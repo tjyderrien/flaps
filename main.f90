@@ -22,9 +22,10 @@ implicit none
 			yCenter=0d0*200d-9			,&! Y position of the max of the intensity
 			Tout=80d0	 		 ,&  !external temperature (K)
 			potential0=7d3,& 	! potential at the bottom of the needle ; default = 7d3
-			potentialNull=0d0
+			potentialNull=0d0, &
+			phiMie=acos(-1d0)		! Mie scattering: polarization angle
     
-    real(8), parameter:: dt0=100d-18          	,& !time step (s)
+    real(8), parameter:: dt0=10d-18          	,& !time step (s)
 			tmax=12d-9	   	,& !stop time	
 			xmin=-10d-6		,& !mesh min
 			xmax=10d-6		,& !mesh max
@@ -34,15 +35,15 @@ implicit none
 			tmin=tCenter-5d0*tau 	   	 !max absolute time
     
 			
-    integer(8), parameter::  iterOut=100	,& ! number of iterations between each stdout
-			  M=51	     	,& !number of cells main domain X direction
-			  N=51		,& !number of cells main domain Y direection
+    integer(8), parameter::  iterOut=10	,& ! number of iterations between each stdout
+			  M=201	     	,& !number of cells main domain X direction
+			  N=201		,& !number of cells main domain Y direection
 			  Mv=101		,& !number of celles in the Vessel domain (larger) X direction
 			  Nv=101	,& !number of celles in the Vessel domain (larger) Y direction
 			  MeshChoice=1		,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: cone, 2: cone in a vessel
 			  MeshIterations=5000	,&	!number of iterations to calculate meshNeedle
 			  MeshIterationsVessel=100*Mv,&	!number of iterations to calculate meshVessel
-			  MeshShift=3		,& 	!number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
+			  MeshShift=5		,& 	!number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
 			  FermiMaxLines=1112	,&	! >= number of lines in Fermi file
 			  SORiterations=1, &	!iteration number for over-relaxation method
 			  InterpolateMethod=1, &	! 0: linear, 1: bicubic
@@ -69,6 +70,7 @@ implicit none
 						!-1: diffusion and conductivity OFF 
 			    TeOff=0		,&		   !0: Disable temperature calculations
 			    HolesOff=0		,&
+			    TsOff=0		,&
 			    ConvectionEnergy=0	,& 	!0: work with Te, no convection. 1: work with Ue, convection
 			    DisableCrossDiffusion=0, &
 			    PoissonOn=0		,& !0: Poisson solver is OFF. 1: Calculation of potential ON. 
@@ -78,7 +80,10 @@ implicit none
 			    PoissonSolver=0	,& !0: Full matrix inversion once, 1: SOR iterative for each dt
 			    InterpolateOff=0, 	&	!just to test speedup...
 			    BandBendingInFDTD=0	,&	!use the interpolation of FDTD 1030 nm with band-bending contribution
-			    PolarizationSource=1	! 0: source Transervse electric, 1: transverse magnetic
+			    PolarizationSource=1, &	! 0: source Transervse electric, 1: transverse magnetic
+			    UseMieScattering=0,& 		! 1: Enable Mie scattering analytic formula
+			    maxBesselOrder=20,&		! Max of terms in series of Bessel for Mie scattering
+			    besselArray=1
 	
     real(8), parameter:: pi=3.14159265358d0 	,& 	!pi number
 			  hbar=1.05457d-34   	,& 	!planck constant
@@ -102,11 +107,16 @@ implicit none
 			 Nborder=1d23				,&! density on boundaries to consider defect layer
 			 DefectThickness=1d-7			
     
-    complex(8), parameter:: Imaginary=(0d0,1d0)		! complex unity
+    complex(8), parameter:: Imaginary=(0d0,1d0), Unit=(1d0,0d0), Zero=(0d0,0d0)		! complex unity
 ! 	             epsilonStatic0=(11.66570433d0,0.01404457712d0)		! dielectric constant for static field
     
     integer(8) 	nbiter, i, itwo, jtwo, j, k, l, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
-		Mp, Np, imax, Nsolve, KLsolve, KUsolve
+		Mp, Np, imax, Nsolve, KLsolve, KUsolve, &
+		Nsolve1, KLsolve1, KUsolve1, &
+		Nsolve2, KLsolve2, KUsolve2, &
+		Nsolve3, KLsolve3, KUsolve3, &
+		Nsolve4, KLsolve4, KUsolve4, &
+		Nsolve5, KLsolve5, KUsolve5
     
     logical	Diverged
     real(8) 	t, t0, dx, dy, x0, y0, dt
@@ -197,7 +207,9 @@ implicit none
 		DistW(1:M,1:N), DistE(1:M,1:N), & 		! distance to the center of neighboor cells
 		DistN(1:M,1:N), DistS(1:M,1:N), &
 		DistDualW(1:M,1:N), DistDualE(1:M,1:N), & 		! distance of the element side (equal to area in 2D)
-		DistDualN(1:M,1:N), DistDualS(1:M,1:N)
+		DistDualN(1:M,1:N), DistDualS(1:M,1:N), &
+		EintFieldR(1:M,1:N), EintFieldI(1:M, 1:N), &
+		EintFieldDual(1:M-1, N-1)
 		
     integer(8)	FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
 		SomeNeighbours(1:4,1:2) 				!Neighbours for the fixed potential
@@ -208,9 +220,10 @@ implicit none
 				     Amatrix(:,:), Bvector(:), 	&
 				     Xvector(:), XvectorPrev(:), 	&
 ! 				     AsolveP(:,:),
-				     BsolveP(:), & 	!matrixes for implicit scheme
-				     ABsolveP(:,:), &
-				     XsolveP(:),  XsolvePrev(:), &	
+				     BsolveP(:), ABsolveP(:,:), XsolveP(:), &
+				     BsolveP1(:), BsolveP2(:), BsolveP3(:), BsolveP4(:), BsolveP5(:), & 	!matrixes for implicit scheme
+				     ABsolveP1(:,:), ABsolveP2(:,:), ABsolveP3(:,:), ABsolveP4(:,:), ABsolveP5(:,:), &
+				     XsolvePrev(:), &
 				     ErrorVec(:), &
 				     spectralNorm(:), 			& !objects for matrix inversion calculation
 				     xP(:,:), yP(:,:),			& 		! vessel position indexes
@@ -228,11 +241,12 @@ implicit none
 				     CellAreaEP(:,:), CellAreaWP(:,:)
 
     integer(8), allocatable, target:: FixedPotentialIndex(:,:), & 	!array of points where potential has been fixed
-				      ipiv(:)
+				      ipiv(:), ipiv1(:), ipiv2(:), ipiv3(:), ipiv4(:), ipiv5(:)
     
     complex(8) 	Dielectric(1:M,1:N), &! solid dielectric function under laser illumination
 		DielectricDrudeE(1:M,1:N), & ! Drude part of dielectric function under laser illumination
-		DielectricDrudeH(1:M,1:N)
+		DielectricDrudeH(1:M,1:N), &
+		EintField(1:M,1:N)	!Ez internal field for Mie scattering theory
 
 		
     complex(8) epsilonInf !, SORsum !material constant
@@ -262,7 +276,8 @@ implicit none
 	    
     integer(4) unit1, unit2
     integer(8) ColFermiNeNc, ColFermiEta, ColFermi0, ColFermi1, ColFermi2, &
-	       ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf, info
+	       ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf, info, &
+	       info1, info2, info3, info4, info5
 	    
     character(len=50)::format
 !     integer(8) nthreads
@@ -272,20 +287,21 @@ implicit none
 
     external dgbtrf, dgbtrs
 
-    
-  !$O M P PARALLEL default(none) private(myid) &
-  !$O M P shared(nthreads)
+!     CALL OMP_SET_NUM_THREADS(4);
+
+  !$OMP PARALLEL default(none) private(myid) &
+  !$OMP shared(nthreads)
   ! Determine the number of threads and their id
-!       myid = OMP_GET_THREAD_NUM()
-!       nthreads = OMP_GET_NUM_THREADS()
-!$O M P BARRIER
+      myid = OMP_GET_THREAD_NUM()
+      nthreads = OMP_GET_NUM_THREADS()
+  !$OMP BARRIER
   
   if (myid==0) then 
     write(*,'(a)') 'OpenMP TEST'
     write(*,'(a,i1)') 'Number of Threads = ', nthreads
     write(*,'(a)') '*******************************'
   end if 
-  !$O M P END PARALLEL
+  !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
   dt=dt0
@@ -441,7 +457,7 @@ implicit none
 ! ! !  
  	do i=1, M
 	    !t = (-t0;-p*dt0), p integer	
-	    localT=Needlet0Limit*( ( (real(i)-0d0)/(real(M)-1d0) )*(real(MeshShift)*real(MeshShift)/(real(N)-1d0)-1d0)+1d0)
+	    localT=Needlet0Limit*( ( (real(i)-0d0)/(real(M)-1d0) ) * (real(MeshShift)*real(MeshShift)/(real(N)-1d0)-1d0)+1d0)
 	    x(i,N)=NeedleA*(1d0/cos( localT )-1d0)
 	    y(i,N)=NeedleB*tan( localT)
 ! 	    x(i,N)=NeedleA*(1d0/cos(localT)-1d0)		!bottom bounday,
@@ -618,13 +634,17 @@ implicit none
   allocate(Xvector(1:Mp*Np))
   allocate(XvectorPrev(1:Mp*Np))
 !   allocate(AsolveP(1:Mp*Np,1:Mp*Np))
-  allocate(BsolveP(1:Mp*Np))
-  allocate(XsolveP(1:Mp*Np))
+  allocate(BsolveP(1:Mp*Np));
+  allocate(BsolveP1(1:Mp*Np)); allocate(BsolveP2(1:Mp*Np)); allocate(BsolveP3(1:Mp*Np)); allocate(BsolveP4(1:Mp*Np)); allocate(BsolveP5(1:Mp*Np))
+  allocate(XsolveP(1:Mp*Np));
+!   allocate(XsolveP1(1:Mp*Np)); allocate(XsolveP2(1:Mp*Np)); allocate(XsolveP3(1:Mp*Np)); allocate(XsolveP4(1:Mp*Np)); allocate(XsolveP5(1:Mp*Np))
   allocate(XsolvePrev(1:Mp*Np))
   allocate(ErrorVec(1:Mp*Np))
 
-  allocate(ABsolveP(1:2*Np+Np+1,1:Mp*Np))
-  allocate(ipiv(1:Mp*Np))
+  allocate(ABsolveP(1:2*Np+Np+1,1:Mp*Np));
+  allocate(ABsolveP1(1:2*Np+Np+1,1:Mp*Np)); allocate(ABsolveP2(1:2*Np+Np+1,1:Mp*Np)); allocate(ABsolveP3(1:2*Np+Np+1,1:Mp*Np)); allocate(ABsolveP4(1:2*Np+Np+1,1:Mp*Np)); allocate(ABsolveP5(1:2*Np+Np+1,1:Mp*Np))
+  allocate(ipiv(1:Mp*Np));
+  allocate(ipiv1(1:Mp*Np)); allocate(ipiv2(1:Mp*Np)); allocate(ipiv3(1:Mp*Np)); allocate(ipiv4(1:Mp*Np));allocate(ipiv5(1:Mp*Np))
   
   allocate(spectralNorm(1:Mp*Np))
   allocate(ExPoisson(1:Mp,1:Np))
@@ -701,9 +721,9 @@ implicit none
   Te0=Tout
   Th0=Tout
   
-  !$O M P DO
+  !$OMP DO
   do i=1,M
-    !$O M P DO
+    !$OMP DO
     do j=1,N
         
         VeX(i,j)=0d0
@@ -741,9 +761,9 @@ implicit none
         MaxHeatingTime(i,j)=0d0
         epsilonNeedle(i,j)=epsilonStatic0-1d0
     end do
-    !$O M P END DO
+    !$OMP END DO
    end do
-   !$O M P END DO
+   !$OMP END DO
    if(CathodeZone.eq.1) then 
     !one need the indexes of the needle points where potential is imposed: matrix Nx2
     write(*,*) "Indexes of needle base on the vessel mesh"
@@ -756,8 +776,8 @@ implicit none
    
    potential(:,:)=0d0! (0d0,0d0)
    
-   !$O M P PARALLEL DEFAULT (SHARED)
-   
+   ! $ OMP PARALLEL DEFAULT (SHARED)
+   write(*,*) 'Dielectric function interpolation...'
    if(InterpolateOff.eq.0) then 
     ! from needle mesh to vessel mesh
       if(InterpolateMethod.eq.0) then
@@ -767,8 +787,9 @@ implicit none
 	call InterpolateBiCubic(epsilonNeedle, x, y, xP, yP, M, N, Mp, Np, DielectricStatic, DummyVessel, DummyVessel)
       end if
    endif
-   !$O M P END PARALLEL
+   ! $ OMP END PARALLEL
    DielectricStatic(:,:)=DielectricStatic(:,:)+1d0 !so that equals 1 outside needle, and equals epsilonStatic0 inside
+   write(*,*) 'Done.'
    
    ! potential on vessel boundaries
    potential(Mp,:)=potentialNull
@@ -1350,7 +1371,48 @@ implicit none
    !! defining material index
    epsilonInf=DielectricConstant(lambda)
   write(*,*) 'epsilon(', 1d9*lambda, 'nm)=', epsilonInf
-
+if(UseMieScattering.eq.1) then
+  write(*,*) 'Computing the Mie scattering field distribution...'
+  !$OMP DO
+  do i=1,M
+    !$OMP DO
+    do j=1,N
+      EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), epsilonInf) * sqrt(2d0*fluence/(c*epsilon0*tau))
+    end do
+    !$OMP END DO
+  end do
+  !$OMP END DO
+  EintField=EintField*conjg(EintField) !change to modulus of the Ez field
+  write(*,*) 'Smoothing the obtained intensity profile to reduce mesh size...'
+  EintFieldR=EintField
+!   EintFieldI=aimag(EintField) !should be equal to 0
+!! SMOOTHING
+!   !$OMP DO
+!   do i=1,M-1
+!     !$OMP DO
+!     do j=1,N-1
+!       0d0=( &
+! 		  + 0.5d0*CellAreaE(i,j)*(Ne(i+1,j)-Ne(i,j))/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+! 		  - 0.5d0*CellAreaW(i,j)*(Ne(i,j)-Ne(i-1,j))/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
+! 		  + 0.5d0*CellAreaN(i,j)*(Ne(i,j+1)-Ne(i,j))/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
+! 		  - 0.5d0*CellAreaS(i,j)*(Ne(i,j)-Ne(i,j-1))/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
+! ! 		  ! Cross-diffusion from [Mathur and Murthy (1997)]
+! 		  + CrossCoeff*( &
+! 		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*( NeDual(i,j) - NeDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
+! 		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*( NeDual(i-1,j-1) - NeDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+! 		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*( NeDual(i-1,j) - NeDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+! 		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*( NeDual(i,j-1) - NeDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
+! 		  )
+!     end do
+!     !$OMP END DO
+!   end do
+!   !$OMP END DO
+  
+!   call InterpolateBiCubic(EintFieldR, x, y, xDual, yDual, M, N, M-1, N-1, EintFieldDual, DummyNeedle, DummyNeedle)
+!   call InterpolateBiCubic(EintFieldDual, xDual, yDual, x, y, M-1, N-1, M, N, EintFieldI, DummyNeedle, DummyNeedle)
+  write(*,*) 'Done.'
+ end if
+ 
   t=tmin
   
   call cpu_time(calc_time_2)
@@ -1424,7 +1486,11 @@ implicit none
 !   end if
   
   write(*,*) "Starting time loop."
-  !***************** temporal loop
+
+  !***************************************************************
+  !***************** temporal loop *******************************
+  !***************************************************************
+  
   do nbiter=1, nmax
     
     t=t+dt; 
@@ -1436,7 +1502,7 @@ implicit none
       write(*,*) minNe, "< Ne <", maxNe
       write(*,*) minNh, "< Nh <", maxNh
       write(*,*) "CFL_Te=", maxCFLxT+maxCFLyT, "maxCFL_Ne=", maxCFLxN+maxCFLyN, &
-		   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency
+		   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, "NumThreads=", nthreads
       write(*,*) "NeTot=", NeTotal, " NhTotal=", NhTotal
     end if
     
@@ -1444,31 +1510,32 @@ implicit none
     maxNe=0d0; minNe=1d50; maxNh=0d0; minNh=1d50; maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; maxCFLyTs=0d0;
     maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
     
-   !$O M P PARALLEL DEFAULT (PRIVATE) SHARED (dt, UeNew, UhNew, TeNew, ThNew, TsNew, NeNew, NhNew, &
-   !$O M P& TeDual, ThDual, TsDual, NeDual, NhDual, intensityDual, &
-   !$O M P& Ue, Uh, Te, Th, Ts, Ne, Nh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
-   !$O M P& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
-   !$O M P& x, y, xDual, yDual, xDualSW, yDualSW, xDualSE, yDualSE, xDualNE, yDualNE, xDualNW, yDualNW, &
-   !$O M P& diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
-   !$O M P& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CouplingE, CouplingH, &
-   !$O M P& nuColl, nuColleph, mobilityE, mobilityH, etae, etah, Egap, &
-   !$O M P& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
-   !$O M P& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
-   !$O M P& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
-   !$O M P& BsolveP, XsolveP, XsolvePrev, ABsolveP, ErrorVec, &
-   !$O M P& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
-   !$O M P& NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, NormalWx, NormalWy, &
-   !$O M P& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP, &
-   !$O M P& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, TangentWx, TangentWy, TangentNx, &
-   !$O M P& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, &
-   !$O M P& CurviWy, ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW) &
-   !$O M P& FIRSTPRIVATE (t, t0, x0, y0, I0, I1, I2, I3, I4, I5, I6, I7, &
-   !$O M P& x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7, &
-   !$O M P& sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, &
-   !$O M P& sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, &
-   !$O M P& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, nbiter, &
-   !$O M P& cpuefficiency, ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
-   !$O M P& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, SORsum, Mp, Np, NeTotal, NhTotal, ErrorSum)
+   !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, UeNew, UhNew, TeNew, ThNew, TsNew, NeNew, NhNew, &
+   !$OMP& TeDual, ThDual, TsDual, NeDual, NhDual, intensityDual, &
+   !$OMP& Ue, Uh, Te, Th, Ts, Ne, Nh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
+   !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
+   !$OMP& x, y, xDual, yDual, xDualSW, yDualSW, xDualSE, yDualSE, xDualNE, yDualNE, xDualNW, yDualNW, &
+   !$OMP& diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
+   !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CouplingE, CouplingH, &
+   !$OMP& nuColl, nuColleph, mobilityE, mobilityH, etae, etah, Egap, &
+   !$OMP& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
+   !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
+   !$OMP& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
+   !$OMP& BsolveP, XsolveP, XsolvePrev, ABsolveP, KLsolve, KUsolve, Nsolve, ErrorVec, ipiv, info, &
+   !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
+   !$OMP& NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, NormalWx, NormalWy, &
+   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP, &
+   !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, TangentWx, TangentWy, TangentNx, &
+   !$OMP& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, &
+   !$OMP& CurviWy, ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
+   !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR) &
+   !$OMP& FIRSTPRIVATE (t, t0, x0, y0, I0, I1, I2, I3, I4, I5, I6, I7, &
+   !$OMP& x1, x2, x3, x4, x5, x6, x7, y1, y2, y3, y4, y5, y6, y7, &
+   !$OMP& sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, &
+   !$OMP& sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, &
+   !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, nbiter, &
+   !$OMP& cpuefficiency, ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
+   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, SORsum, Mp, Np, NeTotal, NhTotal, ErrorSum)
 
    do i=1,M
     CellAreaN(i,N)=0d0 
@@ -1497,9 +1564,9 @@ implicit none
    
    ! replacing old datas
    
-      !$O M P DO
+      !$OMP DO
       do i=1,M
-        ! $OMP PARALLEL DO
+        !$OMP PARALLEL DO
         do j=1,N
            Ue(i,j)=UeNew(i,j)
            Uh(i,j)=UhNew(i,j)
@@ -1511,9 +1578,9 @@ implicit none
 	   CeOld(i,j)=Ce(i,j)
 	   ChOld(i,j)=Ch(i,j)
         end do
-        ! $OMP END PARALLEL DO
+        !$OMP END PARALLEL DO
       end do
-      !$O M P END DO
+      !$OMP END DO
    
 
       
@@ -1758,10 +1825,10 @@ implicit none
     
 !!!! thermal calculations in the main domain
 ! calculation of sources
-    !$O M P DO
+    !$OMP DO
     do i=1,M
 !      intensity(i,1)=(1d0-reflectivity(i,1))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2.-.5d0*((x(i,1)-x0)/sigmaX)**2.-.5d0*((y(i,1)-y0)/sigmaY)**2.)
-      !$O M P PARALLEL DO
+      !$OMP PARALLEL DO
       do j=1,N
 	! optical coefficients
 	
@@ -1827,7 +1894,7 @@ implicit none
 ! !  	end if
 	
 
-	! WITH LUMERICAL INPUT
+	! WITH EXTERNALLY ADJUSTED INPUTS
 !	!Lumerical mode already contains the reflectivity. Although, it doesn't consider change of optical index with ionization. 
 	if(lambda.eq.1030d-9) then 
 	  ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate(lambda,epsilonInf)+1d0*TwoPhotonIonizationRate(lambda)) &
@@ -1902,6 +1969,17 @@ implicit none
 			  )
 ! 			  *exp(-(OnePhotonIonizationRate(lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(x(i,j)-x(i,N)))
 	end if
+
+	! USING MIE SCATTERING ANALYTICAL FORMULAS
+	if(UseMieScattering .eq. 1) then
+	! calculate electric field inside the tip
+! 	  EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), Dielectric(i,j)) !*sqrt(2d0*fluence/(c*epsilon0*tau))
+	  ! debug formula for constant cone radius
+! 	  EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
+! 	  EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real
+	  intensity(i,j)=0.5d0*c*epsilon0*EintField(i,j)*exp(-.5d0*((t-t0)/sigmaTau)**2) !laser fluence and reflectivity is inside the field
+	end if
+
 	
 	if(intensity(i,j) < 1d-20) then 
 	  intensity(i,j)=0d0
@@ -2010,16 +2088,16 @@ implicit none
 	VhY(i,j)=0d0
 	
       end do
-      !$O M P END PARALLEL DO
+      !$OMP END PARALLEL DO
       
     end do
-    !$O M P END DO
+    !$OMP END DO
     
     ! interpolation and preparation of resolution
     
-    !$O M P DO
+    !$OMP DO
     do i=2,M-1
-      !$O M P PARALLEL DO
+      !$OMP PARALLEL DO
       do j=2,N-1
 	!Dual mesh calculation
       	xDualSW(i,j) = 0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)) !x(i-1/2,j-1/2)
@@ -2036,9 +2114,9 @@ implicit none
 	xDual(M-1,j-1) = xDualSE(M-1,j); yDual(M-1,j-1) = yDualSE(M-1,j)
 	xDual(M-1,N-1) = xDualNE(M-1,N-1); yDual(M-1,N-1) = yDualNE(M-1,N-1); 
       end do
-      !$O M P END PARALLEL DO
+      !$OMP END PARALLEL DO
     end do
-    !$O M P END DO
+    !$OMP END DO
     
     ! interpolation on dual mesh
     ! InterpolateBiCubic(phi_source, x_s, y_s, x_t, y_t, SizeXs, SizeYs, SizeXt, SizeYt, phi_target, Grad(phi)_targetX, Grad(phi)_targetY)
@@ -2068,9 +2146,9 @@ implicit none
     
     
     
-    !$O M P DO
+    !$OMP DO
     do i=2, M-1
-      !$O M P PARALLEL DO
+      !$OMP PARALLEL DO
       do j=2, N-1
       ! define the volume of elementary cell around a point everywhere but not on boundaries
 ! 	CellVol(i,j)=0.25d0*(AreaElement(x(i-1,j-1),y(i-1,j-1),x(i+1,j-1),y(i+1,j-1),x(i+1,j+1),y(i+1,j+1),x(i-1,j+1),y(i-1,j+1)))
@@ -2102,12 +2180,13 @@ implicit none
 	! recalcul du gradient avec phi_bords
 	
 	end do
-	!$O M P END PARALLEL DO
+	!$OMP END PARALLEL DO
       end do
-      !$O M P END DO
-      !$O M P DO
+      !$OMP END DO
+      
+      !$OMP DO
       do i=1, M-1
-	!$O M P PARALLEL DO
+	!$OMP PARALLEL DO
 	do j=1, N-1
 	
       ! interpolation bilineaire ponderee par les aires
@@ -2117,10 +2196,13 @@ implicit none
 	ThDual(i,j) = ( Th(i,j)/CellVol(i,j) + Th(i+1,j)/CellVol(i+1,j) + Th(i,j+1)/CellVol(i,j+1) + Th(i+1,j+1) / CellVol(i+1,j+1) ) / ( 1d0 / CellVol(i,j) + 1d0 / CellVol(i+1,j) + 1d0/CellVol(i,j+1) + 1d0/CellVol(i+1,j+1) )
 	TsDual(i,j) = ( Ts(i,j)/CellVol(i,j) + Ts(i+1,j)/CellVol(i+1,j) + Ts(i,j+1)/CellVol(i,j+1) + Ts(i+1,j+1) / CellVol(i+1,j+1) ) / ( 1d0 / CellVol(i,j) + 1d0 / CellVol(i+1,j) + 1d0/CellVol(i,j+1) + 1d0/CellVol(i+1,j+1) )
 	end do
-	!$O M P END PARALLEL DO
+	!$OMP END PARALLEL DO
       end do
-      !$O M P END DO
+      !$OMP END DO
       
+      !$OMP END PARALLEL !!end of parallel section
+      !=======================================================
+
       
       ! solving the 2D problem
       
@@ -2131,21 +2213,41 @@ implicit none
       ! 3/ Find the solution with Lapack without using a large matrix
       
       ! Analyze of the matrix shape with boundary conditions
-      
-      ! ============ Solving Ne implicitly...  ===============
-      
-!       AsolveP(:,:)=0d0;
-      BsolveP(:)=0d0; XsolveP(:)=0d0; XsolvePrev(:)=0d0; ABsolveP(:,:)=0d0
-      KLsolve=Np; KUsolve=Np;
-      Nsolve=Mp*Np
-      
-      ! $ OMP DO
-      do i=2,Mp-1
-      ! $ OMP PARALLEL DO
-	do j=2,Np-1
 
-	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j)) = CellVol(i,j)/dt + ( &
+
+      
+      
+      ! ============ Solve Ne  ===============
+! if(HolesOff.eq.0) then      
+!       AsolveP(:,:)=0d0;
+      BsolveP1(:)=0d0; ABsolveP1(:,:)=0d0; KLsolve1=Np; KUsolve1=Np; Nsolve1=Mp*Np
+      BsolveP2(:)=0d0; ABsolveP2(:,:)=0d0; KLsolve2=Np; KUsolve2=Np; Nsolve2=Mp*Np
+      BsolveP3(:)=0d0; ABsolveP3(:,:)=0d0; KLsolve3=Np; KUsolve3=Np; Nsolve3=Mp*Np
+      BsolveP4(:)=0d0; ABsolveP4(:,:)=0d0; KLsolve4=Np; KUsolve4=Np; Nsolve4=Mp*Np
+      BsolveP5(:)=0d0; ABsolveP5(:,:)=0d0; KLsolve5=Np; KUsolve5=Np; Nsolve5=Mp*Np
+
+      !$OMP PARALLEL SHARED(KLsolve1, KUsolve1, Nsolve1, BsolveP1, ABsolveP1, &
+      !$OMP& KLsolve2, KUsolve2, Nsolve2, BsolveP2, ABsolveP2, &
+      !$OMP& KLsolve3, KUsolve3, Nsolve3, BsolveP3, ABsolveP3, &
+      !$OMP& KLsolve4, KUsolve4, Nsolve4, BsolveP4, ABsolveP4, &
+      !$OMP& KLsolve5, KUsolve5, Nsolve5, BsolveP5, ABsolveP5, &
+      !$OMP& CellAreaE, CellAreaN, CellAreaS, CellAreaW, DistN, DistS, DistE, DistW, &
+      !$OMP& NormalEx, NormalEy, NormalNx, NormalNy, NormalSx, NormalSy, NormalWx, NormalWy, &
+      !$OMP& CurviEx, CurviEy, CurviNx, CurviNy, CurviSx, CurviSy, CurviWx, CurviWy, CellVol, &
+      !$OMP& DistDualN, DistDualS, DistDualE, DistDualW, &
+      !$OMP& Ne, NeDual, GainsE, LossesE, diffusionE, &
+      !$OMP& Nh, NhDual, GainsH, LossesH, diffusionH, &
+      !$OMP& Te, TeDual, SourceE, CouplingE, kappaE, Ce, &
+      !$OMP& Th, ThDual, SourceH, CouplingH, kappaH, Ch, &
+      !$OMP& Ts, TsDual, kappaS, Cs) &
+      !$OMP& FIRSTPRIVATE(Mp, Np, dt)
+      
+      !$OMP DO COLLAPSE(2)
+      do i=2,Mp-1
+	do j=2,Np-1
+	  !!Ne
+	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve1, KUsolve1, Nsolve1)) then
+	    ABsolveP1(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve1,KUsolve1,Nsolve1),OneDindex(i,j)) = CellVol(i,j)/dt + ( &
 ! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
 			+ 0.5d0*CellAreaE(i,j)*(diffusionE(i,j ) +diffusionE(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
 			+ 0.5d0*CellAreaW(i,j)*(diffusionE(i-1,j)+diffusionE(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
@@ -2153,20 +2255,20 @@ implicit none
 			+ 0.5d0*CellAreaS(i,j)*(diffusionE(i,j-1)+diffusionE(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
 			)
 	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve, KUsolve, Nsolve), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(diffusionE(i,j-1 ) + diffusionE(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve1,KUsolve1,Nsolve1)) then
+	    ABsolveP1(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve1, KUsolve1, Nsolve1), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(diffusionE(i,j-1 ) + diffusionE(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
 ! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(diffusionE(i,j-1 ) + diffusionE(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
 	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve, KUsolve, Nsolve), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(diffusionE(i,j+1 ) + diffusionE(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve1,KUsolve1,Nsolve1)) then
+	    ABsolveP1(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve1, KUsolve1, Nsolve1), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(diffusionE(i,j+1 ) + diffusionE(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
 ! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(diffusionE(i,j+1 ) + diffusionE(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
 	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve, KUsolve, Nsolve), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(diffusionE(i-1,j ) + diffusionE(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve1,KUsolve1,Nsolve1)) then
+	    ABsolveP1(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve1, KUsolve1, Nsolve1), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(diffusionE(i-1,j ) + diffusionE(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
 ! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(diffusionE(i-1,j ) + diffusionE(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
 	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve, KUsolve, Nsolve), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(diffusionE(i,j )   + diffusionE(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve1,KUsolve1,Nsolve1)) then
+	    ABsolveP1(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve1, KUsolve1, Nsolve1), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(diffusionE(i,j )   + diffusionE(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
 ! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(diffusionE(i,j )   + diffusionE(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
 	  end if
 
@@ -2176,190 +2278,770 @@ implicit none
   ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
   ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
 
-	    ! neumann conditions on boundaries
-	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve,KUsolve,Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve, KUsolve, Nsolve), OneDindex(i,N)) = 1d0;
+	  !!Nh
+
+	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve2, KUsolve2, Nsolve2)) then
+	    ABsolveP2(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve2,KUsolve2,Nsolve2),OneDindex(i,j)) = CellVol(i,j)/dt + ( &
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
+			+ 0.5d0*CellAreaE(i,j)*(diffusionH(i,j ) +diffusionH(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+			+ 0.5d0*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
+			+ 0.5d0*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
+			+ 0.5d0*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
+			)
 	  end if
-	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve,KUsolve,Nsolve),OneDindex(i,N-1)) = -1d0;
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve2,KUsolve2,Nsolve2)) then
+	    ABsolveP2(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve2, KUsolve2, Nsolve2), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(diffusionH(i,j-1 ) + diffusionH(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(diffusionH(i,j-1 ) + diffusionH(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
 	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve, KUsolve, Nsolve), OneDindex(i,1)) = 1d0;
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve2,KUsolve2,Nsolve2)) then
+	    ABsolveP2(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve2, KUsolve2, Nsolve2), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(diffusionH(i,j+1 ) + diffusionH(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(diffusionH(i,j+1 ) + diffusionH(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
 	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve, KUsolve, Nsolve), OneDindex(i,2)) = -1d0;
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve2,KUsolve2,Nsolve2)) then
+	    ABsolveP2(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve2, KUsolve2, Nsolve2), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(diffusionH(i-1,j ) + diffusionH(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(diffusionH(i-1,j ) + diffusionH(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
 	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; 
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve, KUsolve, Nsolve), OneDindex(M,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve, KUsolve, Nsolve), OneDindex(M-1,j)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve, KUsolve, Nsolve), OneDindex(1,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve, KUsolve, Nsolve), OneDindex(2,j)) = -1d0;
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve2,KUsolve2,Nsolve2)) then
+	    ABsolveP2(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve2, KUsolve2, Nsolve2), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(diffusionH(i,j )   + diffusionH(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(diffusionH(i,j )   + diffusionH(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
 	  end if
 
-	    BsolveP(OneDindex(i,N)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(1,j)) = 0d0; 
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
+  ! 	  ! dirichlet condnitions on boundaries
+  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
+  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
+  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
+  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
+
+	!!Te
+
+	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve3, KUsolve3, Nsolve3)) then
+	    ABsolveP3(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve3,KUsolve3,Nsolve3),OneDindex(i,j)) = Ce(i,j)*CellVol(i,j)/dt + ( &
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
+			+ 0.5d0*CellAreaE(i,j)*(kappae(i,j ) +kappae(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+			+ 0.5d0*CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
+			+ 0.5d0*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
+			+ 0.5d0*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
+			)
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve3,KUsolve3,Nsolve3)) then
+	    ABsolveP3(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve3, KUsolve3, Nsolve3), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappae(i,j-1 ) + kappae(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappae(i,j-1 ) + kappae(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve3,KUsolve3,Nsolve3)) then
+	    ABsolveP3(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve3, KUsolve3, Nsolve3), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(kappae(i,j+1 ) + kappae(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(kappae(i,j+1 ) + kappae(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve3,KUsolve3,Nsolve3)) then
+	    ABsolveP3(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve3, KUsolve3, Nsolve3), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappae(i-1,j ) + kappae(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappae(i-1,j ) + kappae(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve3,KUsolve3,Nsolve3)) then
+	    ABsolveP3(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve3, KUsolve3, Nsolve3), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappae(i,j )   + kappae(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappae(i,j )   + kappae(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+	  end if
+
+  ! 	  ! dirichlet condnitions on boundaries
+  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP3(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
+  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP3(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
+  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP3(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
+  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP3(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
+
+      !!Th
+	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve4, KUsolve4, Nsolve4)) then
+	    ABsolveP4(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve4,KUsolve4,Nsolve4),OneDindex(i,j)) = Ch(i,j)*CellVol(i,j)/dt + ( &
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
+			+ 0.5d0*CellAreaE(i,j)*(kappah(i,j ) +kappah(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+			+ 0.5d0*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
+			+ 0.5d0*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
+			+ 0.5d0*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
+			)
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve4,KUsolve4,Nsolve4)) then
+	    ABsolveP4(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve4, KUsolve4, Nsolve4), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappah(i,j-1 ) + kappah(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappah(i,j-1 ) + kappah(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve4,KUsolve4,Nsolve4)) then
+	    ABsolveP4(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve4, KUsolve4, Nsolve4), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(kappah(i,j+1 ) + kappah(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(kappah(i,j+1 ) + kappah(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve4,KUsolve4,Nsolve4)) then
+	    ABsolveP4(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve4, KUsolve4, Nsolve4), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappah(i-1,j ) + kappah(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappah(i-1,j ) + kappah(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve4,KUsolve4,Nsolve4)) then
+	    ABsolveP4(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve4, KUsolve4, Nsolve4), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappah(i,j )   + kappah(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappah(i,j )   + kappah(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+	  end if
+
+  ! 	  ! dirichlet condnitions on boundaries
+  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP4(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
+  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP4(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
+  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP4(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
+  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP4(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
+
+
+      !!Ts
+	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve5, KUsolve5, Nsolve5)) then
+	    ABsolveP5(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve5,KUsolve5,Nsolve5),OneDindex(i,j)) = Cs(i,j)*CellVol(i,j)/dt + ( &
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
+			+ 0.5d0*CellAreaE(i,j)*(kappas(i,j ) +kappas(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+			+ 0.5d0*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
+			+ 0.5d0*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
+			+ 0.5d0*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
+			)
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve5,KUsolve5,Nsolve5)) then
+	    ABsolveP5(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve5, KUsolve5, Nsolve5), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappas(i,j-1 ) + kappas(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappas(i,j-1 ) + kappas(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve5,KUsolve5,Nsolve5)) then
+	    ABsolveP5(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve5, KUsolve5, Nsolve5), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(kappas(i,j+1 ) + kappas(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(kappas(i,j+1 ) + kappas(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve5,KUsolve5,Nsolve5)) then
+	    ABsolveP5(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve5, KUsolve5, Nsolve5), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappas(i-1,j ) + kappas(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappas(i-1,j ) + kappas(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve5,KUsolve5,Nsolve5)) then
+	    ABsolveP5(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve5, KUsolve5, Nsolve5), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappas(i,j )   + kappas(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappas(i,j )   + kappas(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+	  end if
+
+  ! 	  ! dirichlet condnitions on boundaries
+  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP5(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
+  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP5(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
+  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP5(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
+  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP5(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
+
       
-      ! $ OMP DO
-      do i=1,Mp
-      ! $ OMP PARALLEL DO
-	do j=1,Np
+	end do !j
+      end do !i
+      !$OMP END DO
+      
+      !$OMP DO
+      do i=2, Mp-1
+! 	write(*,*) "Complete the boundaries in i..."
+    !! Ne
+	  ! neumann conditions on boundaries
+	if(FillMatrixCondition(OneDindex(i,Np), OneDindex(i,Np),KLsolve1,KUsolve1,Nsolve1)) then
+! 	    AsolveP(OneDindex(i,Np), OneDindex(i,Np)) = 1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(i,Np), OneDindex(i,Np), KLsolve1, KUsolve1, Nsolve1), OneDindex(i,Np)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(i,Np),OneDindex(i,Np-1),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(i,Np), OneDindex(i,Np-1)) = -1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(i,Np), OneDindex(i,Np-1),KLsolve1,KUsolve1,Nsolve1),OneDindex(i,Np-1)) = -1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve1, KUsolve1, Nsolve1), OneDindex(i,1)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve1, KUsolve1, Nsolve1), OneDindex(i,2)) = -1d0;
+	end if
+
+	BsolveP1(OneDindex(i,Np)) = 0d0; BsolveP1(OneDindex(i,1)) = 0d0;
+
+    !! Nh
+
+	! neumann conditions on boundaries
+	if(FillMatrixCondition(OneDindex(i,Np), OneDindex(i,Np), KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(i,Np), OneDindex(i,Np)) = 1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(i,Np), OneDindex(i,Np), KLsolve2, KUsolve2, Nsolve2), OneDindex(i,Np)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(i,Np),OneDindex(i,N-1),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(i,Np), OneDindex(i,N-1)) = -1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(i,Np), OneDindex(i,Np-1), KLsolve2, KUsolve2, Nsolve2),OneDindex(i,Np-1)) = -1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve2, KUsolve2, Nsolve2), OneDindex(i,1)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve2, KUsolve2, Nsolve2), OneDindex(i,2)) = -1d0;
+	end if
+
+	BsolveP2(OneDindex(i,Np)) = 0d0; BsolveP2(OneDindex(i,1)) = 0d0;
+
+
+    !!Te
+
+	  ! neumann conditions on boundaries
+	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve3,KUsolve3,Nsolve3)) then
+! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve3, KUsolve3, Nsolve3), OneDindex(i,N)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve3,KUsolve3,Nsolve3),OneDindex(i,N-1)) = -1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve3, KUsolve3, Nsolve3), OneDindex(i,1)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve3, KUsolve3, Nsolve3), OneDindex(i,2)) = -1d0;
+	  end if
+
+	  BsolveP3(OneDindex(i,Np)) = 0d0; BsolveP3(OneDindex(i,1)) = 0d0;
 	  
-! 	  XsolveP(OneDindex(i,j)) = Ne(i,j)
-	  BsolveP(OneDindex(i,j)) = CellVol(i,j)*Ne(i,j)/dt  + (GainsE(i,j)-LossesE(i,j))*CellVol(i,j) &
+      !!Th
+	  ! neumann conditions on boundaries
+	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve4,KUsolve4,Nsolve4)) then
+! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve4, KUsolve4, Nsolve4), OneDindex(i,N)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve4,KUsolve4,Nsolve4),OneDindex(i,N-1)) = -1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve4, KUsolve4, Nsolve4), OneDindex(i,1)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve4, KUsolve4, Nsolve4), OneDindex(i,2)) = -1d0;
+	  end if
+
+	  BsolveP4(OneDindex(i,N)) = 0d0; BsolveP4(OneDindex(i,1)) = 0d0;
+
+      !! Ts
+	    ! neumann conditions on boundaries
+	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve5,KUsolve5,Nsolve5)) then
+! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve5, KUsolve5, Nsolve5), OneDindex(i,N)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve5,KUsolve5,Nsolve5),OneDindex(i,N-1)) = -1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve5, KUsolve5, Nsolve5), OneDindex(i,1)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve5, KUsolve5, Nsolve5), OneDindex(i,2)) = -1d0;
+	  end if
+
+	  BsolveP5(OneDindex(i,N)) = 0d0; BsolveP5(OneDindex(i,1)) = 0d0;
+	
+      end do !i
+      !$OMP END DO
+
+      
+!       write(*,*) "Complete the boundaries in j..."
+      
+      !$OMP DO
+      do j=2, Np-1
+
+    !!Ne
+	if(FillMatrixCondition(OneDindex(Mp,j),OneDindex(Mp,j),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(Mp,j), OneDindex(Mp,j), KLsolve1, KUsolve1, Nsolve1), OneDindex(Mp,j)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(Mp,j),OneDindex(Mp-1,j),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(Mp,j), OneDindex(Mp-1,j), KLsolve1, KUsolve1, Nsolve1), OneDindex(Mp-1,j)) = -1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve1, KUsolve1, Nsolve1), OneDindex(1,j)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
+	  ABsolveP1(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve1, KUsolve1, Nsolve1), OneDindex(2,j)) = -1d0;
+	end if
+
+	BsolveP1(OneDindex(Mp,j)) = 0d0; BsolveP1(OneDindex(1,j)) = 0d0;
+
+    !! Nh
+
+	if(FillMatrixCondition(OneDindex(Mp,j),OneDindex(Mp,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(Mp,j), OneDindex(Mp,j)) = 1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(Mp,j), OneDindex(Mp,j), KLsolve2, KUsolve2, Nsolve2), OneDindex(Mp,j)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(Mp,j),OneDindex(Mp-1,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(Mp,j), OneDindex(Mp-1,j)) = -1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(Mp,j), OneDindex(Mp-1,j), KLsolve2, KUsolve2, Nsolve2), OneDindex(Mp-1,j)) = -1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve2, KUsolve2, Nsolve2), OneDindex(1,j)) = 1d0;
+	end if
+	if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
+	  ABsolveP2(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve2, KUsolve2, Nsolve2), OneDindex(2,j)) = -1d0;
+	end if
+
+	BsolveP2(OneDindex(Mp,j)) = 0d0; BsolveP2(OneDindex(1,j)) = 0d0;
+
+
+    !! Te
+
+	if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve3, KUsolve3, Nsolve3), OneDindex(M,j)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve3, KUsolve3, Nsolve3), OneDindex(M-1,j)) = -1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve3, KUsolve3, Nsolve3), OneDindex(1,j)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve3, KUsolve3, Nsolve3), OneDindex(2,j)) = -1d0;
+	  end if
+
+	  BsolveP3(OneDindex(M,j)) = 0d0; BsolveP3(OneDindex(1,j)) = 0d0;
+	  
+      !!Th
+	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve4, KUsolve4, Nsolve4), OneDindex(M,j)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve4, KUsolve4, Nsolve4), OneDindex(M-1,j)) = -1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve4, KUsolve4, Nsolve4), OneDindex(1,j)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve4, KUsolve4, Nsolve4), OneDindex(2,j)) = -1d0;
+	  end if
+
+	  BsolveP4(OneDindex(M,j)) = 0d0; BsolveP4(OneDindex(1,j)) = 0d0;
+
+      !! Ts
+	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve5, KUsolve5, Nsolve5), OneDindex(M,j)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve5, KUsolve5, Nsolve5), OneDindex(M-1,j)) = -1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve5, KUsolve5, Nsolve5), OneDindex(1,j)) = 1d0;
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve5, KUsolve5, Nsolve5), OneDindex(2,j)) = -1d0;
+	  end if
+
+	  BsolveP5(OneDindex(M,j)) = 0d0; BsolveP5(OneDindex(1,j)) = 0d0;
+	  
+	  
+      end do !j
+      !$OMP END DO
+
+
+      
+      
+      !$OMP DO COLLAPSE(2)
+      do i=1,Mp
+	do j=1,Np
+      !! Ne
+	  BsolveP1(OneDindex(i,j)) = CellVol(i,j)*Ne(i,j)/dt  + (GainsE(i,j)-LossesE(i,j))*CellVol(i,j) &
 		+ CrossCoeff*( &
 		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionE(i,j)+diffusionE(i+1,j))*( NeDual(i,j) - NeDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
 		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionE(i-1,j)+diffusionE(i,j))*( NeDual(i-1,j-1) - NeDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
 		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionE(i,j+1)+diffusionE(i,j))*( NeDual(i-1,j) - NeDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
 		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionE(i,j-1)+diffusionE(i,j))*( NeDual(i,j-1) - NeDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
 		  )
-		  
- 	  ! for Dirichlet conditions
-!  	  BsolveP(OneDindex(1,j)) = Ne0; BsolveP(OneDindex(M,j)) = Ne0; BsolveP(OneDindex(i,1)) = Ne0; BsolveP(OneDindex(i,N)) = Ne0;  
+
+      !! Nh
+      	  BsolveP2(OneDindex(i,j)) = CellVol(i,j)*Nh(i,j)/dt  + (GainsH(i,j)-LossesH(i,j))*CellVol(i,j) &
+		+ CrossCoeff*( &
+		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*( NhDual(i,j) - NhDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
+		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*( NhDual(i-1,j-1) - NhDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*( NhDual(i-1,j) - NhDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*( NhDual(i,j-1) - NhDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
+		  )
+
+      !! Te
+	  XsolveP(OneDindex(i,j)) = Ne(i,j)
+	  BsolveP3(OneDindex(i,j)) = CellVol(i,j)*Ce(i,j)*Te(i,j)/dt  + (SourceE(i,j)-CouplingE(i,j))*CellVol(i,j) &
+		+ CrossCoeff*( &
+		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j))*( TeDual(i,j) - TeDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
+		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j))*( TeDual(i-1,j-1) - TeDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j))*( TeDual(i-1,j) - TeDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j))*( TeDual(i,j-1) - TeDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
+		  )
+
+      !! Th
+! 	  XsolveP(OneDindex(i,j)) = Ne(i,j)
+	  BsolveP4(OneDindex(i,j)) = CellVol(i,j)*Ch(i,j)*Th(i,j)/dt  + (SourceH(i,j)-CouplingH(i,j))*CellVol(i,j) &
+		+ CrossCoeff*( &
+		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*( ThDual(i,j) - ThDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
+		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*( ThDual(i-1,j-1) - ThDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*( ThDual(i-1,j) - ThDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*( ThDual(i,j-1) - ThDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
+		  )
+      !! Ts
+
+! 	  XsolveP(OneDindex(i,j)) = Ne(i,j)
+	  BsolveP5(OneDindex(i,j)) = CellVol(i,j)*Cs(i,j)*Ts(i,j)/dt  + (CouplingE(i,j)+CouplingH(i,j))*CellVol(i,j) &
+		+ CrossCoeff*( &
+		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappas(i,j)+kappas(i+1,j))*( TsDual(i,j) - TsDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
+		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j))*( TsDual(i-1,j-1) - TsDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j))*( TsDual(i-1,j) - TsDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j))*( TsDual(i,j-1) - TsDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
+		  )
+	end do
+      end do
+      !$OMP END DO
+
+      !$OMP DO
+      do i=1, Mp
+
+      !!Ne
+	  ! for Dirichlet conditions
+! 	  BsolveP(OneDindex(i,1)) = Ne0; BsolveP(OneDindex(i,N)) = Ne0;
+	  ! for Neumann conditions
+	  BsolveP1(OneDindex(i,1)) = 0d0; BsolveP1(OneDindex(i,Np)) = 0d0
+
+      !!Nh
+	  ! for Dirichlet conditions
+! 	  BsolveP2(OneDindex(i,1)) = Ne0; BsolveP2(OneDindex(i,N)) = Ne0;
  	  ! for Neumann conditions
- 	  BsolveP(OneDindex(1,j)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(i,N)) = 0d0
-	 
+	  BsolveP2(OneDindex(i,1)) = 0d0; BsolveP2(OneDindex(i,Np)) = 0d0
+
+      !! Te
+	  ! for Dirichlet conditions
+! 	  BsolveP3(OneDindex(i,1)) = Ne0; BsolveP3(OneDindex(i,Np)) = Ne0;
+ 	  ! for Neumann conditions
+ 	  BsolveP3(OneDindex(i,1)) = 0d0; BsolveP3(OneDindex(i,Np)) = 0d0
+
+      !! Th
+	  ! for Dirichlet conditions
+! 	  BsolveP4(OneDindex(i,1)) = Ne0; BsolveP4(OneDindex(i,Np)) = Ne0;
+	  ! for Neumann conditions
+	  BsolveP4(OneDindex(i,1)) = 0d0; BsolveP4(OneDindex(i,Np)) = 0d0
+
+      !! Ts
+   	  ! for Dirichlet conditions
+! 	  BsolveP5(OneDindex(i,1)) = Ne0; BsolveP5(OneDindex(i,N)) = Ne0;
+ 	  ! for Neumann conditions
+ 	  BsolveP5(OneDindex(i,1)) = 0d0; BsolveP5(OneDindex(i,Np)) = 0d0
+
+      end do
+      !$OMP END DO
+
+      !$OMP DO
+      do j=1, Np
+    !! Ne
+! 	! for Dirichlet conditions
+! 	BsolveP1(OneDindex(1,j)) = Ne0; BsolveP1(OneDindex(M,j)) = Ne0;
+	! for Neumann conditions
+	BsolveP1(OneDindex(1,j)) = 0d0; BsolveP1(OneDindex(Mp,j)) = 0d0;
+    !! Nh
+	! for Dirichlet conditions
+! 	BsolveP2(OneDindex(1,j)) = Ne0; BsolveP2(OneDindex(M,j)) = Ne0;
+	! for Neumann conditions
+	BsolveP2(OneDindex(1,j)) = 0d0; BsolveP2(OneDindex(Mp,j)) = 0d0
+
+    !!Te
+	! for Dirichlet conditions
+! 	BsolveP3(OneDindex(1,j)) = Ne0; BsolveP3(OneDindex(Mp,j)) = Ne0;
+	! for Neumann conditions
+	BsolveP3(OneDindex(1,j)) = 0d0; BsolveP3(OneDindex(Mp,j)) = 0d0;
+
+    !!Th
+	! for Dirichlet conditions
+!  	BsolveP4(OneDindex(1,j)) = Ne0; BsolveP4(OneDindex(M,j)) = Ne0;
+ 	! for Neumann conditions
+ 	BsolveP4(OneDindex(1,j)) = 0d0; BsolveP4(OneDindex(Mp,j)) = 0d0;
+
+    !! Ts
+	! for Dirichlet conditions
+	BsolveP5(OneDindex(1,j)) = Ne0; BsolveP5(OneDindex(Mp,j)) = Ne0;
+ 	! for Neumann conditions
+ 	BsolveP5(OneDindex(1,j)) = 0d0; BsolveP5(OneDindex(Mp,j)) = 0d0
+ 	
+      end do
+      !$OMP END DO
+
+      !$OMP DO COLLAPSE(2)
+      do i=1,Mp
+	do j=1,Np
+
+      !!Ne
 	 ! corners dont play any role then must be deleted
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve1, KUsolve1, Nsolve1)) then
 ! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
+	    ABsolveP1(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve1,KUsolve1,Nsolve1),OneDindex(i,j))=0d0
 	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
+	  if(FillMatrixCondition(OneDindex(1,Np),OneDindex(i,j),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(1,Np), OneDindex(i,j))=0d0
+	    ABsolveP1(FillMatrixRow(OneDindex(1,Np), OneDindex(i,j),KLsolve1,KUsolve1,Nsolve1),OneDindex(i,j))=0d0
 	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
+	  if(FillMatrixCondition(OneDindex(Mp,1),OneDindex(i,j),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(Mp,1), OneDindex(i,j))=0d0
+	    ABsolveP1(FillMatrixRow(OneDindex(Mp,1), OneDindex(i,j),KLsolve1,KUsolve1,Nsolve1),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(Mp,Np),OneDindex(i,j),KLsolve1, KUsolve1, Nsolve1)) then
+! 	    AsolveP(OneDindex(Mp,Np), OneDindex(i,j))=0d0
+	    ABsolveP1(FillMatrixRow(OneDindex(Mp,Np), OneDindex(i,j),KLsolve1,KUsolve1,Nsolve1),OneDindex(i,j))=0d0
+	  end if
+	  
+      !! Nh
+	  ! corners dont play any role then must be deleted
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
+	    ABsolveP2(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve2,KUsolve2,Nsolve2),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,Np),OneDindex(i,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(1,Np), OneDindex(i,j))=0d0
+	    ABsolveP2(FillMatrixRow(OneDindex(1,Np), OneDindex(i,j),KLsolve2,KUsolve2,Nsolve2),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(Mp,1),OneDindex(i,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(Mp,1), OneDindex(i,j))=0d0
+	    ABsolveP2(FillMatrixRow(OneDindex(Mp,1), OneDindex(i,j),KLsolve2,KUsolve2,Nsolve2),OneDindex(i,j))=0d0
 	  end if
 
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
+	  if(FillMatrixCondition(OneDindex(Mp,Np),OneDindex(i,j),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(Mp,Np), OneDindex(i,j))=0d0
+	    ABsolveP2(FillMatrixRow(OneDindex(Mp,Np), OneDindex(i,j),KLsolve2,KUsolve2,Nsolve2),OneDindex(i,j))=0d0
 	  end if
+
+      !! Te
+	  ! corners dont play any role then must be deleted
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
+	    ABsolveP3(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve3,KUsolve3,Nsolve3),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
+	    ABsolveP3(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve3,KUsolve3,Nsolve3),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
+	    ABsolveP3(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve3,KUsolve3,Nsolve3),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve3, KUsolve3, Nsolve3)) then
+! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
+	    ABsolveP3(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve3,KUsolve3,Nsolve3),OneDindex(i,j))=0d0
+	  end if
+
+      !!Th
+	  ! corners dont play any role then must be deleted
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
+	    ABsolveP4(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve4,KUsolve4,Nsolve4),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
+	    ABsolveP4(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve4,KUsolve4,Nsolve4),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
+	    ABsolveP4(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve4,KUsolve4,Nsolve4),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve4, KUsolve4, Nsolve4)) then
+! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
+	    ABsolveP4(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve4,KUsolve4,Nsolve4),OneDindex(i,j))=0d0
+	  end if
+
+
+      !! Ts
+	  ! corners dont play any role then must be deleted
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
+	    ABsolveP5(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve5,KUsolve5,Nsolve5),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
+	    ABsolveP5(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve5,KUsolve5,Nsolve5),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
+	    ABsolveP5(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve5,KUsolve5,Nsolve5),OneDindex(i,j))=0d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve5, KUsolve5, Nsolve5)) then
+! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
+	    ABsolveP5(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve5,KUsolve5,Nsolve5),OneDindex(i,j))=0d0
+	  end if
+	end do
+      end do
+      !$OMP END DO
 	  
 	  ! other direction, no ?
-! 	  AsolveP(OneDindex(i,j), OneDindex(1,1))=0d0; AsolveP(OneDindex(i,j), OneDindex(1,N))=0d0
-! 	  AsolveP(OneDindex(i,j), OneDindex(M,1))=0d0; AsolveP(OneDindex(i,j), OneDindex(M,N))=0d0
-	  
+! 	  AsolveP(OneDindex(i,j), OneDindex(1,1))=0d0; AsolveP(OneDindex(i,j), OneDindex(1,Np))=0d0
+! 	  AsolveP(OneDindex(i,j), OneDindex(Mp,1))=0d0; AsolveP(OneDindex(i,j), OneDindex(M,Np))=0d0
+    !! Ne
 	  ! however, diagonal cannot be null
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve, KUsolve, Nsolve)) then
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve1, KUsolve1, Nsolve1)) then
+  ! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
+	    ABsolveP1(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve1,KUsolve1,Nsolve1),OneDindex(1,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,Np),OneDindex(1,Np),KLsolve1, KUsolve1, Nsolve1)) then
+  ! 	    AsolveP(OneDindex(1,Np), OneDindex(1,Np))=1d0
+	    ABsolveP1(FillMatrixRow(OneDindex(1,Np), OneDindex(1,Np),KLsolve1,KUsolve1,Nsolve1),OneDindex(1,Np))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(Mp,1),OneDindex(Mp,1),KLsolve1, KUsolve1, Nsolve1)) then
+  ! 	    AsolveP(OneDindex(Mp,1), OneDindex(Mp,1))=1d0
+	    ABsolveP1(FillMatrixRow(OneDindex(Mp,1), OneDindex(Mp,1),KLsolve1,KUsolve1,Nsolve1),OneDindex(Mp,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(Mp,Np),OneDindex(Mp,Np),KLsolve1, KUsolve1, Nsolve1)) then
+  ! 	    AsolveP(OneDindex(Mp,Np), OneDindex(Mp,Np))=1d0
+	    ABsolveP1(FillMatrixRow(OneDindex(Mp,Np), OneDindex(Mp,Np),KLsolve1,KUsolve1,Nsolve1),OneDindex(Mp,Np))=1d0
+	  end if
+
+	  ! let give a value to the corners, since they are used for NeDual calculation
+  ! 	  BsolveP1(OneDindex(1,1))=Ne0; BsolveP1(OneDindex(1,Np))=Ne0
+  ! 	  BsolveP1(OneDindex(Mp,1))=Ne0; BsolveP1(OneDindex(Mp,Np))=Ne0
+	  BsolveP1(OneDindex(1,1))=0.5d0*(Ne(1,2)+Ne(2,1)); BsolveP1(OneDindex(1,Np))=0.5d0*(Ne(1,Np-1)+Ne(2,Np))
+	  BsolveP1(OneDindex(Mp,1))=0.5d0*(Ne(Mp,2)+Ne(Mp-1,1)); BsolveP1(OneDindex(Mp,Np))=0.5d0*(Ne(Mp,Np-1)+Ne(Mp-1,Np))
+
+    !! Nh
+	  ! however, diagonal cannot be null
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve2, KUsolve2, Nsolve2)) then
 ! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve,KUsolve,Nsolve),OneDindex(1,1))=1d0
+	    ABsolveP2(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve2,KUsolve2,Nsolve2),OneDindex(1,1))=1d0
 	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(1,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(1,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(1,N),KLsolve,KUsolve,Nsolve),OneDindex(1,N))=1d0
+	  if(FillMatrixCondition(OneDindex(1,Np),OneDindex(1,Np),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(1,Np), OneDindex(1,Np))=1d0
+	    ABsolveP2(FillMatrixRow(OneDindex(1,Np), OneDindex(1,Np),KLsolve2,KUsolve2,Nsolve2),OneDindex(1,Np))=1d0
 	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(M,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(M,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(M,1),KLsolve,KUsolve,Nsolve),OneDindex(M,1))=1d0
+	  if(FillMatrixCondition(OneDindex(Mp,1),OneDindex(Mp,1),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(Mp,1), OneDindex(Mp,1))=1d0
+	    ABsolveP2(FillMatrixRow(OneDindex(Mp,1), OneDindex(Mp,1),KLsolve2,KUsolve2,Nsolve2),OneDindex(Mp,1))=1d0
 	  end if
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(M,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(M,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(M,N),KLsolve,KUsolve,Nsolve),OneDindex(M,N))=1d0
+	  if(FillMatrixCondition(OneDindex(Mp,Np),OneDindex(Mp,Np),KLsolve2, KUsolve2, Nsolve2)) then
+! 	    AsolveP(OneDindex(Mp,Np), OneDindex(Mp,Np))=1d0
+	    ABsolveP2(FillMatrixRow(OneDindex(Mp,Np), OneDindex(Mp,Np),KLsolve2,KUsolve2,Nsolve2),OneDindex(Mp,Np))=1d0
 	  end if
-	 
+
 	 ! let give a value to the corners, since they are used for NeDual calculation
-! 	  BsolveP(OneDindex(1,1))=Ne0; BsolveP(OneDindex(1,N))=Ne0
-! 	  BsolveP(OneDindex(M,1))=Ne0; BsolveP(OneDindex(M,N))=Ne0
-	  BsolveP(OneDindex(1,1))=0.5d0*(Ne(1,2)+Ne(2,1)); BsolveP(OneDindex(1,N))=0.5d0*(Ne(1,N-1)+Ne(2,N))
-	  BsolveP(OneDindex(M,1))=0.5d0*(Ne(M,2)+Ne(M-1,1)); BsolveP(OneDindex(M,N))=0.5d0*(Ne(M,N-1)+Ne(M-1,N))
+	  BsolveP2(OneDindex(1,1))=0.5d0*(Nh(1,2)+Nh(2,1)); BsolveP2(OneDindex(1,Np))=0.5d0*(Nh(1,Np-1)+Nh(2,Np))
+	  BsolveP2(OneDindex(Mp,1))=0.5d0*(Nh(Mp,2)+Nh(Mp-1,1)); BsolveP2(OneDindex(Mp,Np))=0.5d0*(Nh(Mp,Np-1)+Nh(Mp-1,Np))
+
+    !!Te
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve3, KUsolve3, Nsolve3)) then
+    ! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
+	    ABsolveP3(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve3,KUsolve3,Nsolve3),OneDindex(1,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(1,N),KLsolve3, KUsolve3, Nsolve3)) then
+    ! 	    AsolveP(OneDindex(1,N), OneDindex(1,N))=1d0
+	    ABsolveP3(FillMatrixRow(OneDindex(1,N), OneDindex(1,N),KLsolve3,KUsolve3,Nsolve3),OneDindex(1,N))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(M,1),KLsolve3, KUsolve3, Nsolve3)) then
+    ! 	    AsolveP(OneDindex(M,1), OneDindex(M,1))=1d0
+	    ABsolveP3(FillMatrixRow(OneDindex(M,1), OneDindex(M,1),KLsolve3,KUsolve3,Nsolve3),OneDindex(M,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(M,N),KLsolve3, KUsolve3, Nsolve3)) then
+    ! 	    AsolveP(OneDindex(M,N), OneDindex(M,N))=1d0
+	    ABsolveP3(FillMatrixRow(OneDindex(M,N), OneDindex(M,N),KLsolve3,KUsolve3,Nsolve3),OneDindex(M,N))=1d0
+	  end if
+
+	  ! let give a value to the corners, since they are used for NeDual calculation
+	  BsolveP3(OneDindex(1,1))=0.5d0*(Te(1,2)+Te(2,1)); BsolveP3(OneDindex(1,N))=0.5d0*(Te(1,N-1)+Te(2,N))
+	  BsolveP3(OneDindex(M,1))=0.5d0*(Te(M,2)+Te(M-1,1)); BsolveP3(OneDindex(M,N))=0.5d0*(Te(M,N-1)+Te(M-1,N))
+    !! Th
+
+	  ! however, diagonal cannot be null
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve4, KUsolve4, Nsolve4)) then
+    ! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
+	    ABsolveP4(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve4,KUsolve4,Nsolve4),OneDindex(1,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,Np),OneDindex(1,Np),KLsolve4, KUsolve4, Nsolve4)) then
+    ! 	    AsolveP(OneDindex(1,Np), OneDindex(1,Np))=1d0
+	    ABsolveP4(FillMatrixRow(OneDindex(1,Np), OneDindex(1,Np),KLsolve4,KUsolve4,Nsolve4),OneDindex(1,Np))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(M,1),KLsolve4, KUsolve4, Nsolve4)) then
+    ! 	    AsolveP(OneDindex(M,1), OneDindex(M,1))=1d0
+	    ABsolveP4(FillMatrixRow(OneDindex(M,1), OneDindex(M,1),KLsolve4,KUsolve4,Nsolve4),OneDindex(M,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(M,Np),OneDindex(M,Np),KLsolve4, KUsolve4, Nsolve4)) then
+    ! 	    AsolveP(OneDindex(M,Np), OneDindex(M,Np))=1d0
+	    ABsolveP4(FillMatrixRow(OneDindex(M,Np), OneDindex(M,Np),KLsolve4,KUsolve4,Nsolve4),OneDindex(M,Np))=1d0
+	  end if
+
+	    ! let give a value to the corners, since they are used for NeDual calculation
+	  BsolveP4(OneDindex(1,1))=0.5d0*(Th(1,2)+Th(2,1)); BsolveP4(OneDindex(1,Np))=0.5d0*(Th(1,Np-1)+Th(2,Np))
+	  BsolveP4(OneDindex(Mp,1))=0.5d0*(Th(Mp,2)+Th(Mp-1,1)); BsolveP4(OneDindex(Mp,Np))=0.5d0*(Th(Mp,Np-1)+Th(Mp-1,Np))
+
+      !! Ts
+	  ! however, diagonal cannot be null
+	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve5, KUsolve5, Nsolve5)) then
+    ! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
+	    ABsolveP5(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve5,KUsolve5,Nsolve5),OneDindex(1,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(1,Np),OneDindex(1,Np),KLsolve5, KUsolve5, Nsolve5)) then
+    ! 	    AsolveP(OneDindex(1,Np), OneDindex(1,Np))=1d0
+	    ABsolveP5(FillMatrixRow(OneDindex(1,Np), OneDindex(1,Np),KLsolve5,KUsolve5,Nsolve5),OneDindex(1,Np))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(Mp,1),OneDindex(Mp,1),KLsolve5, KUsolve5, Nsolve5)) then
+    ! 	    AsolveP(OneDindex(Mp,1), OneDindex(Mp,1))=1d0
+	    ABsolveP5(FillMatrixRow(OneDindex(Mp,1), OneDindex(Mp,1),KLsolve5,KUsolve5,Nsolve5),OneDindex(Mp,1))=1d0
+	  end if
+	  if(FillMatrixCondition(OneDindex(Mp,Np),OneDindex(Mp,Np),KLsolve5, KUsolve5, Nsolve5)) then
+    ! 	    AsolveP(OneDindex(Mp,Np), OneDindex(Mp,Np))=1d0
+	    ABsolveP5(FillMatrixRow(OneDindex(Mp,Np), OneDindex(Mp,Np),KLsolve5,KUsolve5,Nsolve5),OneDindex(Mp,Np))=1d0
+	  end if
+
+	    ! let give a value to the corners, since they are used for NeDual calculation
+	  BsolveP5(OneDindex(1,1))=0.5d0*(Ts(1,2)+Ts(2,1)); BsolveP5(OneDindex(1,Np))=0.5d0*(Ts(1,Np-1)+Ts(2,Np))
+	  BsolveP5(OneDindex(Mp,1))=0.5d0*(Ts(Mp,2)+Ts(Mp-1,1)); BsolveP5(OneDindex(Mp,Np))=0.5d0*(Ts(Mp,Np-1)+Ts(Mp-1,Np))
+
 	  
-! 	  ! Implicit replacement of corners by average !!do not work since diag=1. 
-! 	  AsolveP(OneDindex(1,1),OneDindex(1,2))=0.5d0; AsolveP(OneDindex(1,1),OneDindex(2,1))=0.5d0; BsolveP(OneDindex(1,1))=0d0; 
-! 	  AsolveP(OneDindex(1,N),OneDindex(2,N))=0.5d0; AsolveP(OneDindex(1,N),OneDindex(1,N-1))=0.5d0; BsolveP(OneDindex(1,N))=0d0
-! 	  AsolveP(OneDindex(M,N),OneDindex(M-1,N))=0.5d0; AsolveP(OneDindex(M,N),OneDindex(M,N-1))=0.5d0; BsolveP(OneDindex(M,N))=0d0
-! 	  AsolveP(OneDindex(M,1),OneDindex(M,2))=0.5d0; AsolveP(OneDindex(M,1),OneDindex(M-1,1))=0.5d0; BsolveP(OneDindex(M,1))=0d0; 
-	  
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-! !       ! test with a trivial matrix
-! !       AsolveP(:,:)=0d0
-! !       !$O M P DO
-! !       do i=1,Mp
-! !       !$O M P PARALLEL DO
-! ! 	do j=1,Np
-! ! 	AsolveP(OneDindex(i,j), OneDindex(i,j))=1d0
-! ! 	end do
-! ! 	!$O M P END PARALLEL DO
-! !       end do
-! !       !$O M P END DO
-! ! !       
-!
-! !
-! 	if(mod(nbiter,iterOut).eq.0) then
-! 		  write(91,'(5E18.9)') BsolveP !Amatrix
-! 		  write(91,*)
-! 	end if
-
-! 	!Not optimised but valid resolution
-!       AsolveP=LaInv((AsolveP))
-! 	XsolveP=(matmul(AsolveP, (BsolveP))) ! solution des NeNew
-
-! 	
-!       ! optimised and validated resolution, but fill is still using AsolveP
-!       ABsolveP(:,:)=0d0
-!       KLsolve=Np; KUsolve=Np;
-!       Nsolve=Mp*Np
-! 
-!       do i=1,Nsolve
-!       !$O M P PARALLEL DO
-! 	do j=1,Nsolve
-! 	  if(FillMatrixCondition(i,j,KLsolve, KUsolve, Nsolve)) then
-! 	    ABsolveP(FillMatrixRow(i,j,KLsolve,KUsolve,Nsolve),j)=AsolveP(i,j)
-! 	  end if
-! 	end do
-! 	!$O M P END PARALLEL DO
-!       end do
-!       !$O M P END DO
-
-
- 
-! 	!!!Test of the optimised solutions (idiot, but good to check validity of the solver)
-! 	call SolveSparse(AsolveP, XsolveP, BsolveP, Nsolve, Nsolve)
-	!$O M P SECTIONS
-	!$O M P SECTION
-	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve, KUsolve, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, info)
-	CALL dgbtrs('N', Nsolve, KLsolve, KUsolve, 1, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, BsolveP, Nsolve, info)
+  !$OMP END PARALLEL
 	
 
-	if (info .ne. 0) then
+! 	!!!Test of the optimised solutions (idiot, but good to check validity of the solver)
+! 	call SolveSparse(AsolveP, XsolveP, BsolveP, Nsolve, Nsolve)
+!!! SOLVE THE SYSTEMS
+
+      
+    !! Ne
+	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve1, KUsolve1, ABsolveP1, 2*KLsolve1+KUsolve1+1, ipiv1, info1)
+	CALL dgbtrs('N', Nsolve1, KLsolve1, KUsolve1, 1, ABsolveP1, 2*KLsolve1+KUsolve1+1, ipiv1, BsolveP1, Nsolve1, info1)
+    !! Nh
+	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve2, KUsolve2, ABsolveP2, 2*KLsolve2+KUsolve2+1, ipiv2, info2)
+	CALL dgbtrs('N', Nsolve2, KLsolve2, KUsolve2, 1, ABsolveP2, 2*KLsolve2+KUsolve2+1, ipiv2, BsolveP2, Nsolve2, info2)
+    !! Te
+	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve3, KUsolve3, ABsolveP3, 2*KLsolve3+KUsolve3+1, ipiv3, info3)
+	CALL dgbtrs('N', Nsolve3, KLsolve3, KUsolve3, 1, ABsolveP3, 2*KLsolve3+KUsolve3+1, ipiv3, BsolveP3, Nsolve3, info3)
+    !! Th
+	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve4, KUsolve4, ABsolveP4, 2*KLsolve4+KUsolve4+1, ipiv4, info4)
+	CALL dgbtrs('N', Nsolve4, KLsolve4, KUsolve4, 1, ABsolveP4, 2*KLsolve4+KUsolve4+1, ipiv4, BsolveP4, Nsolve4, info4)
+    !! Ts
+	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve5, KUsolve5, ABsolveP5, 2*KLsolve5+KUsolve5+1, ipiv5, info5)
+	CALL dgbtrs('N', Nsolve5, KLsolve5, KUsolve5, 1, ABsolveP5, 2*KLsolve5+KUsolve5+1, ipiv5, BsolveP5, Nsolve5, info5)
+	
+	if ((info1 .ne. 0) .OR. (info2 .ne. 0) .OR. (info3 .ne. 0) .OR. (info4 .ne. 0) .OR. (info5 .ne. 0)) then
 	  stop 'Matrix is numerically singular!'
 	end if
 ! 
-! 	if(mod(nbiter,iterOut).eq.0) then
-! 		  write(91,'(5E18.9)') BsolveP !Amatrix
-! 		  write(91,*)
-! 	end if
+!!! Affecting the solutions
 
-
-            
-! 
+      !$OMP PARALLEL SHARED(BsolveP1, BsolveP2, BsolveP3, BsolveP4, BsolveP5, &
+      !$OMP& NeNew, NhNew, TeNew, ThNew, TsNew) FIRSTPRIVATE(Mp, Np)
+      
+      !$OMP DO COLLAPSE(2)
       do i=1,Mp
 	do j=1,Np
-	  NeNew(i,j) = BsolveP(OneDindex(i,j))
+	  NeNew(i,j) = BsolveP1(OneDindex(i,j))
+	  NhNew(i,j) = BsolveP2(OneDindex(i,j))
+	  TeNew(i,j) = BsolveP3(OneDindex(i,j))
+	  ThNew(i,j) = BsolveP4(OneDindex(i,j))
+	  TsNew(i,j) = BsolveP5(OneDindex(i,j))
 	end do
       end do
+      
+      !$OMP END DO
+      !$OMP END PARALLEL
 
       !$O M P END SECTIONS
       
@@ -2375,682 +3057,28 @@ implicit none
 ! 	ErrorSum=ErrorSum+ErrorVec(i)**2
 !       end do
 !       write(*,*) "Norm", ErrorSum
-      
+! end if !temporary !!!      
+
+!============ SOLVE Ts ==================
 
 
-      !======= SOLVE Nh ==========
-            
-
-      BsolveP(:)=0d0; XsolveP(:)=0d0; XsolvePrev(:)=0d0; ABsolveP(:,:)=0d0
-      KLsolve=Np; KUsolve=Np;
-      Nsolve=Mp*Np
-
-      ! $ OMP DO
-      do i=2,Mp-1
-      ! $ OMP PARALLEL DO
-	do j=2,Np-1
-
-	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j)) = CellVol(i,j)/dt + ( &
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
-			+ 0.5d0*CellAreaE(i,j)*(diffusionH(i,j ) +diffusionH(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
-			+ 0.5d0*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
-			+ 0.5d0*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
-			+ 0.5d0*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
-			)
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve, KUsolve, Nsolve), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(diffusionH(i,j-1 ) + diffusionH(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(diffusionH(i,j-1 ) + diffusionH(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve, KUsolve, Nsolve), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(diffusionH(i,j+1 ) + diffusionH(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(diffusionH(i,j+1 ) + diffusionH(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve, KUsolve, Nsolve), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(diffusionH(i-1,j ) + diffusionH(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(diffusionH(i-1,j ) + diffusionH(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve, KUsolve, Nsolve), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(diffusionH(i,j )   + diffusionH(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(diffusionH(i,j )   + diffusionH(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-	  end if
-
-  ! 	  ! dirichlet condnitions on boundaries
-  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
-  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
-  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
-  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
-
-	    ! neumann conditions on boundaries
-	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve,KUsolve,Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve, KUsolve, Nsolve), OneDindex(i,N)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve,KUsolve,Nsolve),OneDindex(i,N-1)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve, KUsolve, Nsolve), OneDindex(i,1)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve, KUsolve, Nsolve), OneDindex(i,2)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve, KUsolve, Nsolve), OneDindex(M,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve, KUsolve, Nsolve), OneDindex(M-1,j)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve, KUsolve, Nsolve), OneDindex(1,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve, KUsolve, Nsolve), OneDindex(2,j)) = -1d0;
-	  end if
-
-	    BsolveP(OneDindex(i,N)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(1,j)) = 0d0;
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-      ! $ OMP DO
-      do i=1,Mp
-      ! $ OMP PARALLEL DO
-	do j=1,Np
-
-! 	  XsolveP(OneDindex(i,j)) = Ne(i,j)
-	  BsolveP(OneDindex(i,j)) = CellVol(i,j)*Nh(i,j)/dt  + (GainsH(i,j)-LossesH(i,j))*CellVol(i,j) &
-		+ CrossCoeff*( &
-		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*( NhDual(i,j) - NhDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*( NhDual(i-1,j-1) - NhDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*( NhDual(i-1,j) - NhDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*( NhDual(i,j-1) - NhDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
-		  )
-
- 	  ! for Dirichlet conditions
-!  	  BsolveP(OneDindex(1,j)) = Ne0; BsolveP(OneDindex(M,j)) = Ne0; BsolveP(OneDindex(i,1)) = Ne0; BsolveP(OneDindex(i,N)) = Ne0;
- 	  ! for Neumann conditions
- 	  BsolveP(OneDindex(1,j)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(i,N)) = 0d0
-
-	 ! corners dont play any role then must be deleted
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  ! however, diagonal cannot be null
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve,KUsolve,Nsolve),OneDindex(1,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(1,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(1,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(1,N),KLsolve,KUsolve,Nsolve),OneDindex(1,N))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(M,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(M,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(M,1),KLsolve,KUsolve,Nsolve),OneDindex(M,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(M,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(M,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(M,N),KLsolve,KUsolve,Nsolve),OneDindex(M,N))=1d0
-	  end if
-
-	 ! let give a value to the corners, since they are used for NeDual calculation
-	  BsolveP(OneDindex(1,1))=0.5d0*(Nh(1,2)+Nh(2,1)); BsolveP(OneDindex(1,N))=0.5d0*(Nh(1,N-1)+Nh(2,N))
-	  BsolveP(OneDindex(M,1))=0.5d0*(Nh(M,2)+Nh(M-1,1)); BsolveP(OneDindex(M,N))=0.5d0*(Nh(M,N-1)+Nh(M-1,N))
-
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-	!$O M P SECTIONS
-	!$O M P SECTION
-	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve, KUsolve, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, info)
-	CALL dgbtrs('N', Nsolve, KLsolve, KUsolve, 1, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, BsolveP, Nsolve, info)
+      if(TeOff.eq.0 .AND. TsOff.eq.0) then
 
 
-	if (info .ne. 0) then
+
+	if (info5 .ne. 0) then
 	  stop 'Matrix is numerically singular!'
 	end if
-
-      do i=1,Mp
-	do j=1,Np
-	  NhNew(i,j) = BsolveP(OneDindex(i,j))
-	end do
-      end do
-
-      !$O M P END SECTIONS
-
-      !============ SOLVE Te ==================
-
-      BsolveP(:)=0d0; XsolveP(:)=0d0; XsolvePrev(:)=0d0; ABsolveP(:,:)=0d0
-      KLsolve=Np; KUsolve=Np;
-      Nsolve=Mp*Np
-
-      ! $ OMP DO
-      do i=2,Mp-1
-      ! $ OMP PARALLEL DO
-	do j=2,Np-1
-
-	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j)) = Ce(i,j)*CellVol(i,j)/dt + ( &
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
-			+ 0.5d0*CellAreaE(i,j)*(kappae(i,j ) +kappae(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
-			+ 0.5d0*CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
-			+ 0.5d0*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
-			+ 0.5d0*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
-			)
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve, KUsolve, Nsolve), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappae(i,j-1 ) + kappae(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappae(i,j-1 ) + kappae(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve, KUsolve, Nsolve), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(kappae(i,j+1 ) + kappae(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(kappae(i,j+1 ) + kappae(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve, KUsolve, Nsolve), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappae(i-1,j ) + kappae(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappae(i-1,j ) + kappae(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve, KUsolve, Nsolve), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappae(i,j )   + kappae(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappae(i,j )   + kappae(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-	  end if
-
-  ! 	  ! dirichlet condnitions on boundaries
-  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
-  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
-  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
-  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
-
-	    ! neumann conditions on boundaries
-	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve,KUsolve,Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve, KUsolve, Nsolve), OneDindex(i,N)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve,KUsolve,Nsolve),OneDindex(i,N-1)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve, KUsolve, Nsolve), OneDindex(i,1)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve, KUsolve, Nsolve), OneDindex(i,2)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve, KUsolve, Nsolve), OneDindex(M,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve, KUsolve, Nsolve), OneDindex(M-1,j)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve, KUsolve, Nsolve), OneDindex(1,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve, KUsolve, Nsolve), OneDindex(2,j)) = -1d0;
-	  end if
-
-	    BsolveP(OneDindex(i,N)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(1,j)) = 0d0;
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-      ! $ OMP DO
-      do i=1,Mp
-      ! $ OMP PARALLEL DO
-	do j=1,Np
-
-! 	  XsolveP(OneDindex(i,j)) = Ne(i,j)
-	  BsolveP(OneDindex(i,j)) = CellVol(i,j)*Ce(i,j)*Te(i,j)/dt  + (SourceE(i,j)-CouplingE(i,j))*CellVol(i,j) &
-		+ CrossCoeff*( &
-		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j))*( TeDual(i,j) - TeDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j))*( TeDual(i-1,j-1) - TeDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j))*( TeDual(i-1,j) - TeDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j))*( TeDual(i,j-1) - TeDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
-		  )
-
- 	  ! for Dirichlet conditions
-!  	  BsolveP(OneDindex(1,j)) = Ne0; BsolveP(OneDindex(M,j)) = Ne0; BsolveP(OneDindex(i,1)) = Ne0; BsolveP(OneDindex(i,N)) = Ne0;
- 	  ! for Neumann conditions
- 	  BsolveP(OneDindex(1,j)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(i,N)) = 0d0
-
-	 ! corners dont play any role then must be deleted
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  ! however, diagonal cannot be null
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve,KUsolve,Nsolve),OneDindex(1,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(1,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(1,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(1,N),KLsolve,KUsolve,Nsolve),OneDindex(1,N))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(M,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(M,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(M,1),KLsolve,KUsolve,Nsolve),OneDindex(M,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(M,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(M,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(M,N),KLsolve,KUsolve,Nsolve),OneDindex(M,N))=1d0
-	  end if
-
-	 ! let give a value to the corners, since they are used for NeDual calculation
-	  BsolveP(OneDindex(1,1))=0.5d0*(Te(1,2)+Te(2,1)); BsolveP(OneDindex(1,N))=0.5d0*(Te(1,N-1)+Te(2,N))
-	  BsolveP(OneDindex(M,1))=0.5d0*(Te(M,2)+Te(M-1,1)); BsolveP(OneDindex(M,N))=0.5d0*(Te(M,N-1)+Te(M-1,N))
-
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-	!$O M P SECTIONS
-	!$O M P SECTION
-	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve, KUsolve, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, info)
-	CALL dgbtrs('N', Nsolve, KLsolve, KUsolve, 1, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, BsolveP, Nsolve, info)
-
-
-	if (info .ne. 0) then
-	  stop 'Matrix is numerically singular!'
-	end if
-
-      do i=1,Mp
-	do j=1,Np
-	  TeNew(i,j) = BsolveP(OneDindex(i,j))
-	end do
-      end do
-
-      !$O M P END SECTIONS
-
-     !============ SOLVE Th ==================
-
-      BsolveP(:)=0d0; XsolveP(:)=0d0; XsolvePrev(:)=0d0; ABsolveP(:,:)=0d0
-      KLsolve=Np; KUsolve=Np;
-      Nsolve=Mp*Np
-
-      ! $ OMP DO
-      do i=2,Mp-1
-      ! $ OMP PARALLEL DO
-	do j=2,Np-1
-
-	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j)) = Ch(i,j)*CellVol(i,j)/dt + ( &
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
-			+ 0.5d0*CellAreaE(i,j)*(kappah(i,j ) +kappah(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
-			+ 0.5d0*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
-			+ 0.5d0*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
-			+ 0.5d0*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
-			)
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve, KUsolve, Nsolve), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappah(i,j-1 ) + kappah(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappah(i,j-1 ) + kappah(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve, KUsolve, Nsolve), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(kappah(i,j+1 ) + kappah(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(kappah(i,j+1 ) + kappah(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve, KUsolve, Nsolve), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappah(i-1,j ) + kappah(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappah(i-1,j ) + kappah(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve, KUsolve, Nsolve), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappah(i,j )   + kappah(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappah(i,j )   + kappah(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-	  end if
-
-  ! 	  ! dirichlet condnitions on boundaries
-  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
-  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
-  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
-  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
-
-	    ! neumann conditions on boundaries
-	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve,KUsolve,Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve, KUsolve, Nsolve), OneDindex(i,N)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve,KUsolve,Nsolve),OneDindex(i,N-1)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve, KUsolve, Nsolve), OneDindex(i,1)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve, KUsolve, Nsolve), OneDindex(i,2)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve, KUsolve, Nsolve), OneDindex(M,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve, KUsolve, Nsolve), OneDindex(M-1,j)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve, KUsolve, Nsolve), OneDindex(1,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve, KUsolve, Nsolve), OneDindex(2,j)) = -1d0;
-	  end if
-
-	    BsolveP(OneDindex(i,N)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(1,j)) = 0d0;
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-      ! $ OMP DO
-      do i=1,Mp
-      ! $ OMP PARALLEL DO
-	do j=1,Np
-
-! 	  XsolveP(OneDindex(i,j)) = Ne(i,j)
-	  BsolveP(OneDindex(i,j)) = CellVol(i,j)*Ch(i,j)*Th(i,j)/dt  + (SourceH(i,j)-CouplingH(i,j))*CellVol(i,j) &
-		+ CrossCoeff*( &
-		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*( ThDual(i,j) - ThDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*( ThDual(i-1,j-1) - ThDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*( ThDual(i-1,j) - ThDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*( ThDual(i,j-1) - ThDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
-		  )
-
- 	  ! for Dirichlet conditions
-!  	  BsolveP(OneDindex(1,j)) = Ne0; BsolveP(OneDindex(M,j)) = Ne0; BsolveP(OneDindex(i,1)) = Ne0; BsolveP(OneDindex(i,N)) = Ne0;
- 	  ! for Neumann conditions
- 	  BsolveP(OneDindex(1,j)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(i,N)) = 0d0
-
-	 ! corners dont play any role then must be deleted
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  ! however, diagonal cannot be null
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve,KUsolve,Nsolve),OneDindex(1,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(1,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(1,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(1,N),KLsolve,KUsolve,Nsolve),OneDindex(1,N))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(M,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(M,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(M,1),KLsolve,KUsolve,Nsolve),OneDindex(M,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(M,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(M,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(M,N),KLsolve,KUsolve,Nsolve),OneDindex(M,N))=1d0
-	  end if
-
-	 ! let give a value to the corners, since they are used for NeDual calculation
-	  BsolveP(OneDindex(1,1))=0.5d0*(Th(1,2)+Th(2,1)); BsolveP(OneDindex(1,N))=0.5d0*(Th(1,N-1)+Th(2,N))
-	  BsolveP(OneDindex(M,1))=0.5d0*(Th(M,2)+Th(M-1,1)); BsolveP(OneDindex(M,N))=0.5d0*(Th(M,N-1)+Th(M-1,N))
-
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-	!$O M P SECTIONS
-	!$O M P SECTION
-	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve, KUsolve, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, info)
-	CALL dgbtrs('N', Nsolve, KLsolve, KUsolve, 1, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, BsolveP, Nsolve, info)
-
-
-	if (info .ne. 0) then
-	  stop 'Matrix is numerically singular!'
-	end if
-
-      do i=1,Mp
-	do j=1,Np
-	  ThNew(i,j) = BsolveP(OneDindex(i,j))
-	end do
-      end do
-
-      !$O M P END SECTIONS
-
-           !============ SOLVE Ts ==================
-
-      BsolveP(:)=0d0; XsolveP(:)=0d0; XsolvePrev(:)=0d0; ABsolveP(:,:)=0d0
-      KLsolve=Np; KUsolve=Np;
-      Nsolve=Mp*Np
-
-      ! $ OMP DO
-      do i=2,Mp-1
-      ! $ OMP PARALLEL DO
-	do j=2,Np-1
-
-	  if(FillMatrixCondition(OneDindex(i,j),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j)) = Cs(i,j)*CellVol(i,j)/dt + ( &
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j)) = CellVol(i,j)/dt + ( &
-			+ 0.5d0*CellAreaE(i,j)*(kappas(i,j ) +kappas(i+1,j))*(1d0)/DistE(i,j) * (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
-			+ 0.5d0*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j) ) *(1d0)/DistW(i,j) * (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
-			+ 0.5d0*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j) ) *(1d0)/DistN(i,j) * (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
-			+ 0.5d0*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j) ) *(1d0)/DistS(i,j) * (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
-			)
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j-1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j-1),KLsolve, KUsolve, Nsolve), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappas(i,j-1 ) + kappas(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j-1)) =0.5d0*CellAreaS(i,j)*(kappas(i,j-1 ) + kappas(i,j)   )*( -1d0 ) / DistS(i,j)* (NormalSx(i,j)**2+NormalSy(i,j)**2) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i,j+1),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i,j+1),KLsolve, KUsolve, Nsolve), OneDindex(i,j+1))=0.5d0*CellAreaN(i,j)*(kappas(i,j+1 ) + kappas(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i,j+1)) =0.5d0*CellAreaN(i,j)*(kappas(i,j+1 ) + kappas(i,j)   )*( -1d0 ) / DistN(i,j)* (NormalNx(i,j)**2+NormalNy(i,j)**2) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i-1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i-1,j),KLsolve, KUsolve, Nsolve), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappas(i-1,j ) + kappas(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i-1,j)) =0.5d0*CellAreaW(i,j)*(kappas(i-1,j ) + kappas(i,j)   )*( -1d0 ) / DistW(i,j)* (NormalWx(i,j)**2+NormalWy(i,j)**2) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,j), OneDindex(i+1,j),KLsolve,KUsolve,Nsolve)) then
-	    ABsolveP(FillMatrixRow(OneDindex(i,j), OneDindex(i+1,j),KLsolve, KUsolve, Nsolve), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappas(i,j )   + kappas(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-! 	    AsolveP(OneDindex(i,j), OneDindex(i+1,j)) =0.5d0*CellAreaE(i,j)*(kappas(i,j )   + kappas(i+1,j) )*( -1d0 ) / DistE(i,j)* (NormalEx(i,j)**2+NormalEy(i,j)**2) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
-	  end if
-
-  ! 	  ! dirichlet condnitions on boundaries
-  ! 	  AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0; BsolveP(OneDindex(i,N)) = Ne0; AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = 0d0;
-  ! 	  AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0; BsolveP(OneDindex(i,1)) = Ne0; AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = 0d0;
-  ! 	  AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0; BsolveP(OneDindex(M,j)) = Ne0; AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = 0d0;
-  ! 	  AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0; BsolveP(OneDindex(1,j)) = Ne0; AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = 0d0;
-
-	    ! neumann conditions on boundaries
-	  if(FillMatrixCondition(OneDindex(i,N), OneDindex(i,N),KLsolve,KUsolve,Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N), KLsolve, KUsolve, Nsolve), OneDindex(i,N)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,N),OneDindex(i,N-1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,N), OneDindex(i,N-1)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,N), OneDindex(i,N-1),KLsolve,KUsolve,Nsolve),OneDindex(i,N-1)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,1)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,1), KLsolve, KUsolve, Nsolve), OneDindex(i,1)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(i,1),OneDindex(i,2),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(i,1), OneDindex(i,2 ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(i,1), OneDindex(i,2), KLsolve, KUsolve, Nsolve), OneDindex(i,2)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M,j), KLsolve, KUsolve, Nsolve), OneDindex(M,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,j),OneDindex(M-1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,j), OneDindex(M-1,j)) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(M,j), OneDindex(M-1,j), KLsolve, KUsolve, Nsolve), OneDindex(M-1,j)) = -1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(1,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(1,j)) = 1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(1,j), KLsolve, KUsolve, Nsolve), OneDindex(1,j)) = 1d0;
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,j),OneDindex(2,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,j), OneDindex(2,j ) ) = -1d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,j), OneDindex(2,j), KLsolve, KUsolve, Nsolve), OneDindex(2,j)) = -1d0;
-	  end if
-
-	    BsolveP(OneDindex(i,N)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(1,j)) = 0d0;
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-      ! $ OMP DO
-      do i=1,Mp
-      ! $ OMP PARALLEL DO
-	do j=1,Np
-
-! 	  XsolveP(OneDindex(i,j)) = Ne(i,j)
-	  BsolveP(OneDindex(i,j)) = CellVol(i,j)*Cs(i,j)*Ts(i,j)/dt  + (CouplingE(i,j)+CouplingH(i,j))*CellVol(i,j) &
-		+ CrossCoeff*( &
-		  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappas(i,j)+kappas(i+1,j))*( TsDual(i,j) - TsDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-		  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j))*( TsDual(i-1,j-1) - TsDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-		  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j))*( TsDual(i-1,j) - TsDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-		  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j))*( TsDual(i,j-1) - TsDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
-		  )
-
- 	  ! for Dirichlet conditions
-!  	  BsolveP(OneDindex(1,j)) = Ne0; BsolveP(OneDindex(M,j)) = Ne0; BsolveP(OneDindex(i,1)) = Ne0; BsolveP(OneDindex(i,N)) = Ne0;
- 	  ! for Neumann conditions
- 	  BsolveP(OneDindex(1,j)) = 0d0; BsolveP(OneDindex(M,j)) = 0d0; BsolveP(OneDindex(i,1)) = 0d0; BsolveP(OneDindex(i,N)) = 0d0
-
-	 ! corners dont play any role then must be deleted
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(i,j))=0d0;
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(i,j),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(i,j))=0d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(i,j),KLsolve,KUsolve,Nsolve),OneDindex(i,j))=0d0
-	  end if
-
-	  ! however, diagonal cannot be null
-	  if(FillMatrixCondition(OneDindex(1,1),OneDindex(1,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,1), OneDindex(1,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,1), OneDindex(1,1),KLsolve,KUsolve,Nsolve),OneDindex(1,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(1,N),OneDindex(1,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(1,N), OneDindex(1,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(1,N), OneDindex(1,N),KLsolve,KUsolve,Nsolve),OneDindex(1,N))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,1),OneDindex(M,1),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,1), OneDindex(M,1))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,1), OneDindex(M,1),KLsolve,KUsolve,Nsolve),OneDindex(M,1))=1d0
-	  end if
-	  if(FillMatrixCondition(OneDindex(M,N),OneDindex(M,N),KLsolve, KUsolve, Nsolve)) then
-! 	    AsolveP(OneDindex(M,N), OneDindex(M,N))=1d0
-	    ABsolveP(FillMatrixRow(OneDindex(M,N), OneDindex(M,N),KLsolve,KUsolve,Nsolve),OneDindex(M,N))=1d0
-	  end if
-
-	 ! let give a value to the corners, since they are used for NeDual calculation
-	  BsolveP(OneDindex(1,1))=0.5d0*(Ts(1,2)+Ts(2,1)); BsolveP(OneDindex(1,N))=0.5d0*(Ts(1,N-1)+Ts(2,N))
-	  BsolveP(OneDindex(M,1))=0.5d0*(Ts(M,2)+Ts(M-1,1)); BsolveP(OneDindex(M,N))=0.5d0*(Ts(M,N-1)+Ts(M-1,N))
-
-	end do
-	! $ OMP END PARALLEL DO
-      end do
-      ! $ OMP END DO
-
-	!$O M P SECTIONS
-	!$O M P SECTION
-	CALL dgbtrf(Mp*Np, Mp*Np, KLsolve, KUsolve, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, info)
-	CALL dgbtrs('N', Nsolve, KLsolve, KUsolve, 1, ABsolveP, 2*KLsolve+KUsolve+1, ipiv, BsolveP, Nsolve, info)
-
-
-	if (info .ne. 0) then
-	  stop 'Matrix is numerically singular!'
-	end if
-
-      do i=1,Mp
-	do j=1,Np
-	  TsNew(i,j) = BsolveP(OneDindex(i,j))
-	end do
-      end do
-
-      !$O M P END SECTIONS
+      end if
 
       !=======================================================================================
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXPLICIT SOLVERS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! validated, works, but limited to low precision, and short max time on 8 cores x 24 h. 
       !=======================================================================================
-      !$O M P DO
-      do i=2, M-1
-	!$O M P PARALLEL DO
-	do j=2, N-1
+      !$OMP DO
+      do i=2, Mp-1
+	!$OMP PARALLEL DO
+	do j=2, Np-1
 ! 		 
 ! 	 NeNew(i,j) = (&
 ! 	      (GainsE(i,j)-LossesE(i,j))*CellVol(i,j) & 
@@ -3395,12 +3423,12 @@ implicit none
 	
 
       end do
-      !$O M P END PARALLEL DO
+      !$OMP END PARALLEL DO
       
     end do
-    !$O M P END DO
+    !$OMP END DO
 
-  !$O M P END PARALLEL !!end of parallel section
+  ! $ OMP END PARALLEL !!end of parallel section
     
     !boundary conditions
     
@@ -4358,7 +4386,7 @@ implicit none
 			LossesH(i,j), real(DielectricDrudeE(i,j)), aimag(DielectricDrudeE(i,j)), Egap(i,j), real(Dielectric(i,j)), & !30
 			aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !35
 			Ey(i,j), diffusionE(i,j), diffusionH(i,j), intensity2(i,j), GradNeX(i,j), & !40
-			GradNeY(i,j)
+			GradNeY(i,j), real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j) !45
 			
   887	FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 		  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -4368,7 +4396,7 @@ implicit none
 		  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 		  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 		  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-		  3x, 1E12.5)	
+		  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)	
 !	  write(97,886, advance='yes')
 	  call flush(97); 
 	end if
@@ -4660,6 +4688,170 @@ implicit none
       return
     end function FermiIndex
 
+    function MieScattering(r, phi, radius, dielectric)
+      implicit none
+    
+      complex(8) :: MieScattering, dielectric
+      complex(8) total
+		 
+      real(8) :: r, phi, radius, k=2d0*pi/lambda
+      real(8) ireal
+      integer(8) i, j
+
+      
+      total=Zero
+      ! Just test functions to validate
+!       total=BesselJ(1d0, Unit*k*r) !test: success
+!       total=BesselJ(-1d0, Unit*k*r) !test: success
+! 	total=Hankel1(1d0, Unit*k*r) !test: succes, undefined for z=0
+! 	total=Hankel1(-1d0, Unit*k*r) !test: success, undefined for z=0
+! 	total=BesselJprime(1d0, Unit*k*r) !test: success
+! 	total=BesselJprime(-1d0, Unit*k*r) !test: success
+! 	total=Hankel1prime(1d0, Unit*k*r) !test: success
+! 	total=Hankel1prime(-1d0, Unit*k*r) !test: failed, strong divergence while r->0
+
+      do i=1, 2*maxBesselOrder+1
+	ireal=real(i)-maxBesselOrder-1 !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
+! 	write(*,*) i, ireal
+	total=total+Imaginary**ireal * exp(Imaginary*sqrt(dielectric)*phi) * BesselJ(ireal, sqrt(dielectric)*k*r) * MieCoeff1(ireal, radius, dielectric)
+      end do
+
+      MieScattering=total
+      return
+    end function MieScattering
+
+    function MieCoeff1(order, radius, dielectric)
+      implicit none
+      complex(8) MieCoeff1, dielectric
+      real(8) :: k=2d0*pi/lambda, radius
+      real(8) :: order
+! 	MieCoeff1=Unit !debug
+      MieCoeff1=(BesselJ(order, Unit*k*radius) - MieCoeff2(order, radius, dielectric) * Hankel1(order, Unit*k*radius)) / (BesselJ(order, k*radius*sqrt(dielectric)))
+      return
+    end function MieCoeff1
+
+    function MieCoeff2(order, radius, dielectric)
+      implicit none
+      complex(8) :: MieCoeff2, dielectric
+      real(8) :: k=2d0*pi/lambda, radius
+      real(8) :: order
+      complex(8) value1
+	MieCoeff2=( (sqrt(dielectric) * BesselJprime(order, k*radius*sqrt(dielectric)) * BesselJ(order, Unit*k*radius) ) - (BesselJ(order,sqrt(dielectric)*k*radius)*BesselJprime(order, Unit*k*radius)) ) &
+		    / (( sqrt(dielectric)*BesselJprime(order,k*radius*sqrt(dielectric))*Hankel1(order, Unit*k*radius) ) - ( BesselJ(order, sqrt(dielectric)*k*radius)*Hankel1prime(order, Unit*k*radius) ))
+
+! 	value1=radius*sqrt(dielectric)
+! 	MieCoeff2=BesselJprime(order, value1) !debug
+
+! 	MieCoeff2=BesselJprime(order, Unit*k*radius)
+!  	write(*,*) order, MieCoeff2
+      return
+    end function MieCoeff2
+
+    function BesselJ(order, z)
+      implicit none
+      complex(8) :: z, BesselJ
+      real(8) zR, zC
+      real(8) :: order
+      integer(8) nz, ierr
+      real(8) cyr(1:besselArray), cyi(1:besselArray)
+
+      external ZBESJ
+!       external ZABS
+      
+      cyr(:)=0.d0; cyi(:)=0.d0
+      ierr=0; nz=0
+      
+      zR=real(z)
+      zC=aimag(z)
+
+!       write(*,*) (zR, zC)
+
+!       CALL zbesj(1.d0, 0.d0, 0.d0, 1, besselArray, cyr, cyi, nz, ierr)
+
+!       write(*,*) "Bessel 1", order
+      CALL ZBESJ(zR, zC, abs(order), 1, besselArray, cyr, cyi, nz, ierr)
+
+      if(ierr.ne.0) then
+	write(*,*) "BesselJ is not well configured."
+	write(*,*) z, cyr, cyi, ierr !, ZABS(zR, zC)
+      end if
+      BesselJ=Unit*cyr(besselArray)+Imaginary*cyi(besselArray)
+
+!       write(*,*) "Bessel", order
+      
+      if(order .lt. 0d0) then
+	BesselJ=(-1d0)**(abs(order)) * BesselJ
+      end if
+
+      return
+    end function BesselJ
+
+    function BesselJprime(order, z)
+    implicit none
+      external zbesj
+      complex(8) z, BesselJprime
+      real(8) order
+  
+      BesselJprime=0.5d0*(BesselJ(order-1d0,z)-BesselJ(order+1d0,z)) !Abramovitz, Eq. (9.1.27)
+
+!! other form of the relation
+!       if(z .eq. Zero) then
+! 	BesselJprime=Zero
+!       else
+! 	BesselJprime=order*BesselJ(order,z)/z-BesselJ(order+1d0,z) !other form (still given in Abramovitz)
+!       end if
+      
+      !debug
+!       BesselJprime=Unit
+!       end if
+    end function BesselJprime
+    
+    function Hankel1(order, z)
+      implicit none
+      complex(8) :: z, Hankel1
+      real(8) zR, zC
+      real(8) :: order
+      integer(8) nz, ierr
+      real(8) cyr(1:besselArray), cyi(1:besselArray)
+      external ZBESH
+!       external ZABS
+      cyr(:)=0.d0; cyi(:)=0.d0
+      ierr=0; nz=0
+      zR=real(z)
+      zC=aimag(z)
+
+!       write(*,*) zR, zC
+      
+      CALL ZBESH(zR, zC, abs(order), 1, 1, besselArray, cyr, cyi, nz, ierr)
+
+      if(z .eq. Zero) then
+	Hankel1=Zero
+      else
+	if(ierr.ne.0) then
+	  write(*,*) "Hankel1 is not well configured."
+	  write(*,*) z, order, ierr !, ZABS(zR, zC)
+	end if
+      end if
+      Hankel1=Unit*cyr(besselArray)+Imaginary*cyi(besselArray)
+
+!       write(*,*) "Hankel", order, Hankel1
+
+      if(order .lt. 0d0) then
+	Hankel1=exp(Imaginary*abs(order)*pi) * Hankel1
+      end if
+    return
+    end function Hankel1
+
+    function Hankel1prime(order, z)
+      implicit none
+      external zbesh
+      complex(8) z, Hankel1prime
+      real(8) order
+!       Hankel1prime=0.5d0*(Hankel1(order-1d0,z)-Hankel1(order+1d0,z))
+! debug
+	Hankel1prime=Unit
+    end function Hankel1prime
+    
     subroutine swap(a, b)
       real(8) temp, a, b
       temp=a
@@ -4680,7 +4872,7 @@ implicit none
     function FillMatrixCondition(i,j,kl,ku, Nsolve)
     ! returns boolean if position i,j has to be filled in the band diagonal matrix for Lapack solver DGBTRF/DGBTRS.
       implicit none
-      integer(8) i,j, 		&
+      integer(8):: i,j, 		&
 		 ku,kl, 	&
 		 Nsolve, 	& !size of the matrix A
 		 FillMatrixCondition
@@ -4692,7 +4884,7 @@ implicit none
     function FillMatrixRow(i,j,kl,ku, Nsolve)
     ! returns row index to fill the band diagonal matrix for Lapack solver DGBTRF/DGBTRS. 
       implicit none
-      integer(8) i,j,		&!Input matrix indexes
+      integer(8):: i,j,		&!Input matrix indexes
 		 ku,kl,		&!Number of upper and lower diagonals
 		 Nsolve, 	&!number of rows of the full band diagonal matrix
 		 FillMatrixRow	 !Output for ABsolve solve matrix
@@ -4846,7 +5038,7 @@ implicit none
 	! 4/ extract the result
 ! 	InterpolateBiCubic(:,:)=Interpolated(:,:)
       else 
-	write(*,*) ShepardError
+	write(*,*) 'BicubicInterp. error code = ', ShepardError
       end if
 	     
     end subroutine InterpolateBiCubic
@@ -5088,6 +5280,20 @@ implicit none
 	Tangent=TangentY
       end if
     end function Tangent
+
+    function ContourYofX(x, radius, angle)
+    ! returns the value of the cone radius as a function of position X
+    ! assumption: cone is symmetrical by rotation around (Ox) axis
+      implicit none
+
+      real(8)::x, radius, angle, ContourYofX
+      real(8) a, b
+      a=radius/(tan(angle/2d0)**2)
+      b=radius/(tan(angle/2d0))
+      ContourYofX=b*tan(acos(a/(x+a)))
+      
+      return
+    end function ContourYofX
     
 end program Flaps
 
