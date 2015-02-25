@@ -1,8 +1,8 @@
 # Author: Thibault J.-Y. Derrien <thibault.derrien@gmail.com>
 
 # Financial supports
-[15/02/2012 - 14/12/2012] French National Research Agency (ANR, Agence Nationale de la Recherche), project "Ultrasonde".
-[01/09/2015 - 31/08/2017] Marie Sklodowska Curie Actions, European Commision, project "QuantumLaP"
+1. [15/02/2012 - 14/12/2012] French National Research Agency (ANR, Agence Nationale de la Recherche), project "Ultrasonde".
+1. [01/09/2015 - 31/08/2017] Marie Sklodowska Curie Actions, European Commision, project "QuantumLaP"
 
 #Description
 This code calculates the excitation, heating and transport of free-carriers (electrons and holes, separately) of silicon irradiated by a laser pulse. The coupling with phonons and their diffusive transport is also calculated in time and space. Geometry is expressed in cartesian plane (x,y) and assumes invariance per translation. 
