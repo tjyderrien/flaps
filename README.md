@@ -1,7 +1,8 @@
 # Author: Thibault J.-Y. Derrien <thibault.derrien@gmail.com>
-# Sponsored by french "Agence Nationale de la Recherche" under the project name "Ultrasonde".
+# Sponsored by french "Agence Nationale de la Recherche" under the project name "Ultrasonde" from 15-02-2012 - 14-12-2012.
+# Now under development supported by Marie Curie Actions, project "QuantumLaP", from 1-09-2015 - 31-08-2017
 
-This code calculates the excitation, heating and transport of free-carriers (electrons and holes, separately) in silicon.
+This code calculates the excitation, heating and transport of free-carriers (electrons and holes, separately) in silicon, coupling with phonons and their diffusive transport. 
 
 Features:
 - The shape of Silicon can be changed.
