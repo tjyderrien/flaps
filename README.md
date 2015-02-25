@@ -2,8 +2,8 @@
 
 # Financial supports
 1. [15/02/2012 - 14/12/2012] French National Research Agency (ANR, Agence Nationale de la Recherche), project "Ultrasonde".
-1. [01/02/2013-31/01/2014] Adolf Martens Fellowship, German Ministry of Economy and Technology, Germany
-1. [01/02/2014-30/04/2014] BAM Federal Institute for Material Research and Testing, Berlin, Germany
+1. [01/02/2013 - 31/01/2014] Adolf Martens Fellowship, German Ministry of Economy and Technology, Germany
+1. [01/02/2014 - 30/04/2014] BAM Federal Institute for Material Research and Testing, Berlin, Germany
 1. [01/09/2015 - 31/08/2017] Marie Sklodowska Curie Actions, European Commision, project "QuantumLaP"
 
 #Description
