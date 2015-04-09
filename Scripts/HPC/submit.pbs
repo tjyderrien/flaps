@@ -1,0 +1,41 @@
+## fichier pour soumettre job en PBS
+#PBS -S /bin/bash
+#PBS -N Flirt1DSBD
+#PBS -m ae -M thibault.derrien@gmail.com
+#PBS -e IdentifyingBadSourceTerm.err
+#PBS -o IdentifyingBadSourceTerm.log
+#PBS -l select=2:ncpus=8:mpiprocs=8
+#PBS -l walltime=0:30:00
+
+#workpath=`pwd`
+
+module load fftw/3.2.2
+
+echo "PBS NODEFILE=" 
+cat $PBS_NODEFILE
+cd $PBS_O_WORKDIR
+
+echo "PBS_O_WORKDIR=" 
+echo $PBS_O_WORKDIR
+echo "" >> /scratch/tderrien/LastJobs.log 
+echo $PBS_O_WORKDIR >> /scratch/tderrien/LastJobs.log
+# echo "workpath="
+# echo $workpath
+
+# cp $workpath/*.* .
+
+echo "Where am I ?"
+pwd
+
+echo "What have I got ?"
+ls
+
+echo "Executing code..."
+mpiexec a.out
+
+# echo "Copying files to ..."
+# echo $workpath
+
+# cp *.dat -f $workpath
+# cp *.log -f $workpath
+# cp *.err -f $workpath
