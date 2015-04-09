@@ -1,0 +1,607 @@
+// load "real_SuperLU_DIST_FreeFem"
+
+int LaserSource=0; //0: Scalar direct, 1: BeerLambert 1D solver (DISABLED, buggy), 2: Non-reflecting Helmoltz 2D, 3: Absorpting Helmoltz2D, 4: Helmoltz injected under surface, 5: Importing from outside
+int LaserProfile=1; //0: top hat, //1: gaussian
+int CoulombAblation=0; //suppression of domain exceeding critical field #DISABLED
+int UseSBDeq=0; 
+int SeparatedPoisson=0; //to solve absorption using separated Poisson eq (==> plasmons, visualisation of the induced fields)
+int ActivatePoisson=0; // 0: OFF, 1: usual Poisson, 2: Complex Poisson, 3: Time-dependent complex Poisson
+int ActivateHoles=1; //activate holes ?
+int QuantumCe=0; //use Ce fitted with quantum simulation
+int SolveNewton=0; //solve newton for momentum absorption
+int OutputEvery=10; //frames
+int TypeOfSurface=1; //0 : flat surface, //1: needle
+
+real c=3e8; 
+real pi=3.141592653; 
+
+real fluence=7e0; 
+real tau=40e-15; 
+real spot=200e-9; 
+real wavelength=343e-9; 
+real x0=500e-9; 
+
+// LaAPT shape parameters
+real NeedleAngle=10e0*pi/180e0; 
+real NeedleLength=3e-6; 
+real NeedleRadius=50e-9; 
+
+// Initial datas
+func Ts0=80e0; 
+//273.15+20;
+
+func Tout=80e0; 
+//273.15+20;
+
+// func Ne0=1; //crashes with low density ?!
+func Ne0=1e15; 
+// func Ne0=3*1.73e27; 
+
+func Nv0=5e28;
+
+// Applied Potential
+func phiCathode=7E3; //V on the cathode
+func phiVessel=0;   //V on the vacuum vessel
+
+real FitCollFreq=6e9;
+
+complex Dielectric00, DielectricConstant=11.6656355+0.014099184i; 
+if(wavelength==1030e-9) Dielectric00=12.80+0.001414418i; //OK for 1030 nm
+if(wavelength==800e-9) Dielectric00=13.46+0.048i; 	//OK for 800 nm
+if(wavelength==515e-9) Dielectric00=17.8254+0.50669i; //OK for 515 nm
+
+real[int] isoField=[1,10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1E10,1E11]; 
+real[int] isoValeurs=[1,10,1e2,1e3,1e4,1e5,1e6,1e7,1e8,1e9,1E10,1E11,1E12,1E13,1E14,1E15,1E16,1E17,1E18]; 
+real[int] isoPotential=[0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]; 
+//real[int] isoPotential=[-40000,-30000,-20000,-10000,0,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000]; 
+
+
+// real absorption0=(1e-5)^(-1); 
+real I0=fluence/tau; 
+
+real sigmaspot=spot/(2e0*sqrt(2e0*log(2e0))); 
+real sigmatau=tau/(2e0*sqrt(2e0*log(2e0))); 
+
+real ky=2e0*pi/wavelength; 
+real Tmelted=1687e0; //K
+real omegaLaser=2e0*pi*c/wavelength; 
+
+func Intensity0=fluence/tau; 
+
+real Lambda=795e-9; // ripples
+real RipplesHeight=295e-9; // ripples
+
+// real Lambda=2e-6; //bead period
+// real RipplesHeight=700e-9; //bead height
+// real RipplesHeight=10e-6; 
+// real Lambda=5e-6; //spikes
+
+
+real alpha=100; //cooling coefficient
+real dt, dt2;
+int rk4iterations; 
+
+
+if(LaserSource>=2 && LaserSource < 5) { dt=.1*wavelength/c; } // common without newton: .1, common with newton: 0.001
+else { dt=1e-16; }
+dt2=dt/100; //to solve newton
+
+cout << "dt = " << dt << endl; 
+real tmin=-4*tau, tmax=500*tau; 
+
+real deltax, deltaz; 
+
+if(LaserSource<=1) { deltax=20E-6; deltaz=20E-6;}
+if(LaserSource>=2) { deltax=50e-6; deltaz=10e-6; }
+
+//zoom for outpus
+real zoomy1=deltaz; 
+real zoomy2=0;
+
+int periods=int(deltax/Lambda); 
+cout << "Period=" << periods << endl; 
+deltax=periods*Lambda; 
+
+// NAME CONTOURS
+int needle=1;
+int cathode=2; 
+int vesselUp=3; int vesselLeft=4; int vesselDown=5; int vesselRight=6; 
+int vesselRightTop=7, vesselRightDown=8; 
+
+// MESH PARAMETERS
+real HelmoltzLayer=2*wavelength; 
+
+
+
+real tNeedle=acos(NeedleRadius/(NeedleLength*tan(NeedleAngle/2)^2+NeedleRadius)); 
+real HyperbolParam1=NeedleRadius/(tan(NeedleAngle/2))^2;
+real HyperbolParam2=NeedleRadius/tan(NeedleAngle/2);
+
+border N1(t=-tNeedle,tNeedle){x=HyperbolParam1*(1/cos(t)-1);y=HyperbolParam2*tan(t); label=needle;}
+border N2(t=-tNeedle,tNeedle){x=HyperbolParam1*(1/cos(tNeedle)-1);y=HyperbolParam2*tan(t); label=cathode;}
+
+border V1(t=-3,-1){x=HyperbolParam1*(1/cos(tNeedle)-1);y=t*HyperbolParam2*tan(tNeedle); label=vesselRightTop;}
+border V2(t=1,3){x=HyperbolParam1*(1/cos(tNeedle)-1);y=t*HyperbolParam2*tan(tNeedle); label=vesselRightDown;}
+border V3(t=-1,1){x=(HyperbolParam1*(1/cos(tNeedle)-1))*t;y=-3*HyperbolParam2*tan(tNeedle); label=vesselDown; }
+border V4(t=-3,3){x=-HyperbolParam1*(1/cos(tNeedle)-1);y=t*HyperbolParam2*tan(tNeedle); label=vesselLeft; }
+border V5(t=-1,1){x=(HyperbolParam1*(1/cos(tNeedle)-1))*t;y=3*HyperbolParam2*tan(tNeedle); label=vesselUp; }
+
+int m=200, n=200;
+
+
+plot(N1(m)+N2(n)+V1(m)+V2(m)+V3(m)+V4(m)+V5(m), wait=false); 
+mesh ThNeedle=buildmesh(N1(-m)+N2(m));
+mesh ThVessel=buildmesh(N2(m)+V1(m)+V2(m)+V3(m)+V4(-m)+V5(-m)); 
+mesh ThImport=triangulate("1030nm-IntensityMapFEM.dat"); 
+
+plot(ThNeedle, ThVessel, wait=false); 
+
+fespace Vh(ThNeedle,P1); 
+fespace Vh2dc(ThNeedle, P2dc); 
+fespace Vh1b(ThNeedle,P1b); //barycenter of elements
+fespace Vhdc(ThNeedle, P1dc); //discontinuous so that epsilon is not changed in vacuum. 
+
+fespace VhGlob(ThVessel,P1); 
+fespace VhImport(ThImport,P1); 
+
+VhImport IntensityMap, HeatingMap; 
+
+Vh Ts=Ts0,v,TsOld;
+Vh Enthalpy=0; 
+Vh Te=Ts0,TeOld,TePrev=Ts0;
+Vh Th=Ts0,ThOld,ThPrev=Ts0;
+Vh Ne=Ne0, NeOld, Nh=Ne0, NhOld, FermiVelocity;
+Vh Intensity2=0, Ivelocity=c, absorption, Reflection;  
+Vh Intensity, v1b, IntensityOld; 
+
+VhGlob phi; VhGlob Ex, Ey; VhGlob vg; 
+VhGlob<complex> phiC, phiOldC, phiPrevC, vgC, ExC, EyC; 
+
+
+
+// ballistic diffusive weapons
+Vh Length, ThermalVelocity, MeanFreePath, Knudsen;  
+
+Vh HeatSource, LinearAbsorption; 
+real t, error=0.001;
+real MSi=22.8; //atomic mass of Si
+real rho=2.57e3; //liquid density
+real Hvap=359e3*rho/MSi; 
+real v0=1e3; 
+real kb=1.38e-23; 
+real Nav=6.022e23; 
+func tension = 885-0.28*(Ts-Tmelted); 
+real N0=Nav*rho/MSi;
+real ec=1.6e-19; 
+real eMobility=0.015; //m2.s-1.V-1
+real hMobility=.0045; //m2.s-1.V-1
+// real OnePhotonIonizationRate=1021e2; //ok for 800 nm
+real OnePhotonIonizationRate=(4e0*pi/wavelength)*imag(sqrt(Dielectric00)); 
+
+real TwoPhotonIonizationRate; //=10e-2*1E-9 // OK for 800 nm. 
+if(wavelength==1030e-9) TwoPhotonIonizationRate=1.933288399e-11; //[Van Driel, APL 2007]
+if(wavelength==800e-9) TwoPhotonIonizationRate=1.857135194e-11; 
+if(wavelength==515e-9) TwoPhotonIonizationRate=1.512238197e-11; 
+
+real me=9.1e-31*0.18e0; 
+real epsilon0=8.85e-12; 
+real CouplingTime=240e-15; 
+func Egap=ec*(1.17 - 4.73e-4*Ts*Ts/(Ts+636));
+real hplanck=6.62e-34; 
+real hbar=hplanck/(2*pi);
+real Ncrit=4e0*pi^2*c^2*me*epsilon0/(wavelength^2*ec^2);
+real CollisionTime=1e14; 
+real AugerTime=6e-12;
+real AugerConst=3.8e-43;
+real mu0=4e0*pi*1e-9; 
+
+Vh Zt; 
+Vh1b Ke,Ce,De; //electrons parameters
+Vh1b Kh, Ch, Dh; 
+Vh1b Ks,Cs,Ds,Kl,Cl,CouplingRate, Coupling, CouplingTi; // lattice (solid, liquid) parameters
+
+Vh1b Jx, Jy, JxOld, JyOld, Vex, Vey, VexOld, VeyOld, Vhx, Vhy, VhxOld, VhyOld; 
+Vh1b Jex, Jey, Jhx, Jhy, JexOld, JeyOld, JhxOld, JhyOld; 
+Vh1b Jxt, Jyt; 
+
+Vh ElectronSource, ImpactIonization; // free electrons
+
+//Vh SiliconMesh=1.; 
+Vh2dc SiliconMesh=1.; 
+
+VhGlob<complex> Dielectric00Mesh=1.+SiliconMesh*(Dielectric00-1.); 
+VhGlob datatoplot=real(Dielectric00Mesh); 
+plot(ps="2D-Dielectric0.eps", value=true, datatoplot, fill=1, nbiso=30); 
+Vh Nv=Nv0;
+Vh nuColl;
+
+// intensity profile management
+Vh IntensityProfile; 
+Vh HeatProfile; 
+
+real xx, yy; 
+
+if (LaserSource!=5) IntensityProfile=I0*(1-Reflection); //*exp(-.5*((x-x0)/sigmaspot)^2);
+else { //Lumerical coupling case
+	{ ifstream ifile1("1030nm-IntensityMapFEM.dat"); 
+	for(int i=0; i<IntensityMap.n; i++) 
+	ifile1 >> xx >> yy >> IntensityMap[][i]; 
+	}
+	plot(ps="IntensityMapInput.eps", IntensityMap, value=true, fill=true); 
+	IntensityProfile=IntensityMap; 
+
+	{ ifstream ifile2("1030nm-HeatingMapFEM.dat"); 
+	for(int i=0; i<HeatingMap.n; i++) 
+	ifile2 >> xx >> yy >> HeatingMap[][i]; 
+	}
+	plot(ps="HeatingMapInput.eps", HeatingMap, value=true, fill=true); 
+	HeatProfile=HeatingMap; 
+}
+
+
+
+func Q0=absorption*I0*(1e0-Reflection)*exp(absorption*y); 
+VhGlob DielectricRe, DielectricIm, DielectricReOld, IndexRe, IndexIm, g; 
+VhGlob<complex> Dielectric, DielectricOld; 
+
+problem ElectronTemp(Te,v, solver=sparsesolver)=
+				int2d(ThNeedle)(Te*v/dt)
+				+ int2d(ThNeedle)((Ke/Ce)*(dx(Te) * dx(v) + dy(Te) * dy(v))) //diffusion				
+	            - int2d(ThNeedle)(TeOld*v/dt) //No convection
+// 				- int2d(ThNeedle)(v*convect([Jex/Ne,Jey/Ne],-dt,TeOld)/dt) //convection on TeOld
+                - int2d(ThNeedle)(((HeatSource-Coupling)/Ce)*v); //+dy(Intensity); //use with  
+                //source = 1photon+2photon+Auger-UsedForIonization+div(I)
+                
+problem HoleTemp(Th,v, solver=sparsesolver)=
+				int2d(ThNeedle)(Th*v/dt)
+				+ int2d(ThNeedle)((Kh/Ch)*(dx(Th) * dx(v) + dy(Th) * dy(v))) //diffusion				
+	            - int2d(ThNeedle)(ThOld*v/dt) //No convection
+                - int2d(ThNeedle)(((HeatSource-Coupling)/Ch)*v); //+dy(Intensity); //use with  
+                //source = 1photon+2photon+Auger-UsedForIonization+div(I)
+
+problem BallisticDiffusiveTe(Te, v, solver=sparsesolver) = 
+			 int2d(ThNeedle)(0.25/nuColl*((Te)/(dt^2.))*v)
+			+int2d(ThNeedle)(0.25/nuColl*((-2*TeOld+TePrev)/(dt^2.))*v)
+			+int2d(ThNeedle)((Te)*v/dt)
+			+int2d(ThNeedle)((-TeOld)*v/dt)
+			+int2d(ThNeedle)((Length^2.*nuColl/(6*pi^2.))*(sqrt(1+4*pi^2.*Knudsen^2.)-1.)*(dx(v)*dx(Te)+dy(v)*dy(Te)))
+			+int2d(ThNeedle)((Coupling/Ce-HeatSource/Ce)*v);
+		
+                  
+problem ElectronDensity(Ne,v, solver=sparsesolver)= 
+				int2d(ThNeedle)(Ne*v/dt) 
+							+
+// 								int2d(ThNeedle)(eMobility*(dx(Ne)*ExOld+dy(Ne)*EyOld)*v)
+// //								+int1d(ThNeedle,bottom,surface,right,left)(dx(ExOld)+dy(EyOld)*Ne*v)
+// 								+int2d(ThNeedle)(eMobility*Ne*(dx(ExOld)+dy(EyOld))*v)
+							
+							- int2d(ThNeedle)((kb*eMobility/ec)*(dx(TeOld)*dx(Ne)+dy(TeOld)*dy(Ne))*v)
+							+ int2d(ThNeedle)((TeOld*kb*eMobility/ec)*(dx(Ne)*dx(v)+dy(Ne)*dy(v)))
+				- int2d(ThNeedle)(NeOld*v/dt)
+				- int2d(ThNeedle)((ElectronSource)*v);
+				
+
+
+problem HoleDensity(Nh,v, solver=sparsesolver)= 
+				int2d(ThNeedle)(Nh*v/dt) 
+					
+							
+// 								-int2d(ThNeedle)(hMobility*(dx(Nh)*(ExOld)+dy(Nh)*(EyOld))*v) 
+// //								+int1d(ThNeedle,bottom,surface,right,left)(dx(ExOld)+dy(EyOld)*Nh*v)
+// 								-int2d(ThNeedle)(hMobility*Nh*(dx(ExOld)+dy(EyOld))*v)
+
+							- int2d(ThNeedle)((kb*hMobility/ec)*(dx(TeOld)*dx(Nh)+dy(TeOld)*dy(Nh))*v)
+							+ int2d(ThNeedle)((TeOld*kb*hMobility/ec)*(dx(Nh)*dx(v)+dy(Nh)*dy(v)))
+				- int2d(ThNeedle)(NhOld*v/dt)
+				- int2d(ThNeedle)((ElectronSource)*v);
+
+
+problem LatticeTemp(Ts,v, solver=sparsesolver)= int2d(ThNeedle)(Ts*v/dt + Ds*(dx(Ts) * dx(v) + dy(Ts) * dy(v)))
+//                 + int1d(ThNeedle,bottom,surface, right, left)(alpha*(Ts*v) //cooling
+//                 - int1d(ThNeedle,bottom,surface, right, left)(alpha*Tout*v) //cooling
+//				  - int1d(ThNeedle, bottom, surface)(rho*Hvap*Zt*v) //ablation
+                - int2d(ThNeedle)(TsOld*v/dt)
+                - int2d(ThNeedle)((Coupling/Cs)*v);
+ 
+problem Poisson(phi,vg,solver=sparsesolver)=
+						// int2d(ThVessel)((dx(DielectricRe)*dx(phi)+dy(DielectricRe)*dy(phi))*vg)
+						//-	int2d(ThVessel)((dx(phi)*dx(DielectricRe)+dy(phi)*dy(DielectricRe))*vg)
+						- 	int2d(ThVessel)((dx(phi)*dx(vg)+dy(phi)*dy(vg))*DielectricRe)
+						+ 	int2d(ThVessel)(ec*(Nh-Ne)*vg/epsilon0)
+						+ on(cathode,phi=phiCathode)
+						+ on(vesselLeft, vesselDown, vesselUp, vesselRightTop, vesselRightDown, phi=phiVessel);
+
+problem PoissonC(phiC, vgC, solver=sparsesolver)=int2d(ThVessel)(DielectricConstant*(dx(phiC)*dx(vgC)+dy(phiC)*dy(vgC))) 
+							+ int2d(ThVessel)(ec*(Ne-Nh)*vgC/epsilon0)
+							+ on(cathode, phiC=phiCathode)
+							+ on(vesselLeft, vesselDown, vesselUp, vesselRightTop, vesselRightDown, phiC=phiVessel);
+
+problem PoissonTD(phiC, vgC, solver=sparsesolver)=int2d(ThVessel)(Dielectric*(dx(phiC)*dx(vgC)+dy(phiC)*dy(vgC))) 
+							+ int2d(ThVessel)(ec*Ne*vgC/epsilon0)
+							+ int2d(ThVessel)((Dielectric/c^2/dt^2)*(phiC*vgC))
+							- int2d(ThVessel)((Dielectric/c^2/dt^2)*(-2*phiOldC+phiPrevC)*vgC)
+							+ on(cathode, phiC=phiCathode)
+							+ on(vesselLeft, vesselDown, vesselUp, vesselRightTop, vesselRightDown, phiC=phiVessel);
+
+
+
+{ ofstream Thermics("Time.dat"); }
+ofstream HelmoltzFile("Helmoltz.dat");
+ofstream CPUfile("CPUtimes.dat");
+
+// ofstream MeshFile("Mesh.dat"); 
+int iterations=0; 
+Vh printer, printer4; 
+Vh printer2, printer3; 
+// initial conditions
+Te=Ts0; 
+Ne=Ne0;
+Ts=Ts0; 
+phi=0; 
+phiC=0; phiOldC=0; phiPrevC=0; 
+//OUTPUT mesh
+
+real CPUtime=clock(); 
+cout << "[CPU] Initisaliation"+CPUtime << endl; 
+CPUfile << "Initisaliation"+CPUtime << endl; 
+ 
+// MeshFile << 
+	
+	cout << "Starting calculation..." << endl; 
+
+for(t=-4*tau;t<tmax;t+=dt){
+	
+	cout << "[Sources]" << endl; 
+	
+	//preparation of sources
+	iterations++; 
+	
+CPUtime=clock()-CPUtime; 
+cout << "[CPU] iteration="+iterations+" CPU="+CPUtime << endl; 
+CPUfile << "iteration="+iterations+" CPU="+CPUtime << endl; 
+CPUtime=clock();
+	
+ 	Nv=Nv0-Nh;
+ 	
+
+//  	IntensityOld=Intensity; 
+	FermiVelocity=hbar*(3*pi^2*Ne)^(1./3.)/me; 
+	nuColl=(CollisionTime)^(-1e0); //2.*FitCollFreq*ec^2.*kb*Ts/(hbar^2.*FermiVelocity); 
+ 	DielectricOld=Dielectric;
+	Dielectric=1+(Dielectric00Mesh-1)*(1-Ne/Nv0)-(Ne/Ncrit)/(1+1i*nuColl/omegaLaser);
+// 	Dielectric=(Dielectric0-1.)*SiliconMesh+1; 
+	
+ 	DielectricRe=real(Dielectric);
+	DielectricIm=imag(Dielectric);
+	
+ 	absorption=2*omegaLaser*imag(sqrt(Dielectric))/c; //compute absorptivity field
+	if(LaserSource != 5) LinearAbsorption=absorption*Intensity; 
+	else LinearAbsorption=HeatProfile*exp(-.5*(t/sigmatau)^2.); 
+
+ 	HeatSource=
+ 						LinearAbsorption
+						+(
+							(hbar*omegaLaser-Egap)*OnePhotonIonizationRate*Intensity/(hbar*omegaLaser)
+							+(2*hbar*omegaLaser-Egap)*TwoPhotonIonizationRate*Intensity^2/(2*hbar*omegaLaser)
+							-Egap*ImpactIonization*Ne
+						)
+						+Egap*Ne/(AugerTime+1/(AugerConst*Ne*Nh))
+						-1.5*kb*TeOld*(Ne-NeOld)/dt;
+	
+	
+// erasing the past...
+	if(UseSBDeq==0)	{ TeOld=Te ; }
+	else {
+		TePrev=TeOld; TeOld=Te; 
+	}
+	ThOld=Th;
+	TsOld=Ts;
+	
+	NeOld=Ne;
+	NhOld=Nh; 
+	phiOldC=phiPrevC;
+	phiPrevC=phiC; 
+	cout << "Time = " << 1e12*t << "ps" << endl; 
+	if(LaserProfile==0) {
+		g=sqrt(2*fluence/(c*epsilon0*tau))*cos(omegaLaser*t-ky*y)*exp(-.5*(t/sigmatau)^2.); // *exp(-.5*(x/sigmaspot)^2.); //*sin(omegaLaser*t)* //-ky*y); *exp(-.5*(x/sigmaspot)^2.);
+	}
+	if(LaserProfile==1) {
+		g=sqrt(2*fluence/(c*epsilon0*tau))*cos(omegaLaser*t-ky*y)*exp(-.5*(t/sigmatau)^2.)*exp(-.5*((x-x0)/sigmaspot)^2.); //*sin(omegaLaser*t)* //-ky*y); *exp(-.5*(x/sigmaspot)^2.);
+	}
+	if(LaserSource==4) { //on surface case
+		g=g*(1-Reflection);
+//		g=g;
+	}
+	IndexRe=real(sqrt(Dielectric));
+	IndexIm=imag(sqrt(Dielectric)); 
+	if(LaserSource==0) {	
+	     Intensity=IntensityProfile*exp(-.5*(t/sigmatau)^2.)*exp(absorption*y); // exp(-.5*(x/sigmaspot)^2.);
+	}
+	if(LaserSource==5) { //Lumerical Coupling
+		Intensity=IntensityProfile*exp(-.5*(t/sigmatau)^2.); 
+	}
+    
+    // electronic density parameters
+    
+    ImpactIonization=3.6e10*exp(-1.5*Egap/(kb*Te)); 
+    ElectronSource=	OnePhotonIonizationRate*Intensity/(hbar*omegaLaser) 
+    				+ TwoPhotonIonizationRate*Intensity^2/(2*hbar*omegaLaser) 
+    				+ ImpactIonization*Ne
+    				-NeOld*(AugerTime+(1/(AugerConst*NeOld*NhOld))); 
+    				
+	// moving ablating interface
+    Zt=0; //v0*exp(-Hvap/(kb*Nav*Ts)+tension(Ts)/(N0*kb*Ts));
+	
+    // heat electron equation parameters        
+	if(QuantumCe==0) {
+		Ce=1.5*kb*Ne; 
+		Ch=1.5*kb*Nh;
+	}
+	else {
+		Ce=((8.24341*Te^1.91512)/(Te^1.79893+1.7615)+0.5)*kb*Ne;
+		Ch=((8.24341*Th^1.91512)/(Th^1.79893+1.7615)+0.5)*kb*Nh;
+	}
+    Ke=2*kb^2*eMobility*Ne*Te/ec; 
+    Kh=2*kb^2*hMobility*Nh*Th/ec; 
+    De=Ke/Ce; Dh=Kh/Ch; 
+    // heat lattice / liquid equation parameters
+//    Cs=1e6*(1.978+3.54E-4*Ts-3.68*Ts^(-2.)); //Van Driel, (1987) wrong for T<300 K
+    Cs=1e3*rho*0.2703/(exp(63.456/Ts)+0.84586); //Fited on Flubacher (1959), T > 3 K
+    Cl=1.045e-3*2.57e3; 
+//    Ks=(1.585e5*Ts^-1.23); // ok for Bulk [Van Driel (1987)]
+    Ks=-0.1412*Ts^1.38961+0.638157*Ts^1.14013; //Mingo et al (2002) - silicon nanowire 132 nm, OK for 50 K < T < 300 K
+    Ds=Ks/Cs; 
+    Kl=(1e2*(.5+29.3e-5*(Ts-Tmelted))); 
+    
+    CouplingRate=Ce/(CouplingTime*(1+(Ne/Ncrit)^2));
+    Coupling=CouplingRate*(Te-Ts); 
+    CouplingTi=CouplingRate/Cs; 
+    
+    // simplified ballistic-diffusive equation parameters
+    Length=absorption^(-1.);
+    ThermalVelocity=sqrt(3*kb*Te/me); 
+    MeanFreePath=ThermalVelocity/nuColl; 
+    Knudsen=MeanFreePath/Length;
+    
+if(LaserSource<2 || LaserSource==4) {
+	Reflection=((IndexRe^2+IndexIm^2)-2*IndexRe+1)/(IndexRe^2+IndexIm^2+2*IndexRe+1); //Fresnel flat normal interface formula, polarisation perp.
+}
+if(LaserSource==2 || LaserSource==3) {
+	Reflection=1-Intensity/Intensity0; 
+}
+CPUtime=clock()-CPUtime; 
+cout << "[CPU] iteration="+iterations+" CPU="+CPUtime << " Calcul des sources" << endl; 
+CPUfile << "iteration="+iterations+" CPU="+CPUtime << " Calcul des sources" << endl; 
+CPUtime=clock();
+
+    ////////////////
+    // solving...
+    ///////////////
+    
+//    ThNeedle=adaptmesh(ThNeedle,Te,err=error, hmin=250e-9, hmax=10e-6);	
+    if(ActivatePoisson==1) Poisson;
+    if(ActivatePoisson==2) PoissonC; 
+    if(ActivatePoisson==3) PoissonTD;  
+    if(UseSBDeq==0) ElectronTemp; 
+    else BallisticDiffusiveTe; 
+     LatticeTemp;
+	ElectronDensity; 
+ if(ActivateHoles==1) { 
+	HoleDensity; HoleTemp; 
+ }
+ else { 
+	Nh=Ne;
+	Th=Te; 
+ }
+
+ 		// essayer de diminuer fortement le pas de temps et tourner sur Cines
+		// sinon, trouver pas de temps adaptatif ou trouver un RK4 variationnel pour equation sur Ne,Nh. 
+
+CPUtime=clock()-CPUtime; 
+cout << "[CPU] iteration=" << iterations << " CPU=" << CPUtime << " Resolution thermodyn" << endl; 
+CPUfile << "iteration=" << iterations << " CPU=" << CPUtime << " Resolution thermodyn" << endl; 
+CPUtime=clock();
+
+//    for(int i=0;i<ITMAX;i++) {
+
+if(LaserSource==2 || LaserSource==3) {
+	Reflection=1.-Intensity/(Intensity0*exp(-.5*(t/sigmatau)^2.)); 
+}
+	    cout << "Intensity(0,0)=" << Intensity(0,0) << endl; 
+CPUtime=clock()-CPUtime; 
+cout << "[CPU] iteration="+iterations+" CPU="+CPUtime << " Resolution electrodyn" << endl; 
+CPUfile << "iteration="+iterations+" CPU="+CPUtime << " Resolution electrodyn" << endl; 
+CPUtime=clock();
+	    Enthalpy=Enthalpy+Cs*(Ts-TsOld);
+	    ThNeedle=adaptmesh(ThNeedle,IntensityProfile, Ne,Nh,Te,Th, Ts,phi,err=error, nbvx=200000, hmin=wavelength/4/20, hmax=10e-6);
+	    if(ActivatePoisson==1) {
+	    	ThVessel=adaptmesh(ThVessel, IntensityProfile, phi, Ne, Nh, Te, Th, Ts,err=error, nbvx=200000, hmin=wavelength/4/20, hmax=10e-6);
+	    }
+	    if(ActivatePoisson>1) {
+			ThVessel=adaptmesh(ThVessel, real(phiC), Ne, Nh, Te, Th, Ts,err=error, nbvx=200000, hmin=wavelength/4/20, hmax=10e-6);
+		}
+CPUtime=clock()-CPUtime; 
+cout << "[CPU] iteration="+iterations+" CPU="+CPUtime << " Autoadaptation." << endl; 
+CPUfile << "iteration="+iterations+" CPU="+CPUtime << " Autoadaptation." << endl; 
+CPUtime=clock();
+{
+    ofstream Thermics("Time.dat", append); 
+    Thermics << t << " " << Te(0,0) << " " << Ts(0,0)<< " " << Ne(0,0) << " " << Nh(0,0) << " " << Intensity(0,0) << " " << DielectricRe(0,0) << " " << DielectricIm(0,0) << endl;
+}
+    	printer=log10(Intensity);
+	Vh printer4=log10(Ne); 
+	Vh printer7=tension*(tension>=Tmelted); 
+	Vh printer8=log10(Enthalpy);
+	Vh printer9=Nh-Ne; 
+	Vh printer10=log10(printer9);
+	Ex=dx(phi); Ey=dy(phi); 
+
+	VhGlob printer2=log10(abs(Ex)); 
+	VhGlob printer3=log10(abs(Ey)); 
+	VhGlob printer12, printer15, printer16, printer17, printer18, printer20; 
+	if(ActivatePoisson==1) { 
+		printer12=phi; printer15=Ex; printer16=Ey; 
+	}
+	if(ActivatePoisson>1) { 
+		printer12=real(phiC); 
+		ExC=dx(phiC); EyC=dy(phiC); 
+		printer15=real(ExC); printer16=real(EyC); 
+		printer20=real(sqrt(ExC*conj(ExC)+EyC*conj(EyC)));
+	}
+	printer17=log10(abs(printer15)); printer18=log10(abs(printer16)); 
+
+ 	if(iterations % OutputEvery==0) { 
+ 		plot(ps="2D-Intensity"+iterations+".eps", Intensity, fill=1, cmm="Intensity, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-logIntensity"+iterations+".eps", printer, fill=1, cmm="Intensity, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-ZoomedIntensity"+iterations+".eps", Intensity, fill=1, cmm="Intensity, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+		plot(ps="2D-ZoomedlogIntensity"+iterations+".eps", printer, fill=1, cmm="Intensity, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+ 		plot(ps="2D-Reflection.eps", Reflection, fill=1, cmm="R, t="+t*1E12+" ps", value=true, aspectratio=false, nbiso=30);
+ 		plot(ps="2D-Te"+iterations+".eps", Te, fill=1, cmm="Te, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+ 		plot(ps="2D-Ts"+iterations+".eps", Ts, fill=1, cmm="Ts, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-ZoomedTe"+iterations+".eps", Te, fill=1, cmm="Te, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+ 		plot(ps="2D-ZoomedTs"+iterations+".eps", Ts, fill=1, cmm="Ts, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+ 		plot(ps="2D-Ne"+iterations+".eps", Ne, fill=1, cmm="Ne, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-ZoomedNe"+iterations+".eps", Ne, fill=1, cmm="Ne, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+		plot(ps="2D-logNe"+iterations+".eps", printer4, fill=1, cmm="log10(Ne), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-ZoomedLogNe"+iterations+".eps", printer4, fill=1, cmm="Ne, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+ 		plot(ps="2D-Nh"+iterations+".eps", Nh, fill=1, cmm="Nh, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-ZoomedNh"+iterations+".eps", Nh, fill=1, cmm="Nh, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+		plot(ps="2D-Potential"+iterations+".eps", printer12, ThNeedle, fill=1, cmm="Potential, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, viso=isoPotential); //nbiso=30
+  		plot(ps="2D-Ex"+iterations+".eps", printer15, fill=1, cmm="abs(Ex), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, viso=isoField);
+		plot(ps="2D-InducedFieldNorm"+iterations+".eps", printer20, ThNeedle, fill=1, cmm="abs(Einduced), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, viso=isoField);
+// 		plot(ps="2D-ZoomedEx"+iterations+".eps", Ex, fill=1, cmm="abs(Ex), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+  		plot(ps="2D-Ey"+iterations+".eps", printer16, ThVessel, fill=1, cmm="abs(Ey), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, viso=isoField);
+ 		plot(ps="2D-logEx"+iterations+".eps", printer17, fill=1, cmm="log(abs(Ex)), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+// 		plot(ps="2D-ZoomedlogEx"+iterations+".eps", printer2, fill=1, cmm="log(abs(Ex)), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]);
+  		plot(ps="2D-logEy"+iterations+".eps", printer18, fill=1, cmm="log(abs(Ey)), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+// 		plot(ps="2D-InducedFieldX"+iterations+".eps", InducedFieldX, fill=1, cmm="abs(Ex), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+// 		plot(ps="2D-InducedFieldZ"+iterations+".eps", InducedFieldZ, fill=1, cmm="abs(Ex), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+// 		plot(ps="2D-logInducedFieldX"+iterations+".eps", printer5, fill=1, cmm="abs(Ex), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+// 		plot(ps="2D-logInducedFieldZ"+iterations+".eps", printer6, fill=1, cmm="abs(Ex), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-Epsilon"+iterations+".eps", DielectricRe, fill=1, cmm="EpsilonRe, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-Strain"+iterations+".eps", printer7, fill=true, cmm="Strain [N/m], t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30); 
+		plot(ps="2D-Enthalpy"+iterations+".eps", Enthalpy, fill=true, cmm="Enthalpy [J/m3], t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30); 
+		plot(ps="2D-logEnthalpy"+iterations+".eps", printer8, fill=true, cmm="log(Enthalpy [N/m]), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30); 
+		plot(ps="2D-ZoomedEnthalpy"+iterations+".eps", Enthalpy, fill=true, cmm="Enthalpy [J/m3], t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]); 
+		plot(ps="2D-ZoomedLogEnthalpy"+iterations+".eps", printer8, fill=true, cmm="log(Enthalpy [N/m]), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30, bb=[[-5e-6,0], [5e-6,500e-9]]); 
+		
+// 		plot(ps="2D-Vex"+iterations+".eps", Vex, fill=true, cmm="Vex (m/s), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30); 
+// 		plot(ps="2D-Vey"+iterations+".eps", Vey, fill=true, cmm="Vey (m/s), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30); 
+// 		plot(ps="2D-Vhx"+iterations+".eps", Vhx, fill=true, cmm="Vhx (m/s), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30); 
+// 		plot(ps="2D-Vhy"+iterations+".eps", Vhy, fill=true, cmm="Vhy (m/s), t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30); 
+		plot(ps="2D-NhNe"+iterations+".eps", printer9, fill=true, cmm="Nh-Ne, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+		plot(ps="2D-logNhNe"+iterations+".eps", printer10, fill=true, cmm="Nh-Ne, t="+t*1E12+" ps, dt="+1e15*dt+"fs", value=true, aspectratio=false, nbiso=30);
+
+
+// TO ZOOM,ADD THIS TO EACH PLOT LINE	", bb=[[-deltax/2,zoomy1],[deltax/2,zoomy2]]"
+ 	}
+    // plot(k, value=true); 
+    
+CPUtime=clock()-CPUtime; 
+cout << "[CPU] iteration="+iterations+" CPU="+CPUtime << " Output" << endl; 
+CPUfile << "iteration="+iterations+" CPU="+CPUtime << " Output" << endl; 
+CPUtime=clock();
+    
+} // end of time loop
+// plot(Ts, value=true, cmm="t="+1E12*tau+" ps", fill=true, nbiso=50, aspectratio=false);
+

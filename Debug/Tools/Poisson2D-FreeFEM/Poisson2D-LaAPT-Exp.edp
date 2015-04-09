@@ -1,0 +1,49 @@
+/* 
+
+Origine du repère = centre du cercle définissant le rayon de courbure
+
+Contours : 
+1/ AB = bottom
+
+2/ BD = W1
+3/ DG = WAg
+4/ GA = W2
+
+5/ DE = Ag1
+6/ EF = AgSi
+7/ FG = Ag2
+
+8/ EP = Si1
+9/ PPp= Tip
+10/PpF= Si2
+
+11/F1-F2 = left
+12/F2-F3 = anode
+13/F3-F4 = right
+14/F4-F1 = cathode
+
+*/ 
+
+real pi=3.141592653; 
+
+real h=3e-6; //total height of the cone - from base to tip
+real theta=20/180*pi; // angle of aperture
+real R=50e-9; //radius of curvature of the tip
+
+real hW=; //thickness of the tungsten layer
+real hAg=; //thickness of the Ag paste layer
+
+int bottom=1; 
+int W1=2; int WAg=3; int W2=4; 
+int Ag1=5; int AgSi=6; int Ag2=7; 
+int Si1=8; int Tip=9; int Si2=10; 
+int left=11; int anode=12; int right=13; int cathode=14; 
+
+border W1(t=-1,1){x=h-R; y=((-h*sin(theta/2)-R+R*sin(theta/2))/cos(theta/2))*t; label=bottom};
+border W2(t=){x=; y=; label=W1}; 
+
+problem Poisson(phi,v)=int2d(Th)((dx(DielectricRe)*dx(phi)+dy(DielectricRe)*dy(phi))*v)
+						-	int2d(Th)((dx(phi)*dx(DielectricRe)+dy(phi)*dy(DielectricRe))*v)
+						- 	int2d(Th)((dx(phi)*dx(v)+dy(phi)*dy(v))*DielectricRe)
+						+ 	int2d(Th)(ec*(Nh-Ne)*v/epsilon0)
+						+ on(bottom,phi=0);
