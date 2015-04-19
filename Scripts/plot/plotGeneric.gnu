@@ -30,9 +30,9 @@ plot "TimeMax.dat" u ($1*scale):2 w l t 'Te', \
 "TimeMax.dat" u ($1*scale):6 w l t 'Nh' axis x1y2, \
 "TimeMax.dat" u ($1*scale):7 w l t 'Laser Intensity' axis x1y2 
 
-set size 1.0
-set terminal x11 enhanced 1
-replot
+# set size 1.0
+# set terminal x11 enhanced 1
+# replot
 
 ########## Tip apex datas #######
 reset
