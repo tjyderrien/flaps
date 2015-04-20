@@ -2,10 +2,10 @@
 
 reset
 
-set terminal dumb
+# set terminal dumb
 
-# set terminal postscript eps enhanced color font 'Helvetica, 26'
-# set output '20150108-EnergyConservation.eps'
+set terminal postscript eps enhanced color font 'Helvetica, 26'
+set output '20150108-EnergyConservation.eps'
 
 set format "%g"
 
