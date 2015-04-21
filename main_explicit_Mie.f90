@@ -10,6 +10,7 @@ program Flaps
 
 ! include 'Bivariate.f'
 ! USE Bivariate
+  USE LIBMSH2VF !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing.
 
 implicit none
 
@@ -37,12 +38,13 @@ implicit none
     
                         
     integer(8), parameter::  iterOut=100       ,& ! number of iterations between each stdout
-                        iterOutMaps=100      ,& ! number of outputs for maps between each stdout
-                          M=2001   ,& !number of cells main domain X direction
-                          N=151      ,& !number of cells main domain Y direection
+                        iterOutMaps=10      ,& ! number of outputs for maps between each stdout
+                          M=401   ,& !number of cells main domain X direction
+                          N=301      ,& !number of cells main domain Y direection
+                          VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
-                          MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: cone, 2: cone in a vessel
+                          MeshChoice=3       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: cone, 2: cone in a vessel, 3: import GMSH
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
                           MeshShift=100       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
@@ -65,7 +67,7 @@ implicit none
                           MeshDamping0=1d8, &         ! damping coefficient (m^-1) for mesh refinement
                           ActivateInduction=0d0, &
                           CrossCoeff=-1d0, &                ! 0d0: OFF, 1d0: ON
-                          maxCFL=5d-3                        ! maximum admitted on CFL condition for any time step increase
+                          maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
     integer(8), parameter::  DrudeHeating=1, &        ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
                             ConductivityFix=0, &        ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
@@ -121,7 +123,7 @@ implicit none
 !                      epsilonStatic0=(11.66570433d0,0.01404457712d0)                ! dielectric constant for static field
     
     integer(8)         nbiter, i, itwo, jtwo, j, k, l, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
-                Mp, Np, imax, NewtonIteration
+                Mp, Np, imax, NewtonIteration, RunningIndex
     logical        Diverged
     real(8)         t, t0, dx, dy, x0, y0, dt, dt1, dt2, dt3, dt4, h1, h2, h3, h4
     real(8)         Te0, Th0, I0 !initial values of the problem
@@ -221,7 +223,8 @@ implicit none
                 phiMie(1:M, 1:N), &
                 Radius(1:M, 1:N)
                 
-    integer(8)        FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
+    integer(8)  FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
+		 MeshVertice(1:M, 1:N), &			! data from the GMSH file
                 SomeNeighbours(1:4,1:2)                                 !Neighbours for the fixed potential
     
     
@@ -245,6 +248,17 @@ implicit none
                                      CellAreaEP(:,:), CellAreaWP(:,:)
 
     integer(8), allocatable, target:: FixedPotentialIndex(:,:)         !array of points where potential has been fixed
+
+! mesh interface with gmsh management
+    CHARACTER(LEN=60)               :: namefile_msh, namefile_vf
+!
+    DOUBLE PRECISION, DIMENSION(:,:), POINTER :: vertices
+    INTEGER, DIMENSION(:,:), POINTER          :: points, segments, triangles, quadrangles, boundedges, edges
+    INTEGER, DIMENSION(:), POINTER            :: dim_physical_entities, id_physical_entities, idvertices
+    CHARACTER(LEN=200), DIMENSION(:), POINTER :: name_physical_entities
+!     INTEGER                                   :: kmouton
+    CHARACTER(LEN=1)                          :: choice
+    INTEGER                           :: nb_vertices, nb_triangles, nb_quadrangles, nb_edges, nb_boundedges
     
     complex(8)         Dielectric(1:M,1:N), &! solid dielectric function under laser illumination
                 DielectricDrudeE(1:M,1:N), & ! Drude part of dielectric function under laser illumination
@@ -281,7 +295,7 @@ implicit none
             TotalMeshVolume, &
             OnePhotonIonizationRate0, TwoPhotonIonizationRate0
             
-            
+
 !    integer(4) unit1, unit2
     integer(8) ColFermiNeNc, ColFermiEta, ColFermi0, ColFermi1, ColFermi2, &
                ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf
@@ -293,10 +307,11 @@ implicit none
             
     character(len=50)::format
 
-!  !!********OpenMP Test*************
+!OPENMP declarations
     integer :: myid, nthreads
     integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
-
+    
+   !  !!********OpenMP Test*************
   myid=1 !if openMP is off, then test is disabled; else: will be set to 0 by OpenMP
   nthreads=1 !idem
 
@@ -315,6 +330,95 @@ implicit none
   end if 
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
+
+
+!******** READ GMSH MESH FILE ************
+namefile_msh='gmsh/mesh.msh'
+RunningIndex=1 !gonna be used to mesh down
+! CALL extract_parameters(namefile_msh, namefile_vf)
+! We read the .msh file
+
+WRITE(*,*) 'Loading GMSH mesh...'
+
+CALL read_msh_file(namefile_msh, vertices, points, segments, triangles, quadrangles, dim_physical_entities, &
+			& id_physical_entities, name_physical_entities, idvertices)
+! We verify if the triangles are sorted in trigonometric sense and we bring correction if necessary
+IF (associated(triangles)) THEN
+	CALL correct_orientation(vertices, triangles)
+END IF
+! We verify if the quadrangles are sorted in trigonometric sense and we bring correction if necessary
+IF (associated(quadrangles)) THEN
+	CALL correct_orientation(vertices, quadrangles)
+END IF
+
+nb_vertices = size(vertices,1)
+IF (associated(triangles)) THEN
+	nb_triangles = size(triangles,1)
+ELSE
+	nb_triangles = 0
+END IF
+IF (associated(quadrangles)) THEN
+	nb_quadrangles = size(quadrangles,1)
+ELSE
+	nb_quadrangles = 0
+END IF
+nb_edges = size(edges,1)
+nb_boundedges = size(boundedges,1)
+
+! We build the edges
+CALL compute_edges(triangles, quadrangles, edges)
+! For each edge, we identify the physical zone in which it is included
+CALL identify_physical_zone_for_edges(edges, segments, triangles, quadrangles)
+! We extract the bound edges
+CALL extract_boundedges(edges, boundedges)
+! We are mainly interested in getting the point data.
+    
+WRITE(*,FMT=*) "MESH INFORMATIONS"
+WRITE(*,FMT=*) "[GMSH] Quadrangles number"
+WRITE(*,FMT=*) nb_quadrangles
+WRITE(*,FMT=*) "[GMSH] Node number"
+WRITE(*,FMT=*) nb_vertices
+
+!***** Attribute positions of the nodes by recursivity
+
+RunningIndex=VirtualPoints
+
+! Corners
+RunningIndex=RunningIndex+1; MeshVertice(1,1) = RunningIndex
+RunningIndex=RunningIndex+1; MeshVertice(M,1) = RunningIndex
+RunningIndex=RunningIndex+1; MeshVertice(M,N) = RunningIndex
+RunningIndex=RunningIndex+1; MeshVertice(1,N) = RunningIndex
+
+!North
+do i=2, M-1
+  RunningIndex=RunningIndex+1; MeshVertice(i, 1)=RunningIndex
+end do
+!East
+do j=2, N-1
+  RunningIndex=RunningIndex+1; MeshVertice(M, j)=RunningIndex
+end do
+!South
+do i=M-1,2, -1
+  RunningIndex=RunningIndex+1; MeshVertice(i,N)=RunningIndex
+end do
+!West
+do j=N-1, 2, -1
+  RunningIndex=RunningIndex+1; MeshVertice(1,j)=RunningIndex
+end do
+
+!rest of the domain
+do i=2,M-1
+  do j=2, N-1
+    RunningIndex=RunningIndex+1; MeshVertice(i,j)=RunningIndex
+  end do
+end do
+
+
+WRITE(*,*) 'Latest running index while remeshing', RunningIndex
+
+
+!***** Compute geometrical data
+
 
 !**** INITIALIZATION
 
@@ -401,7 +505,7 @@ implicit none
     open(96,FILE='parameters.dat', access='sequential', status='unknown')
     open(97,FILE='Depth.dat',access='sequential',status='unknown')                ! format 887
     open(98,FILE='TimeMax.dat',access='sequential',status='unknown')                 ! format 888
-    open(99,FILE='mesh.dat',access='sequential',status='unknown')                ! format 885
+    open(99,FILE='mesh.dat',access='sequential',status='unknown')                ! format 885, 8852
     open(100,FILE='meshVessel.dat',access='sequential',status='unknown')
     open(101,FILE='DepthVessel.dat',access='sequential',status='unknown')         ! format 889
     open(102,FILE='meshElements.dat', access='sequential',status='unknown') ! format 881
@@ -433,6 +537,7 @@ implicit none
   end do
   
   write(*,*)
+
   if(MeshChoice.eq.0) then  !rectangular mesh as main domain
     do i=1,M
       do j=1,N
@@ -445,7 +550,7 @@ implicit none
   end if
 !   else ! conical mesh as main domain
     
-  if(MeshChoice>=1) then !conical mesh as main domain
+  if(MeshChoice==1 .OR. MeshChoice==2) then !conical mesh as main domain
     !boudary definition
     NeedleIndexX=M
     NeedleIndexY=N
@@ -771,6 +876,30 @@ implicit none
     ! use to select the mesh in which Poisson eq is solved
   end if
   
+  !Attribute the node positions
+  if(MeshChoice.eq.3) then
+    do i=1, M
+      do j=1, N
+	x(i,j)=vertices(idvertices(MeshVertice(i,j)),1)
+	y(i,j)=vertices(idvertices(MeshVertice(i,j)),2)
+      end do
+    end do
+
+    x(:,:)=1d-6*x(:,:)
+    y(:,:)=1d-6*y(:,:)
+    
+    !writing of the mesh
+    do i=1,M
+      do j=1,N
+        write(99, 8852, advance='yes') x(i,j), y(i,j), i, j, MeshVertice(i,j)
+        8852        FORMAT (1E15.8, 3x, 1E15.8, 3x, I4, 3X, I4, 3X, I8)
+        !write(99,*)
+        end do
+        write(99,*) " "
+    end do
+    
+  end if
+
   if(MeshChoice.eq.2) then
      Mp=Mv
      Np=Nv
@@ -832,7 +961,7 @@ implicit none
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL !(FermiTableE, FermiTableH)
-!   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
+   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
   write(96,*) "========== CONE PARAMETERS ========="
@@ -1926,7 +2055,8 @@ if(UseMieScattering.eq.1) then
 !     
 !     do i=2, Mp-1 !pour chaque point ou l on va calculer le potentiel
 !         do j=2, Np-1 
-!           Amatrix(OneDindex(i,j),OneDindex(i,j))=(1d0/8d0)*(-DielectricStatic(i+1,j)-DielectricStatic(i,j))*(xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1)-2d0*xP(i+1,j+1)*xP(i+1,j-1)-2d0*xP(i+1,j+1)*xP(i,j-1)+xP(i,j+1)**2-2d0*xP(i,j+1)*xP(i+1,j-1)-2d0*xP(i,j+1)*xP(i,j-1)+xP(i+1,j-1)**2+2d0*xP(i+1,j-1)*xP(i,j-1)+xP(i,j-1)**2+yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)-2d0*yP(i+1,j+1)*yP(i+1,j-1)-2d0*yP(i+1,j+1)*yP(i,j-1)+yP(i,j+1)**2-2d0*yP(i,j+1)*yP(i+1,j-1)-2d0*yP(i,j+1)*yP(i,j-1)+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1)+yP(i,j-1)**2)**(0.5d0)/(xP(i+1,j)**2-2d0*xP(i+1,j)*xP(i,j)+xP(i,j)**2+yP(i+1,j)**2-2d0*yP(i+1,j)*yP(i,j)+yP(i,j)**2)**(0.5d0)-(1d0/8d0)*(DielectricStatic(i,j)+DielectricStatic(i-1,j))*(xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1)-2d0*xP(i,j+1)*xP(i-1,j-1)-2d0*xP(i,j+1)*xP(i,j-1)+xP(i-1,j+1)**2-2d0*xP(i-1,j+1)*xP(i-1,j-1)-2d0*xP(i-1,j+1)*xP(i,j-1)+xP(i-1,j-1)**2+2d0*xP(i-1,j-1)*xP(i,j-1)+xP(i,j-1)**2+yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)-2d0*yP(i,j+1)*yP(i-1,j-1)-2d0*yP(i,j+1)*yP(i,j-1)+yP(i-1,j+1)**2 & 
+!           Amatrix(OneDindex(i,j),OneDindex(i,j))=(1d0/8d0)*(-DielectricStatic(i+1,j)-DielectricStatic(i,j))*(xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1)-2d0*xP(i+1,j+1)*xP(i+1,j-1)-2d0*xP(i+1,j+1)*xP(i,j-1)+xP(i,j+1)**2-2d0*xP(i,j+1)*xP(i+1,j-1)-2d0*xP(i,j+1)*xP(i,j-1)+xP(i+1,j-1)**2+2d0*xP(i+1,j-1)*xP(i,j-1)+xP(i,j-1)**2+yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)-2d0*yP(i+1,j+1)*yP(i+1,j-1)-2d0*yP(i+1,j+1)*yP(i,j-1)+yP(i,j+1)**2-2d0*yP(i,j+1)*yP(i+1,j-1)-2d0*yP(i,j+1)*yP(i,j-1)+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1)+yP(i,j-1)**2)**(0.5d0)/(xP(i+1,j)**2-2d0*xP(i+1,j)*xP(i,j)+xP(i,j)**2+yP(i+1,j)**2-2d0*yP(i+1,j)*yP(i,j)+yP(i,j)**2)**(0.5d0)-(1d0/8d0)*(DielectricStatic(i,j)+DielectricStatic(i-1,j))*(xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1)-2d0*xP(i,j+1)*xP(i-1,j-1)-2d0*xP(i,j+1)*xP(i,j-1)+xP(i-1,j+1)**2-2d0*xP(i-1,j+1)*xP(i-1,j-1)-2d0*xP(i-1,j+1)*xP(i,j-1)+xP(i-1,j-1)**2+2d0*xP(i-1,j-1)*xP(i,j-1)+xP(i,j-1)**2+yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)-2d0*yP(i,j+1)*yP(i-1,j-1)-2d0*yP(i,j+1)*yP(i,j-1)+yP(i-1,j+1)**2 &
+ 
 !           -2d0*yP(i-1,j+1)*yP(i-1,j-1)-2d0*yP(i-1,j+1)*yP(i,j-1)+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i,j-1)+yP(i,j-1)**2)**(0.5d0)/(xP(i-1,j)**2-2d0*xP(i-1,j)*xP(i,j)+xP(i,j)**2+yP(i-1,j)**2-2d0*yP(i-1,j)*yP(i,j)+yP(i,j)**2)**(0.5d0)+(1d0/8d0)*(-DielectricStatic(i,j)-DielectricStatic(i,j+1))*(xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j)-2d0*xP(i+1,j+1)*xP(i-1,j)-2d0*xP(i+1,j+1)*xP(i-1,j+1)+xP(i+1,j)**2-2d0*xP(i+1,j)*xP(i-1,j)-2d0*xP(i+1,j)*xP(i-1,j+1)+xP(i-1,j)**2+2d0*xP(i-1,j)*xP(i-1,j+1)+xP(i-1,j+1)**2+yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i+1,j)-2d0*yP(i+1,j+1)*yP(i-1,j)-2d0*yP(i+1,j+1)*yP(i-1,j+1)+yP(i+1,j)**2-2d0*yP(i+1,j)*yP(i-1,j)-2d0*yP(i+1,j)*yP(i-1,j+1)+yP(i-1,j)**2+2d0*yP(i-1,j)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(0.5d0)/(xP(i,j+1)**2-2d0*xP(i,j+1)*xP(i,j)+xP(i,j)**2+yP(i,j+1)**2-2d0*yP(i,j+1)*yP(i,j)+yP(i,j)**2)**(0.5d0)-(1d0/8d0)*(DielectricStatic(i,j)+DielectricStatic(i,j-1))*(xP(i+1,j)**2+2d0*xP(i+1,j)*xP(i+1,j-1)-2d0*xP(i+1,j)*xP(i-1,j-1)-2d0*xP(i+1,j)*xP(i-1,j)+xP(i+1,j-1)**2-2d0*xP(i+1,j-1)*xP(i-1,j-1)- &
 !           2d0*xP(i+1,j-1)*xP(i-1,j)+xP(i-1,j-1)**2+2d0*xP(i-1,j-1)*xP(i-1,j)+xP(i-1,j)**2+yP(i+1,j)**2+2d0*yP(i+1,j)*yP(i+1,j-1)-2d0*yP(i+1,j)*yP(i-1,j-1)-2d0*yP(i+1,j)*yP(i-1,j)+yP(i+1,j-1)**2-2d0*yP(i+1,j-1)*yP(i-1,j-1)-2d0*yP(i+1,j-1)*yP(i-1,j)+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i-1,j)+yP(i-1,j)**2)**(0.5d0)/(xP(i,j-1)**2-2d0*xP(i,j-1)*xP(i,j)+xP(i,j)**2+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i,j)+yP(i,j)**2)**(0.5d0)
 !          
@@ -2127,8 +2257,8 @@ if(UseMieScattering.eq.1) then
         DOSh(i,j)=DensityOfStateH(Th(i,j))
         FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
+        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j)) 
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
