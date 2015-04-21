@@ -1,70 +1,15 @@
 #! /bin/bash
 
 valeurX=2.40024e-09
-# valeurX=1.5557e-09
 valeurY=0
-
-# 1.00026e-08
-# 1.60011e-09; 
-# 2.50017e-9
-
 valeurT=50e-15
-
-# ## MAKE file for T,X profiles
-for i in `ls Bonse*.dat`
-do
- 	echo "Filtering XZ $i"
-#	awk "{ if(\$4==${valeurY}) print }" $i > $i.2DX &
-done
-
-## MAKE file for T,X profiles
-for i in `ls Main*.dat`
-do
-	echo "Filtering TX $i"
-#	awk "{ if(\$4==${valeurX}) print }" $i > $i.2DX
-done
-
-## MAKE file for T, Z profiles
-for i in `ls Main*.dat`
-do 
-	echo "Filtering TZ $i"
-	awk '{if($3==0) print }' $i > $i.2DZ
-done
-
-############ BUILD zOfFluence.dat ##############
-# build an unordered Fluences.dat file
-set LC_ALL=C
-rm Fluences.tmp
-rm zOfFluence*.tmp 
-
-for i in `ls Main*.dat -1`
-do
-	awk '{print $2}' $i | head -n1 >> Fluences.tmp
-done
-
-
-
-# extract unordrer datas from TIME*.dat
-# rm Time0.dat
-for i in `ls Time*.dat -1`
-do
-	awk -f '/home/thibault/Documents/LaAPT/Scripts/MeltingOfFluence-Enhanced.awk' $i >> zOfFluence.tmp
-done
-sort -g Fluences.tmp > Fluences.dat
-awk '{ printf("%15.15f\t%15.15f\t%15.15f\t%15.15f\t%15.15f\t%g\t%g\t%g\t%g\n", $1, $2, $3, $4, $5, $6, $7, $8, $9)}' zOfFluence.tmp > zOfFluenceSorted.tmp
-# sort -g zOfFluence.tmp > zOfFluenceSorted.tmp
-paste Fluences.dat zOfFluenceSorted.tmp > zOfFluence.dat
-
-rm Fluences.tmp
-rm zOfFluence.tmp
-rm zOfFluenceSorted.tmp
 
 ####### Build Video ###########
 
 rm *.vid
-# awk -f '/home/thibault/Documents/LaAPT/Scripts/BuildFilesXZ.awk' DepthVessel.dat
-awk -f '/home/thibault/Documents/LaAPT/Scripts/BuildMaps.awk' Depth.dat
-# awk -f '/home/thibault/Documents/LaAPT/Scripts/BuildFilesXZ.awk' DualDepth.dat
+# awk -f 'Scripts/video/BuildMaps.awk' DepthVessel.dat'
+awk -f 'Scripts/video/BuildMaps.awk' Depth.dat
+# awk -f 'Scripts/video/BuildFilesXZ.awk' DualDepth.dat
 ls *.vid
 
 file=`ls -1 -t *.vid | sort -n | tail -n1`

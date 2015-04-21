@@ -5,12 +5,12 @@ reset
 set xlabel 'Time (s)'
 set ylabel 'Energy (J.m^{-1})'
 
-# set output '20140312-Energy.eps'
-# set terminal postscript eps enhanced color font 'Helvetica, 26'
+set output '20150414-Energy.eps'
+set terminal postscript eps enhanced color font 'Helvetica, 26'
 
 set key outside center bottom
 set grid
-unset log x
+set log x
 unset log y
 unset log y2
 set xtics format "10^{%L}"
