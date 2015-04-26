@@ -24,7 +24,7 @@ implicit none
                         Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
                         potentialNull=0d0, &
-                        phiMie0=0.5d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
+                        phiMie0=1.0d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
                         tmax=50d-9 ,& !stop time
@@ -39,12 +39,12 @@ implicit none
                         
     integer(8), parameter::  iterOut=100       ,& ! number of iterations between each stdout
                         iterOutMaps=10      ,& ! number of outputs for maps between each stdout
-                          M=401   ,& !number of cells main domain X direction
-                          N=301      ,& !number of cells main domain Y direection
+                          M=2001   ,& !number of cells main domain X direction
+                          N=151     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
-                          MeshChoice=3       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: cone, 2: cone in a vessel, 3: import GMSH
+                          MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: Experimental cones, 2: Cone in a vessel (HS), 3: import GMSH (working)
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
                           MeshShift=100       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
@@ -617,8 +617,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !           meshParameterTmax=2.471556d0 !maximum t parameter
 !           meshParameterTmin=-3.35d0        !minimum t parameter
           ! reduced length cone for accelerated calculations
-          meshParameterTmax=1d0 !maximum t parameter
-          meshParameterTmin=-1.05d0        !minimum t parameter
+          meshParameterTmax=0.2361d0 !maximum t parameter
+          meshParameterTmin=-0.2531506894d0        !minimum t parameter
         end if
         meshStepDt=(meshParameterTmax-meshParameterTmin)/(real(2*(M-1)+N)) !step of parameter t to define corners of the mesh
 
@@ -4467,12 +4467,15 @@ if(UseMieScattering.eq.1) then
       real(8) p1, p2, p3, p4, p5, q1, q2, q3, q4, x0, tc
 
       ConeExp1=0d0
+      p1=42.14d0; p2=-10.64d0; p3=3.07d0; p4=-0.0173d0; p5=0d0;
+      q1=-0.6025d0; q2=0.7698d0; q3=-0.1032d0; q4=0.01836d0;
+      x0=0.0013621d0; tc=-0.0028855d0
+      ! Old and wrong data... Lost 1.5 years of calculations. 
+      ! p1=42.15d0; p2=-62.93d0; p3=66.13d0; p4=-15.28d0; p5=0.981d0
+      ! q1=-2.848d0; q2=12.53d0; q3=-9.082d0; q4=5.09d0
+      ! x0=0.0045712d0; tc=-0.14033d0
 
-      p1=42.15d0; p2=-62.93d0; p3=66.13d0; p4=-15.28d0; p5=0.981d0
-      q1=-2.848d0; q2=12.53d0; q3=-9.082d0; q4=5.09d0
-      x0=0.0045712d0; tc=-0.14033d0
-
-      if(t <= 1d0 .AND. t >= -1.05d0) then !reduced cone size for calculation acceleration
+      if(t <= 0.2361d0 .AND. t >= -0.2531506894d0) then !reduced cone size for calculation acceleration
 !       if(t <= 2.471556d0 .AND. t >= -3.35d0) then
         ConeExp1=(p1*(t-tc)**4+p2*(t-tc)**3+p3*(t-tc)**2+p4*(t-tc)+p5)/((t-tc)**4 + q1*(t-tc)**3 + q2*(t-tc)**2 + q3*(t-tc) + q4) + x0
       end if
@@ -4585,8 +4588,8 @@ if(UseMieScattering.eq.1) then
 !         temp1=zeroin(0d0, 2.471556d0, ConeExp1Equation, 1d-15, value)
 !         temp2=zeroin(-3.35d0, 0d0, ConeExp1Equation, 1d-15, value)
         ! reduced cone size to accelerate calculations
-        temp1=zeroin(0d0, 1d0, ConeExp1Equation, 1d-15, value)
-        temp2=zeroin(-1.05d0, 0d0, ConeExp1Equation, 1d-15, value)
+        temp1=zeroin(0d0, 0.2361d0, ConeExp1Equation, 1d-15, value)
+        temp2=zeroin(-0.2531506894d0, 0d0, ConeExp1Equation, 1d-15, value)
 !         write(*,*) 'Solve:', temp
 !       end do
         if(abs(temp1) < abs(temp2)) then
