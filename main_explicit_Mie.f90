@@ -3044,7 +3044,7 @@ if(UseMieScattering.eq.1) then
                     + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
                     /(-h3 + h1) / (-h2 + h1) * CsOld(i,j) + h1 * h3 / (-h2 &
                     + h1) / h2 / (-h3 + h2) * CsPrev(i,j) - h1 * h2 / h3 &
-                    / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j)) &
+                    / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j))*0d0 & !20150426-Temporal variation of Cs is killed here.
                     * Ts(i,j)) / Cs(i,j) + h2 * h3 / h1 / (-h3 + h1)  &
                     / (-h2 + h1) * Ts(i,j) - h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2) &
                     * TsOld(i,j) + h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 &
@@ -3350,7 +3350,7 @@ if(UseMieScattering.eq.1) then
               
         HoleEnergy=HoleEnergy+(Ch(i,j)*(ThNew(i,j)-Th(i,j))+(Ch(i,j)-ChOld(i,j))*Th(i,j)) * CellVol(i,j) !kinetic energy
         
-        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(TsNew(i,j)-Ts(i,j)))+(Cs(i,j)-CsOld(i,j))*Ts(i,j))*CellVol(i,j)
+        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(TsNew(i,j)-Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
         
         if(Te(i,j).ne.Te(i,j)) then
           write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
