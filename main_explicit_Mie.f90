@@ -38,7 +38,7 @@ implicit none
     
                         
     integer(8), parameter::  iterOut=100       ,& ! number of iterations between each stdout
-                        iterOutMaps=10      ,& ! number of outputs for maps between each stdout
+                        iterOutMaps=100      ,& ! number of outputs for maps between each stdout
                           M=2001   ,& !number of cells main domain X direction
                           N=151     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)

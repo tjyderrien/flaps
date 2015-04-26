@@ -2,7 +2,7 @@
 
 # export KMP_STACKSIZE=1048576000
 export OMP_STACKSIZE=10485760
-export OMP_NUM_THREADS=16
+export OMP_NUM_THREADS=8
 # export MKL_NUM_THREADS=16
 export MKL_DYNAMIC="FALSE"
 export OMP_DYNAMIC="FALSE"
@@ -28,10 +28,10 @@ cd amos/
 gfortran -c *.f
 cd ..
 gfortran -c Bivariate.f zeroin.f
-gfortran -c -g -w -fbacktrace gmsh/libmsh2vf.f90 
+gfortran -c -g -w -fbacktrace gmsh/libmsh2vf.f90 -ffree-line-length-none -ffixed-line-length-none -finteger-4-integer-8
 gfortran -c main_explicit_Mie.f90 -g -Wno-unused-variable -Wall -fbacktrace -fbounds-check -O2 -mcmodel=small -I/usr/include -llapack -fopenmp -ffree-line-length-none -ffixed-line-length-none -finteger-4-integer-8 -lm
-gfortran main_explicit_Mie.o -fbacktrace -fopenmp -mcmodel=small amos/*.o Bivariate.o zeroin.o gmsh/libmsh2vf.o -o Flaps_explicit.out 
-#./Flaps_explicit.out
+gfortran main_explicit_Mie.o -fbacktrace -fopenmp -mcmodel=small amos/*.o Bivariate.o zeroin.o libmsh2vf.o -o Flaps_explicit.out 
+./Flaps_explicit.out
 
 # ifort main.o Bivariate.o -o Flaps.out
 #  -axSSE4.2 
