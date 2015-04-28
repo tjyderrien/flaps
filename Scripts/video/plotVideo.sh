@@ -3,7 +3,8 @@
 gnuplot << EOF
 set terminal postscript eps enhanced color font 'Helvetica, 22'
 set output "$1.eps"
-# set view equal xy
+set view equal xy
+set view map 
 set xlabel 'X [{/Symbol m}m]'
 set ylabel 'Y [{/Symbol m}m]'
 # set cbtics format "%1.0l x 10^{%L}"
@@ -25,7 +26,7 @@ unset logscale cb
 # set cbrange [1e-1:]
 set key out left
 # set format "%g"
-set pm3d map interpolate 4,4
+# set pm3d map interpolate 4,4
 
 set xtics 5
 set ytics 2
@@ -34,6 +35,6 @@ set ytics 2
 # splot "< awk -f '/home/thibault/Documents/LaAPT/Scripts/plotXZ.awk' $1" u (\$2*1E6):(\$3*1E6):((\$5**2+\$6**2)**0.5) w pm3d t columnheader 1
 # splot "< awk -f '/home/thibault/Documents/LaAPT/Scripts/plotXZ.awk' $1" u (\$2*1E6):(\$3*1E6):((\$16**2+\$17**2)**.5) w pm3d t columnheader 1
 # splot "< awk -f '/home/thibault/Documents/LaAPT/Scripts/plotXZ.awk' $1" u (\$2*1E6):(\$3*1E6):(\$7) w pm3d t columnheader 1
-splot "< awk -f '/home/thibault/Documents/LaAPT/Scripts/plotXZ.awk' $1" u (\$1):(\$2):((\$3)) w pm3d t columnheader 1
+splot "< awk -f 'Scripts/video/plotXZ.awk' $1" u (\$1):(\$2):((\$3)) w pm3d t columnheader 1
 
 EOF
