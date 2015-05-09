@@ -42,7 +42,7 @@ rm *.vid.eps
 echo "`ls *.vid | wc -l` pictures in Video"
 for i in `ls -tr -1 *.vid | sort -n`
 do
-	/home/thibault/Documents/LaAPT/Scripts/plotVideo.sh $i
+	Scripts/video/plotVideo.sh $i
 done
 
-/home/thibault/Documents/LaAPT/Scripts/epsToGif-TTM.sh 
+Scripts/video/epsToGif-TTM.sh 
