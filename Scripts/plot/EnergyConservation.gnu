@@ -15,6 +15,27 @@ unset log y
 set key left
 
 set xlabel 'Time (ps)'
-set ylabel 'Energy (J)'
+set ylabel 'Energy (uJ/m)'
 
-plot "EnergyConservation.dat" u ($1*xscale):2 w l t 'Laser', "EnergyConservation.dat" u ($1*xscale):3 w l t 'Electron', "EnergyConservation.dat" u ($1*xscale):4 w l t 'Hole', "EnergyConservation.dat" u ($1*xscale):5 w l t 'Lattice', "EnergyConservation.dat" u ($1*xscale):7 w l t 'Laser intensity energy'
+yscale=1E6
+
+plot "EnergyConservation.dat" u ($1*xscale):($2*yscale) w l lw 5 t 'Laser energy', \
+"EnergyConservation.dat" u ($1*xscale):($3*yscale) w l lc 3 lw 5 t 'Electron', \
+"EnergyConservation.dat" u ($1*xscale):($4*yscale) w l lc 4 lw 5 t 'Hole', \
+"EnergyConservation.dat" u ($1*xscale):($5*yscale) w l lc 7 lw 5 t 'Lattice', \
+"EnergyConservation.dat" u ($1*xscale):($7*yscale) w l lc 1 lw 5 t 'Laser intensity energy'
+
+############## Reconstructed energy
+
+# After reconstruction using RebuildEnergy.sh, we plot kinetic energy and potential energy.
+set output '20150509-EnergyPotvsKin.eps'
+set terminal postscript eps enhanced color font 'Helvetica, 24' 
+set key out right horizontal
+
+plot "EnergyConservation.dat" u ($1*xscale):($7*yscale) w l lc 1 lw 3 t 'Incoming laser energy', \
+"EnergyConservation.dat" u ($1*xscale):($2*yscale) w l lc 1 lw 3 t 'Abs. Laser energy', \
+"EnergyBalance.dat" u ($1*xscale):($2*yscale) w l lc 3 lw 1 t 'Kin, e', \
+"EnergyBalance.dat" u ($1*xscale):($5*yscale) w l lc 3 lw 1 t 'Pot. e', \
+"EnergyConservation.dat" u ($1*xscale):($3*yscale) w l lc 3 lw 3 t 'Kin.+Pot. e-', \
+"EnergyConservation.dat" u ($1*xscale):($4*yscale) w l lc 4 lw 3 t 'Kin.+Pot. h', \
+"EnergyConservation.dat" u ($1*xscale):($5*yscale) w l lc 7 lw 3 t 'Lattice'

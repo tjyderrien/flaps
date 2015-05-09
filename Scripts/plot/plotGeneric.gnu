@@ -4,7 +4,7 @@ unset multiplot
 
 reset
 set size 1
-set output '20120828-Evolution.eps'
+set output '20150509-Evolution.eps'
 set terminal postscript eps enhanced color font 'Helvetica, 24'
 
 set format "%g"
@@ -68,52 +68,72 @@ plot "TimeApex.dat" u ($1*1E12):2 w l t 'Te', \
 
 reset
 
-scale=1e9
+scale=1e12
 
 set terminal postscript eps enhanced color font 'Helvetica, 26' 
-set output '20121128-TipHeating-Log.eps'
+set output '20150509-TipHeating-Log.eps'
 
 set multiplot 
 
-set xlabel 'Time (ns)'
+set xlabel 'Time (ps)'
 set ylabel 'Temperature (K)'
-# set xtics format "%0.0t{/Symbol \327}10^{%L}"
-set xtics format "%g" 5
-# set xtics format "%3.1e"
-unset log x
+
 unset log y
 set key out top center horizontal spacing 1.2
-set xrange [-0.5:]
 
-plot "TimeApex.dat" u ($1*scale):4 w l lw 3 t 'T_{apex}, 515 nm', \
-"TimeUp.dat" u ($1*scale):4 w l lw 3 t 'T_{top}, 515 nm', \
-"TimeBottom.dat" u ($1*scale):4 w l lw 3 t 'T_{bottom}, 515 nm'
-# "TimeMax.dat" u ($1*scale):4 w l lw 3 t 'T_{max}, 515 nm', \
+# ### For Non-log scale
+# # set xtics format "%0.0t{/Symbol \327}10^{%L}"
+# set xtics format "%g" 1
+# # set xtics format "%3.1e"
+# set xrange [-0.5:5]
+# unset log x
 
-set xrange [1e-4:10]
-set origin 0.45, 0.25
-set size 0.5, 0.5
-unset xlabel 
-unset ylabel
+
+### For LOG scale
 set log x
 set xtics format "10^{%L}" 100
 set ytics 100
-unset key
-replot
+set xrange [1e-4:10]
+
+plot "TimeApex.dat" u ($1*scale):4 w l lc 1 lw 5 t 'T_{apex}, 515 nm', \
+"TimeUp.dat" u ($1*scale):4 w l lc 3 lw 3 t 'T_{top}, 515 nm', \
+"TimeBottom.dat" u ($1*scale):4 w l lc 4 lw 3 t 'T_{bottom}, 515 nm', \
+"TimeMax.dat" u ($1*scale):4 w l lc 7 lw 3 t 'T_{max}, 515 nm'
+
+## enable if you want an inset
+# set xrange [1e-4:10]
+# set origin 0.45, 0.25
+# set size 0.5, 0.5
+# unset xlabel 
+# unset ylabel
+# set log x
+# set xtics format "10^{%L}" 100
+# set ytics 100
+# unset key
+# replot
 
 unset multiplot
 
 
 ########## plot mesh with points top bottom and apex
-set output '20130722-PositionOnMesh.dat'
-set terminal postscript eps enhanced monochrome
+set terminal postscript eps enhanced monochrome font 'Helvetica, 24'
+set output "20150509-PositionOnMesh.dat"
+
+M=2001
+N=151
+
 set size 1.0,1.0
 scale=1E9
+
+set key left top
 set view map
+
+set xrange [-20:30]
+
 splot "mesh.dat" u ($1*scale):($2*scale):(1) w l lw 0.4 notitle, \
-"< awk '{ if($3==1 && $4==25) print }' mesh.dat" u ($1*scale):($2*scale):(1) w p lw 6 t 'Apex', \
-"< awk '{ if($3==1 && $4==51) print }' mesh.dat" u ($1*scale):($2*scale):(1) w p lw 6 t 'Top', \
-"< awk '{ if($3==1 && $4==1) print }' mesh.dat" u ($1*scale):($2*scale):(1) w p lw 6 t 'Bottom'
+"< awk '{ if($3==1 && $4==76) print }' mesh.dat" u ($1*scale):($2*scale):(1) w p lw 6 t 'Apex', \
+"< awk '{ if($3==1 && $4==1) print }' mesh.dat" u ($1*scale):($2*scale):(1) w p lw 6 t 'Top', \
+"< awk '{ if($3==1 && $4==151) print }' mesh.dat" u ($1*scale):($2*scale):(1) w p lw 6 t 'Bottom'
 
 ########## Free carrier density at the tip apex
 reset
