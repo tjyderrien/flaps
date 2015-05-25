@@ -6,9 +6,9 @@ BEGIN {
 	tau=40e-15
 	dt0=100E-18; #dt of the code
 	dt=1e-12; #dt between export
-	tmax=0.29800E-10 #100*tau #0.2e-12
-	tmin=0.80000E-12 #-0.24990E-11 #-4.9978000000e-13 #0.159E-12 #min of the one exported!
-	M=31; N=31
+	tmax=0.47200E-11 #100*tau #0.2e-12
+	tmin=-0.19000E-12 #-0.24990E-11 #-4.9978000000e-13 #0.159E-12 #min of the one exported!
+	M=2001; N=151
 	NbPoints=100
 	NbPointsDec=NbPoints*1e0
 #	print "NbPointsDec", 1e0/NbPointsDec
@@ -41,7 +41,7 @@ BEGIN {
 #	Condition=int(Condition1 % Condition2)
 #	print Condition1, Condition2, Condition, Test
 	if($1 < tmax && $1>tmin) {
-		if($1 >= Outputs[indice]) {
+#enable me	if($1 >= Outputs[indice]) {
 			print $0 >> ($1-tmin)/dt".vid";
 			Exportedlines=Exportedlines+1
 #			print $1 " exported, id=", indice
@@ -49,7 +49,7 @@ BEGIN {
 				Exportedlines=0
 				indice=indice+1
 			}
-		}
+#enable me		}
 	}
 	
 }
