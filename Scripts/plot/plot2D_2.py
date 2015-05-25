@@ -12,7 +12,7 @@ columnNumX=1
 columnNumY=2
 columnNumZ=3
 
-Ny=101 #nombre de points en profondeur
+Ny=2001 #nombre de points en profondeur
 # Ny=101 #nombre de points en profondeur
 
 NxReg=2000; NyReg=2000; #mesh for interpolation
@@ -27,7 +27,7 @@ isolevels=[3]
 # isolevels=[1E10,1E25,1E27]
 
 #### read file
-f = open('Field-515nm-TE-0.5pi.map','r')
+f = open('Field.map','r')
 data = f.readlines()
 N =len(data)
 print N
