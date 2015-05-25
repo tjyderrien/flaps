@@ -24,7 +24,7 @@ implicit none
                         Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
                         potentialNull=0d0, &
-                        phiMie0=1.0d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
+                        phiMie0=0.5d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
                         tmax=50d-9 ,& !stop time
