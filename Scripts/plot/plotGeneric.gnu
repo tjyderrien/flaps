@@ -137,36 +137,47 @@ splot "mesh.dat" u ($1*scale):($2*scale):(1) w l lw 0.4 notitle, \
 
 ########## Free carrier density at the tip apex
 reset
-set output '20130711-ApexNeNh.eps'
+unset multiplot
+set output '20150509-MaxNeNh.eps'
 set terminal postscript eps enhanced color font 'Helvetica, 26'
 
 set multiplot
 set origin 0.0, 0.0
 set size 1.0, 1.0
+
 set xlabel 'Time (ps)'
-set ylabel 'Carrier density (m^{-3})'
-set y2label 'Carrier temperature (m^{-3})'
-set xrange [:20]
+set ylabel 'Carrier density (cm^{-3})'
+set y2label 'Carrier temperature (K)'
+
+set xrange [:5]
+
 set xtics format '%g'
-set ytics nomirror format '10^{%L}'
+set ytics nomirror format '%3.1l x 10^{%L}' 2.5e20
 set y2tics nomirror 
+
 scale=1E12
-shift=2e-12
+yscale=1E6
+
+shift=0e0; #2e-12
+
 unset log x
-set log y
-set log y2
-set key bottom right
-plot "TimeApex.dat" u (scale*($1+shift)):5 w l lc 1 t 'N_e', \
-"TimeApex.dat" u (scale*($1+shift)):6 w l lc 1 t 'N_h', \
-"TimeApex.dat" u (scale*($1+shift)):2 w l lc 3 t 'T_e' axis x1y2, \
-"TimeApex.dat" u (scale*($1+shift)):3 w l lc 3 t 'T_h' axis x1y2
+# set log y
+unset log y2
+set key top right
 
-scale=1E9
+plot "TimeMax.dat" u (scale*($1+shift)):($5/yscale) w l lw 5 lc 1 t 'N_e', \
+"TimeMax.dat" u (scale*($1+shift)):($6/yscale) w l lw 5 lc 1 t 'N_h', \
+"TimeMax.dat" u (scale*($1+shift)):2 w l lw 5 lc 3 t 'T_e' axis x1y2, \
+"TimeMax.dat" u (scale*($1+shift)):3 w l lw 5 lc 3 t 'T_h' axis x1y2
 
-set key bottom left
-set log x
-set xlabel 'Time (ns)'
-set xtics format '10^{%L}'
-set output '20130711-ApexNeNhLog.eps'
-set xrange [1e-15*scale:10]
-replot
+# scale=1E12
+# 
+# set key bottom left
+# set log x
+# set xlabel 'Time (ps)'
+# set xtics format '10^{%L}'
+# # set output '20130711-ApexNeNhLog.eps'
+# set xrange [1e-15*scale:10]
+# replot
+
+unset multiplot

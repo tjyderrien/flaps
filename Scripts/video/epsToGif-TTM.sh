@@ -1,7 +1,7 @@
 #! /bin/bash
 
 ################# Video for any value ###########
-Physical="Te-needle"
+Physical="Ts-needle"
 
 ################ SCRIPT to not modify #############
 rm file.tmp

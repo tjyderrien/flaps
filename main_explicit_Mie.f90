@@ -95,7 +95,7 @@ implicit none
                             maxBesselOrder=20,&                ! Max of terms in series of Bessel for Mie scattering
                             besselArray=1, &
                             NewtonIterations=1000, &
-                            ExpNeedleType=0
+                            ExpNeedleType=1
         
     real(8), parameter:: pi=acos(-1d0),&         !pi number
                           hbar=1.05457d-34  ,&         !planck constant
@@ -611,8 +611,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 ! contour is defined by a parameter t
         if(ExpNeedleType.eq.1) then
-          meshParameterTmax=1.4d0 !maximum t parameter
-          meshParameterTmin=-1.4d0        !minimum t parameter
+        !  meshParameterTmax=1.4d0 !maximum t parameter
+        !  meshParameterTmin=-1.4d0        !minimum t parameter
+          meshParameterTmax=0.7866818869d0
+          meshParameterTmin=-0.7866818869d0
         else
 !           meshParameterTmax=2.471556d0 !maximum t parameter
 !           meshParameterTmin=-3.35d0        !minimum t parameter
@@ -4515,7 +4517,8 @@ if(UseMieScattering.eq.1) then
       a0=6.486d0; a1=-6.901d0; a2=1.874d0; a3=-0.7881d0; a4=-0.2992d0; a5=-0.05438d0; 
       a6=-0.1377d0; a7=-0.08898d0; a8=-0.05379d0; w=2.162d0; x0=-0.040850d0
 
-      if(t <= 1.4d0 .AND. t >= -1.4d0) then
+!      if(t <= 1.4d0 .AND. t >= -1.4d0) then
+      if(t <= 0.7866818869d0 .AND. t >= -0.7866818869d0) then !to limit maxX to 5 um
         ConeExp2=a0+a1*cos(1d0*w*t)+a2*cos(2d0*w*t)+a3*cos(3d0*w*t)+a4*cos(4d0*w*t) & 
                   +a5*cos(5d0*w*t)+a6*cos(6d0*w*t)+a7*cos(7d0*w*t)+a8*cos(8d0*w*t)+x0
       end if
@@ -4611,8 +4614,10 @@ if(UseMieScattering.eq.1) then
 !       do i=1,NewtonIterations
 !         temp=ConeExp2Newton(temp,value,step)
 !         write(*,*) 'Solving contour radius...'
-        temp1=zeroin(0d0, 1.4d0, ConeExp2Equation, 1d-15, value)
-        temp2=zeroin(-1.4d0, 0d0, ConeExp2Equation, 1d-15, value)
+!         temp1=zeroin(0d0, 1.4d0, ConeExp2Equation, 1d-15, value)
+!         temp2=zeroin(-1.4d0, 0d0, ConeExp2Equation, 1d-15, value)
+        temp1=zeroin(0d0, 0.7866818869d0, ConeExp2Equation, 1d-15, value)
+        temp2=zeroin(-0.7866818869d0, 0d0, ConeExp2Equation, 1d-15, value)
 
         ! choose the maximum value of radius to avoid the non-physical case r>R.
         if(abs(temp1) < abs(temp2)) then

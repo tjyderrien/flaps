@@ -32,10 +32,10 @@ set output '20150509-EnergyPotvsKin.eps'
 set terminal postscript eps enhanced color font 'Helvetica, 24' 
 set key out right horizontal
 
-plot "EnergyConservation.dat" u ($1*xscale):($7*yscale) w l lc 1 lw 3 t 'Incoming laser energy', \
-"EnergyConservation.dat" u ($1*xscale):($2*yscale) w l lc 1 lw 3 t 'Abs. Laser energy', \
-"EnergyBalance.dat" u ($1*xscale):($2*yscale) w l lc 3 lw 1 t 'Kin, e', \
-"EnergyBalance.dat" u ($1*xscale):($5*yscale) w l lc 3 lw 1 t 'Pot. e', \
-"EnergyConservation.dat" u ($1*xscale):($3*yscale) w l lc 3 lw 3 t 'Kin.+Pot. e-', \
-"EnergyConservation.dat" u ($1*xscale):($4*yscale) w l lc 4 lw 3 t 'Kin.+Pot. h', \
+plot "EnergyConservation.dat" u ($1*xscale):($7*yscale) w l lc 1 lw 5 t 'Incoming laser energy', \
+"EnergyConservation.dat" u ($1*xscale):($2*yscale) w l lc 1 lw 4 t 'Abs. Laser energy', \
+"EnergyBalance.dat" u ($1*xscale):($2*yscale) w l lc 3 lw 3 t 'Kin, e', \
+"EnergyBalance.dat" u ($1*xscale):($5*yscale) w l lc 3 lw 4 t 'Pot. e', \
+"EnergyConservation.dat" u ($1*xscale):($3*yscale) w l lc 3 lw 2 t 'Kin.+Pot. e-', \
+"EnergyConservation.dat" u ($1*xscale):($4*yscale) w l lc 4 lw 2 t 'Kin.+Pot. h', \
 "EnergyConservation.dat" u ($1*xscale):($5*yscale) w l lc 7 lw 3 t 'Lattice'
