@@ -38,8 +38,8 @@ implicit none
     
                         
     integer(8), parameter::  iterOut=100       ,& ! number of iterations between each stdout
-                        iterOutMaps=100      ,& ! number of outputs for maps between each stdout
-                          M=3001   ,& !number of cells main domain X direction
+                        iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
+                          M=2001   ,& !number of cells main domain X direction
                           N=151     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
@@ -90,12 +90,12 @@ implicit none
                             PoissonSolver=0        ,& !0: Full matrix inversion once, 1: SOR iterative for each dt
                             InterpolateOff=0,         &        !just to test speedup...
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
-                            PolarizationSource=1, &        ! 0: source TE, 1: source TM
+                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
                             UseMieScattering=1,&                 ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
                             maxBesselOrder=20,&                ! Max of terms in series of Bessel for Mie scattering
                             besselArray=1, &
                             NewtonIterations=1000, &
-                            ExpNeedleType=1
+                            ExpNeedleType=0
         
     real(8), parameter:: pi=acos(-1d0),&         !pi number
                           hbar=1.05457d-34  ,&         !planck constant
