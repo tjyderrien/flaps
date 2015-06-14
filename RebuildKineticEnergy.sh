@@ -26,6 +26,3 @@ do
 	kins=kins+kb*n0*$6*$9
 	} END { print time, kine, kinh, kins, pote, poth }' $i.vol
 done
-
-
-#  
