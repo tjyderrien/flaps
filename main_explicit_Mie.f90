@@ -24,7 +24,7 @@ implicit none
                         Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
                         potentialNull=0d0, &
-                        phiMie0=0.5d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
+                        phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
                         tmax=50d-9 ,& !stop time
@@ -39,7 +39,7 @@ implicit none
                         
     integer(8), parameter::  iterOut=100       ,& ! number of iterations between each stdout
                         iterOutMaps=100      ,& ! number of outputs for maps between each stdout
-                          M=2001   ,& !number of cells main domain X direction
+                          M=3001   ,& !number of cells main domain X direction
                           N=151     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
@@ -273,7 +273,7 @@ implicit none
             maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, &
             maxTe, minTe, maxTh, minTh, maxTs, minTs, maxIntensity, maxNe, minNe, maxNh, minNh, &
             maxEnergy, maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, maxDiffNe, maxDiffNh, &
-            TotalLaserEnergy, TotalThermalEnergy, &
+            TotalLaserEnergy, TotalThermalEnergy, ElectronPotentialEnergy, ElectronKineticEnergy, &
             cpuefficiency, calc_time_begin, calc_time_1, calc_time_2, calc_time_3, &
             NeedleHeight, NeedleA, NeedleB, Needlet0Limit, NeedleXParam, NeedleYParam, NeedleAngle, &
             localT, P2critic, ConstBLx, ConstBLy, TotalNumOfE, TotalNumOfH, &
@@ -291,7 +291,7 @@ implicit none
             NeTotal, NhTotal, &
             meshParameterTmax, meshParameterTmin, &
             meshStepDt, localTmin, localTmax, localdT, &
-            LaserIntensityEnergy, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, &
+            IntensityEnergy, LaserIntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, &
             TotalMeshVolume, &
             OnePhotonIonizationRate0, TwoPhotonIonizationRate0
             
@@ -515,14 +515,15 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     ! FORMAT numbers already used for writing: 887, 886, 888, 885, 882, 883
     
   
-  TotalLaserEnergy=0d0; TotalThermalEnergy=0d0
-  ElectronEnergy=0d0
+  TotalLaserEnergy=0d0; 
+  IntensityEnergy=0d0;
+  LaserIntensityEnergy=0d0; 
+  ElectronKineticEnergy=0d0; ElectronPotentialEnergy=0d0; ElectronEnergy=0d0
   HoleEnergy=0d0
   LatticeEnergy=0d0
+  TotalThermalEnergy=0d0; 
   cpuefficiency=0d0
-  IntensityEnergy=0d0
-  LaserIntensityEnergy=0d0
-
+  
   
 !***************** MESH GENERATION *****************
   write(*,*) "[Mesh] Building..."
@@ -2163,7 +2164,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, TangentWx, TangentWy, TangentNx, &
    !$OMP& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, &
    !$OMP& CurviWy, ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
-   !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal, IntensityEnergy, LaserIntensityEnergy) &
+   !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal), &
    !$OMP& FIRSTPRIVATE (t, t0, x0, y0, I0, I1, I2, I3, I4, I5, I6, I7, &
    !$OMP& I8, I9, &
    !$OMP& x1, x2, x3, x4, x5, x6, x7, x8, x9, &
@@ -3209,7 +3210,7 @@ if(UseMieScattering.eq.1) then
     
     do i=1,M
 
-      do j=1, N
+      do j=1,N
 
         NeTotal=NeTotal + Ne(i,j) * CellVol(i,j)
         NhTotal=NhTotal + Nh(i,j) * CellVol(i,j)
@@ -3333,13 +3334,16 @@ if(UseMieScattering.eq.1) then
         TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
         TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
 
+!         CAUTION: These definitions are erroneously including initial temperature into account. 
 !         ElectronEnergy=ElectronEnergy+Ce(i,j)*Te(i,j)*CellVol(i,j)
 !         HoleEnergy=HoleEnergy+Ch(i,j)*Th(i,j)*CellVol(i,j)
 !         LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
 
-        ! calculation of the absorbed laser energy involved in the simulated slice !J
-        IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
+        ! calculation of the absorbed laser energy involved in the simulated slice !
+        if((i.eq.1) .AND. (j.eq.(N/2))) then 
+	IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
                   +absorptionDrudeH(i,j))*intensity(i,j)*CellVol(i,j)*dt
+        end if
         LaserIntensityEnergy=LaserIntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
                   +absorptionDrudeH(i,j))*I0*real(sqrt(Dielectric(i,j))) & 
                   *exp(-.5d0*((t-t0)/sigmaTau)**2)*CellVol(i,j)*dt
@@ -3350,6 +3354,11 @@ if(UseMieScattering.eq.1) then
           + (Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(Ne(i,j),Ts(i,j)))  & 
               + Egap(i,j)*(NeNew(i,j)-Ne(i,j))) * CellVol(i,j) !potential energy
               
+        ElectronKineticEnergy=ElectronKineticEnergy+(Ce(i,j)*(TeNew(i,j)-Te(i,j))+(Ce(i,j)-CeOld(i,j))*Te(i,j)) * CellVol(i,j) !kinetic energy 
+        ElectronPotentialEnergy=ElectronPotentialEnergy+(Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(Ne(i,j),Ts(i,j)))  & 
+              + Egap(i,j)*(NeNew(i,j)-Ne(i,j))) * CellVol(i,j) !potential energy
+!         ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
+        
         HoleEnergy=HoleEnergy+(Ch(i,j)*(ThNew(i,j)-Th(i,j))+(Ch(i,j)-ChOld(i,j))*Th(i,j)) * CellVol(i,j) !kinetic energy
         
         LatticeEnergy=LatticeEnergy+((Cs(i,j)*(TsNew(i,j)-Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
@@ -3488,8 +3497,8 @@ if(UseMieScattering.eq.1) then
     
     if(mod(nbiter,iterOut).eq.0) then 
       
-      write(105,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, &
-          TotalMeshVolume, LaserIntensityEnergy
+      write(105,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, & !5
+          TotalMeshVolume, LaserIntensityEnergy, ElectronKineticEnergy, ElectronPotentialEnergy !9
       
 892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 1E12.5, 3x, 1E12.5, 3x)
@@ -3500,7 +3509,8 @@ if(UseMieScattering.eq.1) then
                     maxDiffNe, maxDiffNh, TotalNumOfE, TotalNumOfH, real(maxFermiIndexE), &        !20
                     real(maxFermiIndexH), NeTotal, NhTotal, maxCFLxT, maxCFLyT, &        !25
                     maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, IntensityEnergy, &        !30
-                    TotalMeshVolume, ElectronEnergy, HoleEnergy, LatticeEnergy, LaserIntensityEnergy         !35
+                    TotalMeshVolume, ElectronEnergy, HoleEnergy, LatticeEnergy, LaserIntensityEnergy, &         !35
+                    ElectronKineticEnergy, ElectronPotentialEnergy
                     
 888 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1F12.8, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -3508,7 +3518,8 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11)
+3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
+3x, 1E19.11, 3x, 1E19.11)
                 
         write(94,884, advance="YES") t, Te(1,N/2), Th(1,N/2), Ts(1,N/2), Ne(1,N/2), &                        !5
               Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
