@@ -1,4 +1,4 @@
-# Author: Thibault J.-Y. Derrien <derrien@fzu.cz
+# Author: Thibault J.-Y. Derrien <derrien@fzu.cz>
 
 # Financial supports
 1. [15/02/2012 - 14/12/2012] French National Research Agency (ANR, Agence Nationale de la Recherche), project "Ultrasonde".
