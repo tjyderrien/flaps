@@ -1,4 +1,4 @@
-# Author: Thibault J.-Y. Derrien <thibault.derrien@gmail.com>
+# Author: Thibault J.-Y. Derrien <derrien@fzu.cz
 
 # Financial supports
 1. [15/02/2012 - 14/12/2012] French National Research Agency (ANR, Agence Nationale de la Recherche), project "Ultrasonde".
@@ -14,4 +14,4 @@ This code calculates the excitation, heating and transport of free-carriers (ele
 * Equations are discretized using a *finite volume formulation* with mesh-free formulation.
 * Calculations are performed in the (x,y) plane, thus assuming the invariance by translation on Z axis. This hypothesis was required since laser does not originates from the tip symmetry axis, but from aside.
 * The Mie scattering theory for cylinders is locally applied for irradiations by the apex side. 
-* The Fermi-Dirac statistics of electrons and holes are taken into account as a function of carrier density and temperature. 
+* The Fermi-Dirac statistics of electrons and holes are taken into account as a function of carrier density and temperature.
