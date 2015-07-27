@@ -11,6 +11,7 @@ program Flaps
 ! include 'Bivariate.f'
 ! USE Bivariate
   USE LIBMSH2VF !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing.
+!   use control_file !Script provided by Jason Blevins, Ohio State University
 
 implicit none
 
@@ -23,8 +24,8 @@ implicit none
                         yCenter=0d0*200d-9      ,&! Y position of the max of the intensity
                         Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
-                        potentialNull=0d0, &
-                        phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
+                        potentialNull=0d0 !, &
+ !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
                         tmax=50d-9 ,& !stop time
@@ -90,7 +91,7 @@ implicit none
                             PoissonSolver=0        ,& !0: Full matrix inversion once, 1: SOR iterative for each dt
                             InterpolateOff=0,         &        !just to test speedup...
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
-                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
+!                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
                             UseMieScattering=1,&                 ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
                             maxBesselOrder=20,&                ! Max of terms in series of Bessel for Mie scattering
                             besselArray=1, &
@@ -227,6 +228,7 @@ implicit none
 		 MeshVertice(1:M, 1:N), &			! data from the GMSH file
                 SomeNeighbours(1:4,1:2)                                 !Neighbours for the fixed potential
     
+    real(8) phiMie0, PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
     
     real(8), allocatable, target :: FermiTableE(:,:),&
                                      FermiTableH(:,:),& !reduced Fermi level for electrons and holes
@@ -331,6 +333,8 @@ implicit none
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
+!******** READ PARAMETER INPUT FILE ***********
+CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
 
 !******** READ GMSH MESH FILE ************
 namefile_msh='gmsh/mesh.msh'

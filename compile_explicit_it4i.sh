@@ -21,7 +21,7 @@ cp FermiDatasH.sav FermiDatasH.dat
 # ifort -w amos/*.f Bivariate.f zeroin.f matrixtools.f90 main_explicit_Mie.f90 -traceback -mcmodel=large -I/usr/include -I/opt/intel/mkl/include -L/opt/intel/mkl/lib/intel64 -shared-intel -llapack -lm -o Flaps_explicit.out
 
 # with multithreaded lapack mkl 
-ifort -ipo -O3 -vec -xAVX -vec-report1 -w gmsh/libmsh2vf.f90 amos/*.f Bivariate.f zeroin.f main_explicit_Mie.f90 -traceback -mcmodel=large \
+ifort -ipo -O3 -vec -xAVX -vec-report1 -w gmsh/libmsh2vf.f90 amos/*.f Bivariate.f zeroin.f control_file.f90 main_explicit_Mie.f90 -traceback -mcmodel=large \
 -I/usr/include -I$MKL_INC_DIR -L$MKL_LIB_DIR \
 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -liomp5 -lpthread -W1 -lm -o Flaps_explicit.out
 
