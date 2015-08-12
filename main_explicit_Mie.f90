@@ -225,8 +225,8 @@ implicit none
                 Radius(1:M, 1:N)
                 
     integer(8)  FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
-		 MeshVertice(1:M, 1:N), &			! data from the GMSH file
-                SomeNeighbours(1:4,1:2)                                 !Neighbours for the fixed potential
+                MeshVertice(1:M, 1:N), & ! data from the GMSH file
+                SomeNeighbours(1:4,1:2)   !Neighbours for the fixed potential
     
     real(8) phiMie0, PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
     
@@ -308,10 +308,11 @@ implicit none
 !                 Tangent, Normal, AreaElement, AreaTri
             
     character(len=50)::format
-
 !OPENMP declarations
     integer :: myid, nthreads
     integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
+
+! call omp_set_num_threads(16)
     
    !  !!********OpenMP Test*************
   myid=1 !if openMP is off, then test is disabled; else: will be set to 0 by OpenMP
@@ -320,9 +321,9 @@ implicit none
   !$OMP PARALLEL default(none) private(myid) &
   !$OMP shared(nthreads)
   ! Determine the number of threads and their id
-        myid = OMP_GET_THREAD_NUM()
+!        myid = OMP_GET_THREAD_NUM()
         PRINT *, 'Hello from thread =', myid
-        nthreads = OMP_GET_NUM_THREADS()
+!        nthreads = OMP_GET_NUM_THREADS()
   !$OMP BARRIER
   
   if (myid==0) then 
@@ -345,7 +346,7 @@ RunningIndex=1 !gonna be used to mesh down
 WRITE(*,*) 'Loading GMSH mesh...'
 
 CALL read_msh_file(namefile_msh, vertices, points, segments, triangles, quadrangles, dim_physical_entities, &
-			& id_physical_entities, name_physical_entities, idvertices)
+& id_physical_entities, name_physical_entities, idvertices)
 ! We verify if the triangles are sorted in trigonometric sense and we bring correction if necessary
 IF (associated(triangles)) THEN
 	CALL correct_orientation(vertices, triangles)

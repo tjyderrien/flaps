@@ -1,3 +1,2 @@
 PolarizationSource 0
-phiMie0 90
-error 1d0
+phiMie0 45
