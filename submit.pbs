@@ -5,22 +5,22 @@
 #PBS -e Flaps.err
 #PBS -o Flaps.log
 #PBS -A OPEN-5-22
-#PBS -l select=1:ncpus=16:mpiprocs=1:ompthreads=16
-#PBS -l walltime=0:15:00
+#PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=16
+#PBS -l walltime=0:05:00
 
 # store submission path
 workpath=`pwd`
 
 # load modules for the code
-module load intel
-module load mkl
+module load intel/2015b
+module load imkl/11.2.3.187-iimpi-7.3.5-GNU-5.1.0-2.25
 
 # set parameters for calculation 
 # export KMP_STACKSIZE=104857600
 # export OMP_STACKSIZE=104857600
 
-export OMP_NUM_THREADS=16
-export MKL_NUM_THREADS=16
+export OMP_NUM_THREADS=24
+export MKL_NUM_THREADS=24
 # export MKL_DYNAMIC="FALSE"
 export OMP_DYNAMIC="FALSE"
 export OMP_SCHEDULE="DYNAMIC,800"
@@ -31,13 +31,17 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 # let's move to the temporary folder
 
 # change to scratch directory, exit on failure
-myjob=`qstat -a -u tderrien | grep 'tderrien' | awk '{ print $1 }' `
-TARGETDIR=/scratch/$USER/$myjob
+myjob=`qstat -a -u tderrien | grep 'Flaps2D' | awk '{ print $1 }' | head -n1`
+echo "Job number: " $myjob
+TARGETDIR=/scratch/work/user/$USER/$myjob
 mkdir -p $TARGETDIR
 echo "Target:" >> /home/tderrien/LastJobs.log
 echo $TARGETDIR >> /home/tderrien/LastJobs.log
 
 cd $TARGETDIR || exit
+
+# Copy the code to scratch
+git clone /home/tderrien/Codes/flaps2d/ || exit
 
 echo "PBS NODEFILE=" 
 cat $PBS_NODEFILE
@@ -48,9 +52,9 @@ echo $PBS_O_WORKDIR
 echo "" >> /home/tderrien/LastJobs.log 
 echo $PBS_O_WORKDIR >> /home/tderrien/LastJobs.log
 
-cp $PBS_O_WORKDIR/Flaps_explicit.out $TARGETDIR
-cp $PBS_O_WORKDIR/FermiDatasE.sav $TARGETDIR/FermiDatasE.dat
-cp $PBS_O_WORKDIR/FermiDatasH.sav $TARGETDIR/FermiDatasH.dat
+# cp $PBS_O_WORKDIR/Flaps_explicit.out $TARGETDIR
+# cp $PBS_O_WORKDIR/FermiDatasE.sav $TARGETDIR/FermiDatasE.dat
+# cp $PBS_O_WORKDIR/FermiDatasH.sav $TARGETDIR/FermiDatasH.dat
 
 echo "Where am I ?"
 pwd
@@ -58,8 +62,16 @@ pwd
 echo "What have I got ?"
 ls
 
+cd $TARGETDIR/flirt1d/
+
+bash compile_explicit_it4i.sh || exit
+
+# Copy the script using git. They want us to compile on nodes, instead of login... Hence, the code has to be copied many times to run :-( OR we shall prepare a special run just to compile separately.  
+
 echo "Executing code..."
-./Flaps_explicit.out
+
+./Flaps_explicit.out || exit
+
 exit
 
 # echo "Copying files to ..."
