@@ -1,7 +1,11 @@
 #!/bin/bash
 
-module load intel
-module load mkl
+module load intel/2015b
+module load imkl/11.2.3.187-iimpi-7.3.5-GNU-5.1.0-2.25
+
+
+# module load intel
+# module load mkl
 
 export KMP_STACKSIZE=104857600
 export OMP_STACKSIZE=104857600

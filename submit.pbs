@@ -5,8 +5,8 @@
 #PBS -e Flaps.err
 #PBS -o Flaps.log
 #PBS -A OPEN-5-22
-#PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=16
-#PBS -l walltime=0:05:00
+#PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1
+#PBS -l walltime=0:20:00
 
 # store submission path
 workpath=`pwd`
@@ -19,8 +19,8 @@ module load imkl/11.2.3.187-iimpi-7.3.5-GNU-5.1.0-2.25
 # export KMP_STACKSIZE=104857600
 # export OMP_STACKSIZE=104857600
 
-export OMP_NUM_THREADS=24
-export MKL_NUM_THREADS=24
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
 # export MKL_DYNAMIC="FALSE"
 export OMP_DYNAMIC="FALSE"
 export OMP_SCHEDULE="DYNAMIC,800"
@@ -62,7 +62,7 @@ pwd
 echo "What have I got ?"
 ls
 
-cd $TARGETDIR/flirt1d/
+cd $TARGETDIR/flaps2d/
 
 bash compile_explicit_it4i.sh || exit
 
