@@ -70,6 +70,8 @@ bash compile_explicit_it4i.sh || exit
 
 echo "Executing code..."
 
+top -n 1000 >> TaskLists.dat
+
 ./Flaps_explicit.out || exit
 
 exit

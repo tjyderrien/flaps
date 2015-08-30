@@ -3,7 +3,6 @@
 module load intel/2015b
 module load imkl/11.2.3.187-iimpi-7.3.5-GNU-5.1.0-2.25
 
-
 # module load intel
 # module load mkl
 
@@ -71,3 +70,6 @@ ifort gmsh/libmsh2vf.f90 amos/*.f Bivariate.f zeroin.f control_file.f90 main_exp
 #  -axSSE4.2 
 # ifort main.f90 --O3 -lm -I/usr/include -o Flaps.out
 # ./Flaps_explicit.out
+
+module purge #load intel/2015b
+#module load imkl/11.2.3.187-iimpi-7.3.5-GNU-5.1.0-2.25
