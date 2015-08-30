@@ -1,12 +1,12 @@
 #!/bin/bash
 #PBS -q qprod
-#PBS -N Flaps2D
+#PBS -N Flaps2D-1
 #PBS -m ae -M derrien@fzu.cz
 #PBS -e Flaps.err
 #PBS -o Flaps.log
 #PBS -A OPEN-5-22
 #PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1
-#PBS -l walltime=0:20:00
+#PBS -l walltime=0:05:00
 
 # store submission path
 workpath=`pwd`
@@ -19,8 +19,8 @@ module load imkl/11.2.3.187-iimpi-7.3.5-GNU-5.1.0-2.25
 # export KMP_STACKSIZE=104857600
 # export OMP_STACKSIZE=104857600
 
-export OMP_NUM_THREADS=24
-export MKL_NUM_THREADS=24
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
 # export MKL_DYNAMIC="FALSE"
 export OMP_DYNAMIC="FALSE"
 export OMP_SCHEDULE="DYNAMIC,800"
@@ -31,7 +31,7 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 # let's move to the temporary folder
 
 # change to scratch directory, exit on failure
-myjob=`qstat -a -u tderrien | grep 'Flaps2D' | awk '{ print $1 }' | head -n1`
+myjob=`qstat -a -u tderrien | grep 'Flaps2D-1' | awk '{ print $1 }' | head -n1`
 echo "Job number: " $myjob
 TARGETDIR=/scratch/work/user/$USER/$myjob
 mkdir -p $TARGETDIR
