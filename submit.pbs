@@ -1,12 +1,12 @@
 #!/bin/bash
-#PBS -q qlong
+#PBS -q qprod
 #PBS -N Flaps2D-5
 #PBS -m ae -M derrien@fzu.cz
 #PBS -e Flaps.err
 #PBS -o Flaps.log
 #PBS -A OPEN-5-22
 #PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1
-#PBS -l walltime=144:00:00
+#PBS -l walltime=0:15:00
 
 # store submission path
 workpath=`pwd`
