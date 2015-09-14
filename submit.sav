@@ -41,7 +41,8 @@ echo $TARGETDIR >> /home/tderrien/LastJobs.log
 cd $TARGETDIR || exit
 
 # Copy the code to scratch
-git clone /home/tderrien/Codes/flaps2d/ || exit
+# git clone /home/tderrien/Codes/flaps2d/ || exit
+rsync -avzher /home/tderrien/Codes/flaps2d/ . || exit
 
 echo "PBS NODEFILE=" 
 cat $PBS_NODEFILE
