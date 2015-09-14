@@ -43,7 +43,7 @@ cp FermiDatasH.sav FermiDatasH.dat
 # -o Flaps_explicit.out 
 
 # IT4I > Salomon optimization
-ifort -ipo -O3 -xCORE-AVX2 -qopt-report1 -qopt-report-phase=vec -w \
+ifort -ipo -O3 -w \
 gmsh/libmsh2vf.f90 amos/*.f Bivariate.f zeroin.f control_file.f90 main_explicit_Mie.f90 \
 -mcmodel=large \
 -I/usr/include -I$MKL_INC_DIR -L$MKL_LIB_DIR \
@@ -52,7 +52,7 @@ gmsh/libmsh2vf.f90 amos/*.f Bivariate.f zeroin.f control_file.f90 main_explicit_
 -openmp -lpthread -W1 -lm \
 -o Flaps_explicit.out
 #-lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core \
-
+# -xCORE-AVX2 -qopt-report1 -qopt-report-phase=vec #efficiency was a bit smaller with this
 ## with IT4I optimizations for Anselm, multithreaded lapack mkl - runs on one core only :-(
 # ifort -ipo -O3 -vec -xAVX -vec-report1 -w \
 # gmsh/libmsh2vf.f90 amos/*.f Bivariate.f zeroin.f control_file.f90 main_explicit_Mie.f90 \
