@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -q qprod
-#PBS -N Flaps2D-5
+#PBS -N Flaps-0
 #PBS -m ae -M derrien@fzu.cz
 #PBS -e Flaps.err
 #PBS -o Flaps.log
@@ -31,7 +31,7 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 # let's move to the temporary folder
 
 # change to scratch directory, exit on failure
-myjob=`qstat -a -u tderrien | grep 'Flaps2D-5' | awk '{ print $1 }' | head -n1`
+myjob=`qstat -a -u tderrien | grep "Flaps-0" | awk '{ print $1 }' | head -n1`
 echo "Job number: " $myjob
 TARGETDIR=/scratch/work/user/$USER/$myjob
 mkdir -p $TARGETDIR
