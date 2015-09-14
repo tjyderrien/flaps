@@ -2,7 +2,7 @@
 
 reset
 
-set output '20150428-Field.eps'
+set output 'Field.eps'
 set terminal postscript eps enhanced color font 'Helvetica, 22' size 8cm, 5cm
 
 # set view equal xy
@@ -23,6 +23,6 @@ unset logscale cb
 set key out left
 
 
-splot "< awk -f 'Scripts/video/plotXZ.awk' Field.dat" u ($1*xscale):($2*xscale):3 w pm3d notitle
+splot "< awk -f 'Scripts/plot/plotField.awk' Field.dat" u ($1*xscale):($2*xscale):3 w pm3d notitle
 
 
