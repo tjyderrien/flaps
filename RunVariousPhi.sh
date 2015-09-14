@@ -7,17 +7,19 @@
 # 3. Modify the corresponding submit.pbs
 # 4. Submit the corresponding run
 
-values=(0 90 180 270)
+# values=(0 45 90 180 270)
+values=`seq 0 45 270`
 
-counter=0
+rm input_Mie.txt submit.pbs
+rm submit*.pbs
 for i in ${values[*]}
 do
 	echo "Angle = $i deg"
-	rm input_Mie.txt submit.pbs
+	# rm input_Mie.txt submit.pbs
 	# sed "s/MieValue/$i/g" input_Mie.sav > input_Mie.txt #replace in input file
 	sed "s/MieValue/$i/g" submit.sav > submit$i.pbs #prepare batch submission
 	# git add input_Mie.txt submit.pbs
 	# git commit -m "IT4I: changed the Mie orientation plane to $i"
 	qsub submit$i.pbs && echo "Job $i submitted"
-	sleep 2 #let time to qsub to actually submit !
+	# sleep 1 #let time to qsub to actually submit !
 done
