@@ -42,7 +42,11 @@ cd $TARGETDIR || exit
 
 # Copy the code to scratch
 # git clone /home/tderrien/Codes/flaps2d/ || exit
+mkdir flaps2d && cd flaps2d
 rsync -avzher /home/tderrien/Codes/flaps2d/ . || exit
+
+# Replacing the value in angles for Mie
+sed "s/ThisIsASecondValue/MieValue/g" input_Mie.sav > input_Mie.txt #replace in input file
 
 echo "PBS NODEFILE=" 
 cat $PBS_NODEFILE

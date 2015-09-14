@@ -13,9 +13,11 @@ counter=0
 for i in ${values[*]}
 do
 	echo "Angle = $i deg"
-	sed "s/MieValue/$i/g" input_Mie.sav > input_Mie.txt #replace in input file
-	sed "s/MieValue/$i/g" submit.sav > submit.pbs #prepare batch submission
-	git add input_Mie.txt submit.pbs
-	git commit -m "IT4I: changed the Mie orientation plane to $i"
-	qsub submit.pbs
+	rm input_Mie.txt submit.pbs
+	# sed "s/MieValue/$i/g" input_Mie.sav > input_Mie.txt #replace in input file
+	sed "s/MieValue/$i/g" submit.sav > submit$i.pbs #prepare batch submission
+	# git add input_Mie.txt submit.pbs
+	# git commit -m "IT4I: changed the Mie orientation plane to $i"
+	qsub submit$i.pbs && echo "Job $i submitted"
+	sleep 2 #let time to qsub to actually submit !
 done
