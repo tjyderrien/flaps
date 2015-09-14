@@ -15,3 +15,9 @@ This code calculates the excitation, heating and transport of free-carriers (ele
 * Calculations are performed in the (x,y) plane, thus assuming the invariance by translation on Z axis. This hypothesis was required since laser does not originates from the tip symmetry axis, but from aside.
 * The Mie scattering theory for cylinders is locally applied for irradiations by the apex side. 
 * The Fermi-Dirac statistics of electrons and holes are taken into account as a function of carrier density and temperature.
+
+# Performances #
+
+* CPU index (see column 10 in TimeMax.dat output file) of 3 is very good, for a mesh of 2000x150 cells. 
+
+* CPU index of 60 is very good for a mesh of 150x150 cells. 
