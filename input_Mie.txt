@@ -1,2 +1,2 @@
 PolarizationSource 0
-phiMie0 270
+phiMie0 0
