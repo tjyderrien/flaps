@@ -1,5 +1,7 @@
 #!gnuplot
 
+FlapsRoot="/home/thibault/Documents/Codes/Flaps/20150428-flaps-gmsh/flaps2d"
+
 reset
 
 set output 'Field.eps'
@@ -23,6 +25,6 @@ unset logscale cb
 set key out left
 
 
-splot "< awk -f 'Scripts/plot/plotField.awk' Field.dat" u ($1*xscale):($2*xscale):3 w pm3d notitle
+splot "< awk -f '".FlapsRoot."'/Scripts/plot/plotField.awk Field.dat" u ($1*xscale):($2*xscale):3 w pm3d notitle
 
 
