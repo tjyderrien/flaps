@@ -3,7 +3,7 @@
 ! Jason Blevins <jrblevin@sdf.lonestar.org>
 ! Durham, May 6, 2008
 
-subroutine control_file
+subroutine control_file(phiMie0, PolarizationSource)
   implicit none
 
   ! Input related variables
@@ -15,9 +15,11 @@ subroutine control_file
   real(8) :: pi = acos(-1d0)
 
   ! Control file variables
-  real(8) :: phiMie0
-  integer(8) :: PolarizationSource
+  real(8) phiMie0
+  integer(8) PolarizationSource
 
+  write(*,*) "Pi = ", pi
+  
   open(fh, file='input_Mie.txt')
 
   ! ios is negative if an end of record condition is encountered or if

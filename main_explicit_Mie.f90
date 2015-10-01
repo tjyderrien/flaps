@@ -228,7 +228,8 @@ implicit none
                 MeshVertice(1:M, 1:N), & ! data from the GMSH file
                 SomeNeighbours(1:4,1:2)   !Neighbours for the fixed potential
     
-    real(8) phiMie0, PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
+    real(8) phiMie0
+    integer(8) PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
     
     real(8), allocatable, target :: FermiTableE(:,:),&
                                      FermiTableH(:,:),& !reduced Fermi level for electrons and holes
@@ -336,7 +337,7 @@ implicit none
 
 !******** READ PARAMETER INPUT FILE ***********
 CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
-
+write(*,*) "Importing data on Polarization."
 !******** READ GMSH MESH FILE ************
 namefile_msh='gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
@@ -1980,7 +1981,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))
 if(UseMieScattering.eq.1) then
   write(*,*) 'Computing the Mie scattering field distribution...'
-
+  write(*,*) 'Angle Mie =', phiMie0
+  write(*,*) 'Polarization TM ? ', PolarizationSource
   ! $ O M P DO
     do i=1,M
         ! $ O M P PARALLEL DO
