@@ -1,6 +1,7 @@
 #!gnuplot
 
-FlapsRoot="/home/thibault/Documents/Codes/Flaps/20150428-flaps-gmsh/flaps2d"
+# FlapsRoot="/home/thibault/Documents/Codes/Flaps/20150428-flaps-gmsh/flaps2d" #Budecska
+FlapsRoot="." #IT4I
 
 reset
 
