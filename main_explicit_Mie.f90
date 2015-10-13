@@ -970,7 +970,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL !(FermiTableE, FermiTableH)
-   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
+!    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
   write(96,*) "========== CONE PARAMETERS ========="
@@ -1072,8 +1072,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DOSh(i,j)=DensityOfStateH(Th(i,j))
         FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j)) !1
+        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j))
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
@@ -2014,7 +2014,7 @@ if(UseMieScattering.eq.1) then
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
             EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
-            EintField2(i,j)=0d0
+            EintField2(i,j)=Zero
           ! formula with a super mistake on radius
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
 
@@ -2040,7 +2040,7 @@ if(UseMieScattering.eq.1) then
 
     do i=1,M
       do j=1,N
-        write(104, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2)**0.5d0, Radius(i,j)
+        write(104, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**0.5d0, Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
     end do
@@ -3850,8 +3850,12 @@ if(UseMieScattering.eq.1) then
         total=total + ( Imaginary**ireal * exp(Imaginary*ireal*phi) * BesselJ(ireal, &
               sqrt(dielectric)*k*r) * ireal * MieCoeff3(ireal, radius, dielectric) ) !original !!
       end do
-      MieScatteringTE1=-total/(dielectric*k*r)
+      if(r.eq.0d0) then
+        MieScatteringTE1=Zero
+      else
+        MieScatteringTE1=-total/(dielectric*k*r)
 !         MieScatteringTE1=Zero
+      end if
       return
     end function MieScatteringTE1
 
