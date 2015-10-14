@@ -1,0 +1,172 @@
+10c10
+<   real(8), parameter::me=9.1d-31, hbar=1.05457d-34, T=100.d0
+---
+>   real(8), parameter::me=9.1d-31, hbar=1.05457d-34, T=80.d0
+15,16c15
+<   integer i,j,k, PrevIndex, NbLignes
+<   real(8) NeNc, NeNcMax, NeNc0, dNeNc
+---
+>   integer i,j,k, PrevIndex
+22,23c21,22
+<   mc=0.36d0*me !http://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html
+<   mp=0.81d0*me
+---
+>   mc=0.36*me !http://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html
+>   mp=0.81*me
+48,49c47,48
+< open(fid,FILE='Ch.dat',access='sequential',status='unknown')
+< open(987, FILE='FermiDatas2.dat', access='sequential', status='unknown')
+---
+> open(fid,FILE='Ce.dat',access='sequential',status='unknown')
+> open(987, FILE='FermiDatas.dat', access='sequential', status='unknown')
+54,60c53,59
+< !   dTe=10.d0	!temperature step
+< !   Te0=1.d0	!initial sweep for temperature
+< !   TeMax=1d4	!maximum electron temperature
+< ! 
+< !   ne=1.d1 	!initial sweep of density
+< !   dNe=10.d0	!multiplication coefficient of density
+< !   neMax=1*5d28 !maxdensity
+---
+>   dTe=10.d0	!temperature step
+>   Te0=1.d0	!initial sweep for temperature
+>   TeMax=1d4	!maximum electron temperature
+> 
+>   ne=1.d1 	!initial sweep of density
+>   dNe=10.d0	!multiplication coefficient of density
+>   neMax=1d0*5d28 !maxdensity
+62,63c61,62
+< !   nuColl=1d14	! collision frequency
+<   mass=mp !mc : eletron, mp: holes
+---
+>   nuColl=1d15	! collision frequency
+>   mass=mc !mc : eletron, mp: holes
+66c65
+< !   mu0=qe/(mass*nuColl)
+---
+>   mu0=qe/(mass*nuColl)
+69,80c68,82
+< ! On va balayer directement les valeurs de Ne/Nc. Inutile de balayer les parametres   
+< ! Ne/Nc = [1d-38:1d8] On va parcourir par une loi géométrique. 
+< 
+< NbLignes=100000
+< NeNc0=1d-38
+< dNeNc=1.1d0
+< NeNcMax=1d8
+< 
+< 
+< NeNc=NeNc0
+< do i=1, NbLignes
+<      ! fi0=ne/Nc
+---
+>   
+>   
+> do k=1,10000 !Balayage sur Ne
+>   Te=Te0
+>   ne=ne*dNe
+>   if (ne>=neMax) then
+>     exit
+>   endif
+>   do i=1,10000 !Balayage sur Te
+>      Te=Te+dTe
+>      if (Te>=TeMax) then
+>         exit
+>      endif
+>      Nc=2.d0*(mass*kb*Te/(2.d0*pi*hbar**2))**(3.d0/2.d0)
+>      fi0=ne/Nc
+83c85
+<      do j=1,Nblignes !Calcul de l'integrale
+---
+>      do j=1,100000 !Calcul de l'integrale
+86c88
+<         if (fi1>=NeNc) then
+---
+>         if (fi1>=fi0) then
+98,110c100,112
+< !      fi4=fermi_integral(1.5, eta)/fermi_integral(0.5, eta)-eta*(1d0-(fermi_integral(1.5,eta)/fermi_integral(0.5,eta))*(fermi_integral(-0.5,eta)/fermi_integral(0.5,eta)))
+< !      Ce=1.5d0*kb*ne*fi4
+< ! 
+< !      SigmaE=qe*ne*mu0*(fermi_integral(0.,eta)/fermi_integral(0.5,eta))
+< !      Ke=kb**2*SigmaE*Te/qe**2*(6d0*fermi_integral(2.0,eta)/fermi_integral(0.,eta)-4d0*(fermi_integral(1.,eta)/fermi_integral(0.,eta))**2)
+< !      De=Ke/Ce
+< !      DeChen=-kb*ne*mu0*fermi_integral(0.,eta)/fermi_integral(0.5,eta)*(eta-2*fermi_integral(1.,eta)/fermi_integral(0.,eta))
+< ! 
+< !      write(fid,999) & !'(e12.5, f12.5, f12.5, f12.5, e12.5, f12.5, e12.5, e12.5, e12.5)'
+< ! 	     ne, Te, eta, fi4, Ce, &
+< ! 	     Ce/(kb*ne), Ke, De, DeChen, fi0
+< ! 999	format (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+< ! 		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+---
+>      fi4=fermi_integral(1.5, eta)/fermi_integral(0.5, eta)-eta*(1d0-(fermi_integral(1.5,eta)/fermi_integral(0.5,eta))*(fermi_integral(-0.5,eta)/fermi_integral(0.5,eta)))
+>      Ce=1.5d0*kb*ne*fi4
+> 
+>      SigmaE=qe*ne*mu0*(fermi_integral(0.,eta)/fermi_integral(0.5,eta))
+>      Ke=kb**2*SigmaE*Te/qe**2*(6d0*fermi_integral(2.0,eta)/fermi_integral(0.,eta)-4d0*(fermi_integral(1.,eta)/fermi_integral(0.,eta))**2)
+>      De=Ke/Ce
+>      DeChen=-kb*ne*mu0*fermi_integral(0.,eta)/fermi_integral(0.5,eta)*(eta-2*fermi_integral(1.,eta)/fermi_integral(0.,eta))
+> 
+>      write(fid,999) & !'(e12.5, f12.5, f12.5, f12.5, e12.5, f12.5, e12.5, e12.5, e12.5)'
+> 	     ne, Te, eta, fi4, Ce, &
+> 	     Ce/(kb*ne), Ke, De, DeChen, fi0
+> 999	format (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+> 		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+116,117c118,121
+< 	FermiIndex(NeNc), NeNc, eta, Fermi0, Fermi1, &
+< 	Fermi2, FermiHalf, FermiThreeHalf, FermiMenusHalf
+---
+> 	FermiIndex(ne/Nc), &
+> 	!real(k-1)*10d3+real(i), &
+> 	ne/Nc, eta, Fermi0, &
+> 	Fermi1, Fermi2, FermiHalf, FermiThreeHalf, FermiMenusHalf
+119,120c123,124
+< 998	format (I8.3, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+< 		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+---
+> 998	format (F10.2, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+> 		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+122,127c126
+< !   enddo
+< 
+<   NeNc=NeNc*dNeNc
+<   if(NeNc > NeNcMax) then
+<     exit
+<   end if
+---
+>   enddo
+129d127
+< 
+135,146c133,141
+<     function FermiIndex(NeNc)
+<       implicit none
+<       ! Input: Value of density/DOS
+<       ! returns the index to take in the Fermi files
+<       real(8) NeNc, NeNc0, dNeNc
+<       integer(8) FermiIndex
+<       NeNc0=1d-38
+<       dNeNc=1.1d0 !NeNc=NeNc0*dNeNc**n
+<       
+<       FermiIndex=int(log(NeNc/NeNc0)/log(dNeNc)+1d0)
+<       return
+<     end function FermiIndex
+---
+>   function FermiIndex(ratio) !indice à fournir au tableau contenant eta et la valeur des intégrales de fermi 
+>   implicit none
+>     real(8) FermiIndex, ratio
+>     real(8) Dilatation, Shift
+>     Dilatation=200d0; Shift=5110d0-105d0 !shift for electrons
+>     FermiIndex=Dilatation*log10(ratio)+Shift
+>    return
+>   
+>   end function FermiIndex
+170c165
+<           df = x*(1d0+dexp(-t))*x**degree/(1d0+dexp(x-eta))
+---
+>           df = x*(1+dexp(-t))*x**degree/(1+dexp(x-eta))
+175c170
+<         dfmin = xmin*(1d0+dexp(-tmin))*xmin**degree/(1d0+dexp(xmin-eta))
+---
+>         dfmin = xmin*(1+dexp(-tmin))*xmin**degree/(1+dexp(xmin-eta))
+178c173
+<         dfmax = xmax*(1d0+dexp(-tmax))*xmax**degree/(1d0+dexp(xmax-eta))
+---
+>         dfmax = xmax*(1+dexp(-tmax))*xmax**degree/(1+dexp(xmax-eta))
