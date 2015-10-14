@@ -49,7 +49,7 @@ implicit none
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
                           MeshShift=100       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
-                          FermiMaxLines=1112        ,&        ! >= number of lines in Fermi file
+                          FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
                           SORiterations=1        ,&        !iteration number for over-relaxation method
                           InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
                           UseInterpolation=0        ,&
