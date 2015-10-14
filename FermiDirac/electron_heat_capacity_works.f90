@@ -55,7 +55,7 @@ open(987, FILE='FermiDatas.dat', access='sequential', status='unknown')
   TeMax=1d4	!maximum electron temperature
 
   ne=1.d1 	!initial sweep of density
-  dNe=10.d0	!multiplication coefficient of density
+  dNe=1.1d0	!multiplication coefficient of density
   neMax=1d0*5d28 !maxdensity
 
   nuColl=1d15	! collision frequency
@@ -64,16 +64,16 @@ open(987, FILE='FermiDatas.dat', access='sequential', status='unknown')
 ! Additionnal parameters
   mu0=qe/(mass*nuColl)
 
-
+maxiter=100000
   
   
-do k=1,10000 !Balayage sur Ne
+do k=1,maxiter !Balayage sur Ne
   Te=Te0
   ne=ne*dNe
   if (ne>=neMax) then
     exit
   endif
-  do i=1,10000 !Balayage sur Te
+  do i=1,maxiter !Balayage sur Te
      Te=Te+dTe
      if (Te>=TeMax) then
         exit
@@ -82,7 +82,7 @@ do k=1,10000 !Balayage sur Ne
      fi0=ne/Nc
      eta=eta0
      !$OMP DO
-     do j=1,100000 !Calcul de l'integrale
+     do j=1,maxiter !Calcul de l'integrale
         eta=eta+deta
         fi1=fermi_integral(0.5, eta)
         if (fi1>=fi0) then
