@@ -2267,8 +2267,8 @@ if(UseMieScattering.eq.1) then
         DOSh(i,j)=DensityOfStateH(Th(i,j))
         FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j)) !1
+        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j)) 
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
