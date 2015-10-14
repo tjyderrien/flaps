@@ -3788,9 +3788,9 @@ if(UseMieScattering.eq.1) then
       real(8) NeNc, NeNc0, dNeNc
       integer(8) FermiIndex
       NeNc0=1d-38
-      dNeNc=1.1d0 !NeNc=NeNc0*dNeNc**n
+      dNeNc=1.03d0 !NeNc=NeNc0*dNeNc**n
       
-      FermiIndex=int(log10(NeNc/NeNc0)/log10(dNeNc)+1d0)
+      FermiIndex=nint(log10(NeNc/NeNc0)/log10(dNeNc)+1d0)
       if(FermiIndex < 1 .OR. FermiIndex > FermiMaxLines) then
         write(*,*) "FermiIndex problem: NeNc=", NeNc, "FermiIndex=", FermiIndex
       end if
