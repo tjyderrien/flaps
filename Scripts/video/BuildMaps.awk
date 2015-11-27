@@ -4,22 +4,14 @@
 
 BEGIN {
 	tau=40e-15
-<<<<<<< HEAD
-	dt0=100E-18; #dt of the code
-	dt=1e-12; #dt between export
-	tmax=0.47200E-11 #100*tau #0.2e-12
-	tmin=-0.19000E-12 #-0.24990E-11 #-4.9978000000e-13 #0.159E-12 #min of the one exported!
-	M=2001; N=151
-	NbPoints=100
-=======
 	dt0=1E-18; #dt of the code
-	dt=1e-14; #dt between export
-	tmax=0.42200E-11 #100*tau #0.2e-12
-	tmin=-0.19000E-12 #-0.24990E-11 #-4.9978000000e-13 #0.159E-12 #min of the one exported!
+	dt=1e-13; #dt between export
+	tmax=0.24000E-11 #100*tau #0.2e-12
+	tmin=-0.10000E-12 #-0.24990E-11 #-4.9978000000e-13 #0.159E-12 #min of the one exported!
 	M=2001; N=151
+#	NbPoints=100
 	NbPoints=int((tmax-tmin)/dt)
 	print "NbPoints=", NbPoints;
->>>>>>> 07e81f75c06cc50811f1d8c0911a18c938d312ca
 	NbPointsDec=NbPoints*1e0
 #	print "NbPointsDec", 1e0/NbPointsDec
 	
@@ -51,11 +43,7 @@ BEGIN {
 #	Condition=int(Condition1 % Condition2)
 #	print Condition1, Condition2, Condition, Test
 	if($1 < tmax && $1>tmin) {
-<<<<<<< HEAD
 #enable me	if($1 >= Outputs[indice]) {
-=======
-# 		if($1 >= Outputs[indice]) {
->>>>>>> 07e81f75c06cc50811f1d8c0911a18c938d312ca
 			print $0 >> ($1-tmin)/dt".vid";
 			Exportedlines=Exportedlines+1
 #			print $1 " exported, id=", indice
@@ -63,11 +51,7 @@ BEGIN {
 				Exportedlines=0
 				indice=indice+1
 			}
-<<<<<<< HEAD
 #enable me		}
-=======
-# 		}
->>>>>>> 07e81f75c06cc50811f1d8c0911a18c938d312ca
 	}
 	
 }
