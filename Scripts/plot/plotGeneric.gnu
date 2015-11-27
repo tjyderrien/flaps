@@ -134,6 +134,49 @@ plot "TimeApex.dat" u ($1*scale):4 w l lc 1 lt 1 lw 5 t 'T_{apex}', \
 
 unset multiplot
 
+###################### With evaporation flux
+
+reset
+
+
+kb=1.38e-23
+ec=1.6e-19
+Q=0.15*ec
+N=1E3
+nu=1e3
+phi(T)=N*nu*exp(-Q/(kb*T))
+
+scale=1e12
+
+set terminal postscript eps enhanced color font 'Helvetica, 32'
+set output '20150509-TipHeating-Log.eps'
+
+# set multiplot
+
+set xlabel 'Time (ps)'
+set ylabel 'Temperature (K)' textcolor rgbcolor "red"
+
+unset log y
+# set key out top center vertical
+# set key out center vertical Left
+set key font 'Helvetica, 24' spacing 0.9 at 0.1, 490
+
+### For LOG scale
+set log x
+set xtics format "10^{%L}" 100
+set ytics 100 nomirror textcolor rgbcolor "red"
+set xrange [1e-4:3]
+set yrange [0:]
+set y2tics nomirror format "10^{%L}" textcolor rgbcolor "blue"
+set log y2
+set y2label 'Evaporation flux (arb. u.)' textcolor rgbcolor "blue"
+
+plot "TimeApex.dat" u ($1*scale):4 w l lc 1 lw 5 t 'T_{apex}', \
+"TimeMax.dat" u ($1*scale):4 w l lc 1 lt 3 lw 3 t 'T_{max}', \
+"TimeApex.dat" u ($1*scale):(phi($4)) w l lc 3 lt 1 lw 5 t 'Evap. flux' axis x1y2
+
+# unset multiplot
+
 
 # ########## plot mesh with points top bottom and apex
 # set terminal postscript eps enhanced monochrome font 'Helvetica, 24'
@@ -208,7 +251,8 @@ unset multiplot
 set output '20150509-MaxNeNh.eps'
 set terminal postscript eps enhanced color font 'Helvetica, 26'
 
-set title 'TE polarization'
+# set title 'TE polarization'
+set title 'TM polarization'
 
 # set multiplot
 # set origin 0.0, 0.0
@@ -232,6 +276,7 @@ shift=0e0; #2e-12
 unset log x
 # set log y
 unset log y2
+<<<<<<< HEAD
 set key top right font 'Helvetica, 22' spacing 1.2 at 4, 3e20
 
 plot "TimeMax.dat" u (scale*($1+shift)):($5/yscale) w l lw 4 lc 1 lt 1 t 'N_{e,h}^{max}', \
@@ -242,5 +287,16 @@ plot "TimeMax.dat" u (scale*($1+shift)):($5/yscale) w l lw 4 lc 1 lt 1 t 'N_{e,h
 
 # "TimeMax.dat" u (scale*($1+shift)):($6/yscale) w l lw 5 lc 1 t 'N_h', \
 # "TimeMax.dat" u (scale*($1+shift)):3 w l lw 5 lc 3 t 'T_h' axis x1y2, \
+=======
+set key top right font 'Helvetica, 22' spacing 1.2
+
+plot "TimeMax.dat" u (scale*($1+shift)):($5/yscale) w l lw 5 lc 1 lt 1 t 'N_{e,h}^{max}', \
+"TimeApex.dat" u (scale*($1+shift)):($5/yscale) w l lw 5 lc 1 lt 3 t 'N_{e,h}^{apex}', \
+"TimeMax.dat" u (scale*($1+shift)):2 w l lw 5 lc 3 lt 1 t 'T_{e,h}^{max}' axis x1y2, \
+"TimeApex.dat" u (scale*($1+shift)):2 w l lw 5 lc 3 lt 3 t 'T_{e,h}^{apex}' axis x1y2
+
+# "TimeMax.dat" u (scale*($1+shift)):3 w l lw 5 lc 3 t 'T_h' axis x1y2, \
+# "TimeMax.dat" u (scale*($1+shift)):($6/yscale) w l lw 5 lc 1 t 'N_h', \
+>>>>>>> d97eb67c262ba9ed2ba9bd9ae9bab77143624c09
 # "TimeApex.dat" u (scale*($1+shift)):($6/yscale) w l lw 5 lc 1 notitle, \
 # "TimeApex.dat" u (scale*($1+shift)):3 w l lw 5 lc 3 notitle axis x1y2

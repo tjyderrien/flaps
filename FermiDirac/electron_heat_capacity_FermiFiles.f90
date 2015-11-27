@@ -12,14 +12,15 @@ implicit none
   real(8) fle, fi, fi0, flh, fl, eta, etah, etae, Nc, Nv, nh, ne,na, eta0, dNe
   real(8) fi3, fi4,dTe, Ce, deta, SigmaE, De, Ke, mu0, nuColl, DeChen
   real(8) Fermi0, Fermi1, Fermi2, FermiHalf, FermiThreeHalf, FermiMenusHalf
-  integer i,j,k, PrevIndex
+  integer i,j,k, PrevIndex, NbLignes
+  real(8) NeNc, NeNcMax, NeNc0, dNeNc
 
   !Te=T
   !Th=T
   egapJ=egap*qe
 
-  mc=0.36*me !http://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html
-  mp=0.81*me
+  mc=0.36d0*me !http://www.ioffe.ru/SVA/NSM/Semicond/Si/bandstr.html
+  mp=0.81d0*me
 
   pi = 4.d0*datan(1.d0)
   PrevIndex=0
@@ -44,48 +45,45 @@ implicit none
 !  fi4=fermi_integral(1.5, eta)/fermi_integral(0.5, eta)
 !  write(*,*) eta, fi4
   
-open(fid,FILE='Ce.dat',access='sequential',status='unknown')
-open(987, FILE='FermiDatas.dat', access='sequential', status='unknown')
+open(fid,FILE='Ch.dat',access='sequential',status='unknown')
+open(987, FILE='FermiDatasH.dat', access='sequential', status='unknown')
 
   eta0=-80.d0	!initial for reduced potential
   deta=0.1d0	!increase for the solution of reduced potential
 
-  dTe=10.d0	!temperature step
-  Te0=1.d0	!initial sweep for temperature
-  TeMax=1d4	!maximum electron temperature
+!   dTe=10.d0	!temperature step
+!   Te0=1.d0	!initial sweep for temperature
+!   TeMax=1d4	!maximum electron temperature
+! 
+!   ne=1.d1 	!initial sweep of density
+!   dNe=10.d0	!multiplication coefficient of density
+!   neMax=1*5d28 !maxdensity
 
-  ne=1.d1 	!initial sweep of density
-  dNe=1.1d0	!multiplication coefficient of density
-  neMax=1d0*5d28 !maxdensity
-
-  nuColl=1d15	! collision frequency
-  mass=mc !mc : eletron, mp: holes
+!   nuColl=1d14	! collision frequency
+  mass=mp !mc : eletron, mp: holes
   
 ! Additionnal parameters
-  mu0=qe/(mass*nuColl)
+!   mu0=qe/(mass*nuColl)
 
-maxiter=100000
-  
-  
-do k=1,maxiter !Balayage sur Ne
-  Te=Te0
-  ne=ne*dNe
-  if (ne>=neMax) then
-    exit
-  endif
-  do i=1,maxiter !Balayage sur Te
-     Te=Te+dTe
-     if (Te>=TeMax) then
-        exit
-     endif
-     Nc=2.d0*(mass*kb*Te/(2.d0*pi*hbar**2))**(3.d0/2.d0)
-     fi0=ne/Nc
+
+! On va balayer directement les valeurs de Ne/Nc. Inutile de balayer les parametres   
+! Ne/Nc = [1d-38:1d8] On va parcourir par une loi géométrique. 
+
+NbLignes=1000000
+NeNc0=1d-38
+dNeNc=1.03d0
+NeNcMax=1d8
+
+
+NeNc=NeNc0
+do i=1, NbLignes
+     ! fi0=ne/Nc
      eta=eta0
      !$OMP DO
-     do j=1,maxiter !Calcul de l'integrale
+     do j=1,Nblignes !Calcul de l'integrale
         eta=eta+deta
         fi1=fermi_integral(0.5, eta)
-        if (fi1>=fi0) then
+        if (fi1>=NeNc) then
             exit
         endif
      enddo
@@ -97,48 +95,56 @@ do k=1,maxiter !Balayage sur Ne
      FermiThreeHalf=fermi_integral(1.5,eta)
      FermiMenusHalf=fermi_integral(-0.5,eta)
      
-     fi4=fermi_integral(1.5, eta)/fermi_integral(0.5, eta)-eta*(1d0-(fermi_integral(1.5,eta)/fermi_integral(0.5,eta))*(fermi_integral(-0.5,eta)/fermi_integral(0.5,eta)))
-     Ce=1.5d0*kb*ne*fi4
-
-     SigmaE=qe*ne*mu0*(fermi_integral(0.,eta)/fermi_integral(0.5,eta))
-     Ke=kb**2*SigmaE*Te/qe**2*(6d0*fermi_integral(2.0,eta)/fermi_integral(0.,eta)-4d0*(fermi_integral(1.,eta)/fermi_integral(0.,eta))**2)
-     De=Ke/Ce
-     DeChen=-kb*ne*mu0*fermi_integral(0.,eta)/fermi_integral(0.5,eta)*(eta-2*fermi_integral(1.,eta)/fermi_integral(0.,eta))
-
-     write(fid,999) & !'(e12.5, f12.5, f12.5, f12.5, e12.5, f12.5, e12.5, e12.5, e12.5)'
-	     ne, Te, eta, fi4, Ce, &
-	     Ce/(kb*ne), Ke, De, DeChen, fi0
-999	format (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+!      fi4=fermi_integral(1.5, eta)/fermi_integral(0.5, eta)-eta*(1d0-(fermi_integral(1.5,eta)/fermi_integral(0.5,eta))*(fermi_integral(-0.5,eta)/fermi_integral(0.5,eta)))
+!      Ce=1.5d0*kb*ne*fi4
+! 
+!      SigmaE=qe*ne*mu0*(fermi_integral(0.,eta)/fermi_integral(0.5,eta))
+!      Ke=kb**2*SigmaE*Te/qe**2*(6d0*fermi_integral(2.0,eta)/fermi_integral(0.,eta)-4d0*(fermi_integral(1.,eta)/fermi_integral(0.,eta))**2)
+!      De=Ke/Ce
+!      DeChen=-kb*ne*mu0*fermi_integral(0.,eta)/fermi_integral(0.5,eta)*(eta-2*fermi_integral(1.,eta)/fermi_integral(0.,eta))
+! 
+!      write(fid,999) & !'(e12.5, f12.5, f12.5, f12.5, e12.5, f12.5, e12.5, e12.5, e12.5)'
+! 	     ne, Te, eta, fi4, Ce, &
+! 	     Ce/(kb*ne), Ke, De, DeChen, fi0
+! 999	format (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+! 		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
 ! ici on construit le fichier à importer dans le code
 !    if(int(FermiIndex(ne/Nc)) <> PrevIndex) then !write a line only if one change of index
 !    PrevIndex=int(FermiIndex(ne/Nc))
      write(987, 998) &
-	FermiIndex(ne/Nc), &
-	!real(k-1)*10d3+real(i), &
-	ne/Nc, eta, Fermi0, &
-	Fermi1, Fermi2, FermiHalf, FermiThreeHalf, FermiMenusHalf
+	FermiIndex(NeNc, NeNc0, dNeNc), NeNc, eta, Fermi0, Fermi1, &
+	Fermi2, FermiHalf, FermiThreeHalf, FermiMenusHalf
 	
-998	format (F10.2, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+998	format (I8.3, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+		3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 !    end if
-  enddo
+!   enddo
+
+  NeNc=NeNc*dNeNc
+  if(NeNc > NeNcMax) then
+    exit
+  end if
 enddo
+
   close(fid)
 
 
   contains
   
-  function FermiIndex(ratio) !indice à fournir au tableau contenant eta et la valeur des intégrales de fermi 
-  implicit none
-    real(8) FermiIndex, ratio
-    real(8) Dilatation, Shift
-    Dilatation=200d0; Shift=5110d0-105d0 !shift for electrons
-    FermiIndex=Dilatation*log10(ratio)+Shift
-   return
-  
-  end function FermiIndex
+    function FermiIndex(NeNc, NeNc0, dNeNc)
+      implicit none
+      ! Input: Value of density/DOS
+      ! returns the index to take in the Fermi files
+      real(8) :: NeNc, NeNc0, dNeNc
+      integer(8) FermiIndex
+!       NeNc0=1d-38
+!       dNeNc=1.02d0 !NeNc=NeNc0*dNeNc**n
+      
+      FermiIndex=nint(log(NeNc/NeNc0)/log(dNeNc)+1d0) !this one was working, but it looks that there was a bug. 
+!       FermiIndex=int(100d0*log(NeNc/NeNc0)/log(10d0)+3600d0) !this one should work with high accuracy (~ 6000 points)
+      return
+    end function FermiIndex
 
   function fermi_integral(degree, chp)
 
@@ -162,15 +168,15 @@ enddo
         do i = 1,imax-1
           t=tmin+i*dt
           x=dexp(t-dexp(-t))
-          df = x*(1+dexp(-t))*x**degree/(1+dexp(x-eta))
+          df = x*(1d0+dexp(-t))*x**degree/(1d0+dexp(x-eta))
           f = f + df
         enddo
         
         xmin=dexp(tmin-dexp(-tmin))
-        dfmin = xmin*(1+dexp(-tmin))*xmin**degree/(1+dexp(xmin-eta))
+        dfmin = xmin*(1d0+dexp(-tmin))*xmin**degree/(1d0+dexp(xmin-eta))
 
         xmax=dexp(tmax-dexp(-tmax))
-        dfmax = xmax*(1+dexp(-tmax))*xmax**degree/(1+dexp(xmax-eta))
+        dfmax = xmax*(1d0+dexp(-tmax))*xmax**degree/(1d0+dexp(xmax-eta))
         
        !gamma function
         if (degree==0.d0.or.degree==1.d0) then

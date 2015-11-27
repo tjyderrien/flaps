@@ -11,6 +11,7 @@ program Flaps
 ! include 'Bivariate.f'
 ! USE Bivariate
   USE LIBMSH2VF !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing.
+!   use control_file !Script provided by Jason Blevins, Ohio State University
 
 implicit none
 
@@ -23,8 +24,8 @@ implicit none
                         yCenter=0d0*200d-9      ,&! Y position of the max of the intensity
                         Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
-                        potentialNull=0d0, &
-                        phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
+                        potentialNull=0d0 !, &
+ !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
                         tmax=50d-9 ,& !stop time
@@ -48,7 +49,7 @@ implicit none
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
                           MeshShift=100       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
-                          FermiMaxLines=1112        ,&        ! >= number of lines in Fermi file
+                          FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
                           SORiterations=1        ,&        !iteration number for over-relaxation method
                           InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
                           UseInterpolation=0        ,&
@@ -90,7 +91,7 @@ implicit none
                             PoissonSolver=0        ,& !0: Full matrix inversion once, 1: SOR iterative for each dt
                             InterpolateOff=0,         &        !just to test speedup...
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
-                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
+!                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
                             UseMieScattering=1,&                 ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
                             maxBesselOrder=20,&                ! Max of terms in series of Bessel for Mie scattering
                             besselArray=1, &
@@ -224,9 +225,11 @@ implicit none
                 Radius(1:M, 1:N)
                 
     integer(8)  FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
-		 MeshVertice(1:M, 1:N), &			! data from the GMSH file
-                SomeNeighbours(1:4,1:2)                                 !Neighbours for the fixed potential
+                MeshVertice(1:M, 1:N), & ! data from the GMSH file
+                SomeNeighbours(1:4,1:2)   !Neighbours for the fixed potential
     
+    real(8) phiMie0
+    integer(8) PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
     
     real(8), allocatable, target :: FermiTableE(:,:),&
                                      FermiTableH(:,:),& !reduced Fermi level for electrons and holes
@@ -306,10 +309,11 @@ implicit none
 !                 Tangent, Normal, AreaElement, AreaTri
             
     character(len=50)::format
-
 !OPENMP declarations
     integer :: myid, nthreads
     integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
+
+! call omp_set_num_threads(16)
     
    !  !!********OpenMP Test*************
   myid=1 !if openMP is off, then test is disabled; else: will be set to 0 by OpenMP
@@ -331,7 +335,9 @@ implicit none
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
-
+!******** READ PARAMETER INPUT FILE ***********
+CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
+write(*,*) "Importing data on Polarization."
 !******** READ GMSH MESH FILE ************
 namefile_msh='gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
@@ -341,7 +347,7 @@ RunningIndex=1 !gonna be used to mesh down
 WRITE(*,*) 'Loading GMSH mesh...'
 
 CALL read_msh_file(namefile_msh, vertices, points, segments, triangles, quadrangles, dim_physical_entities, &
-			& id_physical_entities, name_physical_entities, idvertices)
+& id_physical_entities, name_physical_entities, idvertices)
 ! We verify if the triangles are sorted in trigonometric sense and we bring correction if necessary
 IF (associated(triangles)) THEN
 	CALL correct_orientation(vertices, triangles)
@@ -964,7 +970,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL !(FermiTableE, FermiTableH)
-   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
+!    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
   write(96,*) "========== CONE PARAMETERS ========="
@@ -1066,8 +1072,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DOSh(i,j)=DensityOfStateH(Th(i,j))
         FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j)) !1
+        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j))
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
@@ -1975,7 +1981,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))
 if(UseMieScattering.eq.1) then
   write(*,*) 'Computing the Mie scattering field distribution...'
-
+  write(*,*) 'Angle Mie =', phiMie0
+  write(*,*) 'Polarization TM ? ', PolarizationSource
   ! $ O M P DO
     do i=1,M
         ! $ O M P PARALLEL DO
@@ -2007,7 +2014,7 @@ if(UseMieScattering.eq.1) then
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
             EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
-            EintField2(i,j)=0d0
+            EintField2(i,j)=Zero
           ! formula with a super mistake on radius
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
 
@@ -2033,7 +2040,7 @@ if(UseMieScattering.eq.1) then
 
     do i=1,M
       do j=1,N
-        write(104, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2)**0.5d0, Radius(i,j)
+        write(104, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**0.5d0, Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
     end do
@@ -2260,8 +2267,8 @@ if(UseMieScattering.eq.1) then
         DOSh(i,j)=DensityOfStateH(Th(i,j))
         FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j)) !1
+        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j)) 
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
@@ -3781,9 +3788,9 @@ if(UseMieScattering.eq.1) then
       real(8) NeNc, NeNc0, dNeNc
       integer(8) FermiIndex
       NeNc0=1d-38
-      dNeNc=1.1d0 !NeNc=NeNc0*dNeNc**n
+      dNeNc=1.03d0 !NeNc=NeNc0*dNeNc**n
       
-      FermiIndex=int(log10(NeNc/NeNc0)/log10(dNeNc)+1d0)
+      FermiIndex=nint(log10(NeNc/NeNc0)/log10(dNeNc)+1d0)
       if(FermiIndex < 1 .OR. FermiIndex > FermiMaxLines) then
         write(*,*) "FermiIndex problem: NeNc=", NeNc, "FermiIndex=", FermiIndex
       end if
@@ -3843,8 +3850,12 @@ if(UseMieScattering.eq.1) then
         total=total + ( Imaginary**ireal * exp(Imaginary*ireal*phi) * BesselJ(ireal, &
               sqrt(dielectric)*k*r) * ireal * MieCoeff3(ireal, radius, dielectric) ) !original !!
       end do
-      MieScatteringTE1=-total/(dielectric*k*r)
+      if(r.eq.0d0) then
+        MieScatteringTE1=Zero
+      else
+        MieScatteringTE1=-total/(dielectric*k*r)
 !         MieScatteringTE1=Zero
+      end if
       return
     end function MieScatteringTE1
 

@@ -1,28 +1,45 @@
-## fichier pour soumettre job en PBS
-#PBS -S /bin/bash
-#PBS -N Flirt1DSBD
-#PBS -m ae -M thibault.derrien@gmail.com
-#PBS -e IdentifyingBadSourceTerm.err
-#PBS -o IdentifyingBadSourceTerm.log
-#PBS -l select=2:ncpus=8:mpiprocs=8
-#PBS -l walltime=0:30:00
+#!/bin/bash
+#PBS -q qprod
+#PBS -N Flaps2D
+#PBS -m ae -M derrien@fzu.cz
+#PBS -e Flaps.err
+#PBS -o Flaps.log
+#PBS -A OPEN-5-22
+#PBS -l select=1:ncpus=1:mpiprocs=1:ompthreads=1
+#PBS -l walltime=0:00:05
 
-#workpath=`pwd`
+# store submission path
+workpath=`pwd`
 
-module load fftw/3.2.2
+# load modules for the code
+module load intel
+module load mkl
+
+# set parameters for calculation 
+export KMP_STACKSIZE=104857600
+# export OMP_STACKSIZE=104857600
+export OMP_NUM_THREADS=16
+export MKL_NUM_THREADS=16
+export MKL_DYNAMIC="FALSE"
+export OMP_DYNAMIC="FALSE"
+export OMP_SCHEDULE="DYNAMIC,800"
+# ulimit -s unlimited
+KMP_AFFINITY=granularity=fine,compact
+
+# let's move to the temporary folder
 
 echo "PBS NODEFILE=" 
 cat $PBS_NODEFILE
-cd $PBS_O_WORKDIR
+cd $PBS_O_WORKDIR || exit
 
 echo "PBS_O_WORKDIR=" 
 echo $PBS_O_WORKDIR
-echo "" >> /scratch/tderrien/LastJobs.log 
-echo $PBS_O_WORKDIR >> /scratch/tderrien/LastJobs.log
+echo "" >> /home/tderrien/LastJobs.log 
+echo $PBS_O_WORKDIR >> /home/tderrien/LastJobs.log
 # echo "workpath="
 # echo $workpath
 
-# cp $workpath/*.* .
+cp $workpath/*.* .
 
 echo "Where am I ?"
 pwd
@@ -31,7 +48,8 @@ echo "What have I got ?"
 ls
 
 echo "Executing code..."
-mpiexec a.out
+# ./Flaps_explicit.out
+exit
 
 # echo "Copying files to ..."
 # echo $workpath
