@@ -19,7 +19,7 @@ phi(T)=N*nu*exp(-Q/(kb*T))
 
 set xrange [1:300]
 # set yrange [1e-3:1]
-set log y
+unset log y
 plot phi(x) w l t '{/Symbol p}(T)'
 
 set terminal postscript eps enhanced monochrome font 'Helvetica, 24'

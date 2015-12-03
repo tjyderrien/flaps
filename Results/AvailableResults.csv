@@ -1,0 +1,27 @@
+	Laser parameters					Data management				Extrapolation											
+Current Localization	Polarization	Direction	Exp. TIP #	tMax		Size (GB)	WEB transfer (days)	Local transfer (hours)		tmin (s)	tmax (s)	tHumanMin	tHumanMax	Total human time	Human time (hours)	Machine Run	Efficiency (fs/h)	Prediction to (hours)	tPrediction (s)		Path
+Budecska	TM	pi	1	4.20E-012		162	7.86432	3.3704228571		-2.00E-013	4.22E-012	04/26/15 04:00 PM	05/09/15 09:38 PM	317:38:00	317.6333333333	HilaseThibs	1.39207681813412E-014				/media/thibault/Berlin1/Travail/Prague/Codes/Flaps2D/Results_Explicit/Tip1/515nm-TM-40fs-pi-budecska/20150426-ShapeCorrectedToTip1
+Hilase	TM	pi/2	1	1.07E-011		300	14.5635555556	6.2415238095													Results/ExpTip1
+Budecska	TM	pi	2	6.30E-011		194	9.4177659259	4.0361853968													/media/thibault/Berlin1/Travail/Prague/Codes/Flaps2D/Results_Explicit/Tip2/ExpTip2-40fs-TM-pi
+Yoann	TM	pi	2	1.60E-011		127	6.1652385185	2.6422450794		-2.00E-013	1.63E-011				328.3333333333	Budecska	5.01682233502538E-014	168	8.22836152284264E-012		/home/thibault/Documents/Codes/Flaps/20150426-flaps-gmsh/flaps2d/Results
+Yoann	TE	pi	1	2.25E-012		66	3.2039822222	1.3731352381		-2.00E-013	2.25E-012				188.3333333333	Budecska	1.29870796460177E-014	168	1.98192938053097E-012		/home/thibault/Documents/Codes/Flaps/20150426-flaps-gmsh/flaps2d/Results/ExpTip1-40fs-TE-pi
+Hilase	TE	pi	1	-		-	#VALUE!	#VALUE!		-2.00E-013	1.65E-012	06/14/2015 17:47:00	06/19/2015 17:40:00	119:53:00	119.8833333333	HilaseThibs	1.54475184206868E-014	317	4.69696333935771E-012		/home/thibault/Documents/Codes/Flaps/20150426-flaps-gmsh/flaps2d
+																					
+																					
+																					
+																					
+																					
+																					
+																					
+																					
+																					
+																					
+																					
+																					
+																					
+tmin		s				Budecska DL rate	250	KB/s													
+Human time		h	14 June, 17:47	15 June, 17:35		Budescska Copy rate	14000	KB/s													
+tCurrent						Local DL Hilase	25600	KB/s													
+Calculation speed		Second/human hour																			
+Prediction (in h)																					
+tMax																					
