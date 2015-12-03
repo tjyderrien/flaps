@@ -1,12 +1,14 @@
 #!/bin/bash
-#PBS -q qprod
-#PBS -N Flaps-MieValue
+#PBS -q qlong
+#PBS -N Ferm6-MieValue
 #PBS -m ae -M derrien@fzu.cz
 #PBS -e Flaps.err
 #PBS -o Flaps.log
 #PBS -A OPEN-5-22
 #PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1
-#PBS -l walltime=0:15:00
+#PBS -l walltime=0:05:00
+
+JobNames = "Ferm6"
 
 # store submission path
 workpath=`pwd`
@@ -31,9 +33,9 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 # let's move to the temporary folder
 
 # change to scratch directory, exit on failure
-myjob=`qstat -a -u tderrien | grep "Flaps-MieValue" | awk '{ print $1 }' | head -n1`
+myjob=`qstat -a -u tderrien | grep ${JobNames} | awk '{ print $1 }' | head -n1`
 echo "Job number: " $myjob
-TARGETDIR=/scratch/work/user/$USER/$myjob
+TARGETDIR=/scratch/work/user/$USER/flaps2d/$myjob
 mkdir -p $TARGETDIR
 echo "Target:" >> /home/tderrien/LastJobs.log
 echo $TARGETDIR >> /home/tderrien/LastJobs.log
@@ -42,7 +44,7 @@ cd $TARGETDIR || exit
 
 # Copy the code to scratch
 # git clone /home/tderrien/Codes/flaps2d/ || exit
-mkdir flaps2d && cd flaps2d
+# mkdir flaps2d && cd flaps2d
 rsync -avzher /home/tderrien/Codes/flaps2d/ . || exit
 
 # Replacing the value in angles for Mie
@@ -67,7 +69,7 @@ pwd
 echo "What have I got ?"
 ls
 
-cd $TARGETDIR/flaps2d/
+cd $TARGETDIR
 
 bash compile_explicit_it4i.sh || exit
 
