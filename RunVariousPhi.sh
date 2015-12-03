@@ -8,7 +8,8 @@
 # 4. Submit the corresponding run
 
 # values=(0 45 90 180 270)
-values=`seq 0 10 270`
+# values=`seq 0 10 270`
+values=`seq 0 1 1`
 
 rm input_Mie.txt submit.pbs
 rm submit*.pbs

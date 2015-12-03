@@ -8,7 +8,7 @@
 #PBS -l select=1:ncpus=24:mpiprocs=1:ompthreads=1
 #PBS -l walltime=0:05:00
 
-JobNames = "Ferm6"
+JobNames="Ferm6-MieValue" #The Mie-Value will be replaced by script RunVariousPhi.sh
 
 # store submission path
 workpath=`pwd`
@@ -33,8 +33,19 @@ export KMP_AFFINITY=granularity=fine,compact,1,0
 # let's move to the temporary folder
 
 # change to scratch directory, exit on failure
+qstat -a -u tderrien
+
+echo "JobNames, ${JobNames}"
 myjob=`qstat -a -u tderrien | grep ${JobNames} | awk '{ print $1 }' | head -n1`
 echo "Job number: " $myjob
+myjobSize=`echo ${myjob} | wc -c`
+echo "Job number size: " ${myjobSize}
+if [ ${myjobSize} < 2 ] 
+then
+	echo "Problem in starting script (myjobSize)"
+	exit
+fi
+
 TARGETDIR=/scratch/work/user/$USER/flaps2d/$myjob
 mkdir -p $TARGETDIR
 echo "Target:" >> /home/tderrien/LastJobs.log
