@@ -38,7 +38,7 @@ implicit none
                         tmin=tCenter-5d0*tau                     !max absolute time
     
                         
-    integer(8), parameter::  iterOut=100       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
                           M=2001   ,& !number of cells main domain X direction
                           N=151     ,& !number of cells main domain Y direection
@@ -3722,7 +3722,8 @@ if(UseMieScattering.eq.1) then
       real(8) :: OnePhotonIonizationRate
       real(8) lambda
       complex(8) epsilonLinear
-      OnePhotonIonizationRate=4d0*pi/lambda*aimag(sqrt(epsilonLinear))
+!       OnePhotonIonizationRate=4d0*pi/lambda*aimag(sqrt(epsilonLinear))
+      OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
       return
     end function OnePhotonIonizationRate
     
