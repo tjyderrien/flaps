@@ -1,0 +1,23 @@
+real	4m59.881s
+user	79m15.695s
+sys	0m2.103s
+M51-N51-8cores.log
+
+real	5m23.251s
+user	42m52.895s
+sys	0m1.494s
+M51-N51-4cores.log
+
+real	5m57.121s
+user	23m41.644s
+sys	0m1.263s
+M51-N51-2cores.log
+
+real	9m19.704s
+user	18m35.039s
+sys	0m1.262s
+M51-N51-1cores.log
+
+real	13m57.796s
+user	13m56.219s
+sys	0m0.412s
