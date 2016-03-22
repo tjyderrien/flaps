@@ -202,11 +202,11 @@ implicit none
                 MeshDensity(1:Mv, 1:Nv)        ,&                ! function to adapt Poisson mesh on the needle mesh
                 CellAreaN(1:M, 1:N), CellAreaS(1:M, 1:N), &                        ! area of the finite elements 
                 CellAreaE(1:M, 1:N), CellAreaW(1:M, 1:N), &
-                CellVol(1:M, 1:N), &                                !volume of needle mesh cells
-                NormalWx(1:M,1:N), NormalWy(1:M,1:N), &
-                NormalEx(1:M,1:N), NormalEy(1:M,1:N), &                ! normal to quadrangle elements
-                NormalNx(1:M,1:N), NormalNy(1:M,1:N), &
-                NormalSx(1:M,1:N), NormalSy(1:M,1:N), &
+                CellVol(1:M, 1:N), InvCellVol(1:M, 1:N),&          !volume of needle mesh cells
+                NormalWx(1:M,1:N), NormalWy(1:M,1:N), NormalW2(1:M,1:N), &
+                NormalEx(1:M,1:N), NormalEy(1:M,1:N), NormalE2(1:M,1:N),  &                ! normal to quadrangle elements
+                NormalNx(1:M,1:N), NormalNy(1:M,1:N), NormalN2(1:M,1:N),  &
+                NormalSx(1:M,1:N), NormalSy(1:M,1:N), NormalS2(1:M,1:N),  &
                 TangentWx(1:M,1:N), TangentWy(1:M,1:N), &                ! Tangent to quadrangle elements
                 TangentEx(1:M,1:N), TangentEy(1:M,1:N), &                
                 TangentNx(1:M,1:N), TangentNy(1:M,1:N), &
@@ -1016,9 +1016,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   Th0=Tout
   
   ! $ OMP DO
-  do i=1,M
-    ! $ OMP DO
-    do j=1,N
+  do j=1,N
+    do i=1,M
         
         VeX(i,j)=0d0
         VeY(i,j)=0d0
@@ -1061,11 +1060,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
     end do
   end do
+  ! $ OMP END DO
         
   ! $ OMP DO
-  do i=1,M
-    ! $ OMP DO
-    do j=1,N
+  do j=1,N
+    do i=1,M
         
         ! initialise variables to calculate Ce, Ch
         DOSe(i,j)=DensityOfStateE(Te(i,j))
@@ -1109,7 +1108,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         epsilonNeedle(i,j)=epsilonStatic0-1d0
         
     end do
-    ! $ OMP END DO
    end do
    ! $ OMP END DO
 !!!! THIS PART IS ONLY USEFUL IF Poisson equation is solved   
@@ -1151,8 +1149,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    ! areas of the cell boudaries e.g. distances in this 2D code 
    ! and normal vectors (Nx, Ny) the four poles of quadrangle elements
    write(*,*) "[Mesh] Calculation of normales and distances."
-   do i=2,M-1
-      do j=2,N-1
+   do j=2,N-1
+      do i=2,M-1
       
         DistN(i,j)=sqrt((x(i,j+1)-x(i,j))**2+(y(i,j+1)-y(i,j))**2)
         DistS(i,j)=sqrt((x(i,j)-x(i,j-1))**2+(y(i,j)-y(i,j-1))**2)
@@ -1241,8 +1239,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    write(*,*) "West", NormalWx(M-1,N-1), NormalWy(M-1,N-1)
    write(*,*) CellAreaN(M/2,N/2), CellAreaS(M/2,N/2), CellAreaE(M/2,N/2), CellAreaW(M/2,N/2)
    
-   do i=2,Mp-1
-    do j=2,Np-1
+   do j=2,Np-1
+    do i=2,Mp-1
         NormalNxP(i,j)=4d0*(0.25d0*yP(i-1,j)+0.25d0*yP(i-1,j+1)-0.25d0*yP(i+1,j+1)-0.25d0*yP(i+1,j))/(xP(i-1,j)**2 & 
                       +2d0*xP(i-1,j)*xP(i-1,j+1)-2d0*xP(i-1,j)*xP(i+1,j+1)-2d0*xP(i-1,j)*xP(i+1,j)+xP(i-1,j+1)**2 & 
                       -2d0*xP(i-1,j+1)*xP(i+1,j+1)-2d0*xP(i-1,j+1)*xP(i+1,j)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j) & 
@@ -1984,9 +1982,8 @@ if(UseMieScattering.eq.1) then
   write(*,*) 'Angle Mie =', phiMie0
   write(*,*) 'Polarization TM ? ', PolarizationSource
   ! $ O M P DO
+  do j=1,N
     do i=1,M
-        ! $ O M P PARALLEL DO
-      do j=1,N
         if(y(i,j)<0d0) then
           phiMie(i,j)=phiMie0+pi
         else
@@ -2000,16 +1997,14 @@ if(UseMieScattering.eq.1) then
           Radius(i,j)=ConeExp2Radius(1d6*y(i,j), 1d6*x(i,j), 0d0)
         end if
       end do
-      ! $ O MP END PARALLEL DO
     end do
     ! $ OMP END DO
 
     
 
     ! $ OMP DO
+   do j=1,N
     do i=1,M
-      ! $ OMP PARALLEL DO
-      do j=1,N
           if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
@@ -2030,7 +2025,6 @@ if(UseMieScattering.eq.1) then
             EintField(i,j)=Unit * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf)
           end if
       end do
-      ! $ OMP END PARALLEL DO
     end do
     ! $ OMP END DO
 
@@ -2038,8 +2032,9 @@ if(UseMieScattering.eq.1) then
     EintFieldR=real(sqrt( EintField * conjg(EintField) + EintField2 * conjg(EintField2) ))
     
 
-    do i=1,M
-      do j=1,N
+    
+    do j=1,N
+      do i=1,M
         write(104, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**0.5d0, Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
@@ -2128,6 +2123,101 @@ if(UseMieScattering.eq.1) then
   maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; maxCFLyTs=0d0; 
   maxFermiIndexE=0; maxFermiIndexH=0; 
  
+  do i=1,M
+    CellAreaN(i,N)=0d0 
+!     CellAreaN(i,N-1)=0d0
+!     CellAreaS(i,2)=0d0
+    CellAreaS(i,1)=0d0
+    
+    DistN(i,N-1)=sqrt((0.5d0*(x(i,N-1)+x(i,N))-x(i,N-1))**2+(0.5d0*(y(i,N-1)+y(i,N))-y(i,N-1))**2)
+    DistS(i,2)=sqrt((x(i,2)-0.5d0*(x(i,2)+x(i,1)))**2+(y(i,2)-0.5d0*(y(i,2)+y(i,1)))**2) 
+  end do
+   
+  do j=1,N
+    CellAreaW(1,j)=0d0
+!     CellAreaW(2,j)=0d0
+!     CellAreaE(M-1,j)=0d0
+    CellAreaE(M,j)=0d0
+    
+    DistW(2,j)=sqrt((x(2,j)-0.5d0*(x(2,j)+x(1,j)))**2+((y(2,j)-0.5d0*(y(2,j)+y(1,j))))**2)
+    DistE(M-1,j)=sqrt((0.5d0*(x(M-1,j)+x(M,j))-x(M-1,j))**2+(0.5d0*(y(M-1,j)+y(M,j))-y(M-1,j))**2)
+  end do
+  
+     
+    do j=2, N-1
+      do i=2, M-1
+      ! define the volume of elementary cell around a point everywhere but not on boundaries
+!         CellVol(i,j)=0.25d0*(AreaElement(x(i-1,j-1),y(i-1,j-1),x(i+1,j-1),y(i+1,j-1),x(i+1,j+1),y(i+1,j+1),x(i-1,j+1),y(i-1,j+1)))
+        CellVol(i,j)=AreaElement(0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)), & !x(i-1/2,j-1/2)
+                                 0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j)), &
+                                 0.25d0*(x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)), &        !x(i+1/2,j-1/2)
+                                 0.25d0*(y(i,j-1)+y(i+1,j-1)+y(i+1,j)+y(i,j)), &
+                                 0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), &        !x(i+1/2,j+1/2)
+                                 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
+                                 0.25d0*(x(i-1,j)+x(i,j)+x(i,j+1)+x(i-1,j+1)), &        !x(i-1/2,j+1/2)
+                                 0.25d0*(y(i-1,j)+y(i,j)+y(i,j+1)+y(i-1,j+1)))
+                                 
+        InvCellVol(i,j) = 1.0d0/CellVol(i,j)
+                                 
+        ! Calcul de Grad(Ne) sur le maillage direct
+        ! Première estimation peu stable
+        GradNeX(i,j) = 0.5d0 * InvCellVol(i,j) * &
+                      ( (Ne(i,j) + Ne(i,j+1)) * CellAreaN(i,j) * NormalNx(i,j) & 
+                      + (Ne(i,j) + Ne(i,j-1)) * CellAreaS(i,j) * NormalSx(i,j) & 
+                      + (Ne(i,j) + Ne(i-1,j)) * CellAreaW(i,j) * NormalWx(i,j) & 
+                      + (Ne(i,j) + Ne(i+1,j)) * CellAreaE(i,j) * NormalEx(i,j) )
+        GradNeY(i,j) = 0.5d0 * InvCellVol(i,j) * &
+                      ( (Ne(i,j) + Ne(i,j+1)) * CellAreaN(i,j) * NormalNy(i,j) & 
+                      + (Ne(i,j) + Ne(i,j-1)) * CellAreaS(i,j) * NormalSy(i,j) & 
+                      + (Ne(i,j) + Ne(i-1,j)) * CellAreaW(i,j) * NormalWy(i,j) & 
+                      * (Ne(i,j) + Ne(i+1,j)) * CellAreaE(i,j) * NormalEy(i,j) )
+                      
+        ! interpolation lineaire des valeurs de phi sur les bords de cellules
+!         phiN=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j)+xDual(i-1,j)))+GradNeY(i,j)*(0.5d0*(yDual(i,j)+yDual(i-1,j)))
+!         phiS=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j-1)+xDual(i-1,j-1)))+GradNeY(i,j)*(0.5d0*(yDual(i,j-1)+yDual(i-1,j-1)))
+        ! recalcul du gradient avec phi_bords
+        
+        end do
+      end do
+  
+  ! interpolation and preparation of resolution
+  do j=2,N-1
+    do i=2,M-1
+        !Dual mesh calculation
+        xDualSW(i,j) = 0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)) !x(i-1/2,j-1/2)
+        yDualSW(i,j) = 0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j))
+        xDualSE(i,j) = 0.25d0*(x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)) !x(i+1/2,j-1/2)
+        yDualSE(i,j) = 0.25d0*(y(i,j-1)+y(i+1,j-1)+y(i+1,j)+y(i,j))
+        xDualNE(i,j) = 0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)) !x(i+1/2,j+1/2)
+        yDualNE(i,j) = 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1))
+        xDualNW(i,j) = 0.25d0*(x(i-1,j)+x(i,j)+x(i,j+1)+x(i-1,j+1)) !x(i-1/2,j+1/2)
+        yDualNW(i,j) = 0.25d0*(y(i-1,j)+y(i,j)+y(i,j+1)+y(i-1,j+1))
+                                
+        xDual(i-1,j-1) = xDualSW(i,j); yDual(i-1,j-1)=yDualSW(i,j) ! to make for (i,j) from 2,2 to M,N
+        xDual(i-1,N-1) = xDualNW(i,N-1); yDual(i-1,N-1) = yDualNW(i,N-1); 
+        xDual(M-1,j-1) = xDualSE(M-1,j); yDual(M-1,j-1) = yDualSE(M-1,j)
+        xDual(M-1,N-1) = xDualNE(M-1,N-1); yDual(M-1,N-1) = yDualNE(M-1,N-1); 
+    end do
+  end do
+  
+  do j=1,N
+    do i=1,M
+       NormalN2(i,j) = (NormalNx(i,j)**2+NormalNy(i,j)**2)
+       NormalE2(i,j) = (NormalEx(i,j)**2+NormalEy(i,j)**2)
+       NormalW2(i,j) = (NormalWx(i,j)**2+NormalWy(i,j)**2)
+       NormalS2(i,j) = (NormalSx(i,j)**2+NormalSy(i,j)**2)
+    end do
+  end do
+  
+  do j=2, N-1
+    do i=2, M-1
+      NormalN2(i,j) = NormalN2(i,j)/DistN(i,j)
+      NormalW2(i,j) = NormalW2(i,j)/DistW(i,j)
+      NormalE2(i,j) = NormalE2(i,j)/DistE(i,j)
+      NormalS2(i,j) = NormalS2(i,j)/DistS(i,j)
+     end do
+  end do
+ 
   write(*,*) "Starting time loop."
 
   !***************************************************************
@@ -2166,8 +2256,8 @@ if(UseMieScattering.eq.1) then
    !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
    !$OMP& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
-   !$OMP& NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, NormalWx, NormalWy, &
-   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP, &
+   !$OMP& NormalN2,NormalNx, NormalNy, NormalS2, NormalSx, NormalSy, NormalE2, NormalEx, NormalEy, NormalW2, NormalWx, NormalWy, &
+   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP, &
    !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, TangentWx, TangentWy, TangentNx, &
    !$OMP& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, &
    !$OMP& CurviWy, ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
@@ -2187,54 +2277,25 @@ if(UseMieScattering.eq.1) then
 
    nthreads = OMP_GET_NUM_THREADS()
 
-   !$OMP DO 
-   do i=1,M
-    CellAreaN(i,N)=0d0 
-!     CellAreaN(i,N-1)=0d0
-!     CellAreaS(i,2)=0d0
-    CellAreaS(i,1)=0d0
-    
-    DistN(i,N-1)=sqrt((0.5d0*(x(i,N-1)+x(i,N))-x(i,N-1))**2+(0.5d0*(y(i,N-1)+y(i,N))-y(i,N-1))**2)
-    DistS(i,2)=sqrt((x(i,2)-0.5d0*(x(i,2)+x(i,1)))**2+(y(i,2)-0.5d0*(y(i,2)+y(i,1)))**2) 
-   end do
-   
-   !$OMP DO  
-   do j=1,N
-    CellAreaW(1,j)=0d0
-!     CellAreaW(2,j)=0d0
-!     CellAreaE(M-1,j)=0d0
-    CellAreaE(M,j)=0d0
-    
-    DistW(2,j)=sqrt((x(2,j)-0.5d0*(x(2,j)+x(1,j)))**2+((y(2,j)-0.5d0*(y(2,j)+y(1,j))))**2)
-    DistE(M-1,j)=sqrt((0.5d0*(x(M-1,j)+x(M,j))-x(M-1,j))**2+(0.5d0*(y(M-1,j)+y(M,j))-y(M-1,j))**2)
-   end do
    
    NeTotal=0d0; NhTotal=0d0
    
    ! replacing old datas
+   Ue(:,:)=UeNew(:,:)
+   Uh(:,:)=UhNew(:,:)
+   Te(:,:)=TeNew(:,:)
+   Th(:,:)=ThNew(:,:)
+   TsPrev(:,:)=TsOld(:,:)
+   TsOld(:,:)=Ts(:,:)
+   Ts(:,:)=TsNew(:,:)
+   Ne(:,:)=NeNew(:,:)
+   Nh(:,:)=NhNew(:,:)
+   CeOld(:,:)=Ce(:,:)
+   ChOld(:,:)=Ch(:,:)
    
-      !$OMP DO COLLAPSE(2) 
-      do j=1,N
-        do i=1,M
-           Ue(i,j)=UeNew(i,j)
-           Uh(i,j)=UhNew(i,j)
-           Te(i,j)=TeNew(i,j)
-           Th(i,j)=ThNew(i,j)
-           TsPrev(i,j)=TsOld(i,j)
-           TsOld(i,j)=Ts(i,j)
-           Ts(i,j)=TsNew(i,j)
-           Ne(i,j)=NeNew(i,j)
-           Nh(i,j)=NhNew(i,j)
-           CeOld(i,j)=Ce(i,j)
-           ChOld(i,j)=Ch(i,j)
-           
-           CsPrev2(i,j)=CsPrev(i,j)
-           CsPrev(i,j)=CsOld(i,j)
-           CsOld(i,j)=Cs(i,j)
-           
-        end do
-      end do
-      !$OMP END DO
+   CsPrev2(:,:)=CsPrev(:,:)
+   CsPrev(:,:)=CsOld(:,:)
+   CsOld(:,:)=Cs(:,:)
    
 
     
@@ -2541,29 +2602,7 @@ if(UseMieScattering.eq.1) then
       end do
     end do
     !$OMP END DO
-    
-    ! interpolation and preparation of resolution
-    
-    !$OMP DO  COLLAPSE(2) 
-    do j=2,N-1
-      do i=2,M-1
-        !Dual mesh calculation
-        xDualSW(i,j) = 0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)) !x(i-1/2,j-1/2)
-        yDualSW(i,j) = 0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j))
-        xDualSE(i,j) = 0.25d0*(x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)) !x(i+1/2,j-1/2)
-        yDualSE(i,j) = 0.25d0*(y(i,j-1)+y(i+1,j-1)+y(i+1,j)+y(i,j))
-        xDualNE(i,j) = 0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)) !x(i+1/2,j+1/2)
-        yDualNE(i,j) = 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1))
-        xDualNW(i,j) = 0.25d0*(x(i-1,j)+x(i,j)+x(i,j+1)+x(i-1,j+1)) !x(i-1/2,j+1/2)
-        yDualNW(i,j) = 0.25d0*(y(i-1,j)+y(i,j)+y(i,j+1)+y(i-1,j+1))
-                                
-        xDual(i-1,j-1) = xDualSW(i,j); yDual(i-1,j-1)=yDualSW(i,j) ! to make for (i,j) from 2,2 to M,N
-        xDual(i-1,N-1) = xDualNW(i,N-1); yDual(i-1,N-1) = yDualNW(i,N-1); 
-        xDual(M-1,j-1) = xDualSE(M-1,j); yDual(M-1,j-1) = yDualSE(M-1,j)
-        xDual(M-1,N-1) = xDualNE(M-1,N-1); yDual(M-1,N-1) = yDualNE(M-1,N-1); 
-      end do
-    end do
-    !$OMP END DO
+
     
     ! interpolation on dual mesh
     ! InterpolateBiCubic(phi_source, x_s, y_s, x_t, y_t, SizeXs, SizeYs, SizeXt, SizeYt, phi_target, Grad(phi)_targetX, Grad(phi)_targetY)
@@ -2590,67 +2629,22 @@ if(UseMieScattering.eq.1) then
 ! 
 !     !$OMP END SECTIONS
 !     end if
-    
-    
-    
-    !$OMP DO COLLAPSE(2) 
-    do j=2, N-1
-      do i=2, M-1
-      ! define the volume of elementary cell around a point everywhere but not on boundaries
-!         CellVol(i,j)=0.25d0*(AreaElement(x(i-1,j-1),y(i-1,j-1),x(i+1,j-1),y(i+1,j-1),x(i+1,j+1),y(i+1,j+1),x(i-1,j+1),y(i-1,j+1)))
-        CellVol(i,j)=AreaElement(0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)), & !x(i-1/2,j-1/2)
-                                 0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j)), &
-                                 0.25d0*(x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)), &        !x(i+1/2,j-1/2)
-                                 0.25d0*(y(i,j-1)+y(i+1,j-1)+y(i+1,j)+y(i,j)), &
-                                 0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), &        !x(i+1/2,j+1/2)
-                                 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
-                                 0.25d0*(x(i-1,j)+x(i,j)+x(i,j+1)+x(i-1,j+1)), &        !x(i-1/2,j+1/2)
-                                 0.25d0*(y(i-1,j)+y(i,j)+y(i,j+1)+y(i-1,j+1)))
-                                 
-        ! Calcul de Grad(Ne) sur le maillage direct
-        ! Première estimation peu stable
-        GradNeX(i,j) = 0.5d0 /CellVol(i,j) * &
-                      ( (Ne(i,j) + Ne(i,j+1)) * CellAreaN(i,j) * NormalNx(i,j) & 
-                      + (Ne(i,j) + Ne(i,j-1)) * CellAreaS(i,j) * NormalSx(i,j) & 
-                      + (Ne(i,j) + Ne(i-1,j)) * CellAreaW(i,j) * NormalWx(i,j) & 
-                      + (Ne(i,j) + Ne(i+1,j)) * CellAreaE(i,j) * NormalEx(i,j) )
-        GradNeY(i,j) = 0.5d0/CellVol(i,j) * &
-                      ( (Ne(i,j) + Ne(i,j+1)) * CellAreaN(i,j) * NormalNy(i,j) & 
-                      + (Ne(i,j) + Ne(i,j-1)) * CellAreaS(i,j) * NormalSy(i,j) & 
-                      + (Ne(i,j) + Ne(i-1,j)) * CellAreaW(i,j) * NormalWy(i,j) & 
-                      * (Ne(i,j) + Ne(i+1,j)) * CellAreaE(i,j) * NormalEy(i,j) )
-                      
-        ! interpolation lineaire des valeurs de phi sur les bords de cellules
-!         phiN=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j)+xDual(i-1,j)))+GradNeY(i,j)*(0.5d0*(yDual(i,j)+yDual(i-1,j)))
-!         phiS=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j-1)+xDual(i-1,j-1)))+GradNeY(i,j)*(0.5d0*(yDual(i,j-1)+yDual(i-1,j-1)))
-        ! recalcul du gradient avec phi_bords
-        
-        end do
-      end do
-      !$OMP END DO
-      
-      
        
       !$OMP DO  COLLAPSE(2) 
       do j=1, N-1
         do i=1, M-1
         
       ! interpolation bilineaire ponderee par les aires
-        NeDual(i,j) = ( Ne(i,j)/CellVol(i,j) + Ne(i+1,j)/CellVol(i+1,j) + Ne(i,j+1)/CellVol(i,j+1) + Ne(i+1,j+1) & 
-                / CellVol(i+1,j+1) ) / ( 1d0 / CellVol(i,j) + 1d0 / CellVol(i+1,j) + 1d0/CellVol(i,j+1) &
-                + 1d0/CellVol(i+1,j+1) )
-        NhDual(i,j) = ( Nh(i,j)/CellVol(i,j) + Nh(i+1,j)/CellVol(i+1,j) + Nh(i,j+1)/CellVol(i,j+1) + Nh(i+1,j+1) &
-                / CellVol(i+1,j+1) ) / ( 1d0 / CellVol(i,j) + 1d0 / CellVol(i+1,j) + 1d0/CellVol(i,j+1) & 
-                + 1d0/CellVol(i+1,j+1) )
-        TeDual(i,j) = ( Te(i,j)/CellVol(i,j) + Te(i+1,j)/CellVol(i+1,j) + Te(i,j+1)/CellVol(i,j+1) + Te(i+1,j+1) &
-                / CellVol(i+1,j+1) ) / ( 1d0 / CellVol(i,j) + 1d0 / CellVol(i+1,j) + 1d0/CellVol(i,j+1) &
-                + 1d0/CellVol(i+1,j+1) )
-        ThDual(i,j) = ( Th(i,j)/CellVol(i,j) + Th(i+1,j)/CellVol(i+1,j) + Th(i,j+1)/CellVol(i,j+1) + Th(i+1,j+1) &
-                / CellVol(i+1,j+1) ) / ( 1d0 / CellVol(i,j) + 1d0 / CellVol(i+1,j) + 1d0/CellVol(i,j+1) &
-                + 1d0/CellVol(i+1,j+1) )
-        TsDual(i,j) = ( Ts(i,j)/CellVol(i,j) + Ts(i+1,j)/CellVol(i+1,j) + Ts(i,j+1)/CellVol(i,j+1) + Ts(i+1,j+1) &
-                / CellVol(i+1,j+1) ) / ( 1d0 / CellVol(i,j) + 1d0 / CellVol(i+1,j) + 1d0/CellVol(i,j+1) &
-                + 1d0/CellVol(i+1,j+1) )
+        NeDual(i,j) = ( Ne(i,j)* InvCellVol(i,j) + Ne(i+1,j)*InvCellVol(i+1,j) + Ne(i,j+1)*InvCellVol(i,j+1) + Ne(i+1,j+1) & 
+                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
+        NhDual(i,j) = ( Nh(i,j)*InvCellVol(i,j) + Nh(i+1,j)*InvCellVol(i+1,j) + Nh(i,j+1)*InvCellVol(i,j+1) + Nh(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
+        TeDual(i,j) = ( Te(i,j)*InvCellVol(i,j) + Te(i+1,j)*InvCellVol(i+1,j) + Te(i,j+1)*InvCellVol(i,j+1) + Te(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
+        ThDual(i,j) = ( Th(i,j)*InvCellVol(i,j) + Th(i+1,j)*InvCellVol(i+1,j) + Th(i,j+1)*InvCellVol(i,j+1) + Th(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
+        TsDual(i,j) = ( Ts(i,j)*InvCellVol(i,j) + Ts(i+1,j)*InvCellVol(i+1,j) + Ts(i,j+1)*InvCellVol(i,j+1) + Ts(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + 1d0*InvCellVol(i+1,j+1) )
         end do
       end do
       !$OMP END DO
@@ -2664,14 +2658,14 @@ if(UseMieScattering.eq.1) then
         
      
 !          ! diffusion is separated from drift
-         NeNew(i,j) = Ne(i,j) + dt/CellVol(i,j)*(&
+         NeNew(i,j) = Ne(i,j) + dt*InvCellVol(i,j)*(&
               ( GainsE(i,j)-LossesE(i,j) )*CellVol(i,j)& 
                   !         
                   +0.5d0*( &
                   + CellAreaE(i,j)/ (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
                   * ( &
                      ! direct diffusion operator over irregular mesh
-                     ( diffusionE(i,j)+diffusionE(i+1,j) )*( Ne(i+1,j)-Ne(i,j) )* (NormalEx(i,j)**2+NormalEy(i,j)**2)/DistE(i,j) &
+                     ( diffusionE(i,j)+diffusionE(i+1,j) )*( Ne(i+1,j)-Ne(i,j) )* NormalE2(i,j) &
                      ! Cross-diffusion from [Mathur and Murthy (1997)]
                      +CrossCoeff*( CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j) ) &
                      *(diffusionE(i,j)+diffusionE(i+1,j))*(NeDual(i,j) - NeDual(i,j-1))/DistDualE(i,j)  &
@@ -2679,7 +2673,7 @@ if(UseMieScattering.eq.1) then
                   + CellAreaW(i,j) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
                     *( &
                        ! direct diffusion operator over irregular mesh
-                      -( diffusionE(i-1,j)+diffusionE(i,j) )*( Ne(i,j)-Ne(i-1,j) )* (NormalWx(i,j)**2+NormalWy(i,j)**2)/DistW(i,j)  &
+                      -( diffusionE(i-1,j)+diffusionE(i,j) )*( Ne(i,j)-Ne(i-1,j) )* NormalW2(i,j)  &
                        ! Cross-diffusion from [Mathur and Murthy (1997)]
                       +CrossCoeff*( CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j) ) &
                       *(diffusionE(i-1,j)+diffusionE(i,j))*( NeDual(i-1,j-1) - NeDual(i-1,j) )/DistDualW(i,j) &
@@ -2687,7 +2681,7 @@ if(UseMieScattering.eq.1) then
                   + CellAreaN(i,j) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
                     *( &
                        ! direct diffusion operator over irregular mesh
-                      +( diffusionE(i,j+1)+diffusionE(i,j) )*( Ne(i,j+1)-Ne(i,j) )* (NormalNx(i,j)**2+NormalNy(i,j)**2)/DistN(i,j)  &
+                      +( diffusionE(i,j+1)+diffusionE(i,j) )*( Ne(i,j+1)-Ne(i,j) )* NormalN2(i,j)  &
                        ! Cross-diffusion from [Mathur and Murthy (1997)]
                       +CrossCoeff*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j)) &
                       *(diffusionE(i,j+1)+diffusionE(i,j))*( NeDual(i-1,j) - NeDual(i,j) )/DistDualN(i,j) &
@@ -2695,7 +2689,7 @@ if(UseMieScattering.eq.1) then
                   + CellAreaS(i,j)/ ((CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))) &
                     *( &
                        ! direct diffusion operator over irregular mesh
-                      -( diffusionE(i,j-1)+diffusionE(i,j) )*( Ne(i,j)-Ne(i,j-1) )* (NormalSx(i,j)**2+NormalSy(i,j)**2)/DistS(i,j)  &
+                      -( diffusionE(i,j-1)+diffusionE(i,j) )*( Ne(i,j)-Ne(i,j-1) )* NormalS2(i,j)  &
                        ! Cross-diffusion from [Mathur and Murthy (1997)]
                       +CrossCoeff*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j)) &
                       *(diffusionE(i,j-1)+diffusionE(i,j))*( NeDual(i,j-1) - NeDual(i-1,j-1) )/DistDualS(i,j) &
@@ -2761,17 +2755,17 @@ if(UseMieScattering.eq.1) then
 !               -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) & 
               ! diffusion on irregular mesh
               +0.5d0*(& 
-              + (NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(Nh(i+1,j)-Nh(i,j)) &
-                      / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
+              + NormalE2(i,j)*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(Nh(i+1,j)-Nh(i,j)) &
+                      / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
 !               - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i,j+1)-0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-              - (NormalWx(i,j)**2+NormalWy(i,j)**2)*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(Nh(i,j)-Nh(i-1,j)) &
-                      /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistW(i,j) & 
+              - NormalW2(i,j)*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(Nh(i,j)-Nh(i-1,j)) &
+                      /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) & 
 !               - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(0.25d0*Nh(i,j+1)+0.25d0*Nh(i-1,j+1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-              + (NormalNx(i,j)**2+NormalNy(i,j)**2)*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(Nh(i,j+1)-Nh(i,j)) &
-                      /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistN(i,j) & 
+              + NormalN2(i,j)*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(Nh(i,j+1)-Nh(i,j)) &
+                      /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
 !               - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i+1,j)-0.25d0*Nh(i-1,j)-0.25d0*Nh(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-              - (NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(Nh(i,j)-Nh(i,j-1)) &
-                      /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistS(i,j) & 
+              - NormalS2(i,j)*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(Nh(i,j)-Nh(i,j-1)) &
+                      /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
 !               - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
 !                   ! Cross-diffusion from [Mathur and Murthy (1997)]
               + CrossCoeff*( &
@@ -2784,7 +2778,7 @@ if(UseMieScattering.eq.1) then
               + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) & 
                     *( NhDual(i,j-1) - NhDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
               ) &
-              ))*dt/CellVol(i,j)+Nh(i,j)
+              ))*dt*InvCellVol(i,j)+Nh(i,j)
 !         else
 !           NhNew(i,j)=NeNew(i,j)
         endif
@@ -2796,14 +2790,14 @@ if(UseMieScattering.eq.1) then
           if(ConvectionEnergy.eq.0) then
           TeNew(i,j) = &
                   0.5d0*(&
-                  + (NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j))*(Te(i+1,j)-Te(i,j)) &
-                          / DistE(i,j) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
-                  - (NormalWx(i,j)**2+NormalWy(i,j)**2)*CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j))*(Te(i,j)-Te(i-1,j)) &
-                          / DistW(i,j) / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
-                  + (NormalNx(i,j)**2+NormalNy(i,j)**2)*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j))*(Te(i,j+1)-Te(i,j)) &
-                          / DistN(i,j) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
-                  - (NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j))*(Te(i,j)-Te(i,j-1)) &
-                          / DistS(i,j) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
+                  + NormalE2(i,j)*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j))*(Te(i+1,j)-Te(i,j)) &
+                          / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+                  - NormalW2(i,j) *CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j))*(Te(i,j)-Te(i-1,j)) &
+                          / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
+                  + NormalN2(i,j)*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j))*(Te(i,j+1)-Te(i,j)) &
+                          / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
+                  - NormalS2(i,j)*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j))*(Te(i,j)-Te(i,j-1)) &
+                          / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
                   + CrossCoeff*( &
                    + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j)) & 
                         *( TeDual(i,j) - TeDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
@@ -2815,7 +2809,7 @@ if(UseMieScattering.eq.1) then
                         *( TeDual(i,j-1) - TeDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
                    ) &
                   +2.0d0*(-CouplingE(i,j)+SourceE(i,j))*CellVol(i,j)) & !source
-                /Ce(i,j) * dt / CellVol(i,j) &
+                /Ce(i,j) * dt * InvCellVol(i,j) &
                 +Te(i,j)
 
             else !convective term included!
@@ -2839,28 +2833,35 @@ if(UseMieScattering.eq.1) then
 !                 +x(i,j)**2+y(i,j+1)**2-2d0*y(i,j+1)*y(i,j)+y(i,j)**2)**(0.5d0) & 
 !                 -1d0*((kappae(i,j)+kappae(i,j-1))/(Ce(i,j)+Ce(i,j-1)))*(Ue(i,j)-Ue(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 & 
 !                 -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
-                )*dt/CellVol(i,j) & 
-                +( &
-                    0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*5d0/3d0*(kappae(i,j)/Ce(i,j)+kappae(i+1,j) & 
-                          /Ce(i+1,j))*(Ue(i+1,j)-Ue(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
-                  - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*5d0/3d0*(kappae(i,j) & 
-                          /Ce(i,j)+kappae(i+1,j)/Ce(i+1,j))*(0.25d0*Ue(i+1,j+1)+0.25d0*Ue(i,j+1)-0.25d0*Ue(i+1,j-1) & 
-                          -0.25d0*Ue(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-                  + 0.5d0*(NormalWx(i,j)**2+NormalWy(i,j)**2)*CellAreaW(i,j)*5d0/3d0*(kappae(i-1,j)/Ce(i-1,j)+kappae(i,j) & 
-                          /Ce(i,j))*(Ue(i,j)-Ue(i-1,j))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistW(i,j) & 
-                  - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*5d0/3d0*(kappae(i-1,j) & 
-                          /Ce(i-1,j)+kappae(i,j)/Ce(i,j))*(0.25d0*Ue(i,j+1)+0.25d0*Ue(i-1,j+1)-0.25d0*Ue(i-1,j-1) & 
-                          -0.25d0*Ue(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                  + 0.5d0*(NormalNx(i,j)**2+NormalNy(i,j)**2)*CellAreaN(i,j)*5d0/3d0*(kappae(i,j+1)/Ce(i,j+1)+kappae(i,j) & 
-                          /Ce(i,j))*(Ue(i,j+1)-Ue(i,j))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistN(i,j) & 
-                  - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*5d0/3d0*(kappae(i,j+1) & 
-                          /Ce(i,j+1)+kappae(i,j)/Ce(i,j))*(0.25d0*Ue(i+1,j+1)+0.25d0*Ue(i+1,j)-0.25d0*Ue(i-1,j) & 
-                          -0.25d0*Ue(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-                  + 0.5d0*(NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*5d0/3d0*(kappae(i,j-1)/Ce(i,j-1)+kappae(i,j) & 
-                          /Ce(i,j))*(Ue(i,j)-Ue(i,j-1))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistS(i,j) & 
-                  - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*5d0/3d0*(kappae(i,j-1) & 
-                          /Ce(i,j-1)+kappae(i,j)/Ce(i,j))*(0.25d0*Ue(i+1,j)+0.25d0*Ue(i+1,j-1)-0.25d0*Ue(i-1,j-1) & 
-                          -0.25d0*Ue(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
+                )*dt*InvCellVol(i,j) & 
+                +0.5d0*5d0/3d0*( &
+                    NormalE2(i,j)*CellAreaE(i,j)*(kappae(i,j)/Ce(i,j)+kappae(i+1,j) & 
+                          /Ce(i+1,j))*(Ue(i+1,j)-Ue(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+                    !
+                  - (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j) & 
+                          /Ce(i,j)+kappae(i+1,j)/Ce(i+1,j))*0.25d0*(Ue(i+1,j+1)+Ue(i,j+1)-Ue(i+1,j-1)-Ue(i,j-1)) & 
+                          /(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
+                    !
+                  + NormalW2(i,j)*CellAreaW(i,j)*(kappae(i-1,j)/Ce(i-1,j)+kappae(i,j) & 
+                          /Ce(i,j))*(Ue(i,j)-Ue(i-1,j))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) & 
+                    !
+                  - (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappae(i-1,j) & 
+                          /Ce(i-1,j)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i,j+1)+Ue(i-1,j+1)-Ue(i-1,j-1)-Ue(i,j-1)) & 
+                          /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+                    !
+                  + NormalN2(i,j)*CellAreaN(i,j)*(kappae(i,j+1)/Ce(i,j+1)+kappae(i,j) & 
+                          /Ce(i,j))*(Ue(i,j+1)-Ue(i,j))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
+                    !
+                  - (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappae(i,j+1) & 
+                          /Ce(i,j+1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j+1)+Ue(i+1,j)-Ue(i-1,j)-Ue(i-1,j+1)) & 
+                          /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
+                    !
+                  + NormalS2(i,j)*CellAreaS(i,j)*(kappae(i,j-1)/Ce(i,j-1)+kappae(i,j) & 
+                          /Ce(i,j))*(Ue(i,j)-Ue(i,j-1))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
+                    !
+                  - (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappae(i,j-1) & 
+                          /Ce(i,j-1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j)+Ue(i+1,j-1)-Ue(i-1,j-1)-Ue(i-1,j)) & 
+                          /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
 !                     Korfiatis 2007 equation
 !                     0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappae(i,j)*diffusionE(i,j)/Ne(i,j)+kappae(i+1,j)*diffusionE(i+1,j)/Ne(i+1,j))*(Ne(i+1,j)-Ne(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j)*diffusionE(i,j)/Ne(i,j)+kappae(i+1,j)*diffusionE(i+1,j)/Ne(i+1,j))*(0.25d0*Ne(i+1,j+1)+0.25d0*Ne(i,j+1)-0.25d0*Ne(i+1,j-1)-0.25d0*Ne(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
@@ -2871,15 +2872,15 @@ if(UseMieScattering.eq.1) then
 !                   + 0.5d0*(NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*(kappae(i,j-1)*diffusionE(i,j-1)/Ne(i,j-1)+kappae(i,j)*diffusionE(i,j)/Ne(i,j))*(Ne(i,j)-Ne(i,j-1))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistS(i,j) & 
 !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappae(i,j-1)*diffusionE(i,j-1)/Ne(i,j-1)+kappae(i,j)*diffusionE(i,j)/Ne(i,j))*(0.25d0*Ne(i+1,j)+0.25d0*Ne(i+1,j-1)-0.25d0*Ne(i-1,j-1)-0.25d0*Ne(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
                   ) & 
-                  *dt/CellVol(i,j) &
+                  *dt*InvCellVol(i,j) &
                 +Ue(i,j)
                 
                 UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j) & 
                 ! convective term for transport of the energy by the field
-                -((0.5d0*(VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+0.5d0*(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) & 
-                +( 0.5d0*(VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+0.5d0*(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) & 
-                +( 0.5d0*(VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+0.5d0*(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
-                +( 0.5d0*(VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+0.5d0*(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
+                -0.5d0*(((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) & 
+                +( (VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) & 
+                +( (VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
+                +( (VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
                 ! diffusive term for energy - rewrite correctly
 !                 + ( (Uh(i+1,j)-Uh(i,j))/(x(i+1,j)**2-2d0*x(i+1,j)*x(i,j)+x(i,j)**2 & 
 !                 + y(i+1,j)**2-2d0*y(i+1,j)*y(i,j)+y(i,j)**2)**(0.5d0)*( (kappah(i+1,j)+kappah(i,j))/(Ch(i+1,j)+Ch(i,j)) )*CellAreaE(i,j) &
@@ -2889,27 +2890,27 @@ if(UseMieScattering.eq.1) then
 !                 +x(i,j)**2+y(i,j+1)**2-2d0*y(i,j+1)*y(i,j)+y(i,j)**2)**(0.5d0) & 
 !                 -1d0*((kappah(i,j)+kappah(i,j-1))/(Ch(i,j)+Ch(i,j-1)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 & 
 !                 -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
-                )*dt/CellVol(i,j) & 
-                +( & 
-                    0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappah(i,j)/Ch(i,j)+kappah(i+1,j) & 
-                          /Ch(i+1,j))*(Uh(i+1,j)-Uh(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
-                  - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)/Ch(i,j) & 
-                          +kappah(i+1,j)/Ch(i+1,j))*(0.25d0*Uh(i+1,j+1)+0.25d0*Uh(i,j+1)-0.25d0*Uh(i+1,j-1) & 
-                          -0.25d0*Uh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-                  + 0.5d0*(NormalWx(i,j)**2+NormalWy(i,j)**2)*CellAreaW(i,j)*(kappah(i-1,j)/Ch(i-1,j)+kappah(i,j)/Ch(i,j)) & 
-                          *(Uh(i,j)-Uh(i-1,j))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistW(i,j) & 
-                  - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)/Ch(i-1,j) & 
-                          +kappah(i,j)/Ch(i,j))*(0.25d0*Uh(i,j+1)+0.25d0*Uh(i-1,j+1)-0.25d0*Uh(i-1,j-1)-0.25d0*Uh(i,j-1)) & 
+                )*dt*InvCellVol(i,j) & 
+                +0.5d0*( & 
+                    NormalE2(i,j)*CellAreaE(i,j)*(kappah(i,j)/Ch(i,j)+kappah(i+1,j) & 
+                          /Ch(i+1,j))*(Uh(i+1,j)-Uh(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+                  - (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)/Ch(i,j) & 
+                          +kappah(i+1,j)/Ch(i+1,j))*0.25d0*(Uh(i+1,j+1)+Uh(i,j+1)-Uh(i+1,j-1)-Uh(i,j-1)) & 
+                          /(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
+                  + NormalW2(i,j) *CellAreaW(i,j)*(kappah(i-1,j)/Ch(i-1,j)+kappah(i,j)/Ch(i,j)) & 
+                          *(Uh(i,j)-Uh(i-1,j))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))& 
+                  - (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)/Ch(i-1,j) & 
+                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i,j+1)+Uh(i-1,j+1)-Uh(i-1,j-1)-Uh(i,j-1)) & 
                           /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                  + 0.5d0*(NormalNx(i,j)**2+NormalNy(i,j)**2)*CellAreaN(i,j)*(kappah(i,j+1)/Ch(i,j+1)+kappah(i,j)/Ch(i,j)) & 
-                          *(Uh(i,j+1)-Uh(i,j))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistN(i,j) & 
-                  - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)/Ch(i,j+1) & 
-                          +kappah(i,j)/Ch(i,j))*(0.25d0*Uh(i+1,j+1)+0.25d0*Uh(i+1,j)-0.25d0*Uh(i-1,j)-0.25d0*Uh(i-1,j+1)) & 
+                  + NormalN2(i,j)*CellAreaN(i,j)*(kappah(i,j+1)/Ch(i,j+1)+kappah(i,j)/Ch(i,j)) & 
+                          *(Uh(i,j+1)-Uh(i,j))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
+                  - (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)/Ch(i,j+1) & 
+                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j+1)+Uh(i+1,j)-Uh(i-1,j)-Uh(i-1,j+1)) & 
                           /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-                  + 0.5d0*(NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*(kappah(i,j-1)/Ch(i,j-1)+kappah(i,j)/Ch(i,j)) & 
-                        *(Uh(i,j)-Uh(i,j-1))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistS(i,j) & 
-                  - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)/Ch(i,j-1) & 
-                        +kappah(i,j)/Ch(i,j))*(0.25d0*Uh(i+1,j)+0.25d0*Uh(i+1,j-1)-0.25d0*Uh(i-1,j-1)-0.25d0*Uh(i-1,j)) &
+                  + NormalS2(i,j)*CellAreaS(i,j)*(kappah(i,j-1)/Ch(i,j-1)+kappah(i,j)/Ch(i,j)) & 
+                        *(Uh(i,j)-Uh(i,j-1))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
+                  - (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)/Ch(i,j-1) & 
+                        +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j)+Uh(i+1,j-1)-Uh(i-1,j-1)-Uh(i-1,j)) &
                         /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
 ! ! Korfiatis 2007 equation
 !                     0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappah(i,j)*diffusionH(i,j)/Nh(i,j)+kappah(i+1,j)*diffusionH(i+1,j)/Nh(i+1,j))*(Nh(i+1,j)-Nh(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
@@ -2921,7 +2922,7 @@ if(UseMieScattering.eq.1) then
 !                   + 0.5d0*(NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*(kappah(i,j-1)*diffusionH(i,j-1)/Nh(i,j-1)+kappah(i,j)*diffusionH(i,j)/Nh(i,j))*(Nh(i,j)-Nh(i,j-1))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistS(i,j) & 
 !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)*diffusionH(i,j-1)/Nh(i,j-1)+kappah(i,j)*diffusionH(i,j)/Nh(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
                   ) & 
-                  *dt/CellVol(i,j) &
+                  *dt*InvCellVol(i,j) &
                 +Uh(i,j)
                 
             end if
@@ -2933,38 +2934,38 @@ if(UseMieScattering.eq.1) then
             if(ConvectionEnergy.eq.0) then 
             
             ThNew(i,j) = (&
-                  + 0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(Th(i+1,j)-Th(i,j))  & 
-                        / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
+                  + 0.5d0*NormalE2(i,j)*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(Th(i+1,j)-Th(i,j))  & 
+                        / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i,j+1)-0.25d0*Th(i+1,j-1)-0.25d0*Th(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-                  - 0.5d0*(NormalWx(i,j)**2+NormalWy(i,j)**2)*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(Th(i,j)-Th(i-1,j)) & 
-                        /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistW(i,j) & 
+                  - 0.5d0*NormalW2(i,j)*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(Th(i,j)-Th(i-1,j)) & 
+                        /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) & 
 !                   - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(0.25d0*Th(i,j+1)+0.25d0*Th(i-1,j+1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                  + 0.5d0*(NormalNx(i,j)**2+NormalNy(i,j)**2)*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(Th(i,j+1)-Th(i,j)) & 
-                        /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistN(i,j) & 
+                  + 0.5d0*NormalN2(i,j)*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(Th(i,j+1)-Th(i,j)) & 
+                        /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
 !                   - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i+1,j)-0.25d0*Th(i-1,j)-0.25d0*Th(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-                  - 0.5d0*(NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(Th(i,j)-Th(i,j-1)) & 
-                        /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistS(i,j) & 
+                  - 0.5d0*NormalS2(i,j)*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(Th(i,j)-Th(i,j-1)) & 
+                        /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
 !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(0.25d0*Th(i+1,j)+0.25d0*Th(i+1,j-1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
-                  + CrossCoeff*( &
-                  + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j)) & 
+                  + 0.5d0*CrossCoeff*( &
+                  + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j)) & 
                         *( ThDual(i,j) - ThDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-                  + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j)) & 
+                  + (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j)) & 
                         *( ThDual(i-1,j-1) - ThDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                  + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j)) & 
+                  + (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j)) & 
                         *( ThDual(i-1,j) - ThDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-                  + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j)) & 
+                  + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j)) & 
                         *( ThDual(i,j-1) - ThDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
                   ) &
                   +(-CouplingH(i,j)+SourceH(i,j))*CellVol(i,j)) & 
-                  /Ch(i,j)*dt/CellVol(i,j)+Th(i,j)
+                  /Ch(i,j)*dt*InvCellVol(i,j)+Th(i,j)
             
 
          else !convection scheme
-            UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-( & 
-                   (0.5d0*(VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+0.5d0*(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) & 
-                  +(0.5d0*(VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+0.5d0*(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) & 
-                  +(0.5d0*(VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+0.5d0*(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
-                  +(0.5d0*(VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+0.5d0*(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
+            UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-0.5d0*( & 
+                   ((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) & 
+                  +((VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) & 
+                  +((VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
+                  +((VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
                   + ( ((kappah(i+1,j)+kappah(i,j))/(Ch(i+1,j)+Ch(i,j))) * (Uh(i+1,j)-Uh(i,j)) & 
                   /(x(i+1,j)**2-2d0*x(i+1,j)*x(i,j)+x(i,j)**2 + y(i+1,j)**2-2d0*y(i+1,j)*y(i,j)+y(i,j)**2)**(0.5d0) &
                   *CellAreaE(i,j) &
@@ -2976,7 +2977,7 @@ if(UseMieScattering.eq.1) then
                   *CellAreaN(i,j) &
                   -1d0*((kappah(i,j)+kappah(i,j-1))/(Ch(i,j)+Ch(i,j-1)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 & 
                   -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
-                  )*dt/CellVol(i,j)+Uh(i,j)
+                  )*dt*InvCellVol(i,j)+Uh(i,j)
         end if
         
 !       else
@@ -3051,42 +3052,46 @@ if(UseMieScattering.eq.1) then
         h3=dt+dt2+dt3
 
         TsNew(i,j) =&
-                    (((( (&
-                    + 0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappas(i,j)+kappas(i+1,j))*(Ts(i+1,j)-Ts(i,j))  & 
-                        / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
+                    (((0.5d0*( (&
+                    + NormalE2(i,j)*CellAreaE(i,j) &
+                      /(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))  & 
+                      *(kappas(i,j)+kappas(i+1,j))*(Ts(i+1,j)-Ts(i,j)) &
   !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappas(i,j)+kappas(i+1,j))*(0.25d0*Ts(i+1,j+1)+0.25d0*Ts(i,j+1)-0.25d0*Ts(i+1,j-1)-0.25d0*Ts(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-                    - 0.5d0*(NormalWx(i,j)**2+NormalWy(i,j)**2)*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j))*(Ts(i,j)-Ts(i-1,j)) & 
-                        /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistW(i,j) &
+                    - NormalW2(i,j)*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j))*(Ts(i,j)-Ts(i-1,j)) & 
+                        /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
   !                   - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j))*(0.25d0*Ts(i,j+1)+0.25d0*Ts(i-1,j+1)-0.25d0*Ts(i-1,j-1)-0.25d0*Ts(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                    + 0.5d0*(NormalNx(i,j)**2+NormalNy(i,j)**2)*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j))*(Ts(i,j+1)-Ts(i,j)) & 
-                        /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistN(i,j) &
+                    + NormalN2(i,j)*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j))*(Ts(i,j+1)-Ts(i,j)) & 
+                        /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
   !                   - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j))*(0.25d0*Ts(i+1,j+1)+0.25d0*Ts(i+1,j)-0.25d0*Ts(i-1,j)-0.25d0*Ts(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-                    - 0.5d0*(NormalSx(i,j)**2+NormalSy(i,j)**2)*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j))*(Ts(i,j)-Ts(i,j-1)) &
-                        /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistS(i,j)) &
+                    - NormalS2(i,j)*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j))*(Ts(i,j)-Ts(i,j-1)) &
+                        /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))) &
   !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j))*(0.25d0*Ts(i+1,j)+0.25d0*Ts(i+1,j-1)-0.25d0*Ts(i-1,j-1)-0.25d0*Ts(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
                     + CrossCoeff*( &
-                    + 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappas(i,j)+kappas(i+1,j)) & 
+                    + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappas(i,j)+kappas(i+1,j)) & 
                         *( TsDual(i,j) - TsDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-                    + 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j)) & 
+                    + (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappas(i-1,j)+kappas(i,j)) & 
                         *( TsDual(i-1,j-1) - TsDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                    + 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j)) & 
+                    + (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappas(i,j+1)+kappas(i,j)) & 
                         *( TsDual(i-1,j) - TsDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-                    + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j)) & 
+                    + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j)) & 
                         *( TsDual(i,j-1) - TsDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
                     )) &
-                    + (CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j)) / CellVol(i,j) &
+                    + (CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j)) * InvCellVol(i,j) &
 !                     - ((h1 * h2 + h1 * h3 &
 !                     + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
 !                     /(-h3 + h1) / (-h2 + h1) * CsOld(i,j) + h1 * h3 / (-h2 &
 !                     + h1) / h2 / (-h3 + h2) * CsPrev(i,j) - h1 * h2 / h3 &
 !                     / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j))*0d0 & !20150426-Temporal variation of Cs is killed here.
-!                     * Ts(i,j)
+!                     * Ts(i,j)           
                     ) / Cs(i,j) + h2 * h3 / h1 / (-h3 + h1)  &
                     / (-h2 + h1) * Ts(i,j) - h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2) &
                     * TsOld(i,j) + h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 &
                     * h3 + h1 * h2) * TsPrev(i,j)) / (h1 * h2 + h1 * h3 + &
                     h2 * h3) * h2 * h1 * h3
-
+                 !   ) / Cs(i,j) - h2 * h3 / h1 / (-h3 + h1) / dt2 * Ts(i,j) &
+                 !   - h1 * h3 / h2 / dt2 / dt3 * TsOld(i,j) &
+                 !   + h1 * h2 / (h3 * ( h3 - h1 - h2 ) + h1 * h2) * TsPrev(i,j)) &
+                 !   / (h1 * h2 + h1 * h3 + h2 * h3) * h2 * h1
                     
     end if
 
@@ -3099,28 +3104,27 @@ if(UseMieScattering.eq.1) then
                       
 
 
-          CFLxT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-          CFLyT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
-          CFLxTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-          CFLyTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+    CFLxT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+    CFLyT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+    CFLxTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+    CFLyTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
           
 !         end if
         
-        CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
-        CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
+    CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
+    CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
         
-        TotalElectrons(i,j)=NeNew(i,j)*(1d0/8d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) & 
-                    -1d0/8d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-        TotalHoles(i,j)=NhNew(i,j)*(1d0/8d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) & 
-                    -1d0/8d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+    TotalElectrons(i,j)=NeNew(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) & 
+                    -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+    TotalHoles(i,j)=NhNew(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) & 
+                    -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
         
         
-        ThermalEnergy(i,j)=Ce(i,j)*Te(i,j)+Ch(i,j)*Th(i,j)+Cs(i,j)*Ts(i,j)
-        LaserEnergy(i,j)=OnePhotonIonizationRate0*intensity(i,j)/(1d0-reflectivity(i,j))+ & !energy loss by interband absorption
-                TwoPhotonIonizationRate0*intensity(i,j)**2/(1d0-reflectivity(i,j))**2+ & !energy loss by two photon absorption
-                (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*intensity(i,j)/(1d0-reflectivity(i,j)) !energy loss by carrrier heating
+    ThermalEnergy(i,j)=Ce(i,j)*Te(i,j)+Ch(i,j)*Th(i,j)+Cs(i,j)*Ts(i,j)
+    LaserEnergy(i,j)=OnePhotonIonizationRate0*intensity(i,j)/(1d0-reflectivity(i,j))+ & !energy loss by interband absorption
+               TwoPhotonIonizationRate0*intensity(i,j)**2/(1d0-reflectivity(i,j))**2+ & !energy loss by two photon absorption
+              (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*intensity(i,j)/(1d0-reflectivity(i,j)) !energy loss by carrrier heating
         
-
       end do
     end do
     !$OMP END DO
@@ -3532,7 +3536,7 @@ if(UseMieScattering.eq.1) then
           TotalMeshVolume, LaserIntensityEnergy, ElectronKineticEnergy, ElectronPotentialEnergy !9
       
 892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-1E12.5, 3x, 1E12.5, 3x)
+1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       
       write(98,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
                     maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
