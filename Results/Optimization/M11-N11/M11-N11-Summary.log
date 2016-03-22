@@ -1,0 +1,26 @@
+M11-N11-1cores.log
+
+real	0m36.521s
+user	0m36.219s
+sys	0m0.252s
+M11-N11-2cores.log
+
+real	0m25.611s
+user	0m49.823s
+sys	0m0.380s
+M11-N11-4cores.log
+
+real	0m18.555s
+user	1m10.713s
+sys	0m0.556s
+M11-N11-8cores.log
+
+real	0m18.074s
+user	2m16.880s
+sys	0m0.764s
+M11-N11-16cores.log
+
+real	0m19.467s
+user	4m54.639s
+sys	0m1.132s
+
