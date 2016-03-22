@@ -28,7 +28,7 @@ implicit none
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
-                        tmax=50d-9 ,& !stop time
+                        tmax=0d-15 ,& !stop time
                         coeffDilaDt=2d0        ,& !diltation coeff before dt change
                         xmin=-10d-6       ,& !mesh min
                         xmax=10d-6       ,& !mesh max
@@ -40,15 +40,15 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=2001   ,& !number of cells main domain X direction
-                          N=151     ,& !number of cells main domain Y direection
+                          M=11   ,& !number of cells main domain X direction
+                          N=11     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
                           MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: Experimental cones, 2: Cone in a vessel (HS), 3: import GMSH (working)
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
-                          MeshShift=100       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
+                          MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
                           FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
                           SORiterations=1        ,&        !iteration number for over-relaxation method
                           InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
@@ -92,7 +92,7 @@ implicit none
                             InterpolateOff=0,         &        !just to test speedup...
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
 !                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
-                            UseMieScattering=1,&                 ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
+                            UseMieScattering=-1,&                 ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
                             maxBesselOrder=20,&                ! Max of terms in series of Bessel for Mie scattering
                             besselArray=1, &
                             NewtonIterations=1000, &
@@ -3050,12 +3050,14 @@ if(UseMieScattering.eq.1) then
                     + 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappas(i,j-1)+kappas(i,j)) & 
                         *( TsDual(i,j-1) - TsDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
                     )) &
-                    + (CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j)) / CellVol(i,j) - ((h1 * h2 + h1 * h3 &
-                    + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
-                    /(-h3 + h1) / (-h2 + h1) * CsOld(i,j) + h1 * h3 / (-h2 &
-                    + h1) / h2 / (-h3 + h2) * CsPrev(i,j) - h1 * h2 / h3 &
-                    / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j))*0d0 & !20150426-Temporal variation of Cs is killed here.
-                    * Ts(i,j)) / Cs(i,j) + h2 * h3 / h1 / (-h3 + h1)  &
+                    + (CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j)) / CellVol(i,j) &
+!                     - ((h1 * h2 + h1 * h3 &
+!                     + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
+!                     /(-h3 + h1) / (-h2 + h1) * CsOld(i,j) + h1 * h3 / (-h2 &
+!                     + h1) / h2 / (-h3 + h2) * CsPrev(i,j) - h1 * h2 / h3 &
+!                     / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j))*0d0 & !20150426-Temporal variation of Cs is killed here.
+!                     * Ts(i,j)
+                    ) / Cs(i,j) + h2 * h3 / h1 / (-h3 + h1)  &
                     / (-h2 + h1) * Ts(i,j) - h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2) &
                     * TsOld(i,j) + h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 &
                     * h3 + h1 * h2) * TsPrev(i,j)) / (h1 * h2 + h1 * h3 + &

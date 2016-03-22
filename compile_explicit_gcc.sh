@@ -2,7 +2,7 @@
 
 # export KMP_STACKSIZE=1048576000
 export OMP_STACKSIZE=10485760
-export OMP_NUM_THREADS=4
+export OMP_NUM_THREADS=1
 # export MKL_NUM_THREADS=16
 export MKL_DYNAMIC="FALSE"
 export OMP_DYNAMIC="FALSE"
@@ -23,16 +23,21 @@ cp FermiDatasH.sav FermiDatasH.dat
 # with multithreaded lapack mkl
 # ifort -w amos/*.f Bivariate.f zeroin.f matrixtools.f90 main_explicit_Mie.f90 -O2 -traceback -mcmodel=large -I/usr/include -I/opt/intel/mkl/include -L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -W1 -lm -o Flaps_explicit.out
 
+DebugLine='-g -pg -fbounds-check -w -fbacktrace -Wno-unused-variable -Wall'
+#  #activate only if segmentation error on arrays. '
+Optimization="${DebugLine} -O2 -ffree-line-length-none -ffixed-line-length-none -finteger-4-integer-8 -mcmodel=small -I/usr/include -llapack -fopenmp -lm"
+# -fbounds-check #activate only if segmentation error on arrays. 
+
 # using another compiler
 cd amos/
-gfortran -c *.f
+gfortran -O2 -g -pg -c *.f
 cd ..
-gfortran -c Bivariate.f zeroin.f 
-gfortran -c -g -w -fbacktrace gmsh/libmsh2vf.f90 -ffree-line-length-none -ffixed-line-length-none -finteger-4-integer-8
-gfortran -c control_file.f90 
-gfortran -c main_explicit_Mie.f90 -g -Wno-unused-variable -Wall -fbacktrace -fbounds-check -O2 -mcmodel=small -I/usr/include -llapack -fopenmp -ffree-line-length-none -ffixed-line-length-none -finteger-4-integer-8 -lm
-gfortran main_explicit_Mie.o -fbacktrace -fopenmp -mcmodel=small amos/*.o Bivariate.o zeroin.o libmsh2vf.o control_file.o -o Flaps_explicit.out 
-./Flaps_explicit.out
+gfortran -c ${Optimization} Bivariate.f zeroin.f 
+gfortran -c ${Optimization} gmsh/libmsh2vf.f90 
+gfortran -c ${Optimization} control_file.f90 
+gfortran -c ${Optimization} main_explicit_Mie.f90 
+gfortran ${Optimization} main_explicit_Mie.o amos/*.o Bivariate.o zeroin.o libmsh2vf.o control_file.o -o  Flaps_explicit.out 
+# ./Flaps_explicit.out
 
 # ifort main.o Bivariate.o -o Flaps.out
 #  -axSSE4.2 
