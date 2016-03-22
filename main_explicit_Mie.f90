@@ -38,10 +38,10 @@ implicit none
                         tmin=tCenter-5d0*tau                     !max absolute time
     
                         
-    integer(8), parameter::  iterOut=10000       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=11   ,& !number of cells main domain X direction
-                          N=11     ,& !number of cells main domain Y direection
+                          M=51   ,& !number of cells main domain X direction
+                          N=51     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
@@ -277,7 +277,7 @@ implicit none
             maxTe, minTe, maxTh, minTh, maxTs, minTs, maxIntensity, maxNe, minNe, maxNh, minNh, &
             maxEnergy, maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, maxDiffNe, maxDiffNh, &
             TotalLaserEnergy, TotalThermalEnergy, ElectronPotentialEnergy, ElectronKineticEnergy, &
-            cpuefficiency, calc_time_begin, calc_time_1, calc_time_2, calc_time_3, &
+            cpuefficiency, cpu_timestep_duration, calc_time_begin, calc_time_1, calc_time_2, calc_time_3, &
             NeedleHeight, NeedleA, NeedleB, Needlet0Limit, NeedleXParam, NeedleYParam, NeedleAngle, &
             localT, P2critic, ConstBLx, ConstBLy, TotalNumOfE, TotalNumOfH, &
             distX, distY, SORsum, xmin2, xmax2, ymin2, ymax2, &
@@ -528,7 +528,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   HoleEnergy=0d0
   LatticeEnergy=0d0
   TotalThermalEnergy=0d0; 
-  cpuefficiency=0d0
+  cpuefficiency=0d0; cpu_timestep_duration=0d0
   
   
 !***************** MESH GENERATION *****************
@@ -2145,7 +2145,7 @@ if(UseMieScattering.eq.1) then
       write(*,*) minNe, "< Ne <", maxNe
       write(*,*) minNh, "< Nh <", maxNh
       write(*,*) "CFL_Te=", maxCFLxT+maxCFLyT, "maxCFL_Ne=", maxCFLxN+maxCFLyN, &
-                   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, "NumThreads=", nthreads
+                   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
       write(*,*) "CFL_Limit=", maxCFL
       write(*,*) "dt_init=", dt0, "dt=", dt
     end if
@@ -3524,6 +3524,8 @@ if(UseMieScattering.eq.1) then
        
     ! output to files
     call cpu_time(calc_time_3)
+    
+    cpu_timestep_duration = (calc_time_3-calc_time_begin) / real(nbiter)
     cpuefficiency=real(nbiter)/(calc_time_3-calc_time_begin)*real(nthreads)
     
     if(mod(nbiter,iterOut).eq.0) then 
@@ -3541,7 +3543,7 @@ if(UseMieScattering.eq.1) then
                     real(maxFermiIndexH), NeTotal, NhTotal, maxCFLxT, maxCFLyT, &        !25
                     maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, IntensityEnergy, &        !30
                     TotalMeshVolume, ElectronEnergy, HoleEnergy, LatticeEnergy, LaserIntensityEnergy, &         !35
-                    ElectronKineticEnergy, ElectronPotentialEnergy
+                    ElectronKineticEnergy, ElectronPotentialEnergy, cpu_timestep_duration    !38
                     
 888 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1F12.8, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -3550,19 +3552,21 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
-3x, 1E19.11, 3x, 1E19.11)
+3x, 1E19.11, 3x, 1E19.11, 3x, 1E12.5)
                 
         write(94,884, advance="YES") t, Te(1,N/2), Th(1,N/2), Ts(1,N/2), Ne(1,N/2), &                        !5
               Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
               SourceE(1,N/2), GainsE(1,N/2), SourceH(1,N/2), GainsH(1,N/2), Egap(1,N/2), &                !15
               diffNe(1,N/2), diffNh(1,N/2), real(FermiIndexE(1,N/2)), real(FermiIndexH(1,N/2)), Ce(2,N/2), &                !20
-              CeOld(2,N/2), Ch(2,N/2), ChOld(2,N/2), Cs(2,N/2), CsOld(2,N/2)                                !25
+              CeOld(2,N/2), Ch(2,N/2), ChOld(2,N/2), Cs(2,N/2), CsOld(2,N/2), &                                !25
+              cpu_timestep_duration !26
               
 884 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+3x, 1E12.5)
 
         write(93,883, advance="YES") t, Te(M/2,N), Th(M/2,N), Ts(M/2,N), Ne(M/2,N), &
               Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
