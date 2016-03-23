@@ -1,0 +1,25 @@
+M101-N101-16cores.log
+
+real    0m59.348s
+user    14m11.800s
+sys     0m0.857s
+M101-N101-8cores.log
+
+real    0m56.540s
+user    7m1.359s
+sys     0m0.405s
+M101-N101-4cores.log
+
+real    1m1.657s
+user    3m56.790s
+sys     0m0.109s
+M101-N101-2cores.log
+
+real    1m30.146s
+user    2m57.223s
+sys     0m0.052s
+M101-N101-1cores.log
+
+real    2m17.304s
+user    2m17.081s
+sys     0m0.036s

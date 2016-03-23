@@ -2,7 +2,7 @@
 
 # export KMP_STACKSIZE=104857600
 export OMP_STACKSIZE=10485760
-export OMP_NUM_THREADS=8
+# export OMP_NUM_THREADS=8
 # export MKL_NUM_THREADS=8
 export MKL_DYNAMIC="FALSE"
 export OMP_DYNAMIC="FALSE"
@@ -22,7 +22,7 @@ cp FermiDatasH.sav FermiDatasH.dat
 
 # with multithreaded lapack mkl 
 
-DebugLine='-w -traceback -W1'
+# DebugLine='-w -traceback -W1'
 Optimization="${DebugLine} -O2 -mcmodel=large"
 ifort gmsh/libmsh2vf.f90 amos/*.f ${Optimization} Bivariate.f zeroin.f control_file.f90 main_explicit_Mie.f90 -I/usr/include -I/opt/intel/mkl/include -L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -lm -o Flaps_explicit.out
 

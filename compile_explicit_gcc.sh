@@ -6,7 +6,7 @@ export OMP_NUM_THREADS=4
 # export MKL_NUM_THREADS=16
 export MKL_DYNAMIC="FALSE"
 export OMP_DYNAMIC="FALSE"
-#export OMP_SCHEDULE="DYNAMIC,800"
+export OMP_SCHEDULE="DYNAMIC,800"
 ulimit -s unlimited
 
 KMP_AFFINITY=granularity=fine,compact
