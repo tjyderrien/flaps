@@ -1,0 +1,15 @@
+M2001-N151-4cores.log
+
+real    53m36.036s
+user    138m26.686s
+sys     0m1.004s
+M2001-N151-2cores.log
+
+real    61m18.636s
+user    105m48.904s
+sys     0m0.452s
+M2001-N151-1cores.log
+
+real    114m8.676s
+user    113m59.194s
+sys     0m1.048s
