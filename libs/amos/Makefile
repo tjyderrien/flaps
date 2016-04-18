@@ -9,3 +9,6 @@ amos: $(OBJ)
 
 $(OBJ): %.o: %.f
 	$(CC) -o $@ $^ $(LDFLAGS) -c
+
+clean: 
+	rm -fr *.o
