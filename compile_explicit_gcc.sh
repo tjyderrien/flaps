@@ -42,9 +42,11 @@ cd libs/gmsh/
 gfortran -c ${Optimization} libmsh2vf.f90 
 cd -
 cd src/
-gfortran -c ${Optimization} main_explicit_Mie.f90
+gfortran -c ${Optimization} -I../libs/gmsh main_explicit_Mie.f90
 cd - 
-gfortran ${Optimization} src/main_explicit_Mie.o libs/gmsh/libmsh2vf.o libs/amos/*.o libs/Bivariate.o libs/zeroin.o libs/control_file.o -o  Flaps_explicit.out 
+gfortran ${Optimization}  src/main_explicit_Mie.o libs/gmsh/libmsh2vf.o libs/amos/*.o \
+                         libs/Bivariate.o libs/zeroin.o libs/control_file.o \
+                         -o  Flaps_explicit.out 
 # ./Flaps_explicit.out
 
 # ifort main.o Bivariate.o -o Flaps.out
