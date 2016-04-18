@@ -10,7 +10,7 @@ program Flaps
 
 ! include 'Bivariate.f'
 ! USE Bivariate
-  USE LIBMSH2VF !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing.
+USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 !   use control_file !Script provided by Jason Blevins, Ohio State University
 
 implicit none

@@ -29,9 +29,12 @@ Optimization="${DebugLine} -O2 -ffree-line-length-none -ffixed-line-length-none 
 # -fbounds-check #activate only if segmentation error on arrays. 
 
 # using another compiler
+echo "[Compile] AMOS library..."
 cd libs/amos/
 gfortran -O2 -g -pg -c *.f
 cd -
+
+echo "[Compile] Bivariate and Input control file libraries..."
 
 cd libs/
 gfortran -c ${Optimization} Bivariate.f zeroin.f 
@@ -39,11 +42,15 @@ gfortran -c ${Optimization} control_file.f90
 cd -
 
 cd libs/gmsh/
+echo "[Compile] Interface with GMSH"
 gfortran -c ${Optimization} libmsh2vf.f90 
 cd -
+
+echo "[Compile] Main program..."
 cd src/
 gfortran -c ${Optimization} -I../libs/gmsh main_explicit_Mie.f90
 cd - 
+echo "Linking all..."
 gfortran ${Optimization}  src/main_explicit_Mie.o libs/gmsh/libmsh2vf.o libs/amos/*.o \
                          libs/Bivariate.o libs/zeroin.o libs/control_file.o \
                          -o  Flaps_explicit.out 
