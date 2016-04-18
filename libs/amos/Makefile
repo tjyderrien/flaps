@@ -1,9 +1,11 @@
 CC=gfortran
-CFLAGS=-O2 -g -pg
+LDFLAGS=-O2 -g -pg
+SRC=$(wildcard *.f)
+OBJ=$(SRC:.f=.o)
 
 all: amos
 
 amos: $(OBJ)
 
 $(OBJ): %.o: %.f
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) -o $@ $^ $(LDFLAGS) -c
