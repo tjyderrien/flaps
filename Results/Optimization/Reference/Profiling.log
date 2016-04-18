@@ -1,0 +1,764 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls  ns/call  ns/call  name    
+ 11.22      1.60     1.60                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3063 @ 403aa6)
+  7.04      2.60     1.00                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 402348)
+  5.77      3.42     0.82                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2799 @ 402f6d)
+  5.07      4.14     0.72                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2767 @ 4029e9)
+  4.89      4.83     0.70                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2935 @ 4034ec)
+  3.45      5.32     0.49                             dielectricfunctiondrude (main_explicit_Mie.f90:3691 @ 40568f)
+  2.64      5.70     0.38                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2658 @ 4049a4)
+  2.25      6.02     0.32                             fermiindex (main_explicit_Mie.f90:3795 @ 401f18)
+  1.83      6.28     0.26                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2296 @ 405dff)
+  1.69      6.52     0.24                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2247 @ 407668)
+  1.69      6.76     0.24                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2649 @ 40480e)
+  1.48      6.97     0.21                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2649 @ 404886)
+  1.48      7.18     0.21                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3096 @ 4044df)
+  1.48      7.39     0.21                             dielectricfunction (main_explicit_Mie.f90:3682 @ 4058fb)
+  1.44      7.59     0.21                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2655 @ 404996)
+  1.41      7.79     0.20                             dielectricfunction (main_explicit_Mie.f90:3681 @ 4058d7)
+  1.34      7.98     0.19                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2655 @ 40491a)
+  1.20      8.15     0.17                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2646 @ 404804)
+  1.13      8.31     0.16                             dielectricfunctiondrude (main_explicit_Mie.f90:3691 @ 40579e)
+  1.06      8.46     0.15                             dielectricfunctiondrude (main_explicit_Mie.f90:3690 @ 40566d)
+  1.02      8.61     0.15                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2281 @ 405cfb)
+  1.02      8.75     0.15                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2646 @ 404748)
+  0.99      8.89     0.14                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2453 @ 4063b7)
+  0.95      9.03     0.14                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2622 @ 404d48)
+  0.91      9.16     0.13                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2652 @ 404910)
+  0.84      9.28     0.12                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2652 @ 404894)
+  0.84      9.40     0.12                             dielectricfunction (main_explicit_Mie.f90:3682 @ 406d07)
+  0.77      9.51     0.11                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2668 @ 408548)
+  0.63      9.60     0.09                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2555 @ 404fe5)
+  0.63      9.69     0.09                             ephcollisionfrequency (main_explicit_Mie.f90:3699 @ 4058ab)
+  0.56      9.77     0.08                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2416 @ 405faa)
+  0.49      9.84     0.07                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2258 @ 4058d1)
+  0.49      9.91     0.07                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2273 @ 405b38)
+  0.49      9.98     0.07                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:98 @ 437ca9)
+  0.46     10.04     0.07                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2285 @ 405d9d)
+  0.42     10.10     0.06                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2274 @ 405be1)
+  0.42     10.16     0.06                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2450 @ 406387)
+  0.42     10.22     0.06                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404bc7)
+  0.42     10.28     0.06                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2767 @ 402f63)
+  0.42     10.34     0.06                             flaps (main_explicit_Mie.f90:3372 @ 419f18)
+  0.35     10.39     0.05                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2302 @ 405e63)
+  0.35     10.44     0.05                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2447 @ 406255)
+  0.35     10.49     0.05                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2450 @ 40631d)
+  0.35     10.54     0.05                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2527 @ 40688d)
+  0.35     10.59     0.05                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2447 @ 406ccb)
+  0.35     10.64     0.05                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2695 @ 402313)
+  0.35     10.69     0.05                             flaps (main_explicit_Mie.f90:3407 @ 41a750)
+  0.35     10.74     0.05                             flaps (main_explicit_Mie.f90:3415 @ 41a7a1)
+  0.28     10.78     0.04                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2286 @ 405dcf)
+  0.28     10.82     0.04                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2416 @ 405ffd)
+  0.28     10.86     0.04                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2488 @ 406579)
+  0.28     10.90     0.04                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2493 @ 4065ed)
+  0.28     10.94     0.04                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2556 @ 4050eb)
+  0.28     10.98     0.04                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2668 @ 402010)
+  0.28     11.02     0.04                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:104 @ 437e1d)
+  0.28     11.06     0.04                             fermiindex (main_explicit_Mie.f90:3786 @ 401f00)
+  0.28     11.10     0.04                             flaps (main_explicit_Mie.f90:3357 @ 419d16)
+  0.28     11.14     0.04                             flaps (main_explicit_Mie.f90:3395 @ 41a552)
+  0.28     11.18     0.04                             flaps (main_explicit_Mie.f90:3404 @ 41a728)
+  0.25     11.22     0.04                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2217 @ 405430)
+  0.25     11.25     0.04                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2257 @ 405825)
+  0.25     11.29     0.04                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2258 @ 405884)
+  0.25     11.32     0.04                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2523 @ 4067ff)
+  0.21     11.35     0.03                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2206 @ 4072cc)
+  0.21     11.38     0.03                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2221 @ 405501)
+  0.21     11.41     0.03                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2227 @ 40557f)
+  0.21     11.44     0.03                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2228 @ 40559a)
+  0.21     11.47     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2269 @ 405ad6)
+  0.21     11.50     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2271 @ 405af7)
+  0.21     11.53     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2280 @ 405c5a)
+  0.21     11.56     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2280 @ 405ccd)
+  0.21     11.59     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2416 @ 405f6f)
+  0.21     11.62     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2434 @ 4060ef)
+  0.21     11.65     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2488 @ 40651e)
+  0.21     11.68     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 4066af)
+  0.21     11.71     0.03                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2559 @ 4051f5)
+  0.21     11.74     0.03                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:108 @ 437ea5)
+  0.21     11.77     0.03                             dielectricfunctiondrude (main_explicit_Mie.f90:3686 @ 405660)
+  0.21     11.80     0.03                             flaps (main_explicit_Mie.f90:3223 @ 419911)
+  0.21     11.83     0.03                             flaps (main_explicit_Mie.f90:3239 @ 4199ef)
+  0.21     11.86     0.03                             flaps (main_explicit_Mie.f90:3331 @ 419c6b)
+  0.21     11.89     0.03                             flaps (main_explicit_Mie.f90:3387 @ 41a2c6)
+  0.21     11.92     0.03                             flaps (main_explicit_Mie.f90:3226 @ 41cae4)
+  0.18     11.95     0.03                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2219 @ 405490)
+  0.18     11.97     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2485 @ 4064dc)
+  0.18     12.00     0.03                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2523 @ 4067b4)
+  0.18     12.02     0.03                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2567 @ 405304)
+  0.18     12.05     0.03                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404c1a)
+  0.18     12.07     0.03                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 4021bc)
+  0.18     12.10     0.03                             fermiindex (main_explicit_Mie.f90:3795 @ 401f11)
+  0.18     12.12     0.03                             flaps (main_explicit_Mie.f90:3327 @ 419c3b)
+  0.18     12.15     0.03                             latticeheatcapacity (main_explicit_Mie.f90:3782 @ 401ebd)
+  0.14     12.17     0.02                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2217 @ 4073b8)
+  0.14     12.19     0.02                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2552 @ 408120)
+  0.14     12.21     0.02                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2219 @ 4054d8)
+  0.14     12.23     0.02                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2220 @ 4054e9)
+  0.14     12.25     0.02                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2229 @ 4055aa)
+  0.14     12.27     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2247 @ 4057b0)
+  0.14     12.29     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2260 @ 4059de)
+  0.14     12.31     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2261 @ 4059f2)
+  0.14     12.33     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2274 @ 405c4f)
+  0.14     12.35     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2422 @ 406051)
+  0.14     12.37     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2434 @ 40612c)
+  0.14     12.39     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2438 @ 4061b8)
+  0.14     12.41     0.02                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 4066a7)
+  0.14     12.43     0.02                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2552 @ 404f80)
+  0.14     12.45     0.02                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2558 @ 405186)
+  0.14     12.47     0.02                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2607 @ 404b4a)
+  0.14     12.49     0.02                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404c52)
+  0.14     12.51     0.02                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404d04)
+  0.14     12.53     0.02                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2627 @ 404dda)
+  0.14     12.55     0.02                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2640 @ 4046a0)
+  0.14     12.57     0.02                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2688 @ 402247)
+  0.14     12.59     0.02                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 40227a)
+  0.14     12.61     0.02                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3080 @ 40430d)
+  0.14     12.63     0.02                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3085 @ 404348)
+  0.14     12.65     0.02                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3085 @ 4043b0)
+  0.14     12.67     0.02                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3093 @ 40447a)
+  0.14     12.69     0.02                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3093 @ 4044d0)
+  0.14     12.71     0.02                             __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:573 @ 43c0e4)
+  0.14     12.73     0.02                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:111 @ 437f40)
+  0.14     12.75     0.02                             areaelement (main_explicit_Mie.f90:4219 @ 404d31)
+  0.14     12.77     0.02                             dielectricfunctiondrude (main_explicit_Mie.f90:3693 @ 40575e)
+  0.14     12.79     0.02                             fermiindex (main_explicit_Mie.f90:3796 @ 401f3a)
+  0.14     12.81     0.02                             flaps (main_explicit_Mie.f90:3224 @ 419983)
+  0.14     12.83     0.02                             flaps (main_explicit_Mie.f90:3235 @ 4199d3)
+  0.14     12.85     0.02                             flaps (main_explicit_Mie.f90:3243 @ 419a0b)
+  0.14     12.87     0.02                             flaps (main_explicit_Mie.f90:3276 @ 419aed)
+  0.14     12.89     0.02                             flaps (main_explicit_Mie.f90:3296 @ 419b6d)
+  0.14     12.91     0.02                             flaps (main_explicit_Mie.f90:3300 @ 419b89)
+  0.14     12.93     0.02                             flaps (main_explicit_Mie.f90:3308 @ 419bc1)
+  0.14     12.95     0.02                             flaps (main_explicit_Mie.f90:3342 @ 419ce2)
+  0.14     12.97     0.02                             flaps (main_explicit_Mie.f90:3363 @ 419eaa)
+  0.14     12.99     0.02                             flaps (main_explicit_Mie.f90:3370 @ 419eea)
+  0.14     13.01     0.02                             flaps (main_explicit_Mie.f90:3382 @ 41a0e4)
+  0.14     13.03     0.02                             flaps (main_explicit_Mie.f90:3411 @ 41a778)
+  0.11     13.04     0.02                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2232 @ 4055d7)
+  0.11     13.06     0.02                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2233 @ 4055e0)
+  0.11     13.07     0.02                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2559 @ 4051e0)
+  0.11     13.09     0.02                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2561 @ 405253)
+  0.11     13.10     0.02                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2562 @ 40525d)
+  0.11     13.12     0.02                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404c8d)
+  0.11     13.13     0.02                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:120 @ 437feb)
+  0.11     13.15     0.02                             fermiindex (main_explicit_Mie.f90:3797 @ 401f52)
+  0.11     13.16     0.02                             fermiindex (main_explicit_Mie.f90:3800 @ 401ff9)
+  0.11     13.18     0.02                             flaps (main_explicit_Mie.f90:3365 @ 419ea2)
+  0.11     13.19     0.02                             impactionizationrate (main_explicit_Mie.f90:3715 @ 4067a7)
+  0.07     13.20     0.01  1052124     9.50     9.50  __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:76 @ 437970)
+  0.07     13.21     0.01                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2186 @ 406d45)
+  0.07     13.22     0.01                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2205 @ 407281)
+  0.07     13.23     0.01                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2211 @ 408219)
+  0.07     13.24     0.01                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2603 @ 408250)
+  0.07     13.25     0.01                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2640 @ 4083d0)
+  0.07     13.26     0.01                             MAIN__._omp_fn.1 (main_explicit_Mie.f90:2186 @ 408ada)
+  0.07     13.27     0.01                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2222 @ 405513)
+  0.07     13.28     0.01                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2224 @ 40554f)
+  0.07     13.29     0.01                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2231 @ 4055cc)
+  0.07     13.30     0.01                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2219 @ 4055f9)
+  0.07     13.31     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2260 @ 4059b9)
+  0.07     13.32     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2280 @ 405c4b)
+  0.07     13.33     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2414 @ 405f7e)
+  0.07     13.34     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2423 @ 406088)
+  0.07     13.35     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2434 @ 40616a)
+  0.07     13.36     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2440 @ 4061f2)
+  0.07     13.37     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2445 @ 40623f)
+  0.07     13.38     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2447 @ 4062e8)
+  0.07     13.39     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2485 @ 406493)
+  0.07     13.40     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2494 @ 406605)
+  0.07     13.41     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 406642)
+  0.07     13.42     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 406667)
+  0.07     13.43     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2515 @ 40673e)
+  0.07     13.44     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2517 @ 406743)
+  0.07     13.45     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2517 @ 406771)
+  0.07     13.46     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2537 @ 4068b4)
+  0.07     13.47     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2538 @ 4068d2)
+  0.07     13.48     0.01                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2557 @ 405164)
+  0.07     13.49     0.01                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2560 @ 405214)
+  0.07     13.50     0.01                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2565 @ 4052b7)
+  0.07     13.51     0.01                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2566 @ 4052e7)
+  0.07     13.52     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2603 @ 404aa0)
+  0.07     13.53     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404b01)
+  0.07     13.54     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404b43)
+  0.07     13.55     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404b81)
+  0.07     13.56     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404cd4)
+  0.07     13.57     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2622 @ 404ce6)
+  0.07     13.58     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 402087)
+  0.07     13.59     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 402220)
+  0.07     13.60     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2690 @ 4022ad)
+  0.07     13.61     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 4022d5)
+  0.07     13.62     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3026 @ 403a7d)
+  0.07     13.63     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3027 @ 403a90)
+  0.07     13.64     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3078 @ 40428b)
+  0.07     13.65     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3079 @ 4042c8)
+  0.07     13.66     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3080 @ 4042f1)
+  0.07     13.67     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3088 @ 4043c6)
+  0.07     13.68     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3090 @ 404429)
+  0.07     13.69     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3093 @ 4044c1)
+  0.07     13.70     0.01                             __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:377 @ 4396be)
+  0.07     13.71     0.01                             __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:391 @ 439a2d)
+  0.07     13.72     0.01                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:80 @ 4379ff)
+  0.07     13.73     0.01                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:95 @ 437a7a)
+  0.07     13.74     0.01                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:102 @ 437dfb)
+  0.07     13.75     0.01                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:86 @ 4380ed)
+  0.07     13.76     0.01                             densityofstatee (main_explicit_Mie.f90:3619 @ 405a41)
+  0.07     13.77     0.01                             densityofstateh (main_explicit_Mie.f90:3626 @ 405a82)
+  0.07     13.78     0.01                             dielectricfunctiondrude (main_explicit_Mie.f90:3690 @ 405764)
+  0.07     13.79     0.01                             flaps (main_explicit_Mie.f90:2186 @ 418608)
+  0.07     13.80     0.01                             flaps (main_explicit_Mie.f90:3121 @ 419213)
+  0.07     13.81     0.01                             flaps (main_explicit_Mie.f90:3163 @ 4193b4)
+  0.07     13.82     0.01                             flaps (main_explicit_Mie.f90:3428 @ 4198ca)
+  0.07     13.83     0.01                             flaps (main_explicit_Mie.f90:3226 @ 419969)
+  0.07     13.84     0.01                             flaps (main_explicit_Mie.f90:3223 @ 419973)
+  0.07     13.85     0.01                             flaps (main_explicit_Mie.f90:3255 @ 419a5f)
+  0.07     13.86     0.01                             flaps (main_explicit_Mie.f90:3284 @ 419b1f)
+  0.07     13.87     0.01                             flaps (main_explicit_Mie.f90:3287 @ 419b27)
+  0.07     13.88     0.01                             flaps (main_explicit_Mie.f90:3292 @ 419b51)
+  0.07     13.89     0.01                             flaps (main_explicit_Mie.f90:3312 @ 419bdd)
+  0.07     13.90     0.01                             flaps (main_explicit_Mie.f90:3327 @ 419c52)
+  0.07     13.91     0.01                             flaps (main_explicit_Mie.f90:3331 @ 419c5b)
+  0.07     13.92     0.01                             flaps (main_explicit_Mie.f90:3341 @ 419cc8)
+  0.07     13.93     0.01                             flaps (main_explicit_Mie.f90:3363 @ 419dd4)
+  0.07     13.94     0.01                             flaps (main_explicit_Mie.f90:3363 @ 419de9)
+  0.07     13.95     0.01                             flaps (main_explicit_Mie.f90:3357 @ 419e08)
+  0.07     13.96     0.01                             flaps (main_explicit_Mie.f90:3391 @ 41a440)
+  0.07     13.97     0.01                             flaps (main_explicit_Mie.f90:3399 @ 41a63d)
+  0.07     13.98     0.01                             flaps (main_explicit_Mie.f90:3425 @ 41a7e8)
+  0.07     13.99     0.01                             flaps (main_explicit_Mie.f90:3451 @ 41aded)
+  0.07     14.00     0.01                             flaps (main_explicit_Mie.f90:3457 @ 41ae95)
+  0.07     14.01     0.01                             flaps (main_explicit_Mie.f90:3353 @ 41caab)
+  0.07     14.02     0.01                             impactionizationrate (main_explicit_Mie.f90:3715 @ 406120)
+  0.07     14.03     0.01                             impactionizationrate (main_explicit_Mie.f90:3715 @ 40665a)
+  0.07     14.04     0.01                             impactionizationrate (main_explicit_Mie.f90:3715 @ 406779)
+  0.07     14.05     0.01                             latticeheatcapacity (main_explicit_Mie.f90:3771 @ 401eb0)
+  0.07     14.06     0.01                             latticeheatcapacity (main_explicit_Mie.f90:3783 @ 401ef8)
+  0.04     14.07     0.01                             MAIN__._omp_fn.2 (main_explicit_Mie.f90:2223 @ 4054c9)
+  0.04     14.07     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2257 @ 40587f)
+  0.04     14.08     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2486 @ 4064d8)
+  0.04     14.08     0.01                             MAIN__._omp_fn.3 (main_explicit_Mie.f90:2525 @ 406888)
+  0.04     14.09     0.01                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2560 @ 4051f1)
+  0.04     14.09     0.01                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2552 @ 405331)
+  0.04     14.10     0.01                             MAIN__._omp_fn.4 (main_explicit_Mie.f90:2555 @ 40538f)
+  0.04     14.10     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2611 @ 404c4c)
+  0.04     14.11     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2622 @ 404cbd)
+  0.04     14.11     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404cc6)
+  0.04     14.12     0.01                             MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404d42)
+  0.04     14.12     0.01                             MAIN__._omp_fn.6 (main_explicit_Mie.f90:2649 @ 404800)
+  0.04     14.13     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:2686 @ 4021ed)
+  0.04     14.13     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3026 @ 403a61)
+  0.04     14.14     0.01                             MAIN__._omp_fn.7 (main_explicit_Mie.f90:3077 @ 40424d)
+  0.04     14.14     0.01                             __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:115 @ 43803a)
+  0.04     14.15     0.01                             areaelement (main_explicit_Mie.f90:4219 @ 404c89)
+  0.04     14.15     0.01                             areaelement (main_explicit_Mie.f90:4219 @ 404cb9)
+  0.04     14.16     0.01                             areaelement (main_explicit_Mie.f90:4219 @ 404cd0)
+  0.04     14.16     0.01                             coneexp1.1897 (main_explicit_Mie.f90:4509 @ 401eaa)
+  0.04     14.17     0.01                             ephcollisionfrequency (main_explicit_Mie.f90:3699 @ 405868)
+  0.04     14.17     0.01                             fermiindex (main_explicit_Mie.f90:3786 @ 401f15)
+  0.04     14.18     0.01                             flaps (main_explicit_Mie.f90:3324 @ 419c33)
+  0.04     14.18     0.01                             flaps (main_explicit_Mie.f90:3339 @ 419ca6)
+  0.04     14.19     0.01                             flaps (main_explicit_Mie.f90:3340 @ 419cae)
+  0.04     14.19     0.01                             flaps (main_explicit_Mie.f90:3370 @ 419e27)
+  0.04     14.20     0.01                             flaps (main_explicit_Mie.f90:3363 @ 419e2f)
+  0.04     14.20     0.01                             flaps (main_explicit_Mie.f90:3357 @ 419e8a)
+  0.04     14.21     0.01                             flaps (main_explicit_Mie.f90:3363 @ 419e92)
+  0.04     14.21     0.01                             flaps (main_explicit_Mie.f90:3367 @ 419eae)
+  0.00     14.21     0.00 133006747     0.00     0.00  frame_dummy
+  0.00     14.21     0.00     3014     0.00     0.00  _init
+  0.00     14.21     0.00        1     0.00     0.00  __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:358 @ 439550)
+  0.00     14.21     0.00        1     0.00     0.00  __libmsh2vf_MOD_correct_orientation (libmsh2vf.f90:130 @ 436d00)
+  0.00     14.21     0.00        1     0.00     0.00  __libmsh2vf_MOD_extract_boundedges (libmsh2vf.f90:655 @ 4341c0)
+  0.00     14.21     0.00        1     0.00     0.00  __libmsh2vf_MOD_identify_physical_zone_for_edges (libmsh2vf.f90:583 @ 4385b0)
+  0.00     14.21     0.00        1     0.00     0.00  __libmsh2vf_MOD_read_msh_file (libmsh2vf.f90:192 @ 434780)
+  0.00     14.21     0.00        1     0.00     0.00  control_file_ (control_file.f90:6 @ 43ed60)
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+ 
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this 
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+Copyright (C) 2012 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 2 byte(s) for 0.07% of 14.21 seconds
+
+index % time    self  children    called     name
+                0.00    0.00       1/1052124     __libmsh2vf_MOD_identify_physical_zone_for_edges (libmsh2vf.f90:595 @ 4388e0) [268]
+                0.00    0.00       1/1052124     __libmsh2vf_MOD_identify_physical_zone_for_edges (libmsh2vf.f90:595 @ 438983) [269]
+                0.00    0.00       2/1052124     __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:499 @ 43b619) [267]
+                0.01    0.00  526060/1052124     __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:95 @ 437af2) [265]
+                0.01    0.00  526060/1052124     __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:96 @ 437b15) [266]
+[228]    0.1    0.01    0.00 1052124         __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:76 @ 437970) [228]
+-----------------------------------------------
+                0.00    0.00       1/133006747     flaps (main_explicit_Mie.f90:323 @ 408d9b) [1411]
+                0.00    0.00     121/133006747     flaps (main_explicit_Mie.f90:1074 @ 40c8b0) [1791]
+                0.00    0.00     121/133006747     flaps (main_explicit_Mie.f90:1076 @ 40c8da) [1795]
+                0.00    0.00     121/133006747     flaps (main_explicit_Mie.f90:1093 @ 40ca66) [1816]
+                0.00    0.00     121/133006747     flaps (main_explicit_Mie.f90:1096 @ 40cae0) [1821]
+                0.00    0.00     121/133006747     flaps (main_explicit_Mie.f90:1096 @ 40caee) [1823]
+                0.00    0.00     121/133006747     flaps (main_explicit_Mie.f90:1096 @ 40cb1a) [1829]
+                0.00    0.00    1400/133006747     flaps (main_explicit_Mie.f90:669 @ 409f89) [1591]
+                0.00    0.00    1540/133006747     flaps (main_explicit_Mie.f90:649 @ 409eed) [1579]
+                0.00    0.00    1540/133006747     flaps (main_explicit_Mie.f90:689 @ 40a026) [1603]
+                0.00    0.00    1540/133006747     flaps (main_explicit_Mie.f90:703 @ 40a0d2) [1615]
+                0.00    0.00  200000/133006747     flaps (main_explicit_Mie.f90:2186 @ 418608) [200]
+                0.00    0.00 1800000/133006747     MAIN__._omp_fn.1 (main_explicit_Mie.f90:2552 @ 408120) [94]
+                0.00    0.00 1800000/133006747     MAIN__._omp_fn.1 (main_explicit_Mie.f90:2603 @ 408250) [151]
+                0.00    0.00 1800000/133006747     MAIN__._omp_fn.1 (main_explicit_Mie.f90:2668 @ 408548) [28]
+                0.00    0.00 2000000/133006747     MAIN__._omp_fn.1 (main_explicit_Mie.f90:2640 @ 4083d0) [152]
+                0.00    0.00 2200000/133006747     MAIN__._omp_fn.1 (main_explicit_Mie.f90:2217 @ 4073b8) [93]
+                0.00    0.00 2200000/133006747     MAIN__._omp_fn.1 (main_explicit_Mie.f90:2247 @ 407668) [10]
+                0.00    0.00 24200000/133006747     MAIN__._omp_fn.3 (main_explicit_Mie.f90:2260 @ 4059de) [99]
+                0.00    0.00 24200000/133006747     MAIN__._omp_fn.3 (main_explicit_Mie.f90:2261 @ 405a1d) [319]
+                0.00    0.00 24200000/133006747     MAIN__._omp_fn.3 (main_explicit_Mie.f90:2269 @ 405ad6) [68]
+                0.00    0.00 24200000/133006747     MAIN__._omp_fn.3 (main_explicit_Mie.f90:2271 @ 405af7) [69]
+                0.00    0.00 24200000/133006747     MAIN__._omp_fn.3 (main_explicit_Mie.f90:2489 @ 4065ad) [359]
+[270]    0.0    0.00    0.00 133006747         frame_dummy [270]
+-----------------------------------------------
+                0.00    0.00       1/1           flaps (main_explicit_Mie.f90:339 @ 408dac) [1412]
+[271]    0.0    0.00    0.00       1         control_file_ (control_file.f90:6 @ 43ed60) [271]
+-----------------------------------------------
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1725 @ 41556e) [3090]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1725 @ 4155b9) [3094]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1727 @ 4155f8) [3100]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1727 @ 41561f) [3102]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1730 @ 41568d) [3106]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1730 @ 415700) [3108]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1736 @ 415750) [3113]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1734 @ 41576e) [3116]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1738 @ 41579d) [3122]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1738 @ 4157dc) [3126]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1741 @ 415830) [3133]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1740 @ 41584a) [3136]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1743 @ 4158ef) [3142]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1745 @ 41598f) [3147]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1747 @ 4159cd) [3152]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1749 @ 415a2e) [3157]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1752 @ 415a87) [3164]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1753 @ 415abd) [3169]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1757 @ 415b2e) [3178]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1758 @ 415b5c) [3183]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1786 @ 416298) [3243]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1786 @ 4162ee) [3245]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1787 @ 41632d) [3248]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1788 @ 41634c) [3251]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1791 @ 4163ce) [3255]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1793 @ 4163f9) [3258]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1793 @ 41645c) [3260]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1795 @ 41647f) [3263]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1800 @ 4164cb) [3267]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1800 @ 41655f) [3271]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1804 @ 416602) [3277]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1804 @ 41666d) [3281]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1807 @ 4166bc) [3287]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1807 @ 4166db) [3291]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1809 @ 416712) [3297]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1809 @ 416749) [3301]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1812 @ 41678e) [3307]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1813 @ 4167ec) [3315]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1817 @ 416846) [3321]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1818 @ 41687c) [3327]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1846 @ 416d0c) [3378]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1847 @ 416d2f) [3381]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1848 @ 416d4b) [3384]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1849 @ 416d9d) [3389]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1852 @ 416db9) [3392]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1852 @ 416e5d) [3398]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1856 @ 416ea0) [3404]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1861 @ 416f2c) [3418]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1861 @ 416f5d) [3422]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1863 @ 416f8c) [3426]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1863 @ 416faf) [3428]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1864 @ 416fda) [3431]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1866 @ 416ffe) [3435]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1867 @ 417060) [3440]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1869 @ 41708f) [3445]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1869 @ 4170bc) [3449]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1874 @ 417110) [3458]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1873 @ 41713f) [3462]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1908 @ 4175dc) [3527]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1908 @ 41761d) [3531]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1910 @ 417670) [3537]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1910 @ 41768b) [3539]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1915 @ 4176a7) [3543]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1915 @ 417739) [3547]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1919 @ 4177ac) [3552]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1923 @ 4177df) [3557]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1928 @ 417812) [3563]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1929 @ 41785d) [3568]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1929 @ 4178a0) [3572]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1930 @ 4178cb) [3577]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1933 @ 417916) [3583]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1935 @ 417947) [3586]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1937 @ 4179dc) [3593]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1939 @ 417a0f) [3598]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1942 @ 417a6a) [3608]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1944 @ 417a8b) [3612]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1945 @ 417ad9) [3619]
+                0.00    0.00       1/3014        flaps (main_explicit_Mie.f90:1961 @ 417afb) [3621]
+                0.00    0.00       2/3014        flaps (main_explicit_Mie.f90:1860 @ 416ee0) [3410]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1341 @ 4102bd) [2175]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1343 @ 41036f) [2180]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1345 @ 4103ba) [2185]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1347 @ 4104df) [2188]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1348 @ 410513) [2191]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1349 @ 410569) [2194]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1351 @ 4105c9) [2199]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1353 @ 41067d) [2204]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1356 @ 410702) [2211]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1356 @ 41075e) [2215]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1360 @ 4107c6) [2223]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1360 @ 41084c) [2227]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1363 @ 4108a4) [2233]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1363 @ 4108ea) [2237]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1366 @ 41096a) [2245]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1368 @ 410a09) [2250]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1372 @ 410ab1) [2259]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1373 @ 410aff) [2264]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1374 @ 410b4f) [2269]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1375 @ 410ba5) [2274]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1376 @ 410bdd) [2277]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1376 @ 410c49) [2281]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1408 @ 4114b4) [2340]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1410 @ 41158d) [2345]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1412 @ 41161f) [2352]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1414 @ 4116cf) [2353]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1416 @ 41171a) [2358]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1418 @ 41176e) [2361]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1419 @ 4117e4) [2368]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1419 @ 41180f) [2370]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1423 @ 41184d) [2376]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1423 @ 411966) [2378]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1425 @ 4119db) [2385]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1426 @ 411a0a) [2390]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1427 @ 411a8b) [2397]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1429 @ 411aba) [2402]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1433 @ 411b44) [2410]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1433 @ 411b74) [2412]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1437 @ 411bd2) [2416]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1437 @ 411c3d) [2420]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1440 @ 411cd6) [2435]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1441 @ 411d2b) [2444]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1443 @ 411d8e) [2454]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1444 @ 411db8) [2457]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1479 @ 41293c) [2561]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1481 @ 412a4f) [2566]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1483 @ 412af4) [2573]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1483 @ 412b6a) [2575]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1487 @ 412bba) [2579]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1489 @ 412c2f) [2584]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1491 @ 412c74) [2589]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1491 @ 412c9a) [2591]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1498 @ 412cd2) [2595]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1500 @ 412d5b) [2600]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1502 @ 412dcc) [2605]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1504 @ 412e46) [2608]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1506 @ 412e9e) [2615]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1508 @ 412ecb) [2618]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1511 @ 412f09) [2621]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1511 @ 412f7c) [2625]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1516 @ 412fe4) [2627]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1516 @ 41303d) [2631]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1518 @ 413084) [2637]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1519 @ 4130ce) [2642]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1520 @ 413113) [2645]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1520 @ 41316d) [2649]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1557 @ 413b50) [2717]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1557 @ 413bdd) [2721]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1561 @ 413c55) [2730]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1563 @ 413caf) [2737]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1565 @ 413d67) [2752]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1567 @ 413df8) [2759]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1570 @ 413e5c) [2766]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1573 @ 413ec0) [2773]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1585 @ 413f28) [2782]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1587 @ 413f8d) [2789]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1590 @ 413fea) [2796]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1592 @ 414049) [2799]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1594 @ 4140b3) [2806]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1596 @ 414100) [2809]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1598 @ 414160) [2816]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1600 @ 41422a) [2825]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1602 @ 41429c) [2830]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1602 @ 414306) [2834]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1604 @ 41435d) [2838]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1605 @ 4143d0) [2843]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1608 @ 414493) [2854]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1609 @ 4144ff) [2861]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1641 @ 4147d1) [2927]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1641 @ 414820) [2931]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1645 @ 414881) [2939]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1645 @ 4148cc) [2943]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1649 @ 414921) [2949]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1651 @ 41496e) [2954]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1654 @ 4149ba) [2959]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1657 @ 4149fc) [2962]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1669 @ 414a45) [2969]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1669 @ 414a9e) [2973]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1674 @ 414ae8) [2979]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1677 @ 414b2f) [2982]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1679 @ 414b65) [2985]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1681 @ 414bb9) [2988]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1683 @ 414bf9) [2991]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1685 @ 414c4d) [2994]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1687 @ 414c8d) [3001]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1688 @ 414cc7) [3006]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1688 @ 414cfd) [3010]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1690 @ 414d3b) [3016]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1692 @ 414d94) [3023]
+                0.00    0.00       9/3014        flaps (main_explicit_Mie.f90:1693 @ 414de0) [3028]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1163 @ 40d370) [1908]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1165 @ 40d52e) [1911]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1167 @ 40d543) [1914]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1169 @ 40d6dd) [1917]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1171 @ 40d766) [1920]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1173 @ 40d7ce) [1923]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1175 @ 40d7ff) [1926]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1175 @ 40d8cc) [1928]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1181 @ 40d946) [1932]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1185 @ 40d9f0) [1938]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1185 @ 40da46) [1942]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1187 @ 40dabf) [1943]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1189 @ 40db60) [1948]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1189 @ 40dbad) [1950]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1193 @ 40dbe1) [1954]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1193 @ 40dcfd) [1958]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1197 @ 40dd7e) [1964]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1198 @ 40ddbc) [1969]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1199 @ 40de0d) [1974]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1199 @ 40de4c) [1976]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1201 @ 40de91) [1982]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1202 @ 40deee) [1985]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1203 @ 40df3f) [1990]
+                0.00    0.00      81/3014        flaps (main_explicit_Mie.f90:1203 @ 40df7e) [1992]
+[11049   0.0    0.00    0.00    3014         _init [11049]
+-----------------------------------------------
+                0.00    0.00       1/1           flaps (main_explicit_Mie.f90:375 @ 408fb3) [1432]
+[11050   0.0    0.00    0.00       1         __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:358 @ 439550) [11050]
+-----------------------------------------------
+                0.00    0.00       1/1           flaps (main_explicit_Mie.f90:357 @ 408f50) [1426]
+[11051   0.0    0.00    0.00       1         __libmsh2vf_MOD_correct_orientation (libmsh2vf.f90:130 @ 436d00) [11051]
+-----------------------------------------------
+                0.00    0.00       1/1           flaps (main_explicit_Mie.f90:379 @ 408fee) [1434]
+[11052   0.0    0.00    0.00       1         __libmsh2vf_MOD_extract_boundedges (libmsh2vf.f90:655 @ 4341c0) [11052]
+-----------------------------------------------
+                0.00    0.00       1/1           flaps (main_explicit_Mie.f90:377 @ 408fcd) [1433]
+[11053   0.0    0.00    0.00       1         __libmsh2vf_MOD_identify_physical_zone_for_edges (libmsh2vf.f90:583 @ 4385b0) [11053]
+-----------------------------------------------
+                0.00    0.00       1/1           flaps (main_explicit_Mie.f90:350 @ 408ebb) [1422]
+[11054   0.0    0.00    0.00       1         __libmsh2vf_MOD_read_msh_file (libmsh2vf.f90:192 @ 434780) [11054]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function is in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+Copyright (C) 2012 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+Index by function name
+
+ [148] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2186 @ 406d45) [239] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2560 @ 4051f1) [250] areaelement (main_explicit_Mie.f90:4219 @ 404c89)
+ [149] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2205 @ 407281) [76] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2559 @ 4051f5) [251] areaelement (main_explicit_Mie.f90:4219 @ 404cb9)
+  [64] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2206 @ 4072cc) [176] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2560 @ 405214) [252] areaelement (main_explicit_Mie.f90:4219 @ 404cd0)
+  [93] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2217 @ 4073b8) [140] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2561 @ 405253) [120] areaelement (main_explicit_Mie.f90:4219 @ 404d31)
+  [10] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2247 @ 407668) [141] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2562 @ 40525d) [253] coneexp1.1897 (main_explicit_Mie.f90:4509 @ 401eaa)
+  [94] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2552 @ 408120) [177] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2565 @ 4052b7) [271] control_file_ (control_file.f90:6 @ 43ed60)
+ [150] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2211 @ 408219) [178] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2566 @ 4052e7) [197] densityofstatee (main_explicit_Mie.f90:3619 @ 405a41)
+ [151] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2603 @ 408250) [87] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2567 @ 405304) [198] densityofstateh (main_explicit_Mie.f90:3626 @ 405a82)
+ [152] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2640 @ 4083d0) [240] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2552 @ 405331) [16] dielectricfunction (main_explicit_Mie.f90:3681 @ 4058d7)
+  [28] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2668 @ 408548) [241] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2555 @ 40538f) [14] dielectricfunction (main_explicit_Mie.f90:3682 @ 4058fb)
+ [153] MAIN__._omp_fn.1 (main_explicit_Mie.f90:2186 @ 408ada) [179] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2603 @ 404aa0) [27] dielectricfunction (main_explicit_Mie.f90:3682 @ 406d07)
+  [60] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2217 @ 405430) [180] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404b01) [77] dielectricfunctiondrude (main_explicit_Mie.f90:3686 @ 405660)
+  [84] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2219 @ 405490) [181] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404b43) [20] dielectricfunctiondrude (main_explicit_Mie.f90:3690 @ 40566d)
+ [235] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2223 @ 4054c9) [108] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2607 @ 404b4a) [6] dielectricfunctiondrude (main_explicit_Mie.f90:3691 @ 40568f)
+  [95] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2219 @ 4054d8) [182] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404b81) [121] dielectricfunctiondrude (main_explicit_Mie.f90:3693 @ 40575e)
+  [96] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2220 @ 4054e9) [38] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404bc7) [199] dielectricfunctiondrude (main_explicit_Mie.f90:3690 @ 405764)
+  [65] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2221 @ 405501) [88] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404c1a) [19] dielectricfunctiondrude (main_explicit_Mie.f90:3691 @ 40579e)
+ [154] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2222 @ 405513) [242] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2611 @ 404c4c) [254] ephcollisionfrequency (main_explicit_Mie.f90:3699 @ 405868)
+ [155] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2224 @ 40554f) [109] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404c52) [30] ephcollisionfrequency (main_explicit_Mie.f90:3699 @ 4058ab)
+  [66] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2227 @ 40557f) [142] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404c8d) [55] fermiindex (main_explicit_Mie.f90:3786 @ 401f00)
+  [67] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2228 @ 40559a) [243] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2622 @ 404cbd) [90] fermiindex (main_explicit_Mie.f90:3795 @ 401f11)
+  [97] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2229 @ 4055aa) [244] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404cc6) [255] fermiindex (main_explicit_Mie.f90:3786 @ 401f15)
+ [156] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2231 @ 4055cc) [183] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404cd4) [8] fermiindex (main_explicit_Mie.f90:3795 @ 401f18)
+ [137] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2232 @ 4055d7) [184] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2622 @ 404ce6) [122] fermiindex (main_explicit_Mie.f90:3796 @ 401f3a)
+ [138] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2233 @ 4055e0) [110] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404d04) [143] fermiindex (main_explicit_Mie.f90:3797 @ 401f52)
+ [157] MAIN__._omp_fn.2 (main_explicit_Mie.f90:2219 @ 4055f9) [245] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2614 @ 404d42) [144] fermiindex (main_explicit_Mie.f90:3800 @ 401ff9)
+  [98] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2247 @ 4057b0) [24] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2622 @ 404d48) [200] flaps (main_explicit_Mie.f90:2186 @ 418608)
+  [61] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2257 @ 405825) [111] MAIN__._omp_fn.5 (main_explicit_Mie.f90:2627 @ 404dda) [201] flaps (main_explicit_Mie.f90:3121 @ 419213)
+ [236] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2257 @ 40587f) [112] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2640 @ 4046a0) [202] flaps (main_explicit_Mie.f90:3163 @ 4193b4)
+  [62] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2258 @ 405884) [22] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2646 @ 404748) [203] flaps (main_explicit_Mie.f90:3428 @ 4198ca)
+  [32] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2258 @ 4058d1) [246] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2649 @ 404800) [78] flaps (main_explicit_Mie.f90:3223 @ 419911)
+ [158] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2260 @ 4059b9) [18] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2646 @ 404804) [204] flaps (main_explicit_Mie.f90:3226 @ 419969)
+  [99] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2260 @ 4059de) [11] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2649 @ 40480e) [205] flaps (main_explicit_Mie.f90:3223 @ 419973)
+ [100] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2261 @ 4059f2) [12] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2649 @ 404886) [123] flaps (main_explicit_Mie.f90:3224 @ 419983)
+  [68] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2269 @ 405ad6) [26] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2652 @ 404894) [124] flaps (main_explicit_Mie.f90:3235 @ 4199d3)
+  [69] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2271 @ 405af7) [25] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2652 @ 404910) [79] flaps (main_explicit_Mie.f90:3239 @ 4199ef)
+  [33] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2273 @ 405b38) [17] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2655 @ 40491a) [125] flaps (main_explicit_Mie.f90:3243 @ 419a0b)
+  [36] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2274 @ 405be1) [15] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2655 @ 404996) [206] flaps (main_explicit_Mie.f90:3255 @ 419a5f)
+ [159] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2280 @ 405c4b) [7] MAIN__._omp_fn.6 (main_explicit_Mie.f90:2658 @ 4049a4) [126] flaps (main_explicit_Mie.f90:3276 @ 419aed)
+ [101] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2274 @ 405c4f) [54] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2668 @ 402010) [207] flaps (main_explicit_Mie.f90:3284 @ 419b1f)
+  [70] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2280 @ 405c5a) [185] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 402087) [208] flaps (main_explicit_Mie.f90:3287 @ 419b27)
+  [71] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2280 @ 405ccd) [89] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 4021bc) [209] flaps (main_explicit_Mie.f90:3292 @ 419b51)
+  [21] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2281 @ 405cfb) [247] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2686 @ 4021ed) [127] flaps (main_explicit_Mie.f90:3296 @ 419b6d)
+  [35] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2285 @ 405d9d) [186] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 402220) [128] flaps (main_explicit_Mie.f90:3300 @ 419b89)
+  [49] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2286 @ 405dcf) [113] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2688 @ 402247) [129] flaps (main_explicit_Mie.f90:3308 @ 419bc1)
+   [9] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2296 @ 405dff) [114] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 40227a) [210] flaps (main_explicit_Mie.f90:3312 @ 419bdd)
+  [41] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2302 @ 405e63) [187] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2690 @ 4022ad) [256] flaps (main_explicit_Mie.f90:3324 @ 419c33)
+  [72] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2416 @ 405f6f) [188] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 4022d5) [91] flaps (main_explicit_Mie.f90:3327 @ 419c3b)
+ [160] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2414 @ 405f7e) [46] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2695 @ 402313) [211] flaps (main_explicit_Mie.f90:3327 @ 419c52)
+  [31] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2416 @ 405faa) [2] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2715 @ 402348) [212] flaps (main_explicit_Mie.f90:3331 @ 419c5b)
+  [50] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2416 @ 405ffd) [4] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2767 @ 4029e9) [80] flaps (main_explicit_Mie.f90:3331 @ 419c6b)
+ [102] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2422 @ 406051) [39] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2767 @ 402f63) [257] flaps (main_explicit_Mie.f90:3339 @ 419ca6)
+ [161] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2423 @ 406088) [3] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2799 @ 402f6d) [258] flaps (main_explicit_Mie.f90:3340 @ 419cae)
+  [73] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2434 @ 4060ef) [5] MAIN__._omp_fn.7 (main_explicit_Mie.f90:2935 @ 4034ec) [213] flaps (main_explicit_Mie.f90:3341 @ 419cc8)
+ [103] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2434 @ 40612c) [248] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3026 @ 403a61) [130] flaps (main_explicit_Mie.f90:3342 @ 419ce2)
+ [162] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2434 @ 40616a) [189] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3026 @ 403a7d) [56] flaps (main_explicit_Mie.f90:3357 @ 419d16)
+ [104] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2438 @ 4061b8) [190] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3027 @ 403a90) [214] flaps (main_explicit_Mie.f90:3363 @ 419dd4)
+ [163] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2440 @ 4061f2) [1] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3063 @ 403aa6) [215] flaps (main_explicit_Mie.f90:3363 @ 419de9)
+ [164] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2445 @ 40623f) [249] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3077 @ 40424d) [216] flaps (main_explicit_Mie.f90:3357 @ 419e08)
+  [42] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2447 @ 406255) [191] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3078 @ 40428b) [259] flaps (main_explicit_Mie.f90:3370 @ 419e27)
+ [165] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2447 @ 4062e8) [192] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3079 @ 4042c8) [260] flaps (main_explicit_Mie.f90:3363 @ 419e2f)
+  [43] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2450 @ 40631d) [193] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3080 @ 4042f1) [261] flaps (main_explicit_Mie.f90:3357 @ 419e8a)
+  [37] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2450 @ 406387) [115] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3080 @ 40430d) [262] flaps (main_explicit_Mie.f90:3363 @ 419e92)
+  [23] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2453 @ 4063b7) [116] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3085 @ 404348) [145] flaps (main_explicit_Mie.f90:3365 @ 419ea2)
+ [166] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2485 @ 406493) [117] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3085 @ 4043b0) [131] flaps (main_explicit_Mie.f90:3363 @ 419eaa)
+ [237] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2486 @ 4064d8) [194] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3088 @ 4043c6) [263] flaps (main_explicit_Mie.f90:3367 @ 419eae)
+  [85] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2485 @ 4064dc) [195] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3090 @ 404429) [132] flaps (main_explicit_Mie.f90:3370 @ 419eea)
+  [74] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2488 @ 40651e) [118] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3093 @ 40447a) [40] flaps (main_explicit_Mie.f90:3372 @ 419f18)
+  [51] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2488 @ 406579) [196] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3093 @ 4044c1) [133] flaps (main_explicit_Mie.f90:3382 @ 41a0e4)
+  [52] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2493 @ 4065ed) [119] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3093 @ 4044d0) [81] flaps (main_explicit_Mie.f90:3387 @ 41a2c6)
+ [167] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2494 @ 406605) [13] MAIN__._omp_fn.7 (main_explicit_Mie.f90:3096 @ 4044df) [217] flaps (main_explicit_Mie.f90:3391 @ 41a440)
+ [168] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 406642) [11050] __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:358 @ 439550) [57] flaps (main_explicit_Mie.f90:3395 @ 41a552)
+ [169] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 406667) [229] __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:377 @ 4396be) [218] flaps (main_explicit_Mie.f90:3399 @ 41a63d)
+ [105] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 4066a7) [230] __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:391 @ 439a2d) [58] flaps (main_explicit_Mie.f90:3404 @ 41a728)
+  [75] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2512 @ 4066af) [135] __libmsh2vf_MOD_compute_edges (libmsh2vf.f90:573 @ 43c0e4) [47] flaps (main_explicit_Mie.f90:3407 @ 41a750)
+ [170] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2515 @ 40673e) [11051] __libmsh2vf_MOD_correct_orientation (libmsh2vf.f90:130 @ 436d00) [134] flaps (main_explicit_Mie.f90:3411 @ 41a778)
+ [171] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2517 @ 406743) [11052] __libmsh2vf_MOD_extract_boundedges (libmsh2vf.f90:655 @ 4341c0) [48] flaps (main_explicit_Mie.f90:3415 @ 41a7a1)
+ [172] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2517 @ 406771) [11053] __libmsh2vf_MOD_identify_physical_zone_for_edges (libmsh2vf.f90:583 @ 4385b0) [219] flaps (main_explicit_Mie.f90:3425 @ 41a7e8)
+  [86] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2523 @ 4067b4) [11054] __libmsh2vf_MOD_read_msh_file (libmsh2vf.f90:192 @ 434780) [220] flaps (main_explicit_Mie.f90:3451 @ 41aded)
+  [63] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2523 @ 4067ff) [228] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:76 @ 437970) [221] flaps (main_explicit_Mie.f90:3457 @ 41ae95)
+ [238] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2525 @ 406888) [231] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:80 @ 4379ff) [222] flaps (main_explicit_Mie.f90:3353 @ 41caab)
+  [44] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2527 @ 40688d) [232] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:95 @ 437a7a) [82] flaps (main_explicit_Mie.f90:3226 @ 41cae4)
+ [173] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2537 @ 4068b4) [34] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:98 @ 437ca9) [270] frame_dummy
+ [174] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2538 @ 4068d2) [233] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:102 @ 437dfb) [223] impactionizationrate (main_explicit_Mie.f90:3715 @ 406120)
+  [45] MAIN__._omp_fn.3 (main_explicit_Mie.f90:2447 @ 406ccb) [59] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:104 @ 437e1d) [224] impactionizationrate (main_explicit_Mie.f90:3715 @ 40665a)
+ [106] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2552 @ 404f80) [83] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:108 @ 437ea5) [225] impactionizationrate (main_explicit_Mie.f90:3715 @ 406779)
+  [29] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2555 @ 404fe5) [136] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:111 @ 437f40) [146] impactionizationrate (main_explicit_Mie.f90:3715 @ 4067a7)
+  [53] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2556 @ 4050eb) [147] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:120 @ 437feb) [226] latticeheatcapacity (main_explicit_Mie.f90:3771 @ 401eb0)
+ [175] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2557 @ 405164) [264] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:115 @ 43803a) [92] latticeheatcapacity (main_explicit_Mie.f90:3782 @ 401ebd)
+ [107] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2558 @ 405186) [234] __libmsh2vf_MOD_sort_dicho_int (libmsh2vf.f90:86 @ 4380ed) [227] latticeheatcapacity (main_explicit_Mie.f90:3783 @ 401ef8)
+ [139] MAIN__._omp_fn.4 (main_explicit_Mie.f90:2559 @ 4051e0) [11049] _init

@@ -10,7 +10,7 @@ program Flaps
 
 ! include 'Bivariate.f'
 ! USE Bivariate
-  USE LIBMSH2VF !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing.
+USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 !   use control_file !Script provided by Jason Blevins, Ohio State University
 
 implicit none
@@ -2279,7 +2279,9 @@ if(UseMieScattering.eq.1) then
    !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, TangentWx, TangentWy, TangentNx, &
    !$OMP& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, &
    !$OMP& CurviWy, ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
-   !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal), &
+   !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal, &
+   !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
+   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW ), &
    !$OMP& FIRSTPRIVATE (t, t0, x0, y0, I0, I1, I2, I3, I4, I5, I6, I7, &
    !$OMP& I8, I9, &
    !$OMP& x1, x2, x3, x4, x5, x6, x7, x8, x9, &
@@ -3078,16 +3080,16 @@ if(UseMieScattering.eq.1) then
                     - NormalS2(i,j)*ShapeFactorNormalS(i,j) &
                       *( kappas(i,j-1)+kappas(i,j))*(Ts(i,j)-Ts(i,j-1)) &
                     + &
-                    + ShapeFactorTangentE(i,j)/ShapeFactorNormalE(i,j) &
+                    + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
 	        *( kappas(i,j) + kappas(i+1,j)) & 
                         *( TsDual(i,j) - TsDual(i,j-1) ) &
-                    + ShapeFactorTangentW(i,j)/ShapeFactorNormalW(i,j) &
+                    + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
 	        *( kappas(i-1,j) + kappas(i,j)) & 
                         *( TsDual(i-1,j-1) - TsDual(i-1,j) ) &
-                    + ShapeFactorTangentN(i,j)/ShapeFactorNormalN(i,j) &
+                    + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j) &
 	        *( kappas(i,j+1) + kappas(i,j)) & 
                         *( TsDual(i-1,j) - TsDual(i,j) ) &
-                    + ShapeFactorTangentS(i,j)/ShapeFactorNormalS(i,j) &
+                    + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
 	        *( kappas(i,j-1) + kappas(i,j)) & 
                         *( TsDual(i,j-1) - TsDual(i-1,j-1) ) &
                     ) &
