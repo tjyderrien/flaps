@@ -6,3 +6,5 @@ rm error.dat
 rm gmon.out Profiling.log
 rm Flaps_explicit.out
 rm FermiDatas*.dat
+rm EnergyBalance.dat
+rm CellVols.dat

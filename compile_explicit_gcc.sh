@@ -29,14 +29,22 @@ Optimization="${DebugLine} -O2 -ffree-line-length-none -ffixed-line-length-none 
 # -fbounds-check #activate only if segmentation error on arrays. 
 
 # using another compiler
-cd amos/
+cd libs/amos/
 gfortran -O2 -g -pg -c *.f
-cd ..
+cd -
+
+cd libs/
 gfortran -c ${Optimization} Bivariate.f zeroin.f 
-gfortran -c ${Optimization} gmsh/libmsh2vf.f90 
-gfortran -c ${Optimization} control_file.f90 
-gfortran -c ${Optimization} main_explicit_Mie.f90 
-gfortran ${Optimization} main_explicit_Mie.o amos/*.o Bivariate.o zeroin.o libmsh2vf.o control_file.o -o  Flaps_explicit.out 
+gfortran -c ${Optimization} control_file.f90
+cd -
+
+cd libs/gmsh/
+gfortran -c ${Optimization} libmsh2vf.f90 
+cd -
+cd src/
+gfortran -c ${Optimization} main_explicit_Mie.f90
+cd - 
+gfortran ${Optimization} src/main_explicit_Mie.o libs/gmsh/libmsh2vf.o libs/amos/*.o libs/Bivariate.o libs/zeroin.o libs/control_file.o -o  Flaps_explicit.out 
 # ./Flaps_explicit.out
 
 # ifort main.o Bivariate.o -o Flaps.out
