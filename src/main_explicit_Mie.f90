@@ -2660,7 +2660,6 @@ if(UseMieScattering.eq.1) then
 ! 
 !     !$OMP END SECTIONS
 !     end if
-       
 
       ! interpolation bilineaire ponderee par les aires
       call bilinear_interpol_dual(mesh, dual, InvCellVol)
@@ -2774,17 +2773,13 @@ if(UseMieScattering.eq.1) then
 !               -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) & 
               ! diffusion on irregular mesh
               +0.5d0*(& 
-              + NormalE2(i,j)*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(mesh%Nh(i+1,j)-mesh%Nh(i,j)) &
-                      / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(mesh%Nh(i+1,j)-mesh%Nh(i,j)) &
 !               - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i,j+1)-0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-              - NormalW2(i,j)*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i-1,j)) &
-                      /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) & 
+              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i-1,j)) &
 !               - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(0.25d0*Nh(i,j+1)+0.25d0*Nh(i-1,j+1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-              + NormalN2(i,j)*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(mesh%Nh(i,j+1)-mesh%Nh(i,j)) &
-                      /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
+              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(mesh%Nh(i,j+1)-mesh%Nh(i,j)) &
 !               - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i+1,j)-0.25d0*Nh(i-1,j)-0.25d0*Nh(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-              - NormalS2(i,j)*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i,j-1)) &
-                      /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
+              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i,j-1)) &
 !               - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
 !                   ! Cross-diffusion from [Mathur and Murthy (1997)]
               + CrossCoeff*( &
@@ -3121,7 +3116,7 @@ if(UseMieScattering.eq.1) then
     end if
                       
 
-
+    !TODO: Optimise
     CFLxT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
     CFLyT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
     CFLxTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
@@ -3186,7 +3181,6 @@ if(UseMieScattering.eq.1) then
         
          GradNeX(i,N) = GradNeX(i,N-1)
          GradNeY(i,N) = GradNeY(i,N-1)
-         
 
 ! 
         ! SOUTH
