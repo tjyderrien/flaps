@@ -2035,8 +2035,8 @@ if(UseMieScattering.eq.1) then
 
           else !TE polarization
 !             write(*,*) "TE polarization selected."
-            EintField2(i,j)=Unit * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf)
-            EintField(i,j)=Unit * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf)
+            EintField2(i,j)=Unit * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, besselArray)
+            EintField(i,j)=Unit * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, besselArray)
           end if
       end do
     end do
@@ -3850,10 +3850,12 @@ if(UseMieScattering.eq.1) then
       return
     end function FermiIndex
 
+
+
     function MieScattering(r, phi, radius, dielectric)
       implicit none
 
-      complex(8) :: MieScattering, dielectric
+      complex(8) :: MieScattering, dielectric, BesselJ
       complex(8) total
 
       real(8) :: r, phi, radius, k=2d0*pi/lambda
@@ -3876,22 +3878,22 @@ if(UseMieScattering.eq.1) then
         ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
 !         write(*,*) i, ireal
         total=total+Imaginary**ireal * exp(Imaginary*ireal*phi) * BesselJ(ireal, &
-                sqrt(dielectric)*k*r) * MieCoeff1(ireal, radius, dielectric)
+                sqrt(dielectric)*k*r, besselArray) * MieCoeff1(ireal, radius, dielectric, besselArray)
       end do
 
       MieScattering=total
       return
     end function MieScattering
 
-    function MieScatteringTE1(r, phi, radius, dielectric)
+    function MieScatteringTE1(r, phi, radius, dielectric, besselArray)
       implicit none
 
-      complex(8) :: MieScatteringTE1, dielectric
+      complex(8) :: MieScatteringTE1, dielectric, BesselJ
       complex(8) :: total
 
       real(8) :: r, phi, radius, k=2d0*pi/lambda
       real(8) :: ireal
-      integer(8) :: i, j
+      integer(8) :: i, j, besselArray
 
       !!Careful !! This function is very sensitive to noise.
 
@@ -3901,7 +3903,7 @@ if(UseMieScattering.eq.1) then
         ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
 !         write(*,*) i, ireal
         total=total + ( Imaginary**ireal * exp(Imaginary*ireal*phi) * BesselJ(ireal, &
-              sqrt(dielectric)*k*r) * ireal * MieCoeff3(ireal, radius, dielectric) ) !original !!
+              sqrt(dielectric)*k*r, besselArray) * ireal * MieCoeff3(ireal, radius, dielectric, besselArray) ) !original !!
       end do
       if(r.eq.0d0) then
         MieScatteringTE1=Zero
@@ -3912,16 +3914,17 @@ if(UseMieScattering.eq.1) then
       return
     end function MieScatteringTE1
 
-    function MieScatteringTE2(r, phi, radius, dielectric)
+    function MieScatteringTE2(r, phi, radius, dielectric, besselArray)
       implicit none
 
-      complex(8) :: MieScatteringTE2, dielectric
+      complex(8) :: MieScatteringTE2, dielectric, BesselJprime
       complex(8) :: total
 
       real(8) :: r, phi, radius, k=2d0*pi/lambda
       real(8) :: ireal
       integer(8) :: i, j
 
+      integer(8) :: besselArray
 
       total=Zero
 
@@ -3929,7 +3932,7 @@ if(UseMieScattering.eq.1) then
         ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
 !         write(*,*) i, ireal
         total=total + ( Imaginary**ireal * exp(Imaginary*ireal*phi) * &
-              BesselJprime(ireal, sqrt(dielectric)*k*r) * MieCoeff3(ireal, radius, dielectric) )
+              BesselJprime(ireal, sqrt(dielectric)*k*r, besselArray) * MieCoeff3(ireal, radius, dielectric, besselArray) )
       end do
 
       MieScatteringTE2=-total*Imaginary/sqrt(dielectric)
@@ -3937,29 +3940,31 @@ if(UseMieScattering.eq.1) then
       return
     end function MieScatteringTE2
 
-    function MieCoeff1(order, radius, dielectric)
+    function MieCoeff1(order, radius, dielectric, besselArray)
       implicit none
-      complex(8) MieCoeff1, dielectric
+      complex(8) MieCoeff1, dielectric, Hankel1, BesselJ
       real(8) :: k=2d0*pi/lambda, radius
       real(8) :: order
+      integer(8) :: besselArray
 !         MieCoeff1=Unit !debug
-      MieCoeff1=(BesselJ(order, Unit*k*radius) - MieCoeff2(order, radius, dielectric)  &
-          * Hankel1(order, Unit*k*radius)) / (BesselJ(order, k*radius*sqrt(dielectric)))
+      MieCoeff1=(BesselJ(order, Unit*k*radius, besselArray) - MieCoeff2(order, radius, dielectric, besselArray)  &
+          * Hankel1(order, Unit*k*radius, besselArray)) / (BesselJ(order, k*radius*sqrt(dielectric), besselArray))
       return
     end function MieCoeff1
 
-    function MieCoeff2(order, radius, dielectric)
+    function MieCoeff2(order, radius, dielectric, besselArray)
       implicit none
-      complex(8) :: MieCoeff2, dielectric
+      complex(8) :: MieCoeff2, dielectric, Hankel1prime, Hankel1, BesselJ, BesselJprime
       real(8) :: k=2d0*pi/lambda, radius
       real(8) :: order
       complex(8) value1
-        MieCoeff2= ( (sqrt(dielectric) * BesselJprime(order, k*radius*sqrt(dielectric)) &
-                      * BesselJ(order, Unit*k*radius) ) - (BesselJ(order,sqrt(dielectric)*k*radius) & 
-                      *BesselJprime(order, Unit*k*radius)) ) &
-                    / (( sqrt(dielectric)*BesselJprime(order,k*radius*sqrt(dielectric)) & 
-                        *Hankel1(order, Unit*k*radius) ) - ( BesselJ(order, sqrt(dielectric)*k*radius) & 
-                        *Hankel1prime(order, Unit*k*radius) )) !original
+      integer(8) :: besselArray
+        MieCoeff2= ( (sqrt(dielectric) * BesselJprime(order, k*radius*sqrt(dielectric), besselArray) &
+                      * BesselJ(order, Unit*k*radius, besselArray) ) - (BesselJ(order,sqrt(dielectric)*k*radius, besselArray) &
+                      *BesselJprime(order, Unit*k*radius, besselArray)) ) &
+                    / (( sqrt(dielectric)*BesselJprime(order,k*radius*sqrt(dielectric), besselArray) &
+                        *Hankel1(order, Unit*k*radius,besselArray) ) - ( BesselJ(order, sqrt(dielectric)*k*radius, besselArray) &
+                        *Hankel1prime(order, Unit*k*radius, besselArray) )) !original
 
 !         value1=radius*sqrt(dielectric)
 !         MieCoeff2=BesselJprime(order, value1) !debug
@@ -3969,301 +3974,34 @@ if(UseMieScattering.eq.1) then
       return
     end function MieCoeff2
 
-    function MieCoeff3(order, radius, dielectric)
+    function MieCoeff3(order, radius, dielectric, besselArray)
       implicit none
-      complex(8) MieCoeff3, dielectric
+      complex(8) MieCoeff3, dielectric, Hankel1, BesselJ
       real(8) :: k=2d0*pi/lambda, radius
       real(8) :: order
+      integer(8) :: besselArray
 !         MieCoeff3=Unit !debug
-      MieCoeff3=(BesselJ(order, Unit*k*radius) - MieCoeff4(order, radius, dielectric)  &
-          * Hankel1(order, Unit*k*radius)) / (BesselJ(order, k*radius*sqrt(dielectric)))
+      MieCoeff3=(BesselJ(order, Unit*k*radius, besselArray) - MieCoeff4(order, radius, dielectric, besselArray)  &
+          * Hankel1(order, Unit*k*radius, besselArray)) / (BesselJ(order, k*radius*sqrt(dielectric), besselArray))
       return
     end function MieCoeff3
 
-    function MieCoeff4(order, radius, dielectric)
+    function MieCoeff4(order, radius, dielectric, besselArray)
       implicit none
-      complex(8) :: MieCoeff4, dielectric
+      complex(8) :: MieCoeff4, dielectric, Hankel1, Hankel1prime, BesselJ, BesselJprime
       real(8) :: k=2d0*pi/lambda, radius
       real(8) :: order
+      integer(8) :: besselArray
       complex(8) value1
-        MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt(dielectric))  & 
-                     * BesselJ(order, Unit*k*radius) ) - sqrt(dielectric) * (BesselJ(order,sqrt(dielectric)*k*radius) & 
-                     * BesselJprime(order, Unit*k*radius)) ) &
-                    / (( BesselJprime(order,k*radius*sqrt(dielectric)) * Hankel1(order, Unit*k*radius) ) &
-                    - sqrt(dielectric) * ( BesselJ(order, sqrt(dielectric)*k*radius) &
-                    * Hankel1prime(order, Unit*k*radius) )) !original
+        MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt(dielectric), besselArray)  &
+                     * BesselJ(order, Unit*k*radius, besselArray) ) - sqrt(dielectric) * (BesselJ(order,sqrt(dielectric)*k*radius, besselArray) &
+                     * BesselJprime(order, Unit*k*radius, besselArray)) ) &
+                    / (( BesselJprime(order,k*radius*sqrt(dielectric), besselArray) * Hankel1(order, Unit*k*radius, besselArray) ) &
+                    - sqrt(dielectric) * ( BesselJ(order, sqrt(dielectric)*k*radius, besselArray) &
+                    * Hankel1prime(order, Unit*k*radius, besselArray) )) !original
 !         MieCoeff4=Unit
       return
     end function MieCoeff4
 
-
-    function BesselJ(order, z)
-      implicit none
-      complex(8) :: z, BesselJ
-      real(8) zR, zC
-      real(8) :: order
-      integer(8) nz, ierr
-      real(8) cyr(1:besselArray), cyi(1:besselArray)
-
-      external ZBESJ
-!       external ZABS
-
-      cyr(:)=0.d0; cyi(:)=0.d0
-      ierr=0; nz=0
-
-      zR=real(z)
-      zC=aimag(z)
-
-!       write(*,*) (zR, zC)
-
-!       CALL zbesj(1.d0, 0.d0, 0.d0, 1, besselArray, cyr, cyi, nz, ierr)
-
-!       write(*,*) "Bessel 1", order
-      CALL ZBESJ(zR, zC, abs(order), 1, besselArray, cyr, cyi, nz, ierr)
-
-      if(ierr.ne.0) then
-        write(*,*) "BesselJ is not well configured."
-        write(*,*) z, cyr, cyi, ierr !, ZABS(zR, zC)
-      end if
-      BesselJ=Unit*cyr(besselArray)+Imaginary*cyi(besselArray)
-
-!       write(*,*) "Bessel", order
-
-      if(order .lt. 0d0) then
-        BesselJ=(-1d0)**(abs(order)) * BesselJ
-      end if
-
-      return
-    end function BesselJ
-
-    function BesselJprime(order, z)
-    implicit none
-      external zbesj
-      complex(8) z, BesselJprime
-      real(8) order
-
-      BesselJprime=0.5d0*(BesselJ(order-1d0,z)-BesselJ(order+1d0,z)) !Abramovitz, Eq. (9.1.27)
-
-!! other form of the relation
-!       if(z .eq. Zero) then
-!         BesselJprime=Zero
-!       else
-!         BesselJprime=order*BesselJ(order,z)/z-BesselJ(order+1d0,z) !other form (still given in Abramovitz)
-!       end if
-
-      !debug
-!       BesselJprime=Unit
-!       end if
-    end function BesselJprime
-
-    function Hankel1(order, z)
-      implicit none
-      complex(8) :: z, Hankel1
-      real(8) zR, zC
-      real(8) :: order
-      integer(8) nz, ierr
-      real(8) cyr(1:besselArray), cyi(1:besselArray)
-      external ZBESH
-!       external ZABS
-      cyr(:)=0.d0; cyi(:)=0.d0
-      ierr=0; nz=0
-      zR=real(z)
-      zC=aimag(z)
-
-!       write(*,*) zR, zC
-
-      CALL ZBESH(zR, zC, abs(order), 1, 1, besselArray, cyr, cyi, nz, ierr)
-
-      if(z .eq. Zero) then
-        Hankel1=Zero
-      else
-        if(ierr.ne.0) then
-          write(*,*) "Hankel1 is not well configured."
-          write(*,*) z, order, ierr !, ZABS(zR, zC)
-        end if
-      end if
-      Hankel1=Unit*cyr(besselArray)+Imaginary*cyi(besselArray)
-
-!       write(*,*) "Hankel", order, Hankel1
-
-      if(order .lt. 0d0) then
-        Hankel1=exp(Imaginary*abs(order)*pi) * Hankel1
-      end if
-    return
-    end function Hankel1
-
-    function Hankel1prime(order, z)
-      implicit none
-      external zbesh
-      complex(8) z, Hankel1prime
-      real(8) order
-      Hankel1prime=0.5d0*(Hankel1(order-1d0,z)-Hankel1(order+1d0,z))
-! debug
-!         Hankel1prime=Unit
-    end function Hankel1prime
-
-    subroutine swap(a, b)
-      real(8) temp, a, b
-      temp=a
-      a=b
-      b=temp
-    end subroutine swap
-
-    function OneDindex(i,j)
-      implicit none
-      integer(8) i,j, OneDindex
-      OneDindex=(i-1)*Np+j
-      return
-    end function OneDindex
-
-
-    function LaInv(A) result(Ainv)
-    ! invert A matrix using direct inversion from Lapack
-      real(8), dimension(:,:), intent(in) :: A
-      real(8), dimension(size(A,1),size(A,2)) :: Ainv
-
-      real(8), dimension(size(A,1)) :: work  ! work array for LAPACK
-      integer, dimension(size(A,1)) :: ipiv   ! pivot indices
-      integer :: n, info, nb, ilaenv
-
-      ! External procedures defined in LAPACK
-      external ILAENV
-      external DGETRF !LU decomposition preparation routine
-      external DGETRI !LU inversion routine
-
-      ! Store A in Ainv to prevent it from being overwritten by LAPACK
-      Ainv = A
-      n = size(A,1)
-
-      ! DGETRF computes an LU factorization of a general M-by-N matrix A
-      ! using partial pivoting with row interchanges (!! very slow for a sparse matrix! )
-      call DGETRF(n, n, Ainv, n, ipiv, info)
-
-      if (info /= 0) then
-        stop 'Matrix is numerically singular!'
-      end if
-
-      ! DGETRI computes the inverse of a matrix using the LU factorization
-      ! computed by DGETRF.
-!       nb = ILAENV( 1, 'DGETRI', ' ', N, -1, -1, -1 )
-      call DGETRI(n, Ainv, n, ipiv, work, n, info)
-
-      if (info /= 0) then
-        stop 'Matrix inversion failed!'
-      end if
-    end function LaInv
-
-
-
-!    function FindNeighbours(x, y, xM, yM, number, dimX, dimY)
-!    ! [T. Westermann, J. Comp. Phys. 101, 307-313 (1992)]
-!    ! returns an array(1:4,1:2) with neighboor points of (x,y)
-!      integer(8)         i, j, dimX, dimY, & !source mesh dimensions
-!                        number, & !number of nearest neighbours to return
-!                        times
-!      integer(8) FindNeighbours(1:4, 1:2), minimum(1:1), InElement !neighbour index array
-!      real(8) xM(1:dimX,1:dimY), yM(1:dimX,1:dimY), distance(1:dimX,1:dimY) !source mesh dimensions
-!      real(8) x,y, & !target point to find neighbours in source mesh
-!              Area1, Area2, Area3, Area4, Element1, Element2, Element3, Element4, &
-!              Areas(1:4)!, &
-!!               AreaTri
-!      times=0
-!      InElement=0
-!      distance(:,:)=1d10
-!
-!      do i=2, dimX-1
-!        do j=2,dimY-1
-!          ! compute distance of point (x,y) with each point of (xM, yM)
-!          distance(i,j)=sqrt((x-xM(i,j))**2d0+(y-yM(i,j))**2d0)
-!        end do
-!      end do
-!
-!      ! reprendre ici si jamais la geometrie a rendu caduque le theoreme "times" fois
-!      do while (InElement.eq.0 .AND. times<=4)
-!  !     write(*,*) "1st neighboor index", minloc(distance), minval(distance)
-!!         write(*,'(10E12.4)') distance
-!        FindNeighbours(1,1:2)=minloc(distance)
-!!         write(*,*) "Direct neighbour=", FindNeighbours(1,1:2)
-!        !first neighboor define 4 possible cells (not on boundaries!!)
-!        i=FindNeighbours(1,1); j=FindNeighbours(1,2)
-!
-!  !       if(i.eq.1 .OR. i.eq.dimX .OR. j.eq.1 .OR. j.eq.dimY) then
-!        ! cas particuliers
-!  !       else
-!          ! area of the 4 possible elements calculated with triangles defined by the point to interpolate
-!          Area1=AreaTri(xM(i-1,j-1),yM(i-1,j-1),xM(i,j-1),yM(i,j-1),x,y)+AreaTri(xM(i,j-1),yM(i,j-1),x,y,xM(i,j),yM(i,j)) &
-!          +AreaTri(xM(i,j),yM(i,j),x,y,xM(i-1,j),yM(i-1,j)) + AreaTri(xM(i-1,j),yM(i-1,j),x,y,xM(i-1,j-1),yM(i-1,j-1))
-!
-!          Area2=AreaTri(xM(i,j-1),yM(i,j-1),xM(i+1,j-1),yM(i+1,j-1),x,y)+AreaTri(xM(i+1,j-1),yM(i+1,j-1),x,y,xM(i+1,j),yM(i+1,j)) &
-!          +AreaTri(xM(i+1,j),yM(i+1,j),x,y,xM(i,j),yM(i,j)) + AreaTri(xM(i,j),yM(i,j),x,y,xM(i,j-1),yM(i,j-1))
-!
-!          Area3=AreaTri(xM(i,j),yM(i,j),xM(i+1,j),yM(i+1,j),x,y)+AreaTri(xM(i+1,j),yM(i+1,j),x,y,xM(i+1,j+1),yM(i+1,j+1)) &
-!          +AreaTri(xM(i+1,j+1),yM(i+1,j+1),x,y,xM(i,j+1),yM(i,j+1)) + AreaTri(xM(i,j+1),yM(i,j+1),x,y,xM(i,j),yM(i,j))
-!
-!          Area4=AreaTri(xM(i-1,j),yM(i-1,j),xM(i,j),yM(i,j),x,y)+AreaTri(xM(i,j),yM(i,j),x,y,xM(i,j+1),yM(i,j+1)) &
-!          +AreaTri(xM(i,j+1),yM(i,j+1),x,y,xM(i-1,j+1),yM(i-1,j+1)) + AreaTri(xM(i-1,j+1),yM(i-1,j+1),x,y,xM(i-1,j),yM(i-1,j))
-!
-!          ! calcauler l'aire de chaque element. Celui où Area i == AreaElement(i) contient alors le noeud.
-!          Element1=AreaElement(xM(i-1,j-1),yM(i-1,j-1),xM(i,j-1),yM(i,j-1),xM(i,j),yM(i,j),xM(i-1,j),yM(i-1,j))
-!          Element2=AreaElement(xM(i,j-1),yM(i,j-1),xM(i+1,j-1),yM(i+1,j-1),xM(i+1,j),yM(i+1,j),xM(i,j),yM(i,j))
-!          Element3=AreaElement(xM(i,j),yM(i,j),xM(i+1,j),yM(i+1,j),xM(i+1,j+1),yM(i+1,j+1),xM(i,j+1),yM(i,j+1))
-!          Element4=AreaElement(xM(i-1,j),yM(i-1,j),xM(i,j),yM(i,j),xM(i,j+1),yM(i,j+1),xM(i-1,j+1),yM(i-1,j+1))
-!
-!          if(abs(Area1-Element1)<1d-19) then
-!            InElement=1
-!          else if(abs(Area2-Element2)<1d-19) then
-!            InElement=2
-!          else if(abs(Area3-Element3)<1d-19) then
-!            InElement=3
-!          else if(abs(Area4-Element4)<1d-19) then
-!            InElement=4
-!          else !autrement, il y a deux solutions:
-!                !SOIT le plus proche voisin est dans un element plus loin (cas des points inclus mais pas pris en compte! car maillage non regulier)
-!                !soit il est bel et bien externe au maillage
-!            InElement=0 !
-!            Times=Times+1
-!            distance(i,j)=1d10
-!          end if
-!        end do
-!
-!
-!      ! Now the element is found, we organize the summits
-!      if(InElement.eq.1) then
-!        FindNeighbours(1,1)=i-1;         FindNeighbours(1,2)=j-1;
-!        FindNeighbours(2,1)=i;                 FindNeighbours(2,2)=j-1;
-!        FindNeighbours(3,1)=i;                 FindNeighbours(3,2)=j;
-!        FindNeighbours(4,1)=i-1;         FindNeighbours(4,2)=j;
-!      else if(InElement.eq.2) then
-!        FindNeighbours(1,1)=i;                 FindNeighbours(1,2)=j-1;
-!        FindNeighbours(2,1)=i+1;         FindNeighbours(2,2)=j-1;
-!        FindNeighbours(3,1)=i+1;         FindNeighbours(3,2)=j;
-!        FindNeighbours(4,1)=i;                 FindNeighbours(4,2)=j;
-!      else if(InElement.eq.3) then
-!        FindNeighbours(1,1)=i;                 FindNeighbours(1,2)=j;
-!        FindNeighbours(2,1)=i+1;         FindNeighbours(2,2)=j;
-!        FindNeighbours(3,1)=i+1;         FindNeighbours(3,2)=j+1;
-!        FindNeighbours(4,1)=i;                 FindNeighbours(4,2)=j+1;
-!      else if(InElement.eq.4) then
-!        FindNeighbours(1,1)=i-1;         FindNeighbours(1,2)=j;
-!        FindNeighbours(2,1)=i;                 FindNeighbours(2,2)=j;
-!        FindNeighbours(3,1)=i;                 FindNeighbours(3,2)=j+1;
-!        FindNeighbours(4,1)=i-1;         FindNeighbours(4,2)=j+1;
-!      else if(InElement.eq.0) then
-!        FindNeighbours(:,:)=0 !out of the mesh
-!      else
-!        FindNeighbours(:,:)=-1
-!      end if
-!
-!!       if(i.eq.2 .AND. j.eq.7) then
-!!         write(*,*) InElement
-!!         write(*,*)
-!!         write(*,'(2I6.2)') FindNeighbours
-!!         write(*,*) " "
-!!       end if
-!
-!    end function FindNeighbours
-
-
-    
 end program Flaps
 

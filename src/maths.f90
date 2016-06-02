@@ -2,13 +2,176 @@
 !> @file maths.f90
 !
 ! DESCRIPTION:
-!> @brief A set of mat functions
+!> @brief A set of math functions
 !
 !> @author
 !> Thibault J.Y. Derrien
 !> @date
 !> 01 Jun 2016 - Initial Version
 !------------------------------------------------------------------------------
+
+
+    subroutine swap(a, b)
+      real(8) temp, a, b
+      temp=a
+      a=b
+      b=temp
+    end subroutine swap
+
+!     integer(8) function OneDindex(i,j)
+!      implicit none
+!      integer(8) i,j
+!      OneDindex=(i-1)*Np+j
+!      return
+!    end function OneDindex
+
+
+    function LaInv(A) result(Ainv)
+    ! invert A matrix using direct inversion from Lapack
+      real(8), dimension(:,:), intent(in) :: A
+      real(8), dimension(size(A,1),size(A,2)) :: Ainv
+
+      real(8), dimension(size(A,1)) :: work  ! work array for LAPACK
+      integer, dimension(size(A,1)) :: ipiv   ! pivot indices
+      integer :: n, info, nb, ilaenv
+
+      ! External procedures defined in LAPACK
+      external ILAENV
+      external DGETRF !LU decomposition preparation routine
+      external DGETRI !LU inversion routine
+
+      ! Store A in Ainv to prevent it from being overwritten by LAPACK
+      Ainv = A
+      n = size(A,1)
+
+      ! DGETRF computes an LU factorization of a general M-by-N matrix A
+      ! using partial pivoting with row interchanges (!! very slow for a sparse matrix! )
+      call DGETRF(n, n, Ainv, n, ipiv, info)
+
+      if (info /= 0) then
+        stop 'Matrix is numerically singular!'
+      end if
+
+      ! DGETRI computes the inverse of a matrix using the LU factorization
+      ! computed by DGETRF.
+!       nb = ILAENV( 1, 'DGETRI', ' ', N, -1, -1, -1 )
+      call DGETRI(n, Ainv, n, ipiv, work, n, info)
+
+      if (info /= 0) then
+        stop 'Matrix inversion failed!'
+      end if
+    end function LaInv
+
+
+
+!    function FindNeighbours(x, y, xM, yM, number, dimX, dimY)
+!    ! [T. Westermann, J. Comp. Phys. 101, 307-313 (1992)]
+!    ! returns an array(1:4,1:2) with neighboor points of (x,y)
+!      integer(8)         i, j, dimX, dimY, & !source mesh dimensions
+!                        number, & !number of nearest neighbours to return
+!                        times
+!      integer(8) FindNeighbours(1:4, 1:2), minimum(1:1), InElement !neighbour index array
+!      real(8) xM(1:dimX,1:dimY), yM(1:dimX,1:dimY), distance(1:dimX,1:dimY) !source mesh dimensions
+!      real(8) x,y, & !target point to find neighbours in source mesh
+!              Area1, Area2, Area3, Area4, Element1, Element2, Element3, Element4, &
+!              Areas(1:4)!, &
+!!               AreaTri
+!      times=0
+!      InElement=0
+!      distance(:,:)=1d10
+!
+!      do i=2, dimX-1
+!        do j=2,dimY-1
+!          ! compute distance of point (x,y) with each point of (xM, yM)
+!          distance(i,j)=sqrt((x-xM(i,j))**2d0+(y-yM(i,j))**2d0)
+!        end do
+!      end do
+!
+!      ! reprendre ici si jamais la geometrie a rendu caduque le theoreme "times" fois
+!      do while (InElement.eq.0 .AND. times<=4)
+!  !     write(*,*) "1st neighboor index", minloc(distance), minval(distance)
+!!         write(*,'(10E12.4)') distance
+!        FindNeighbours(1,1:2)=minloc(distance)
+!!         write(*,*) "Direct neighbour=", FindNeighbours(1,1:2)
+!        !first neighboor define 4 possible cells (not on boundaries!!)
+!        i=FindNeighbours(1,1); j=FindNeighbours(1,2)
+!
+!  !       if(i.eq.1 .OR. i.eq.dimX .OR. j.eq.1 .OR. j.eq.dimY) then
+!        ! cas particuliers
+!  !       else
+!          ! area of the 4 possible elements calculated with triangles defined by the point to interpolate
+!          Area1=AreaTri(xM(i-1,j-1),yM(i-1,j-1),xM(i,j-1),yM(i,j-1),x,y)+AreaTri(xM(i,j-1),yM(i,j-1),x,y,xM(i,j),yM(i,j)) &
+!          +AreaTri(xM(i,j),yM(i,j),x,y,xM(i-1,j),yM(i-1,j)) + AreaTri(xM(i-1,j),yM(i-1,j),x,y,xM(i-1,j-1),yM(i-1,j-1))
+!
+!          Area2=AreaTri(xM(i,j-1),yM(i,j-1),xM(i+1,j-1),yM(i+1,j-1),x,y)+AreaTri(xM(i+1,j-1),yM(i+1,j-1),x,y,xM(i+1,j),yM(i+1,j)) &
+!          +AreaTri(xM(i+1,j),yM(i+1,j),x,y,xM(i,j),yM(i,j)) + AreaTri(xM(i,j),yM(i,j),x,y,xM(i,j-1),yM(i,j-1))
+!
+!          Area3=AreaTri(xM(i,j),yM(i,j),xM(i+1,j),yM(i+1,j),x,y)+AreaTri(xM(i+1,j),yM(i+1,j),x,y,xM(i+1,j+1),yM(i+1,j+1)) &
+!          +AreaTri(xM(i+1,j+1),yM(i+1,j+1),x,y,xM(i,j+1),yM(i,j+1)) + AreaTri(xM(i,j+1),yM(i,j+1),x,y,xM(i,j),yM(i,j))
+!
+!          Area4=AreaTri(xM(i-1,j),yM(i-1,j),xM(i,j),yM(i,j),x,y)+AreaTri(xM(i,j),yM(i,j),x,y,xM(i,j+1),yM(i,j+1)) &
+!          +AreaTri(xM(i,j+1),yM(i,j+1),x,y,xM(i-1,j+1),yM(i-1,j+1)) + AreaTri(xM(i-1,j+1),yM(i-1,j+1),x,y,xM(i-1,j),yM(i-1,j))
+!
+!          ! calcauler l'aire de chaque element. Celui où Area i == AreaElement(i) contient alors le noeud.
+!          Element1=AreaElement(xM(i-1,j-1),yM(i-1,j-1),xM(i,j-1),yM(i,j-1),xM(i,j),yM(i,j),xM(i-1,j),yM(i-1,j))
+!          Element2=AreaElement(xM(i,j-1),yM(i,j-1),xM(i+1,j-1),yM(i+1,j-1),xM(i+1,j),yM(i+1,j),xM(i,j),yM(i,j))
+!          Element3=AreaElement(xM(i,j),yM(i,j),xM(i+1,j),yM(i+1,j),xM(i+1,j+1),yM(i+1,j+1),xM(i,j+1),yM(i,j+1))
+!          Element4=AreaElement(xM(i-1,j),yM(i-1,j),xM(i,j),yM(i,j),xM(i,j+1),yM(i,j+1),xM(i-1,j+1),yM(i-1,j+1))
+!
+!          if(abs(Area1-Element1)<1d-19) then
+!            InElement=1
+!          else if(abs(Area2-Element2)<1d-19) then
+!            InElement=2
+!          else if(abs(Area3-Element3)<1d-19) then
+!            InElement=3
+!          else if(abs(Area4-Element4)<1d-19) then
+!            InElement=4
+!          else !autrement, il y a deux solutions:
+!                !SOIT le plus proche voisin est dans un element plus loin (cas des points inclus mais pas pris en compte! car maillage non regulier)
+!                !soit il est bel et bien externe au maillage
+!            InElement=0 !
+!            Times=Times+1
+!            distance(i,j)=1d10
+!          end if
+!        end do
+!
+!
+!      ! Now the element is found, we organize the summits
+!      if(InElement.eq.1) then
+!        FindNeighbours(1,1)=i-1;         FindNeighbours(1,2)=j-1;
+!        FindNeighbours(2,1)=i;                 FindNeighbours(2,2)=j-1;
+!        FindNeighbours(3,1)=i;                 FindNeighbours(3,2)=j;
+!        FindNeighbours(4,1)=i-1;         FindNeighbours(4,2)=j;
+!      else if(InElement.eq.2) then
+!        FindNeighbours(1,1)=i;                 FindNeighbours(1,2)=j-1;
+!        FindNeighbours(2,1)=i+1;         FindNeighbours(2,2)=j-1;
+!        FindNeighbours(3,1)=i+1;         FindNeighbours(3,2)=j;
+!        FindNeighbours(4,1)=i;                 FindNeighbours(4,2)=j;
+!      else if(InElement.eq.3) then
+!        FindNeighbours(1,1)=i;                 FindNeighbours(1,2)=j;
+!        FindNeighbours(2,1)=i+1;         FindNeighbours(2,2)=j;
+!        FindNeighbours(3,1)=i+1;         FindNeighbours(3,2)=j+1;
+!        FindNeighbours(4,1)=i;                 FindNeighbours(4,2)=j+1;
+!      else if(InElement.eq.4) then
+!        FindNeighbours(1,1)=i-1;         FindNeighbours(1,2)=j;
+!        FindNeighbours(2,1)=i;                 FindNeighbours(2,2)=j;
+!        FindNeighbours(3,1)=i;                 FindNeighbours(3,2)=j+1;
+!        FindNeighbours(4,1)=i-1;         FindNeighbours(4,2)=j+1;
+!      else if(InElement.eq.0) then
+!        FindNeighbours(:,:)=0 !out of the mesh
+!      else
+!        FindNeighbours(:,:)=-1
+!      end if
+!
+!!       if(i.eq.2 .AND. j.eq.7) then
+!!         write(*,*) InElement
+!!         write(*,*)
+!!         write(*,'(2I6.2)') FindNeighbours
+!!         write(*,*) " "
+!!       end if
+!
+!    end function FindNeighbours
+
 
 
    real(8) function Normal(x1,y1,x2,y2,axis)

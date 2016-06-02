@@ -1,7 +1,7 @@
 FC90=gfortran
 FCFLAGS=-O2 -g -pg -ffree-line-length-none
 
-F90_SRCS=mesh.f90 maths.f90 types.f90
+F90_SRCS=mesh.f90 maths.f90 types.f90 mie.f90
 OBJ90= $(F90_SRCS:.f90=.o)
 
 
