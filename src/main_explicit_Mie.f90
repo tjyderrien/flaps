@@ -311,7 +311,7 @@ implicit none
                ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf
 
     !! FUNCTIONS CALLS
-!     integer(8) ConeExp1Radius, ConeExp2Radius, Interpolate
+     integer(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, &
                  Tangent, Normal, AreaElement, AreaTri
             
@@ -4262,110 +4262,6 @@ if(UseMieScattering.eq.1) then
 !!       end if
 !
 !    end function FindNeighbours
-
-
-
-
-
-    function ContourYofX(x, radius, angle)
-    ! returns the value of the cone radius as a function of position X
-    ! assumption: cone is symmetrical by rotation around (Ox) axis
-      implicit none
-
-      real(8)::x, radius, angle, ContourYofX
-      real(8) a, b
-      a=radius/(tan(angle/2d0)**2)
-      b=radius/(tan(angle/2d0))
-      ContourYofX=b*tan(acos(a/(x+a)))
-
-      return
-    end function ContourYofX
-
-
-
-!     function ConeExp1Newton(t, value, step)
-!     ! finds the root of the function ConeExp1=value by Newton-Raphson iteration
-!       implicit none
-!       real(8) ConeExp1Newton, t, step, value
-!       ConeExp1Newton=t-ConeExp1Equation(t, value)/( (ConeExp1Equation(t+step, value)-ConeExp1Equation(t, value))/step )
-!     end function ConeExp1Newton
-!
-!     function ConeExp2Newton(t, value, step)
-!     ! finds the root of the function ConeExp2=value by Newton-Raphson iteration
-!       implicit none
-!       real(8) ConeExp2Newton, t, step, value
-!       ConeExp2Newton=t-ConeExp2Equation(t, value)/( (ConeExp2Equation(t+step, value)-ConeExp2Equation(t, value))/step )
-!     end function ConeExp2Newton
-
-    function ConeExp1Equation(t,value)
-    ! sets the equation to solve for Newton algorithm
-      implicit none
-      real(8) ConeExp1Equation, t, value
-!       integer(8) ConeExp1
-      ConeExp1Equation=ConeExp1(t)-value
-    end function ConeExp1Equation
-
-    function ConeExp2Equation(t, value)
-    ! sets the equation to solve for Newton algorithm
-      implicit none
-      real(8) ConeExp2Equation, t, value
-!       integer(8) ConeExp2
-      ConeExp2Equation=ConeExp2(t)-value
-!       ConeExp2Equation=t**3+t-value
-!       write(*,*) "Value", value
-    end function ConeExp2Equation
-
- function ConeExp1Radius(t,value,step)
-    ! execute Newton algorithm to find the radius of the equivalent cylinder
-      implicit none
-      real(8) ConeExp1Radius, temp1, temp2, t, step, value, zeroin
-      integer(8) i
-
-!       do i=1,NewtonIterations
-!         temp=ConeExp2Newton(temp,value,step)
-!         write(*,*) 'Solving contour radius...'
-!         temp1=zeroin(0d0, 2.471556d0, ConeExp1Equation, 1d-15, value)
-!         temp2=zeroin(-3.35d0, 0d0, ConeExp1Equation, 1d-15, value)
-        ! reduced cone size to accelerate calculations
-        temp1=zeroin(0d0, 0.2361d0, ConeExp1Equation, 1d-15, value)
-        temp2=zeroin(-0.2531506894d0, 0d0, ConeExp1Equation, 1d-15, value)
-!         write(*,*) 'Solve:', temp
-!       end do
-        if(abs(temp1) < abs(temp2)) then
-          ConeExp1Radius=abs(temp2)
-        else
-          ConeExp1Radius=abs(temp1)
-        end if
-!         ConeExp1Radius=0.5d0*(abs(temp1)+abs(temp2)) !not the average, since the case r>R is divergent
-!       ConeExp2Radius=0.5d0*(temp1+temp2)
-    end function ConeExp1Radius
-
-
-    function ConeExp2Radius(t,value,step)
-    ! execute Newton algorithm to find the radius of the equivalent cylinder
-      implicit none
-      real(8) ConeExp2Radius, temp1, temp2, t, step, value, zeroin
-      integer(8) i
-
-!       do i=1,NewtonIterations
-!         temp=ConeExp2Newton(temp,value,step)
-!         write(*,*) 'Solving contour radius...'
-!         temp1=zeroin(0d0, 1.4d0, ConeExp2Equation, 1d-15, value)
-!         temp2=zeroin(-1.4d0, 0d0, ConeExp2Equation, 1d-15, value)
-        temp1=zeroin(0d0, 0.7866818869d0, ConeExp2Equation, 1d-15, value)
-        temp2=zeroin(-0.7866818869d0, 0d0, ConeExp2Equation, 1d-15, value)
-
-        ! choose the maximum value of radius to avoid the non-physical case r>R.
-        if(abs(temp1) < abs(temp2)) then
-          ConeExp2Radius=abs(temp2)
-        else
-          ConeExp2Radius=abs(temp1)
-        end if
-!         write(*,*) 'Solve:', temp
-!       end do
-!         ConeExp2Radius=0.5d0*(abs(temp1)+abs(temp2))
-!       ConeExp2Radius=0.5d0*(temp1+temp2)
-    end function ConeExp2Radius
 
 
     
