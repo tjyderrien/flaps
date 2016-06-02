@@ -1,5 +1,7 @@
 DebugLine=-g -pg -fbounds-check -w -fbacktrace -Wno-unused-variable -Wall
-Optimization=$(DebugLine) -O2 -ffree-line-length-none -ffixed-line-length-none -finteger-4-integer-8 -mcmodel=small -I/usr/include -llapack -fopenmp -lm
+Optimization=$(DebugLine) -O2 -ffree-line-length-none -ffixed-line-length-none -mcmodel=small -I/usr/include -llapack -fopenmp -lm
+
+#-finteger-4-integer-8
 
 CC=gfortran
 CFLAGS=$(Optimization)
@@ -9,18 +11,40 @@ EXEC=Flaps_explicit.out
 
 OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $( wildcards libs/amos/*.o) libs/gmsh/libmsh2vf.o libs/control_file.o
 
-all: linking main_explicit_Mie.o
+OBJS= src/types.o src/mesh.o src/maths.o
 
-linking: main_explicit_Mie.o $(OBJ_LIBS)
-	$(CC) $(CFLAGS) $(OBJ_LIBS) -o $(EXEC)
+ 
+all: $(EXEC)
 
-main_explicit_Mie.o: $(OBJ_LIBS)
-	$(CC) -c $(CFLAGS) -I./libs/gmsh src/main_explicit_Mie.f90
+$(EXEC): main_explicit_Mie.o $(OBJ_LIBS) $(OBJS)
+	@echo 'Building target: $@'
+	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS) src/main_explicit_Mie.o
+	@echo 'Finished building target: $@'
+	@echo ' '
+	@echo '************  Compilation OK  ************';
+	@echo '******  You can now do >make test< *******';
 
-$(OBJ_LIBS): 
+main_explicit_Mie.o: $(OBJ_LIBS) $(OBJS)
+	@echo 'Building file: src/main_explicit_Mie.f90'
+	@echo 'Invoking: Fortran Compiler'
+	$(CC) -c $(CFLAGS) -I./libs/gmsh src/main_explicit_Mie.f90 -o src/main_explicit_Mie.o
+	@echo 'Finished building: src/main_explicit_Mie.f90'
+	@echo ' '
+
+
+$(OBJS): 
+	cd src && $(MAKE)
+
+
+$(OBJ_LIBS):
+	@echo 'Building libraries' 
 	cd libs && $(MAKE)
+	@echo 'Finished building libraries'
+	@echo ' '
+ 
 
 clean: 
 	rm -fr *.o
-	cd src && rm -fr *.o 
+	cd src && $(MAKE) clean
 	cd libs && $(MAKE) clean
+

@@ -22,6 +22,8 @@ module Types
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :, :) :: Ts !> lattice temperature
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :, :) :: Ne !> electron density
     DOUBLE PRECISION, ALLOCATABLE, DIMENSION( :, :) :: Nh !> hole density
+
+    INTEGER :: M,N !> Mesh dimension
    end type MeshValues
 
 end module Types

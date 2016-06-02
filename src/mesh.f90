@@ -13,31 +13,66 @@
 
 !> Allocate a MeshValues type
 !> @param MeshValues Structure containing Mesh values
-subroutine allocatemesh( mesh, M, N )
+subroutine initmesh( mesh, M, N )
     use Types
     implicit none
-    type(MeshValues) :: mesh
-    integer :: M, N
+    type(MeshValues), intent(INOUT) :: mesh
+    integer, intent(IN) :: M, N
 
     allocate(mesh%Te(M,N))
     allocate(mesh%Th(M,N))
     allocate(mesh%Ts(M,N))
     allocate(mesh%Ne(M,N))
     allocate(mesh%Nh(M,N))
-end subroutine allocatemesh
+
+    mesh%M = M
+    mesh%N = N
+end subroutine initmesh
 
 !> Deallocate a MeshValues type
 !> @param MeshValues Structure containing Mesh values
-subroutine deallocatemesh( mesh )
+subroutine releasemesh( mesh )
     use Types
     implicit none
-    type(MeshValues) :: mesh
+    type(MeshValues), intent(INOUT) :: mesh
 
     deallocate(mesh%Te)
     deallocate(mesh%Th)
     deallocate(mesh%Ts)
     deallocate(mesh%Ne)
     deallocate(mesh%Nh)
-end subroutine deallocatemesh
+end subroutine releasemesh
 
 
+! interpolation bilineaire ponderee par les aires
+subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
+   use Types
+   implicit none
+   type(MeshValues), intent(INOUT) :: mesh, dual
+   real(8), intent(IN)             :: InvCellVol(mesh%M,mesh%N)
+
+   integer :: i,j
+   real(8) :: weight
+
+   !$OMP DO  COLLAPSE(2)
+      do j=1, dual%N
+        do i=1, dual%M
+
+        weight = 1.0d0/ ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
+
+        ! interpolation bilineaire ponderee par les aires
+        dual%Ne(i,j) = ( mesh%Ne(i,j)* InvCellVol(i,j) + mesh%Ne(i+1,j)*InvCellVol(i+1,j) + mesh%Ne(i,j+1)*InvCellVol(i,j+1) + mesh%Ne(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) * weight
+        dual%Nh(i,j) = ( mesh%Nh(i,j)*InvCellVol(i,j) + mesh%Nh(i+1,j)*InvCellVol(i+1,j) + mesh%Nh(i,j+1)*InvCellVol(i,j+1) + mesh%Nh(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) * weight
+        dual%Te(i,j) = ( mesh%Te(i,j)*InvCellVol(i,j) + mesh%Te(i+1,j)*InvCellVol(i+1,j) + mesh%Te(i,j+1)*InvCellVol(i,j+1) + mesh%Te(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) * weight
+        dual%Th(i,j) = ( mesh%Th(i,j)*InvCellVol(i,j) + mesh%Th(i+1,j)*InvCellVol(i+1,j) + mesh%Th(i,j+1)*InvCellVol(i,j+1) + mesh%Th(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) * weight
+        dual%Ts(i,j) = ( mesh%Ts(i,j)*InvCellVol(i,j) + mesh%Ts(i+1,j)*InvCellVol(i+1,j) + mesh%Ts(i,j+1)*InvCellVol(i,j+1) + mesh%Ts(i+1,j+1) &
+                *InvCellVol(i+1,j+1) ) * weight
+        end do
+      end do
+      !$OMP END DO
+
+ end subroutine

@@ -1,10 +1,17 @@
-! Thibault J.Y. Derrien
-! Laboratoire Hubert Curien, UMR CNRS, St-Etienne
-! ANR Ultrasonde
-! Juillet - Decembre 2012
-
-  !**** calculate temperature distribution in 2D in a tip ****
-
+!------------------------------------------------------------------------------
+!> @file maths.f90
+!
+! DESCRIPTION:
+!> @brief **** calculate temperature distribution in 2D in a tip ****
+!
+!> @author
+!> Thibault J.Y. Derrien
+!  Laboratoire Hubert Curien, UMR CNRS, St-Etienne
+!  ANR Ultrasonde
+!
+!> @date
+!> Jul-Dec 2012 - Initial Version
+!------------------------------------------------------------------------------
 
 program Flaps
 
@@ -13,7 +20,11 @@ program Flaps
 USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 !   use control_file !Script provided by Jason Blevins, Ohio State University
 
+use Types
+
 implicit none
+
+    type(MeshValues) :: mesh, dual
 
     real(8), parameter:: lambda=515d-9         , & !laser wavelength (m)
                         fluence=0d0                , & !laser fluence (J.m-2)
@@ -130,11 +141,7 @@ implicit none
     real(8)         Te0, Th0, I0 !initial values of the problem
     real(8)        Ue(1:M, 1:N), & !electron energy
                 Uh(1:M, 1:N), & !hole energy
-                Te(1:M, 1:N), & !electron temperature
                 Th(1:M, 1:N), & !hole temperature
-                Ts(1:M, 1:N), & !lattice temperature
-                Ne(1:M, 1:N), & !electron density
-                Nh(1:M, 1:N), & !hole density
                 UeNew(1:M, 1:N), & !electron energy
                 UhNew(1:M, 1:N), & !hole energy
                 TeNew(1:M, 1:N), & !electron temperature
@@ -146,11 +153,6 @@ implicit none
                 NhNew(1:M, 1:N), & !hole density
                 GradNeX(1:M, 1:N),& !Grad(Ne)_x
                 GradNeY(1:M, 1:N),& !Grad(Ne)_y
-                TeDual(1:M-1,1:N-1), & !Te dual
-                ThDual(1:M-1,1:N-1), & !Th dual
-                TsDual(1:M-1,1:N-1), & !Ts dual
-                NeDual(1:M-1,1:N-1), & !Ne dual
-                NhDual(1:M-1,1:N-1), & !Nh dual
                 intensity(1:M, 1:N), & !propagated intensity
                 intensity2(1:M-1, 1:N-1), & !test
                 intensityDual(1:M-1,1:N-1), & !intensity dual, just for test of the function
@@ -339,11 +341,12 @@ implicit none
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
+
 !******** READ PARAMETER INPUT FILE ***********
 CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
 write(*,*) "Importing data on Polarization."
 !******** READ GMSH MESH FILE ************
-namefile_msh='gmsh/mesh.msh'
+namefile_msh='libs/gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
 ! CALL extract_parameters(namefile_msh, namefile_vf)
 ! We read the .msh file
@@ -537,6 +540,12 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
 !***************** MESH GENERATION *****************
   write(*,*) "[Mesh] Building..."
+
+
+  !Allocate the mesh and the dual mesh
+  call initmesh(mesh, M, N)
+  call initmesh(dual, M-1, N-1)
+
   ! building rectangular mesh 
   dx=(xmax-xmin)/(M+1)
   dy=(ymax-ymin)/(N+1)
@@ -1056,11 +1065,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !           Nh(i,j)=Nh0 !NhNew(i,j)
         end if
         
-        Ne(i,j)=NeNew(i,j)
-        Nh(i,j)=NhNew(i,j)
-        Te(i,j)=TeNew(i,j)
-        Th(i,j)=ThNew(i,j)
-        Ts(i,j)=TsNew(i,j)
+        mesh%Ne(i,j)=NeNew(i,j)
+        mesh%Nh(i,j)=NhNew(i,j)
+        mesh%Te(i,j)=TeNew(i,j)
+        mesh%Th(i,j)=ThNew(i,j)
+        mesh%Ts(i,j)=TsNew(i,j)
 
     end do
   end do
@@ -1071,10 +1080,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     do i=1,M
         
         ! initialise variables to calculate Ce, Ch
-        DOSe(i,j)=DensityOfStateE(Te(i,j))
-        DOSh(i,j)=DensityOfStateH(Th(i,j))
-        FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
-        FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
+        DOSe(i,j)=DensityOfStateE(mesh%Te(i,j))
+        DOSh(i,j)=DensityOfStateH(mesh%Th(i,j))
+        FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
+        FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
@@ -1082,13 +1091,13 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
 
         ! calculate semi-classical heat capacity
-        CeOld(i,j)=1.5d0*Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) & 
+        CeOld(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
                   -etae(i,j)*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) & 
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
                   (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) & 
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))))
-        ChOld(i,j)=1.5d0*Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) & 
+        ChOld(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
                   -etah(i,j)*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) & 
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
@@ -2166,15 +2175,15 @@ if(UseMieScattering.eq.1) then
         ! Calcul de Grad(Ne) sur le maillage direct
         ! Première estimation peu stable
         GradNeX(i,j) = 0.5d0 * InvCellVol(i,j) * &
-                      ( (Ne(i,j) + Ne(i,j+1)) * CellAreaN(i,j) * NormalNx(i,j) & 
-                      + (Ne(i,j) + Ne(i,j-1)) * CellAreaS(i,j) * NormalSx(i,j) & 
-                      + (Ne(i,j) + Ne(i-1,j)) * CellAreaW(i,j) * NormalWx(i,j) & 
-                      + (Ne(i,j) + Ne(i+1,j)) * CellAreaE(i,j) * NormalEx(i,j) )
+                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalNx(i,j) &
+                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalSx(i,j) &
+                      + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalWx(i,j) &
+                      + (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalEx(i,j) )
         GradNeY(i,j) = 0.5d0 * InvCellVol(i,j) * &
-                      ( (Ne(i,j) + Ne(i,j+1)) * CellAreaN(i,j) * NormalNy(i,j) & 
-                      + (Ne(i,j) + Ne(i,j-1)) * CellAreaS(i,j) * NormalSy(i,j) & 
-                      + (Ne(i,j) + Ne(i-1,j)) * CellAreaW(i,j) * NormalWy(i,j) & 
-                      * (Ne(i,j) + Ne(i+1,j)) * CellAreaE(i,j) * NormalEy(i,j) )
+                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalNy(i,j) &
+                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalSy(i,j) &
+                      + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalWy(i,j) &
+                      * (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalEy(i,j) )
                       
         ! interpolation lineaire des valeurs de phi sur les bords de cellules
 !         phiN=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j)+xDual(i-1,j)))+GradNeY(i,j)*(0.5d0*(yDual(i,j)+yDual(i-1,j)))
@@ -2263,8 +2272,8 @@ if(UseMieScattering.eq.1) then
     maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
     
    !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt1, dt2, dt3, dt4, UeNew, UhNew, TeNew, ThNew, TsNew, TsOld, TsPrev, NeNew, NhNew, &
-   !$OMP& TeDual, ThDual, TsDual, NeDual, NhDual, intensityDual, &
-   !$OMP& Ue, Uh, Te, Th, Ts, Ne, Nh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
+   !$OMP& mesh, dual, intensityDual, &
+   !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, xDual, yDual, xDualSW, yDualSW, xDualSE, yDualSE, xDualNE, yDualNE, xDualNW, yDualNW, &
    !$OMP& diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
@@ -2303,13 +2312,13 @@ if(UseMieScattering.eq.1) then
    ! replacing old datas
    Ue(:,:)=UeNew(:,:)
    Uh(:,:)=UhNew(:,:)
-   Te(:,:)=TeNew(:,:)
-   Th(:,:)=ThNew(:,:)
+   mesh%Te(:,:)=TeNew(:,:)
+   mesh%Th(:,:)=ThNew(:,:)
    TsPrev(:,:)=TsOld(:,:)
-   TsOld(:,:)=Ts(:,:)
-   Ts(:,:)=TsNew(:,:)
-   Ne(:,:)=NeNew(:,:)
-   Nh(:,:)=NhNew(:,:)
+   TsOld(:,:)=mesh%Ts(:,:)
+   mesh%Ts(:,:)=TsNew(:,:)
+   mesh%Ne(:,:)=NeNew(:,:)
+   mesh%Nh(:,:)=NhNew(:,:)
    CeOld(:,:)=Ce(:,:)
    ChOld(:,:)=Ch(:,:)
    
@@ -2335,18 +2344,18 @@ if(UseMieScattering.eq.1) then
 !         Ey(i,j)=0d0*        -1d9
         
         nuColl(i,j)=CollisionFrequency()
-        nuColleph(i,j)=ephCollisionFrequency(Ne(i,j))
-        Dielectric(i,j)=DielectricFunction(lambda, epsilonInf, Ne(i,j), nuColl(i,j))
-        DielectricDrudeE(i,j)=DielectricFunctionDrude(Ne(i,j), nuColl(i,j),me) 
-        DielectricDrudeH(i,j)=DielectricFunctionDrude(Nh(i,j), nuColl(i,j),mh) 
+        nuColleph(i,j)=ephCollisionFrequency(mesh%Ne(i,j))
+        Dielectric(i,j)=DielectricFunction(lambda, epsilonInf, mesh%Ne(i,j), nuColl(i,j))
+        DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl(i,j),me)
+        DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl(i,j),mh)
 
         !         write(*,*) "Esprit es-tu la ?"
         
 !         write(*,*) i,j,TeNew(i,j)
-        DOSe(i,j)=DensityOfStateE(Te(i,j))
-        DOSh(i,j)=DensityOfStateH(Th(i,j))
-        FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
-        FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
+        DOSe(i,j)=DensityOfStateE(mesh%Te(i,j))
+        DOSh(i,j)=DensityOfStateH(mesh%Th(i,j))
+        FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
+        FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
@@ -2488,21 +2497,21 @@ if(UseMieScattering.eq.1) then
         
 
         ! free-carrier balance sources
-        Egap(i,j)=EgapValue(Ne(i,j),Ts(i,j))
+        Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
 
-        diffusionE(i,j)=mobilityE(i,j)*kb*Te(i,j)/ec & 
+        diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)/ec &
                 *FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))
-        diffusionH(i,j)=mobilityH(i,j)*kb*Th(i,j)/ec & 
+        diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i,j)/ec &
                 *FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))
         if(ConductivityFix.eq.-1) then
            diffusionE(i,j)=0d0
            diffusionH(i,j)=0d0
         end if        
 
-        JeX(i,j)=-mobilityE(i,j)*Ne(i,j)*Ex(i,j)
-        JeY(i,j)=-mobilityE(i,j)*Ne(i,j)*Ey(i,j)
-        JhX(i,j)=mobilityH(i,j)*Nh(i,j)*Ex(i,j)
-        JhY(i,j)=mobilityH(i,j)*Nh(i,j)*Ey(i,j)
+        JeX(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ex(i,j)
+        JeY(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ey(i,j)
+        JhX(i,j)=mobilityH(i,j)*mesh%Nh(i,j)*Ex(i,j)
+        JhY(i,j)=mobilityH(i,j)*mesh%Nh(i,j)*Ey(i,j)
 
         if(DriftOn.eq.0) then 
           JeX(i,j)=0d0; JeY(i,j)=0d0; 
@@ -2511,26 +2520,26 @@ if(UseMieScattering.eq.1) then
 
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/omegaLaser &
                     +TwoPhotonIonizationRate0*intensity(i,j)**2/(2d0*hbar*omegaLaser) &
-                    +ImpactIonizationRate(Te(i,j),Ne(i,j),Ts(i,j))*Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here! 
+                    +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
                     
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/omegaLaser &
                     +TwoPhotonIonizationRate0*intensity(i,j)**2/(2d0*hbar*omegaLaser) &
-                    +ImpactIonizationRate(Te(i,j),Ne(i,j),Ts(i,j))*Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+                    +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
                     
-        LossesE(i,j)=AugerRateE * (Ne(i,j))**2d0 * Nh(i,j) + AugerRateH * (Nh(i,j))**2d0 * Ne(i,j) !use Old Ne, Nh here!
+        LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
         LossesH(i,j)=LossesE(i,j)
 
         
         ! thermal coefficients
-        kappae(i,j)=kb**2*Ne(i,j)*mobilityE(i,j)*Te(i,j)/ec*(6d0*FermiTableE(ColFermi2,FermiIndexE(i,j)) & 
+        kappae(i,j)=kb**2*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)/ec*(6d0*FermiTableE(ColFermi2,FermiIndexE(i,j)) &
                 /FermiTableE(ColFermi0,FermiIndexE(i,j)) &
                 -4d0*(FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)))**2)
-        kappah(i,j)=kb**2*Nh(i,j)*mobilityH(i,j)*Th(i,j)/ec*(6d0*FermiTableH(ColFermi2,FermiIndexH(i,j)) &
+        kappah(i,j)=kb**2*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)/ec*(6d0*FermiTableH(ColFermi2,FermiIndexH(i,j)) &
                 /FermiTableH(ColFermi0,FermiIndexH(i,j)) &
                 -4d0*(FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
 !         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K
-        kappas(i,j)=(-8.992d0+68.265d0/(1d0+exp(-.4075612391d-1*Ts(i,j)+2.315984470d0))*(1d0-1d0/ & 
-                    (1d0+exp(-.4756634637d-2*Ts(i,j)+2.403533689d0)))) !Elena fit sur Kazan (2010)
+        kappas(i,j)=(-8.992d0+68.265d0/(1d0+exp(-.4075612391d-1*mesh%Ts(i,j)+2.315984470d0))*(1d0-1d0/ &
+                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0)))) !Elena fit sur Kazan (2010)
         if(kappas(i,j).lt.0d0) then
           kappas(i,j)=0d0
         end if
@@ -2560,18 +2569,18 @@ if(UseMieScattering.eq.1) then
            kappas(i,j)=0d0
         end if
         
-        Ce(i,j)=1.5d0*Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
+        Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
                   -etae(i,j)*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
                   (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))))
-        Ch(i,j)=1.5d0*Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
+        Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
                   -etah(i,j)*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))))
-        Cs(i,j)=LatticeHeatCapacity(Ts(i,j)) 
+        Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
 
 !         Ce(i,j)=Ch(i,j) ! DEBUG test
         
-        CouplingE(i,j)=Ce(i,j)*nuColleph(i,j)*(Te(i,j)-Ts(i,j))
-        CouplingH(i,j)=Ch(i,j)*nuColleph(i,j)*(Th(i,j)-Ts(i,j))
+        CouplingE(i,j)=Ce(i,j)*nuColleph(i,j)*(mesh%Te(i,j)-mesh%Ts(i,j))
+        CouplingH(i,j)=Ch(i,j)*nuColleph(i,j)*(mesh%Th(i,j)-mesh%Ts(i,j))
 
         if(CouplingDebug.eq.1) then
           CouplingE(i,j)=0d0
@@ -2587,24 +2596,24 @@ if(UseMieScattering.eq.1) then
 !         
         SourceE(i,j)= (hbar*omegaLaser-Egap(i,j))/hbar/omegaLaser*((me)/(me+mh))*OnePhotonIonizationRate0*intensity(i,j) &
                      + (2d0*hbar*omegaLaser - Egap(i,j))/(2d0*hbar*omegaLaser)* ((me)/(me+mh)) * TwoPhotonIonizationRate0*intensity(i,j)**2 &
-                     - Egap(i,j)*ImpactIonizationRate(Te(i,j),Ne(i,j),Ts(i,j))*Ne(i,j) &
+                     - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateE*Nh(i,j) * Ne(i,j)**2d0)
+                     + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
 
                      
         SourceUe(i,j) = SourceE(i,j)
 !         SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
-        SourceE(i,j) = SourceE(i,j) - Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
+        SourceE(i,j) = SourceE(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
 
         SourceH(i,j)=(hbar*omegaLaser-Egap(i,j))/hbar/omegaLaser * ((me)/(me+mh)) * OnePhotonIonizationRate0*intensity(i,j) &
                      + (2d0*hbar*omegaLaser - Egap(i,j))/(2d0*hbar*omegaLaser)* ((me)/(me+mh)) *TwoPhotonIonizationRate0*intensity(i,j)**2 &
-                     - Egap(i,j)*ImpactIonizationRate(Th(i,j),Nh(i,j),Ts(i,j))*Nh(i,j) &
+                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j))*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateH*Ne(i,j) * Nh(i,j)**2d0)
+                     + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
                      
         SourceUh(i,j) = SourceH(i,j)
 !         SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-        SourceH(i,j) = SourceH(i,j) - Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt
+        SourceH(i,j) = SourceH(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt
 
         ! first order precision
 !         SourceS(i,j) = 0d0 - Ts(i,j)*(Cs(i,j)-CsOld(i,j))/Cs(i,j)
@@ -2650,24 +2659,11 @@ if(UseMieScattering.eq.1) then
 !     !$OMP END SECTIONS
 !     end if
        
-      !$OMP DO  COLLAPSE(2) 
-      do j=1, N-1
-        do i=1, M-1
-        
+
       ! interpolation bilineaire ponderee par les aires
-        NeDual(i,j) = ( Ne(i,j)* InvCellVol(i,j) + Ne(i+1,j)*InvCellVol(i+1,j) + Ne(i,j+1)*InvCellVol(i,j+1) + Ne(i+1,j+1) & 
-                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
-        NhDual(i,j) = ( Nh(i,j)*InvCellVol(i,j) + Nh(i+1,j)*InvCellVol(i+1,j) + Nh(i,j+1)*InvCellVol(i,j+1) + Nh(i+1,j+1) &
-                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
-        TeDual(i,j) = ( Te(i,j)*InvCellVol(i,j) + Te(i+1,j)*InvCellVol(i+1,j) + Te(i,j+1)*InvCellVol(i,j+1) + Te(i+1,j+1) &
-                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
-        ThDual(i,j) = ( Th(i,j)*InvCellVol(i,j) + Th(i+1,j)*InvCellVol(i+1,j) + Th(i,j+1)*InvCellVol(i,j+1) + Th(i+1,j+1) &
-                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
-        TsDual(i,j) = ( Ts(i,j)*InvCellVol(i,j) + Ts(i+1,j)*InvCellVol(i+1,j) + Ts(i,j+1)*InvCellVol(i,j+1) + Ts(i+1,j+1) &
-                *InvCellVol(i+1,j+1) ) / ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + 1d0*InvCellVol(i+1,j+1) )
-        end do
-      end do
-      !$OMP END DO
+      call bilinear_interpol_dual(mesh, dual, InvCellVol)
+
+
       ! solving the 2D problem
       
       !$OMP DO COLLAPSE(2) !(optimized)
@@ -2678,41 +2674,42 @@ if(UseMieScattering.eq.1) then
         
      
 !          ! diffusion is separated from drift
-         NeNew(i,j) = Ne(i,j) + dt*InvCellVol(i,j)*(&
+         NeNew(i,j) = mesh%Ne(i,j) + dt*InvCellVol(i,j)*(&
               ( GainsE(i,j)-LossesE(i,j) )*CellVol(i,j)& 
                   !         
                   +0.5d0*( &
                   + ShapeFactorNormalE(i,j) &
                   * ( &
                      ! direct diffusion operator over irregular mesh
-                     ( diffusionE(i,j)+diffusionE(i+1,j) )*( Ne(i+1,j)-Ne(i,j) )* NormalE2(i,j) &
+                     ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1,j)-mesh%Ne(i,j) )* NormalE2(i,j) &
                      ! Cross-diffusion from [Mathur and Murthy (1997)]
+                     !TODO: put proper ref here
                      + ShapeFactorTangentE(i,j) &
-                     *(diffusionE(i,j)+diffusionE(i+1,j))*(NeDual(i,j) - NeDual(i,j-1))  &
+                     *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i,j) - dual%Ne(i,j-1))  &
                                                                                                         ) &
                   + ShapeFactorNormalW(i,j) &
                     *( &
                        ! direct diffusion operator over irregular mesh
-                      -( diffusionE(i-1,j)+diffusionE(i,j) )*( Ne(i,j)-Ne(i-1,j) )* NormalW2(i,j)  &
+                      -( diffusionE(i-1,j)+diffusionE(i,j) )*( mesh%Ne(i,j)-mesh%Ne(i-1,j) )* NormalW2(i,j)  &
                        ! Cross-diffusion from [Mathur and Murthy (1997)]
                       +ShapeFactorTangentW(i,j) &
-                      *(diffusionE(i-1,j)+diffusionE(i,j))*( NeDual(i-1,j-1) - NeDual(i-1,j) ) &
+                      *(diffusionE(i-1,j)+diffusionE(i,j))*( dual%Ne(i-1,j-1) - dual%Ne(i-1,j) ) &
                                                                                                              ) &     
                   + ShapeFactorNormalN(i,j) &
                     *( &
                        ! direct diffusion operator over irregular mesh
-                      +( diffusionE(i,j+1)+diffusionE(i,j) )*( Ne(i,j+1)-Ne(i,j) )* NormalN2(i,j)  &
+                      +( diffusionE(i,j+1)+diffusionE(i,j) )*( mesh%Ne(i,j+1)-mesh%Ne(i,j) )* NormalN2(i,j)  &
                        ! Cross-diffusion from [Mathur and Murthy (1997)]
                       +ShapeFactorTangentN(i,j) &
-                      *(diffusionE(i,j+1)+diffusionE(i,j))*( NeDual(i-1,j) - NeDual(i,j) ) &
+                      *(diffusionE(i,j+1)+diffusionE(i,j))*( dual%Ne(i-1,j) - dual%Ne(i,j) ) &
                                                                                                          ) &     
                   + ShapeFactorNormalS(i,j) &
                     *( &
                        ! direct diffusion operator over irregular mesh
-                      -( diffusionE(i,j-1)+diffusionE(i,j) )*( Ne(i,j)-Ne(i,j-1) )* NormalS2(i,j)  &
+                      -( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(i,j)-mesh%Ne(i,j-1) )* NormalS2(i,j)  &
                        ! Cross-diffusion from [Mathur and Murthy (1997)]
                       +ShapeFactorTangentS(i,j) &
-                      *(diffusionE(i,j-1)+diffusionE(i,j))*( NeDual(i,j-1) - NeDual(i-1,j-1) ) &
+                      *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i,j-1) - dual%Ne(i-1,j-1) ) &
                                                                                                          ) ))
             !      +  CrossCoeff*( CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j) ) &
             !        *( diffusionE(i,j)+diffusionE(i+1,j) )*( NeDual(i,j) - NeDual(i,j-1) )/DistDualE(i,j)&
@@ -2749,7 +2746,7 @@ if(UseMieScattering.eq.1) then
             
 
         if(NeOff.eq.1) then
-          NeNew(i,j)=Ne(i,j); NhNew(i,j)=Nh(i,j)
+          NeNew(i,j)=mesh%Ne(i,j); NhNew(i,j)=mesh%Nh(i,j)
         end if
         
         if(HolesOff.eq.0 .AND. NeOff.eq.0) then
@@ -2775,30 +2772,30 @@ if(UseMieScattering.eq.1) then
 !               -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) & 
               ! diffusion on irregular mesh
               +0.5d0*(& 
-              + NormalE2(i,j)*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(Nh(i+1,j)-Nh(i,j)) &
+              + NormalE2(i,j)*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(mesh%Nh(i+1,j)-mesh%Nh(i,j)) &
                       / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
 !               - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i,j+1)-0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-              - NormalW2(i,j)*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(Nh(i,j)-Nh(i-1,j)) &
+              - NormalW2(i,j)*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i-1,j)) &
                       /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) & 
 !               - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(0.25d0*Nh(i,j+1)+0.25d0*Nh(i-1,j+1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-              + NormalN2(i,j)*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(Nh(i,j+1)-Nh(i,j)) &
+              + NormalN2(i,j)*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(mesh%Nh(i,j+1)-mesh%Nh(i,j)) &
                       /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
 !               - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i+1,j)-0.25d0*Nh(i-1,j)-0.25d0*Nh(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-              - NormalS2(i,j)*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(Nh(i,j)-Nh(i,j-1)) &
+              - NormalS2(i,j)*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i,j-1)) &
                       /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
 !               - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
 !                   ! Cross-diffusion from [Mathur and Murthy (1997)]
               + CrossCoeff*( &
               + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j)) & 
-                    *( NhDual(i,j) - NhDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
+                    *( dual%Nh(i,j) - dual%Nh(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
               + (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j)) & 
-                    *( NhDual(i-1,j-1) - NhDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+                    *( dual%Nh(i-1,j-1) - dual%Nh(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
               + (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j)) & 
-                    *( NhDual(i-1,j) - NhDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+                    *( dual%Nh(i-1,j) - dual%Nh(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
               + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) & 
-                    *( NhDual(i,j-1) - NhDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
+                    *( dual%Nh(i,j-1) - dual%Nh(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
               ) &
-              ))*dt*InvCellVol(i,j)+Nh(i,j)
+              ))*dt*InvCellVol(i,j)+mesh%Nh(i,j)
 !         else
 !           NhNew(i,j)=NeNew(i,j)
         endif
@@ -2810,27 +2807,27 @@ if(UseMieScattering.eq.1) then
           if(ConvectionEnergy.eq.0) then
           TeNew(i,j) = &
                   0.5d0*(&
-                  + NormalE2(i,j)*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j))*(Te(i+1,j)-Te(i,j)) &
+                  + NormalE2(i,j)*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
                           / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
-                  - NormalW2(i,j) *CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j))*(Te(i,j)-Te(i-1,j)) &
+                  - NormalW2(i,j) *CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i-1,j)) &
                           / (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) &
-                  + NormalN2(i,j)*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j))*(Te(i,j+1)-Te(i,j)) &
+                  + NormalN2(i,j)*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i,j+1)-mesh%Te(i,j)) &
                           / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) &
-                  - NormalS2(i,j)*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j))*(Te(i,j)-Te(i,j-1)) &
+                  - NormalS2(i,j)*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i,j-1)) &
                           / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) &
                   + CrossCoeff*( &
                    + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j)) & 
-                        *( TeDual(i,j) - TeDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
+                        *( dual%Te(i,j) - dual%Te(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
                    + (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappae(i-1,j)+kappae(i,j)) & 
-                        *( TeDual(i-1,j-1) - TeDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+                        *( dual%Te(i-1,j-1) - dual%Te(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
                    + (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappae(i,j+1)+kappae(i,j)) & 
-                        *( TeDual(i-1,j) - TeDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+                        *( dual%Te(i-1,j) - dual%Te(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
                    + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappae(i,j-1)+kappae(i,j)) & 
-                        *( TeDual(i,j-1) - TeDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
+                        *( dual%Te(i,j-1) - dual%Te(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
                    ) &
                   +2.0d0*(-CouplingE(i,j)+SourceE(i,j))*CellVol(i,j)) & !source
                 /Ce(i,j) * dt * InvCellVol(i,j) &
-                +Te(i,j)
+                +mesh%Te(i,j)
 
             else !convective term included!
             
@@ -2954,30 +2951,30 @@ if(UseMieScattering.eq.1) then
             if(ConvectionEnergy.eq.0) then 
             
             ThNew(i,j) = (&
-                  + 0.5d0*NormalE2(i,j)*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(Th(i+1,j)-Th(i,j))  & 
+                  + 0.5d0*NormalE2(i,j)*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(mesh%Th(i+1,j)-mesh%Th(i,j))  &
                         / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i,j+1)-0.25d0*Th(i+1,j-1)-0.25d0*Th(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-                  - 0.5d0*NormalW2(i,j)*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(Th(i,j)-Th(i-1,j)) & 
+                  - 0.5d0*NormalW2(i,j)*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i-1,j)) &
                         /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) & 
 !                   - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(0.25d0*Th(i,j+1)+0.25d0*Th(i-1,j+1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                  + 0.5d0*NormalN2(i,j)*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(Th(i,j+1)-Th(i,j)) & 
+                  + 0.5d0*NormalN2(i,j)*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(mesh%Th(i,j+1)-mesh%Th(i,j)) &
                         /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
 !                   - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i+1,j)-0.25d0*Th(i-1,j)-0.25d0*Th(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-                  - 0.5d0*NormalS2(i,j)*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(Th(i,j)-Th(i,j-1)) & 
+                  - 0.5d0*NormalS2(i,j)*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i,j-1)) &
                         /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
 !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(0.25d0*Th(i+1,j)+0.25d0*Th(i+1,j-1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
                   + 0.5d0*CrossCoeff*( &
                   + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j)) & 
-                        *( ThDual(i,j) - ThDual(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
+                        *( dual%Th(i,j) - dual%Th(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
                   + (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j)) & 
-                        *( ThDual(i-1,j-1) - ThDual(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
+                        *( dual%Th(i-1,j-1) - dual%Th(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
                   + (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j)) & 
-                        *( ThDual(i-1,j) - ThDual(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
+                        *( dual%Th(i-1,j) - dual%Th(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
                   + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j)) & 
-                        *( ThDual(i,j-1) - ThDual(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
+                        *( dual%Th(i,j-1) - dual%Th(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
                   ) &
                   +(-CouplingH(i,j)+SourceH(i,j))*CellVol(i,j)) & 
-                  /Ch(i,j)*dt*InvCellVol(i,j)+Th(i,j)
+                  /Ch(i,j)*dt*InvCellVol(i,j)+mesh%Th(i,j)
             
 
          else !convection scheme
@@ -3072,26 +3069,26 @@ if(UseMieScattering.eq.1) then
         TsNew(i,j) =&
                     ((0.5d0*( (&
                     + NormalE2(i,j)*ShapeFactorNormalE(i,j)  & 
-                      *( kappas(i,j)+kappas(i+1,j))*(Ts(i+1,j)-Ts(i,j)) &
+                      *( kappas(i,j)+kappas(i+1,j))*(mesh%Ts(i+1,j)-mesh%Ts(i,j)) &
                     - NormalW2(i,j)*ShapeFactorNormalW(i,j) &
-                      *( kappas(i-1,j)+kappas(i,j))*(Ts(i,j)-Ts(i-1,j)) & 
+                      *( kappas(i-1,j)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i-1,j)) &
                     + NormalN2(i,j)*ShapeFactorNormalN(i,j) &
-                      *( kappas(i,j+1)+kappas(i,j))*(Ts(i,j+1)-Ts(i,j)) & 
+                      *( kappas(i,j+1)+kappas(i,j))*(mesh%Ts(i,j+1)-mesh%Ts(i,j)) &
                     - NormalS2(i,j)*ShapeFactorNormalS(i,j) &
-                      *( kappas(i,j-1)+kappas(i,j))*(Ts(i,j)-Ts(i,j-1)) &
+                      *( kappas(i,j-1)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i,j-1)) &
                     + &
                     + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
-	        *( kappas(i,j) + kappas(i+1,j)) & 
-                        *( TsDual(i,j) - TsDual(i,j-1) ) &
+	                  *( kappas(i,j) + kappas(i+1,j)) &
+                        *( dual%Ts(i,j) - dual%Ts(i,j-1) ) &
                     + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
-	        *( kappas(i-1,j) + kappas(i,j)) & 
-                        *( TsDual(i-1,j-1) - TsDual(i-1,j) ) &
+	                  *( kappas(i-1,j) + kappas(i,j)) &
+                        *( dual%Ts(i-1,j-1) - dual%Ts(i-1,j) ) &
                     + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j) &
-	        *( kappas(i,j+1) + kappas(i,j)) & 
-                        *( TsDual(i-1,j) - TsDual(i,j) ) &
+	                  *( kappas(i,j+1) + kappas(i,j)) &
+                        *( dual%Ts(i-1,j) - dual%Ts(i,j) ) &
                     + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
-	        *( kappas(i,j-1) + kappas(i,j)) & 
-                        *( TsDual(i,j-1) - TsDual(i-1,j-1) ) &
+	                  *( kappas(i,j-1) + kappas(i,j)) &
+                        *( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
                     ) &
                     + 2d0*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) &
 	            ) * InvCellVol(i,j) &
@@ -3103,7 +3100,7 @@ if(UseMieScattering.eq.1) then
 !                     * Ts(i,j)           
                     ) / Cs(i,j) &
                     + h2 * h3 / h1 / (-h3 + h1)  &
-                    / (-h2 + h1) * Ts(i,j) - h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2) &
+                    / (-h2 + h1) * mesh%Ts(i,j) - h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2) &
                     * TsOld(i,j) + h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 &
                     * h3 + h1 * h2) * TsPrev(i,j)) / (h1 * h2 + h1 * h3 + &
                     h2 * h3) * h2 * h1 * h3
@@ -3115,9 +3112,9 @@ if(UseMieScattering.eq.1) then
     end if
 
     if(ConvectionEnergy.eq.1) then !define temperatures from energy
-      TeNew(i,j) = Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*Te(i,j)*(NeNew(i,j) - Ne(i,j)) & 
+      TeNew(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(NeNew(i,j) - mesh%Ne(i,j)) &
           *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) / Ce(i,j)
-      ThNew(i,j) = Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*Th(i,j)*(NhNew(i,j) - Nh(i,j)) & 
+      ThNew(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(NhNew(i,j) - mesh%Nh(i,j)) &
           *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) / Ch(i,j)
     end if
                       
@@ -3139,7 +3136,7 @@ if(UseMieScattering.eq.1) then
                     -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
         
         
-    ThermalEnergy(i,j)=Ce(i,j)*Te(i,j)+Ch(i,j)*Th(i,j)+Cs(i,j)*Ts(i,j)
+    ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
     LaserEnergy(i,j)=OnePhotonIonizationRate0*intensity(i,j)/(1d0-reflectivity(i,j))+ & !energy loss by interband absorption
                TwoPhotonIonizationRate0*intensity(i,j)**2/(1d0-reflectivity(i,j))**2+ & !energy loss by two photon absorption
               (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*intensity(i,j)/(1d0-reflectivity(i,j)) !energy loss by carrrier heating
@@ -3266,11 +3263,11 @@ if(UseMieScattering.eq.1) then
 
       do j=1,N
 
-        NeTotal=NeTotal + Ne(i,j) * CellVol(i,j)
-        NhTotal=NhTotal + Nh(i,j) * CellVol(i,j)
+        NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
+        NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
       
-        if(MaxHeating(i,j) < Ts(i,j) .AND. t > 100d0*tau) then
-           MaxHeating(i,j)=Ts(i,j)
+        if(MaxHeating(i,j) < mesh%Ts(i,j) .AND. t > 100d0*tau) then
+           MaxHeating(i,j)=mesh%Ts(i,j)
            MaxHeatingTime(i,j)=t
         end if
 
@@ -3404,36 +3401,37 @@ if(UseMieScattering.eq.1) then
         
         ! calculation of the energy contained in the solid
         ElectronEnergy=ElectronEnergy &
-          + (Ce(i,j)*(TeNew(i,j)-Te(i,j))+(Ce(i,j)-CeOld(i,j))*Te(i,j)) * CellVol(i,j) & !kinetic energy
-          + (Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(Ne(i,j),Ts(i,j)))  & 
-              + Egap(i,j)*(NeNew(i,j)-Ne(i,j))) * CellVol(i,j) !potential energy
+          + (Ce(i,j)*(TeNew(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
+          + (mesh%Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
+              + Egap(i,j)*(NeNew(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
               
-        ElectronKineticEnergy=ElectronKineticEnergy+(Ce(i,j)*(TeNew(i,j)-Te(i,j))+(Ce(i,j)-CeOld(i,j))*Te(i,j)) * CellVol(i,j) !kinetic energy 
-        ElectronPotentialEnergy=ElectronPotentialEnergy+(Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(Ne(i,j),Ts(i,j)))  & 
-              + Egap(i,j)*(NeNew(i,j)-Ne(i,j))) * CellVol(i,j) !potential energy
+        ElectronKineticEnergy=ElectronKineticEnergy+(Ce(i,j)*(TeNew(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
+        ElectronPotentialEnergy=ElectronPotentialEnergy+(mesh%Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
+              + Egap(i,j)*(NeNew(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
 !         ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
         
-        HoleEnergy=HoleEnergy+(Ch(i,j)*(ThNew(i,j)-Th(i,j))+(Ch(i,j)-ChOld(i,j))*Th(i,j)) * CellVol(i,j) !kinetic energy
+        HoleEnergy=HoleEnergy+(Ch(i,j)*(ThNew(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
         
-        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(TsNew(i,j)-Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
+        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(TsNew(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
         
-        if(Te(i,j).ne.Te(i,j)) then
+        !TODO: What the f...? I do not understant
+        if(mesh%Te(i,j).ne.mesh%Te(i,j)) then
           write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
           Diverged=.true.
         end if
-        if((Th(i,j)).ne.Th(i,j)) then
+        if((mesh%Th(i,j)).ne.mesh%Th(i,j)) then
           write(95,*) "Divergence of Th at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
           Diverged=.true.
         end if
-        if((Ts(i,j)).ne.Ts(i,j)) then
+        if((mesh%Ts(i,j)).ne.mesh%Ts(i,j)) then
           write(95,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
           Diverged=.true.
         end if
-        if((Ne(i,j)).ne.Ne(i,j)) then
+        if((mesh%Ne(i,j)).ne.mesh%Ne(i,j)) then
           write(95,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
           Diverged=.true.
         end if
-        if((Nh(i,j)).ne.Nh(i,j)) then
+        if((mesh%Nh(i,j)).ne.mesh%Nh(i,j)) then
           write(95,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
           Diverged=.true.
         end if
@@ -3455,7 +3453,7 @@ if(UseMieScattering.eq.1) then
         end if
         
         if(real(FermiRatioE(i,j)) < 0d0 .OR. real(FermiRatioH(i,j)) < 0d0) then
-          write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", Ne(i,j), Nh(i,j)
+          write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
         end if
         
         call flush(95)
@@ -3467,13 +3465,13 @@ if(UseMieScattering.eq.1) then
 
               ! lets change dt when fast reponse is finished in order to catch the long one. 
 
-        diffNe(i,j)=(NeNew(i,j)-Ne(i,j))/dt
-        diffNh(i,j)=(NhNew(i,j)-Nh(i,j))/dt
+        diffNe(i,j)=(NeNew(i,j)-mesh%Ne(i,j))/dt
+        diffNh(i,j)=(NhNew(i,j)-mesh%Nh(i,j))/dt
         
                 
         if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
-          write(97,887, advance="yes") t, x(i,j), y(i,j), intensity(i,j), Te(i,j), & !5
-                        Th(i,j), Ts(i,j), Ne(i,j), Nh(i,j), reflectivity(i,j), & !10
+          write(97,887, advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
+                        mesh%Th(i,j), mesh%Ts(i,j), mesh%Ne(i,j), mesh%Nh(i,j), reflectivity(i,j), & !10
                         absorptionDrudeE(i,j), absorptionDrudeH(i,j), diffNe(i,j), diffNh(i,j), TotalElectrons(i,j), & !15
                         TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !20
                         SourceE(i,j), SourceH(i,j), GainsE(i,j), GainsH(i,j), LossesE(i,j), & !25
@@ -3577,8 +3575,8 @@ if(UseMieScattering.eq.1) then
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E12.5)
                 
-        write(94,884, advance="YES") t, Te(1,N/2), Th(1,N/2), Ts(1,N/2), Ne(1,N/2), &                        !5
-              Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
+        write(94,884, advance="YES") t, mesh%Te(1,N/2), mesh%Th(1,N/2), mesh%Ts(1,N/2), mesh%Ne(1,N/2), &                        !5
+              mesh%Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
               SourceE(1,N/2), GainsE(1,N/2), SourceH(1,N/2), GainsH(1,N/2), Egap(1,N/2), &                !15
               diffNe(1,N/2), diffNh(1,N/2), real(FermiIndexE(1,N/2)), real(FermiIndexH(1,N/2)), Ce(2,N/2), &                !20
               CeOld(2,N/2), Ch(2,N/2), ChOld(2,N/2), Cs(2,N/2), CsOld(2,N/2), &                                !25
@@ -3591,8 +3589,8 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5)
 
-        write(93,883, advance="YES") t, Te(M/2,N), Th(M/2,N), Ts(M/2,N), Ne(M/2,N), &
-              Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
+        write(93,883, advance="YES") t, mesh%Te(M/2,N), mesh%Th(M/2,N), mesh%Ts(M/2,N), mesh%Ne(M/2,N), &
+              mesh%Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
               SourceE(M/2,N), GainsE(M/2,N), SourceH(M/2,N), GainsH(M/2,N), Egap(M/2,N), &
               diffNe(M/2,N), diffNh(M/2,N), real(FermiIndexE(M/2,N)), real(FermiIndexH(M/2,N))
               
@@ -3601,8 +3599,8 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
-        write(92,882, advance="YES") t, Te(M/2,1), Th(M/2,1), Ts(M/2,1), Ne(M/2,1), &
-              Nh(M/2,1), intensity(M/2,1), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
+        write(92,882, advance="YES") t, mesh%Te(M/2,1), mesh%Th(M/2,1), mesh%Ne(M/2,1), &
+              mesh%Nh(M/2,1), intensity(M/2,1), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
               SourceE(M/2,1), GainsE(M/2,1), SourceH(M/2,1), GainsH(M/2,1), Egap(M/2,1), &
               diffNe(M/2,1), diffNh(M/2,1), real(FermiIndexE(M/2,1)), real(FermiIndexH(M/2,1))
               
@@ -3650,8 +3648,8 @@ if(UseMieScattering.eq.1) then
       do i=1,M-1
         do j=1,N-1
           
-          write(103, 890, advance="YES") t, xDual(i,j), yDual(i,j), TeDual(i,j), ThDual(i,j), & !5
-                                          TsDual(i,j), NeDual(i,j), NhDual(i,j), intensityDual(i,j) !9
+          write(103, 890, advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
+                                          dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9
                   
         end do
       end do        
@@ -3659,7 +3657,8 @@ if(UseMieScattering.eq.1) then
     call flush(98); call flush(94); call flush(93); call flush(101)
   end do
   
-  
+  call releasemesh(mesh)
+  call releasemesh(dual)
 
   contains 
   
@@ -3995,6 +3994,57 @@ if(UseMieScattering.eq.1) then
       return
     end function MieCoeff4
 
+    function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
+    ! works with convex elements!
+      real(8) x1, y1, x2, y2, x3,y3,x4,y4, AreaElement
+!       AreaElement=0.5d0*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
+      AreaElement=0.5d0*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
+    end function AreaElement
+
+    function AreaTri(xA, yA, xB, yB, xP, yP)
+      real(8) xA, yA, xB, yB, xP, yP, AreaTri
+      AreaTri=0.5d0*abs((xA-xP)*(yB-yP)-(xB-xP)*(yA-yP))
+    end function AreaTri
+
+    function Distance(x1, y1, x2, y2)
+      real(8) Distance, x1, y1, x2, y2
+      Distance=sqrt((x2-x1)**2+(y2-y1)**2)
+    end function Distance
+
+    function Normal(x1,y1,x2,y2,axis)
+    !compute the normal vector to the line defined by given distances in cartesian plane
+      real(8) x1, y1, x2, y2
+      real(8) NormalX, NormalY, Dx, Dy, Normal
+      real(8) normVector
+      integer(4) axis
+      Dx=x1-x2; Dy=y1-y2
+      normVector=sqrt(Dx**2+Dy**2)
+      NormalX=-Dy/normVector
+      NormalY=Dx/normVector
+      if(axis.eq.1) then
+        Normal=NormalX
+      else
+        Normal=NormalY
+      end if
+    end function Normal
+
+    function Tangent(x1,y1,x2,y2,axis)
+    !compute the tangent vector to the line defined by given distances in cartesian plane
+      real(8) x1, y1, x2, y2
+      real(8) TangentX, TangentY, Dx, Dy, Tangent
+      real(8) normVector
+      integer(4) axis
+      Dx=x1-x2; Dy=y1-y2
+      normVector=sqrt(Dx**2+Dy**2)
+      TangentX=Dx/normVector
+      TangentY=Dy/normVector
+      if(axis.eq.1) then
+        Tangent=TangentX
+      else
+        Tangent=TangentY
+      end if
+    end function Tangent
+
     function BesselJ(order, z)
       implicit none
       complex(8) :: z, BesselJ
@@ -4099,14 +4149,14 @@ if(UseMieScattering.eq.1) then
 ! debug
 !         Hankel1prime=Unit
     end function Hankel1prime
-    
+
     subroutine swap(a, b)
       real(8) temp, a, b
       temp=a
       a=b
       b=temp
     end subroutine swap
-    
+
     function OneDindex(i,j)
       implicit none
       integer(8) i,j, OneDindex
@@ -4152,7 +4202,7 @@ if(UseMieScattering.eq.1) then
     end function LaInv
 
 
-    
+
 !    function FindNeighbours(x, y, xM, yM, number, dimX, dimY)
 !    ! [T. Westermann, J. Comp. Phys. 101, 307-313 (1992)]
 !    ! returns an array(1:4,1:2) with neighboor points of (x,y)
@@ -4262,262 +4312,7 @@ if(UseMieScattering.eq.1) then
 !    end function FindNeighbours
 
 
-    function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
-    ! works with convex elements!
-      real(8) x1, y1, x2, y2, x3,y3,x4,y4, AreaElement
-!       AreaElement=0.5d0*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
-      AreaElement=0.5d0*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
-    end function AreaElement
 
-    function AreaTri(xA, yA, xB, yB, xP, yP)
-      real(8) xA, yA, xB, yB, xP, yP, AreaTri
-      AreaTri=0.5d0*abs((xA-xP)*(yB-yP)-(xB-xP)*(yA-yP))
-    end function AreaTri
-
-    function Distance(x1, y1, x2, y2)
-      real(8) Distance, x1, y1, x2, y2
-      Distance=sqrt((x2-x1)**2+(y2-y1)**2)
-    end function Distance
-
-    function Normal(x1,y1,x2,y2,axis)
-    !compute the normal vector to the line defined by given distances in cartesian plane
-      real(8) x1, y1, x2, y2
-      real(8) NormalX, NormalY, Dx, Dy, Normal
-      real(8) normVector
-      integer(4) axis
-      Dx=x1-x2; Dy=y1-y2
-      normVector=sqrt(Dx**2+Dy**2)
-      NormalX=-Dy/normVector
-      NormalY=Dx/normVector
-      if(axis.eq.1) then
-        Normal=NormalX
-      else
-        Normal=NormalY
-      end if
-    end function Normal
-
-    function Tangent(x1,y1,x2,y2,axis)
-    !compute the tangent vector to the line defined by given distances in cartesian plane
-      real(8) x1, y1, x2, y2
-      real(8) TangentX, TangentY, Dx, Dy, Tangent
-      real(8) normVector
-      integer(4) axis
-      Dx=x1-x2; Dy=y1-y2
-      normVector=sqrt(Dx**2+Dy**2)
-      TangentX=Dx/normVector
-      TangentY=Dy/normVector
-      if(axis.eq.1) then
-        Tangent=TangentX
-      else
-        Tangent=TangentY
-      end if
-    end function Tangent
-
-    
-!    function InterpolateSelner(Z, xS, yS, xT, yT, dimXs, dimYs, dimXt, dimYt)
-!    ! from Z expressed on a source mesh (xS,yS),
-!    ! returns Z expressed on a target mesh (xT, yT) by bilinear interapolation for convex irregular mesh
-!    ! [Selner & Wastermann, J. Comp. Phys 79, 1-11 (1988)]
-!
-!      integer(8) dimXs, dimYs, &                                !dimension of the source mesh
-!                dimXt, dimYt                                !dimensions of the target mesh
-!
-!      real(8) :: InterpolateSelner(1:dimXt,1:dimYt)                 ! new value of Z
-!      real(8) Z(1:dimXs,1:dimYs), &                                !source data
-!              xS(1:dimXs,1:dimYs), yS(1:dimXs,1:dimYs), &
-!              xT(1:dimXt, 1:dimYt), yT(1:dimXt, 1:dimYt)
-!      real(8) alpha1, alpha2, AireElementVoisin, AireSum
-!      real(8) CoordMatrix(1:2,1:2),&                        ! small matrix for base change
-!              CoordsT(1,1:2), NewCoordsT(1,1:2),&                ! coordinate vectors of target point
-!              CoordsS(1,1:2), NewCoordsS(1,1:2),&                ! coordinate vectors of source points
-!              p, q                                        ! simple coefficients
-!
-!      integer(8) iS, jS, iT, jT                                 ! source indexes, target indexes
-!      integer(8) Neighbours(1:4,1:2) !contain the index of the nearest points in source mesh
-!      
-!      !$O M P PARALLEL DO
-!      do iT=1, dimXt
-!        !$O M P DO
-!        do jT=1, dimYt
-!          ! catch the neighbours of point (i,j) contained in source mesh
-!          Neighbours=FindNeighbours(xT(iT,jT), yT(iT,jT), xS, yS, numberOfNeighbours, dimXs, dimYs)
-!          if(Neighbours(1,1).eq.0) then !point is outside of the found element
-!!             write(*,*) AireElementVoisin, "!=", AireSum
-!            InterpolateSelner(iT,jT)=0d0
-!          else !interpolate for real
-!!             write(*,*) AireElementVoisin, "==", AireSum
-!
-!            ! the coordinate of target point is transformed into squared element
-!            CoordsT(1,1)=xT(iT,jT); CoordsT(1,2)=yT(iT,jT)
-!!             CoordMatrix(1,1)=Neighbours(4,1); CoordMatrix(1,2)=Neighbours(4,2);
-!!             CoordMatrix(2,1)=Neighbours(2,1); CoordMatrix(2,2)=Neighbours(2,2)
-!! il semble qu  il y a une erreur dans les deux lignes precedentes ! test
-!            CoordMatrix(1,1)=Neighbours(2,1); CoordMatrix(1,2)=Neighbours(4,1)
-!            CoordMatrix(2,1)=Neighbours(2,2); CoordMatrix(2,2)=Neighbours(4,2)
-!            CoordMatrix=LaInv(CoordMatrix)
-!
-!            NewCoordsT=transpose(matmul(CoordMatrix, transpose(CoordsT)))
-!            CoordsS(1,1)=Neighbours(3,1); CoordsS(1,2)=Neighbours(3,2)
-!            NewCoordsS=transpose(matmul(CoordMatrix, transpose(CoordsS)))
-!
-!            if((NewCoordsS(1,1)-1d0)<=1d-15) then
-!              alpha2=NewCoordsT(1,2)/(1d0+(NewCoordsT(1,1)*(NewCoordsS(1,2)-1d0)))
-!            else
-!              p=0.5d0*(1d0+NewCoordsT(1,1)*(NewCoordsS(1,2)-1d0)-NewCoordsT(1,2)*(NewCoordsS(1,1)-1d0))
-!              q=NewCoordsT(1,2)*(NewCoordsS(1,1)-1d0)
-!              alpha2=(-p+(p**2+q)**0.5d0)/(NewCoordsS(1,1)-1d0)
-!            end if
-!
-!            alpha1=NewCoordsT(1,1)/(1d0+alpha2*(NewCoordsS(1,1)-1d0))
-!
-!            ! use the 4 neighbours to interpolate
-!            InterpolateSelner(iT,jT)=(1d0-alpha1)*(1d0-alpha2)*Z(Neighbours(1,1),Neighbours(1,2)) &
-!                                + alpha1*(1d0-alpha2)*Z(Neighbours(2,1),Neighbours(2,2)) &
-!                                + alpha1*alpha2*Z(Neighbours(3,1),Neighbours(3,2)) &
-!                                + (1d0-alpha1)*alpha2*Z(Neighbours(4,1),Neighbours(4,2))
-!          end if
-!        end do
-!        !$O M P END DO
-!      end do
-!      !$O M P END PARALLEL DO
-!      ! $ OMP BARRIER
-!    end function InterpolateSelner
-
-
-!     subroutine InterpolateBiCubic(Z, xS, yS, xT, yT, dimXs, dimYs, dimXt, dimYt, Interpolated, DerivativeX, DerivativeY)
-!     ! use bicubic interpolation
-! 
-!     integer(8) dimXs, dimYs, &                                !dimension of the source mesh
-!                 dimXt, dimYt                                !dimensions of the target mesh
-! 
-! !       real(8) :: InterpolateBiCubic(1:dimXt,1:dimYt)                 ! new value of Z
-!       real(8) Z(1:dimXs,1:dimYs), &                                !source data
-!               xS(1:dimXs,1:dimYs), yS(1:dimXs,1:dimYs), &
-!               xT(1:dimXt, 1:dimYt), yT(1:dimXt, 1:dimYt), &
-!               xSs(1:dimXs*dimYs), ySs(1:dimXs*dimYs), & !same in 1D matrixes
-!               xTt(1:dimXt*dimYt), yTt(1:dimXt*dimYt), &
-!               ShepardSource(1:dimXs*dimYs), &
-!               ShepardX(1:dimXs*dimYs), ShepardY(1:dimXs*dimYs), &
-!               ShepardWeight(1:dimXs*dimYs), ShepardRadius(1:dimXs*dimYs), &
-!               ShepardA(1:9,dimXs*dimYs), &
-!               ShepardValues(1:dimXt, 1:dimYt), &
-!               ShepardNext(1:dimXs*dimYs), &
-!               ShepardXmin, ShepardYmin, ShepardDx, ShepardDy, ShepardRadiusMax, CSTVAL, &
-!               Interpolated(1:dimXt, 1:dimYt), &
-!               DerivativeX(1:dimXt, 1:dimYt), &
-!               DerivativeY(1:dimXt, 1:dimYt)
-! 
-!       integer(8) iS, jS, iT, jT, &
-!                   ShepardCells(1:dimXt, 1:dimYt)
-! 
-!       integer(4) ShepardError
-! 
-!       ! 1/ transfer everything in vectors
-!       !$O M P PARALLEL DO
-!       do iS=1,dimXs
-!         !$O M P DO
-!         do jS=1,dimYs
-!           ShepardX((iS-1)*dimXs+jS)=xS(iS,jS)
-!           ShepardY((iS-1)*dimXs+jS)=yS(iS,jS)
-!           ShepardSource((iS-1)*dimXs+jS)=Z(iS,jS)
-!         end do
-!         !$O M P END DO
-!       end do
-!       !$O M P END PARALLEL DO
-! 
-!       ! 2/ compute Cshep2
-!       CALL Cshep2(dimXs*dimYs, ShepardX, ShepardY, ShepardSource, 11, 15, dimXt, &
-!              ShepardCells, ShepardNext, ShepardXmin, ShepardYmin, ShepardDx, &
-!              ShepardDy, ShepardRadiusMax, ShepardRadius, ShepardA, ShepardError)
-! 
-!       ! 3/ compute the interpolation
-!       if(ShepardError.eq.0) then
-!         !$O M P PARALLEL DO
-!         do i=1,dimXt
-!           !$O M P DO
-!           do j=1,dimYt
-! !             Interpolated(i,j)=CSTVAL(xT(i,j), yT(i,j), dimXs*dimYs, ShepardX, ShepardY, ShepardSource, dimXt, ShepardCells, ShepardNext, ShepardXmin, ShepardYmin, ShepardDx, ShepardDy, ShepardRadiusMax, ShepardRadius, ShepardA)
-!             call CS2GRD(xT(i,j), yT(i,j), dimXs*dimYs, ShepardX, ShepardY, ShepardSource, dimXt, ShepardCells, ShepardNext, ShepardXmin, ShepardYmin, ShepardDx, ShepardDy, ShepardRadiusMax, ShepardRadius, ShepardA, Interpolated(i,j), DerivativeX(i,j), DerivativeY(i,j), ShepardError)
-!           end do
-!           !$O M P END DO
-!         end do
-!         !$O M P END PARALLEL DO
-! 
-!         ! 4/ extract the result
-! !         InterpolateBiCubic(:,:)=Interpolated(:,:)
-!       else
-!         write(*,*) 'BicubicInterp. error code = ', ShepardError
-!       end if
-! 
-!     end subroutine InterpolateBiCubic
-
-
-!
-!     function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
-!     ! works with convex elements!
-!       real(8) x1, y1, x2, y2, x3,y3,x4,y4, AreaElement
-! !       AreaElement=0.5d0*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
-!       AreaElement=0.5d0*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
-!     end function AreaElement
-!
-!     function AreaTri(xA, yA, xB, yB, xP, yP)
-!       real(8) xA, yA, xB, yB, xP, yP, AreaTri
-!       AreaTri=0.5d0*abs((xA-xP)*(yB-yP)-(xB-xP)*(yA-yP))
-!     end function AreaTri
-!
-!     function Distance(x1, y1, x2, y2)
-!       real(8) Distance, x1, y1, x2, y2
-!       Distance=sqrt((x2-x1)**2+(y2-y1)**2)
-!     end function Distance
-!
-!     function Normal(x1,y1,x2,y2,axis)
-!     !compute the normal vector to the line defined by given distances in cartesian plane
-!       real(8) x1, y1, x2, y2
-!       real(8) NormalX, NormalY, Dx, Dy, Normal
-!       real(8) normVector
-!       integer(8) axis
-!       Dx=x1-x2; Dy=y1-y2
-!       normVector=sqrt(Dx**2+Dy**2)
-!       NormalX=-Dy/normVector
-!       NormalY=Dx/normVector
-!       if(axis.eq.1) then
-!         Normal=NormalX
-!       else
-!         Normal=NormalY
-!       end if
-!     end function Normal
-!
-!     function Tangent(x1,y1,x2,y2,axis)
-!     !compute the tangent vector to the line defined by given distances in cartesian plane
-!       real(8) x1, y1, x2, y2
-!       real(8) TangentX, TangentY, Dx, Dy, Tangent
-!       real(8) normVector
-!       integer(8) axis
-!       Dx=x1-x2; Dy=y1-y2
-!       normVector=sqrt(Dx**2+Dy**2)
-!       TangentX=Dx/normVector
-!       TangentY=Dy/normVector
-!       if(axis.eq.1) then
-!         Tangent=TangentX
-!       else
-!         Tangent=TangentY
-!       end if
-!     end function Tangent
-
-
-!   write(*,*) "[TEST] Area function"
-!   write(*,*) AreaElement(5.99d-7,-2.5d-7, 7.68d-7,-2.85d-7, 6.11d-7,-2.11d-7,2.71d-7, -1.66d-7)
-!   write(*,*) "[TEST] Triangle area function"
-!   write(*,*) "5.99d-7,-2.5d-7 ; 7.68d-7,-2.85d-7 ; 6.11d-7,-2.11d-7 ; 2.71d-7, -1.66d-7"
-!   write(*,*) "P 3.26d-7, 3.82d-8"
-!   write(*,*) AreaTri(5.99d-7,-2.5d-7,7.68d-7,-2.85d-7,5.74d-7,-2.07d-7)
-!   write(*,*) AreaTri(5.74d-7,-2.07d-7,7.68d-7,-2.85d-7,6.11d-7,-2.11d-7)
-!   write(*,*) AreaTri(5.74d-7,-2.07d-7,6.11d-7,-2.11d-7, 2.71d-7, -1.66d-7)
-!   write(*,*) AreaTri(5.74d-7,-2.07d-7,2.71d-7, -1.66d-7,5.99d-7,-2.5d-7)
-!   write(*,*) "Sum=", AreaTri(5.99d-7,-2.5d-7,7.68d-7,-2.85d-7,5.74d-7,-2.07d-7) + &
-!   AreaTri(5.74d-7,-2.07d-7,7.68d-7,-2.85d-7,6.11d-7,-2.11d-7) + &
-!   AreaTri(5.74d-7,-2.07d-7,6.11d-7,-2.11d-7, 2.71d-7, -1.66d-7) + &
-!   AreaTri(5.74d-7,-2.07d-7,2.71d-7, -1.66d-7,5.99d-7,-2.5d-7)
 
 
     function ContourYofX(x, radius, angle)
@@ -4546,7 +4341,7 @@ if(UseMieScattering.eq.1) then
       p1=42.14d0; p2=-10.64d0; p3=3.07d0; p4=-0.0173d0; p5=0d0;
       q1=-0.6025d0; q2=0.7698d0; q3=-0.1032d0; q4=0.01836d0;
       x0=0.0013621d0; tc=-0.0028855d0
-      ! Old and wrong data... Lost 1.5 years of calculations. 
+      ! Old and wrong data... Lost 1.5 years of calculations.
       ! p1=42.15d0; p2=-62.93d0; p3=66.13d0; p4=-15.28d0; p5=0.981d0
       ! q1=-2.848d0; q2=12.53d0; q3=-9.082d0; q4=5.09d0
       ! x0=0.0045712d0; tc=-0.14033d0
@@ -4588,12 +4383,12 @@ if(UseMieScattering.eq.1) then
       real(8):: ConeExp2, t
       real(8) a0, a1, a2, a3, a4, a5, a6, a7, a8, w, x0
 
-      a0=6.486d0; a1=-6.901d0; a2=1.874d0; a3=-0.7881d0; a4=-0.2992d0; a5=-0.05438d0; 
+      a0=6.486d0; a1=-6.901d0; a2=1.874d0; a3=-0.7881d0; a4=-0.2992d0; a5=-0.05438d0;
       a6=-0.1377d0; a7=-0.08898d0; a8=-0.05379d0; w=2.162d0; x0=-0.040850d0
 
 !      if(t <= 1.4d0 .AND. t >= -1.4d0) then
       if(t <= 0.7866818869d0 .AND. t >= -0.7866818869d0) then !to limit maxX to 5 um
-        ConeExp2=a0+a1*cos(1d0*w*t)+a2*cos(2d0*w*t)+a3*cos(3d0*w*t)+a4*cos(4d0*w*t) & 
+        ConeExp2=a0+a1*cos(1d0*w*t)+a2*cos(2d0*w*t)+a3*cos(3d0*w*t)+a4*cos(4d0*w*t) &
                   +a5*cos(5d0*w*t)+a6*cos(6d0*w*t)+a7*cos(7d0*w*t)+a8*cos(8d0*w*t)+x0
       end if
 
@@ -4704,6 +4499,8 @@ if(UseMieScattering.eq.1) then
 !         ConeExp2Radius=0.5d0*(abs(temp1)+abs(temp2))
 !       ConeExp2Radius=0.5d0*(temp1+temp2)
     end function ConeExp2Radius
+
+
     
 end program Flaps
 
