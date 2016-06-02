@@ -16,7 +16,7 @@ OBJS= src/types.o src/mesh.o src/maths.o
  
 all: $(EXEC)
 
-$(EXEC): main_explicit_Mie.o $(OBJ_LIBS) $(OBJS)
+$(EXEC): $(OBJ_LIBS) $(OBJS)
 	@echo 'Building target: $@'
 	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS) src/main_explicit_Mie.o
 	@echo 'Finished building target: $@'
@@ -24,15 +24,7 @@ $(EXEC): main_explicit_Mie.o $(OBJ_LIBS) $(OBJS)
 	@echo '************  Compilation OK  ************';
 	@echo '******  You can now do >make test< *******';
 
-main_explicit_Mie.o: $(OBJ_LIBS) $(OBJS)
-	@echo 'Building file: src/main_explicit_Mie.f90'
-	@echo 'Invoking: Fortran Compiler'
-	$(CC) -c $(CFLAGS) -I./libs/gmsh src/main_explicit_Mie.f90 -o src/main_explicit_Mie.o
-	@echo 'Finished building: src/main_explicit_Mie.f90'
-	@echo ' '
-
-
-$(OBJS): 
+$(OBJS): $(OBJ_LIBS) 
 	cd src && $(MAKE)
 
 

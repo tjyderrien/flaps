@@ -3079,7 +3079,7 @@ if(UseMieScattering.eq.1) then
                     - NormalS2(i,j)*ShapeFactorNormalS(i,j) &
                       *( kappas(i,j-1)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i,j-1)) &
                     + &
-                    + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
+                      ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
 	                  *( kappas(i,j) + kappas(i+1,j)) &
                         *( dual%Ts(i,j) - dual%Ts(i,j-1) ) &
                     + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
