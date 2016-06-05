@@ -484,11 +484,11 @@
 !
 !     end function ConeExp1Projection
 
-    function ConeExp2(t)
+    real(8) function ConeExp2(t)
     ! returns the parametric function x(t) adjusted on experimental shape given by Angela Vella, GPM Rouen, Dec (2013).
       implicit none
 
-      real(8):: ConeExp2, t
+      real(8):: t
       real(8) a0, a1, a2, a3, a4, a5, a6, a7, a8, w, x0
 
       a0=6.486d0; a1=-6.901d0; a2=1.874d0; a3=-0.7881d0; a4=-0.2992d0; a5=-0.05438d0;
@@ -498,7 +498,11 @@
       if(t <= 0.7866818869d0 .AND. t >= -0.7866818869d0) then !to limit maxX to 5 um
         ConeExp2=a0+a1*cos(1d0*w*t)+a2*cos(2d0*w*t)+a3*cos(3d0*w*t)+a4*cos(4d0*w*t) &
                   +a5*cos(5d0*w*t)+a6*cos(6d0*w*t)+a7*cos(7d0*w*t)+a8*cos(8d0*w*t)+x0
+      else !TODO: What to return here??
+        ConeExp2 = 0.d0
       end if
+
+
 
     end function ConeExp2
 

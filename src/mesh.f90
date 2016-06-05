@@ -43,6 +43,23 @@ subroutine releasemesh( mesh )
     deallocate(mesh%Nh)
 end subroutine releasemesh
 
+!> Copy data from oldmesh to newmesh
+subroutine copy_mesh(oldmesh, newmesh)
+  use Types
+  implicit none
+  type(MeshValues), intent(IN)  :: oldmesh
+  type(MeshValues), intent(INOUT) :: newmesh
+
+  if(newmesh%M /= oldmesh%M .or. newmesh%N /= oldmesh%N ) &
+    stop 'Invalid meshes used in copy_mesh'
+
+  newmesh%Te(1:newmesh%M,1:newmesh%N) = oldmesh%Te(1:newmesh%M,1:newmesh%N)
+  newmesh%Th(1:newmesh%M,1:newmesh%N) = oldmesh%Th(1:newmesh%M,1:newmesh%N)
+  newmesh%Ts(1:newmesh%M,1:newmesh%N) = oldmesh%Ts(1:newmesh%M,1:newmesh%N)
+  newmesh%Ne(1:newmesh%M,1:newmesh%N) = oldmesh%Ne(1:newmesh%M,1:newmesh%N)
+  newmesh%Nh(1:newmesh%M,1:newmesh%N) = oldmesh%Nh(1:newmesh%M,1:newmesh%N)
+
+end subroutine copy_mesh
 
 ! interpolation bilineaire ponderee par les aires
 subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )

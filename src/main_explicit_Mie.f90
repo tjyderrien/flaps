@@ -24,7 +24,7 @@ use Types
 
 implicit none
 
-    type(MeshValues) :: mesh, dual
+    type(MeshValues) :: mesh, dual, newmesh
 
     real(8), parameter:: lambda=515d-9         , & !laser wavelength (m)
                         fluence=0d0                , & !laser fluence (J.m-2)
@@ -141,16 +141,10 @@ implicit none
     real(8)         Te0, Th0, I0 !initial values of the problem
     real(8)        Ue(1:M, 1:N), & !electron energy
                 Uh(1:M, 1:N), & !hole energy
-                Th(1:M, 1:N), & !hole temperature
                 UeNew(1:M, 1:N), & !electron energy
                 UhNew(1:M, 1:N), & !hole energy
-                TeNew(1:M, 1:N), & !electron temperature
-                ThNew(1:M, 1:N), & !hole temperature
-                TsNew(1:M, 1:N), & !lattice temperature
                 TsOld(1:M, 1:N), & !lattice temperature (time n-1)
                 TsPrev(1:M,1:N), & !lattice temperature (time n-2)
-                NeNew(1:M, 1:N), & !electron density
-                NhNew(1:M, 1:N), & !hole density
                 GradNeX(1:M, 1:N),& !Grad(Ne)_x
                 GradNeY(1:M, 1:N),& !Grad(Ne)_y
                 intensity(1:M, 1:N), & !propagated intensity
@@ -546,6 +540,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   !Allocate the mesh and the dual mesh
   call initmesh(mesh, M, N)
   call initmesh(dual, M-1, N-1)
+  call initmesh(newmesh, M, N)
 
   ! building rectangular mesh 
   dx=(xmax-xmin)/(M+1)
@@ -1037,22 +1032,21 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         VeY(i,j)=0d0
         VhX(i,j)=0d0
         VhY(i,j)=0d0
-        TeNew(i,j)=Te0
-        ThNew(i,j)=Th0
-
-        TsNew(i,j)=Tout
+        newmesh%Te(i,j)=Te0
+        newmesh%Th(i,j)=Th0
+        newmesh%Ts(i,j)=Tout
         TsOld(i,j)=Tout
         TsPrev(i,j)=Tout
         
         if(BandBendingInFDTD.eq.1) then
-                  NeNew(i,j)=Ne0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,N))**2+(y(i,j)-y(i,N))**2) & 
+                  newmesh%Ne(i,j)=Ne0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,N))**2+(y(i,j)-y(i,N))**2) &
                     /((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
                     /(2d0*sqrt(2d0*log(2d0))))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
                     /(2d0*sqrt(2d0*log(2d0))))**2)) &
                   )
-                  NhNew(i,j)=Nh0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,N))**2+(y(i,j)-y(i,N))**2) & 
+                  newmesh%Nh(i,j)=Nh0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,N))**2+(y(i,j)-y(i,N))**2) &
                     /((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
                     /(2d0*sqrt(2d0*log(2d0))))**2)) &
@@ -1060,22 +1054,18 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                     /(2d0*sqrt(2d0*log(2d0))))**2)) &
                   )
         else
-          NeNew(i,j)=Ne0
-          NhNew(i,j)=Nh0
+          newmesh%Ne(i,j)=Ne0
+          newmesh%Nh(i,j)=Nh0
 !           Ne(i,j)=Ne0 !NeNew(i,j)
 !           Nh(i,j)=Nh0 !NhNew(i,j)
         end if
         
-        mesh%Ne(i,j)=NeNew(i,j)
-        mesh%Nh(i,j)=NhNew(i,j)
-        mesh%Te(i,j)=TeNew(i,j)
-        mesh%Th(i,j)=ThNew(i,j)
-        mesh%Ts(i,j)=TsNew(i,j)
-
     end do
   end do
   ! $ OMP END DO
         
+  call copy_mesh(newmesh, mesh)
+
   ! $ OMP DO
   do j=1,N
     do i=1,M
@@ -1113,8 +1103,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         Ch(i,j)=ChOld(i,j)
         Cs(i,j)=LatticeHeatCapacity(Tout)
         
-        UeNew(i,j)=TeNew(i,j)*CeOld(i,j)
-        UhNew(i,j)=ThNew(i,j)*ChOld(i,j)
+        UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
+        UhNew(i,j)=newmesh%Th(i,j)*ChOld(i,j)
         
         intensity(i,j)=0d0
         MaxHeating(i,j)=0d0
@@ -1171,6 +1161,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DistE(i,j)=sqrt((x(i+1,j)-x(i,j))**2+(y(i+1,j)-y(i,j))**2)
         DistW(i,j)=sqrt((x(i,j)-x(i-1,j))**2+(y(i,j)-y(i-1,j))**2)
         
+        !TODO: Optimise by defining a stencil object
+
         NormalNx(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
                      0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)),1) !4d0*(0.25d0*y(i-1,j)+0.25d0*y(i-1,j+1)-0.25d0*y(i+1,j+1)-0.25d0*y(i+1,j))/(x(i-1,j)**2+2d0*x(i-1,j)*x(i-1,j+1)-2d0*x(i-1,j)*x(i+1,j+1)-2d0*x(i-1,j)*x(i+1,j)+x(i-1,j+1)**2-2d0*x(i-1,j+1)*x(i+1,j+1)-2d0*x(i-1,j+1)*x(i+1,j)+x(i+1,j+1)**2+2d0*x(i+1,j+1)*x(i+1,j)+x(i+1,j)**2+y(i-1,j)**2+2d0*y(i-1,j)*y(i-1,j+1)-2d0*y(i-1,j)*y(i+1,j+1)-2d0*y(i-1,j)*y(i+1,j)+y(i-1,j+1)**2-2d0*y(i-1,j+1)*y(i+1,j+1)-2d0*y(i-1,j+1)*y(i+1,j)+y(i+1,j+1)**2+2d0*y(i+1,j+1)*y(i+1,j)+y(i+1,j)**2)**(0.5d0)
         NormalNy(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
@@ -2272,7 +2264,7 @@ if(UseMieScattering.eq.1) then
     maxNe=0d0; minNe=1d50; maxNh=0d0; minNh=1d50; maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; 
     maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
     
-   !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt1, dt2, dt3, dt4, UeNew, UhNew, TeNew, ThNew, TsNew, TsOld, TsPrev, NeNew, NhNew, &
+   !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt1, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP& mesh, dual, intensityDual, &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
@@ -2313,13 +2305,8 @@ if(UseMieScattering.eq.1) then
    ! replacing old datas
    Ue(:,:)=UeNew(:,:)
    Uh(:,:)=UhNew(:,:)
-   mesh%Te(:,:)=TeNew(:,:)
-   mesh%Th(:,:)=ThNew(:,:)
    TsPrev(:,:)=TsOld(:,:)
    TsOld(:,:)=mesh%Ts(:,:)
-   mesh%Ts(:,:)=TsNew(:,:)
-   mesh%Ne(:,:)=NeNew(:,:)
-   mesh%Nh(:,:)=NhNew(:,:)
    CeOld(:,:)=Ce(:,:)
    ChOld(:,:)=Ch(:,:)
    
@@ -2327,6 +2314,7 @@ if(UseMieScattering.eq.1) then
    CsPrev(:,:)=CsOld(:,:)
    CsOld(:,:)=Cs(:,:)
    
+   call copy_mesh(mesh, newmesh)
 
     
 !!!! thermal calculations in the main domain
@@ -2675,7 +2663,7 @@ if(UseMieScattering.eq.1) then
         
      
 !          ! diffusion is separated from drift
-         NeNew(i,j) = mesh%Ne(i,j) + dt*InvCellVol(i,j)*(&
+         newmesh%Ne(i,j) = mesh%Ne(i,j) + dt*InvCellVol(i,j)*(&
               ( GainsE(i,j)-LossesE(i,j) )*CellVol(i,j)& 
                   !         
                   +0.5d0*( &
@@ -2745,14 +2733,14 @@ if(UseMieScattering.eq.1) then
 !                   + 0.5d0*CellAreaS(i,j)*(diffusionE(i,j)+diffusionE(i,j-1)) * ( 0.5d0* (GradNeX(i,j)+GradNeX(i,j-1) )*NormalSx(i,j) + 0.5d0* (GradNeY(i,j)+GradNeY(i,j-1) )*NormalSy(i,j) - 0.5d0*( (GradNeX(i,j)+GradNeX(i,j-1) )*CurviSx(i,j) + ( GradNeY(i,j)+GradNeY(i,j-1) )*CurviSy(i,j) )/(NormalSx(i,j)*CurviSx(i,j)+NormalSy(i,j)*CurviSy(i,j))) &
 !                   ) &
             
-
+        !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
         if(NeOff.eq.1) then
-          NeNew(i,j)=mesh%Ne(i,j); NhNew(i,j)=mesh%Nh(i,j)
+          newmesh%Ne(i,j)=mesh%Ne(i,j); newmesh%Nh(i,j)=mesh%Nh(i,j)
         end if
         
         if(HolesOff.eq.0 .AND. NeOff.eq.0) then
                      
-        NhNew(i,j) = ( & 
+        newmesh%Nh(i,j) = ( &
               (GainsH(i,j)-LossesH(i,j))*CellVol(i,j) & 
               ! drift
 !               -((0.5d0*(JhX(i+1,j)+JhX(i,j))*NormalEx(i,j)+0.5d0*(JhY(i+1,j) & 
@@ -2802,7 +2790,7 @@ if(UseMieScattering.eq.1) then
 !     if(ConductivityFix < 2) then
         if(TeOff.ne.1) then 
           if(ConvectionEnergy.eq.0) then
-          TeNew(i,j) = &
+          newmesh%Te(i,j) = &
                   0.5d0*(&
                   + NormalE2(i,j)*CellAreaE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
                           / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
@@ -2947,7 +2935,7 @@ if(UseMieScattering.eq.1) then
         if(HolesOff.eq.0) then
             if(ConvectionEnergy.eq.0) then 
             
-            ThNew(i,j) = (&
+            newmesh%Th(i,j) = (&
                   + 0.5d0*NormalE2(i,j)*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(mesh%Th(i+1,j)-mesh%Th(i,j))  &
                         / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i,j+1)-0.25d0*Th(i+1,j-1)-0.25d0*Th(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
@@ -3063,7 +3051,7 @@ if(UseMieScattering.eq.1) then
 
         
 
-        TsNew(i,j) =&
+        newmesh%Ts(i,j) =&
                     ((0.5d0*( (&
                     + NormalE2(i,j)*ShapeFactorNormalE(i,j)  & 
                       *( kappas(i,j)+kappas(i+1,j))*(mesh%Ts(i+1,j)-mesh%Ts(i,j)) &
@@ -3109,9 +3097,9 @@ if(UseMieScattering.eq.1) then
     end if
 
     if(ConvectionEnergy.eq.1) then !define temperatures from energy
-      TeNew(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(NeNew(i,j) - mesh%Ne(i,j)) &
+      newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
           *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) / Ce(i,j)
-      ThNew(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(NhNew(i,j) - mesh%Nh(i,j)) &
+      newmesh%Th(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(newmesh%Nh(i,j) - mesh%Nh(i,j)) &
           *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) / Ch(i,j)
     end if
                       
@@ -3124,12 +3112,14 @@ if(UseMieScattering.eq.1) then
           
 !         end if
         
+    !TODO: Optimise
     CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
     CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
         
-    TotalElectrons(i,j)=NeNew(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) & 
+    !TODO:Optimise
+    TotalElectrons(i,j)=newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
                     -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-    TotalHoles(i,j)=NhNew(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) & 
+    TotalHoles(i,j)=newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
                     -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
         
         
@@ -3150,23 +3140,23 @@ if(UseMieScattering.eq.1) then
     do i=1, M !North and South boundaries
       ! finite differences finite difference fashion
       if(DriftOn.eq.0) then
-         NeNew(i,1)=NeNew(i,2)
-        NhNew(i,1)=NhNew(i,2)
-        NeNew(i,N)=NeNew(i,N-1)
-        NhNew(i,N)=NhNew(i,N-1)
+        newmesh%Ne(i,1)=newmesh%Ne(i,2)
+        newmesh%Nh(i,1)=newmesh%Nh(i,2)
+        newmesh%Ne(i,N)=newmesh%Ne(i,N-1)
+        newmesh%Nh(i,N)=newmesh%Nh(i,N-1)
       end if
 
         UeNew(i,1)=UeNew(i,2)
         UhNew(i,1)=UhNew(i,2)
-        TeNew(i,1)=TeNew(i,2)
-        ThNew(i,1)=ThNew(i,2)
-        TsNew(i,1)=TsNew(i,2)
+        newmesh%Te(i,1)=newmesh%Te(i,2)
+        newmesh%Th(i,1)=newmesh%Th(i,2)
+        newmesh%Ts(i,1)=newmesh%Ts(i,2)
 
         UeNew(i,N)=UeNew(i,N-1)
         UhNew(i,N)=UhNew(i,N-1)
-        TeNew(i,N)=TeNew(i,N-1)
-        ThNew(i,N)=ThNew(i,N-1)
-        TsNew(i,N)=TsNew(i,N-1)
+        newmesh%Te(i,N)=newmesh%Te(i,N-1)
+        newmesh%Th(i,N)=newmesh%Th(i,N-1)
+        newmesh%Ts(i,N)=newmesh%Ts(i,N-1)
 
         ! includes also the corners... WHy are not they written?
         
@@ -3193,22 +3183,22 @@ if(UseMieScattering.eq.1) then
       do j=2, N-1 !West and East boundaries
       ! finite differences bad fashion
         if(DriftOn.eq.0) then
-                NeNew(1,j)=NeNew(2,j)
-                NhNew(1,j)=NhNew(2,j)
+                newmesh%Ne(1,j)=newmesh%Ne(2,j)
+                newmesh%Nh(1,j)=newmesh%Nh(2,j)
         end if
         
         UeNew(1,j)=UeNew(2,j)
         UhNew(1,j)=UhNew(2,j)
-        TeNew(1,j)=TeNew(2,j)
-        ThNew(1,j)=ThNew(2,j)
-        TsNew(1,j)=TsNew(2,j)
+        newmesh%Te(1,j)=newmesh%Te(2,j)
+        newmesh%Th(1,j)=newmesh%Th(2,j)
+        newmesh%Ts(1,j)=newmesh%Ts(2,j)
   !       potential(1,j)=0d0 !(0d0, 0d0)
   !       potential(M,j)=potential0 !(potential0, 0d0)
   
         ! conditions on the cone base - most important        
         if(DriftOn.eq.0) then
-                NeNew(M,j)=NeNew(M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
-                NhNew(M,j)=NhNew(M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+                newmesh%Ne(M,j)=newmesh%Ne(M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+                newmesh%Nh(M,j)=newmesh%Nh(M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
         end if
         
         !outlet condition on density and energy
@@ -3221,9 +3211,9 @@ if(UseMieScattering.eq.1) then
 !         UeNew(M,j)=UeNew(M-1,j)
 !         UhNew(M,j)=UhNew(M-1,j)
         
-        TeNew(M,j)=TeNew(M-1,j) !Tout
-        ThNew(M,j)=ThNew(M-1,j) !Tout
-        TsNew(M,j)=TsNew(M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
+        newmesh%Te(M,j)=newmesh%Te(M-1,j) !Tout
+        newmesh%Th(M,j)=newmesh%Th(M-1,j) !Tout
+        newmesh%Ts(M,j)=newmesh%Ts(M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
         
 !         TeNew(M,j) = -0.5d0*(kappae(M-2,j)+kappae(M-1,j))*(Te(M-1,j)-Te(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappae(M-1,j)-0.5d0*kappae(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Te(M-1,j)
 !         ThNew(M,j) = -0.5d0*(kappah(M-2,j)+kappah(M-1,j))*(Th(M-1,j)-Th(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappah(M-1,j)-0.5d0*kappah(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Th(M-1,j)
@@ -3255,6 +3245,8 @@ if(UseMieScattering.eq.1) then
 !     HoleEnergy=0d0
 !     LatticeEnergy=0d0
     
+    !TODO: Replace with Fortran native min and max functions
+
     do i=1,M
 
       do j=1,N
@@ -3291,44 +3283,44 @@ if(UseMieScattering.eq.1) then
           maxCFLyTs=CFLyTs(i,j)
         end if
         
-        if(maxTe < TeNew(i,j)) then 
-          maxTe=TeNew(i,j)
+        if(maxTe < newmesh%Te(i,j)) then
+          maxTe=newmesh%Te(i,j)
         end if
         
-        if(minTe > TeNew(i,j)) then 
-          minTe=TeNew(i,j)
+        if(minTe > newmesh%Te(i,j)) then
+          minTe=newmesh%Te(i,j)
         end if
         
-        if(maxTh < ThNew(i,j)) then 
-          maxTh=ThNew(i,j)
+        if(maxTh < newmesh%Th(i,j)) then
+          maxTh=newmesh%Th(i,j)
         end if        
         
-        if(minTh > ThNew(i,j)) then 
-          minTh=ThNew(i,j)
+        if(minTh > newmesh%Th(i,j)) then
+          minTh=newmesh%Th(i,j)
         end if
 
-        if(maxTs < TsNew(i,j)) then 
-          maxTs=TsNew(i,j)
+        if(maxTs < newmesh%Ts(i,j)) then
+          maxTs=newmesh%Ts(i,j)
         end if
         
-        if(minTs > TsNew(i,j)) then 
-          minTs=TsNew(i,j)
+        if(minTs > newmesh%Ts(i,j)) then
+          minTs=newmesh%Ts(i,j)
         end if
         
-        if(maxNe < NeNew(i,j)) then 
-          maxNe=NeNew(i,j)
+        if(maxNe < newmesh%Ne(i,j)) then
+          maxNe=newmesh%Ne(i,j)
         end if
         
-        if(minNe > NeNew(i,j)) then 
-          minNe=NeNew(i,j)
+        if(minNe > newmesh%Ne(i,j)) then
+          minNe=newmesh%Ne(i,j)
         end if
         
-        if(maxNh < NhNew(i,j)) then 
-          maxNh=NhNew(i,j)
+        if(maxNh < newmesh%Nh(i,j)) then
+          maxNh=newmesh%Nh(i,j)
         end if
         
-        if(minNh > NhNew(i,j)) then 
-          minNh=NhNew(i,j)
+        if(minNh > newmesh%Nh(i,j)) then
+          minNh=newmesh%Nh(i,j)
         end if
         
         if(maxIntensity < intensity(i,j)) then 
@@ -3397,18 +3389,18 @@ if(UseMieScattering.eq.1) then
         
         ! calculation of the energy contained in the solid
         ElectronEnergy=ElectronEnergy &
-          + (Ce(i,j)*(TeNew(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
-          + (mesh%Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
-              + Egap(i,j)*(NeNew(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
+          + (Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
+          + (mesh%Ne(i,j)*(EgapValue(newmesh%Ne(i,j), newmesh%Ts(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
+              + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
               
-        ElectronKineticEnergy=ElectronKineticEnergy+(Ce(i,j)*(TeNew(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
-        ElectronPotentialEnergy=ElectronPotentialEnergy+(mesh%Ne(i,j)*(EgapValue(NeNew(i,j), TsNew(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
-              + Egap(i,j)*(NeNew(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
+        ElectronKineticEnergy=ElectronKineticEnergy+(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
+        ElectronPotentialEnergy=ElectronPotentialEnergy+(mesh%Ne(i,j)*(EgapValue(newmesh%Ne(i,j), newmesh%Ts(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
+              + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
 !         ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
         
-        HoleEnergy=HoleEnergy+(Ch(i,j)*(ThNew(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
+        HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
         
-        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(TsNew(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
+        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
         
         !TODO: What the f...? I do not understant
         if(mesh%Te(i,j).ne.mesh%Te(i,j)) then
@@ -3461,8 +3453,8 @@ if(UseMieScattering.eq.1) then
 
               ! lets change dt when fast reponse is finished in order to catch the long one. 
 
-        diffNe(i,j)=(NeNew(i,j)-mesh%Ne(i,j))/dt
-        diffNh(i,j)=(NhNew(i,j)-mesh%Nh(i,j))/dt
+        diffNe(i,j)=(newmesh%Ne(i,j)-mesh%Ne(i,j))/dt
+        diffNh(i,j)=(newmesh%Nh(i,j)-mesh%Nh(i,j))/dt
         
                 
         if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
@@ -3655,6 +3647,7 @@ if(UseMieScattering.eq.1) then
   
   call releasemesh(mesh)
   call releasemesh(dual)
+  call releasemesh(newmesh)
 
   contains 
   
