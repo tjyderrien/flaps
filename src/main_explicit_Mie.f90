@@ -2740,6 +2740,7 @@ if(UseMieScattering.eq.1) then
         
         if(HolesOff.eq.0 .AND. NeOff.eq.0) then
                      
+        !TODO: This can be frther optimise
         newmesh%Nh(i,j) = ( &
               (GainsH(i,j)-LossesH(i,j))*CellVol(i,j) & 
               ! drift
@@ -2770,16 +2771,14 @@ if(UseMieScattering.eq.1) then
               - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i,j-1)) &
 !               - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
 !                   ! Cross-diffusion from [Mathur and Murthy (1997)]
-              + CrossCoeff*( &
-              + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j)) & 
-                    *( dual%Nh(i,j) - dual%Nh(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-              + (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j)) & 
-                    *( dual%Nh(i-1,j-1) - dual%Nh(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-              + (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j)) & 
-                    *( dual%Nh(i-1,j) - dual%Nh(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-              + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) & 
-                    *( dual%Nh(i,j-1) - dual%Nh(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
-              ) &
+              + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j)) &
+                    *( dual%Nh(i,j) - dual%Nh(i,j-1) ) &
+              + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j)) &
+                    *( dual%Nh(i-1,j-1) - dual%Nh(i-1,j) ) &
+              + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j)) &
+                    *( dual%Nh(i-1,j) - dual%Nh(i,j) ) &
+              + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) &
+                    *( dual%Nh(i,j-1) - dual%Nh(i-1,j-1) ) &
               ))*dt*InvCellVol(i,j)+mesh%Nh(i,j)
 !         else
 !           NhNew(i,j)=NeNew(i,j)
