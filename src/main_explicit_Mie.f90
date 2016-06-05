@@ -3031,32 +3031,27 @@ if(UseMieScattering.eq.1) then
 
 !         ! third order precision in time, with variable timesteps
 
-        
-
-        newmesh%Ts(i,j) =&
-                    ((0.5d0*( (&
-                    + NormalE2(i,j)*ShapeFactorNormalE(i,j)  & 
-                      *( kappas(i,j)+kappas(i+1,j))*(mesh%Ts(i+1,j)-mesh%Ts(i,j)) &
-                    - NormalW2(i,j)*ShapeFactorNormalW(i,j) &
-                      *( kappas(i-1,j)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i-1,j)) &
-                    + NormalN2(i,j)*ShapeFactorNormalN(i,j) &
-                      *( kappas(i,j+1)+kappas(i,j))*(mesh%Ts(i,j+1)-mesh%Ts(i,j)) &
-                    - NormalS2(i,j)*ShapeFactorNormalS(i,j) &
-                      *( kappas(i,j-1)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i,j-1)) &
-                    + &
-                      ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
-	                  *( kappas(i,j) + kappas(i+1,j)) &
-                        *( dual%Ts(i,j) - dual%Ts(i,j-1) ) &
-                    + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
-	                  *( kappas(i-1,j) + kappas(i,j)) &
-                        *( dual%Ts(i-1,j-1) - dual%Ts(i-1,j) ) &
-                    + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j) &
-	                  *( kappas(i,j+1) + kappas(i,j)) &
-                        *( dual%Ts(i-1,j) - dual%Ts(i,j) ) &
-                    + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
-	                  *( kappas(i,j-1) + kappas(i,j)) &
-                        *( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
-                    ) &
+        newmesh%Ts(i,j) = ((0.5d0*( (&
+              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*( kappas(i,j)+kappas(i+1,j))*(mesh%Ts(i+1,j)-mesh%Ts(i,j)) &
+                !
+              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*( kappas(i-1,j)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i-1,j)) &
+                !
+              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*( kappas(i,j+1)+kappas(i,j))*(mesh%Ts(i,j+1)-mesh%Ts(i,j)) &
+                !
+              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*( kappas(i,j-1)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i,j-1)) &
+                !
+              + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
+	            *( kappas(i,j) + kappas(i+1,j))*( dual%Ts(i,j) - dual%Ts(i,j-1) ) &
+	            !
+              + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
+	            *( kappas(i-1,j) + kappas(i,j))*( dual%Ts(i-1,j-1) - dual%Ts(i-1,j) ) &
+                !
+              + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j) &
+	            *( kappas(i,j+1) + kappas(i,j))*( dual%Ts(i-1,j) - dual%Ts(i,j) ) &
+                !
+              + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
+	            *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
+                ) &
                     + 2d0*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) &
 	            ) * InvCellVol(i,j) &
 !                     - ((h1 * h2 + h1 * h3 &
