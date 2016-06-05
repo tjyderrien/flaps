@@ -2922,35 +2922,29 @@ if(UseMieScattering.eq.1) then
   !         if(ConductivityFix < 2) then
         if(HolesOff.eq.0) then
             if(ConvectionEnergy.eq.0) then 
-            
-            newmesh%Th(i,j) = (&
-                  + 0.5d0*NormalE2(i,j)*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(mesh%Th(i+1,j)-mesh%Th(i,j))  &
-                        / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j)) &
+
+            !TODO: This can be further optimised
+            newmesh%Th(i,j) = (0.5d0*( &
+                  + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j))*(mesh%Th(i+1,j)-mesh%Th(i,j))  &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i,j+1)-0.25d0*Th(i+1,j-1)-0.25d0*Th(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-                  - 0.5d0*NormalW2(i,j)*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i-1,j)) &
-                        /(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j)) & 
+                  - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i-1,j))  &
 !                   - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(0.25d0*Th(i,j+1)+0.25d0*Th(i-1,j+1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                  + 0.5d0*NormalN2(i,j)*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(mesh%Th(i,j+1)-mesh%Th(i,j)) &
-                        /(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j)) & 
+                  + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j))*(mesh%Th(i,j+1)-mesh%Th(i,j))  &
 !                   - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i+1,j)-0.25d0*Th(i-1,j)-0.25d0*Th(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-                  - 0.5d0*NormalS2(i,j)*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i,j-1)) &
-                        /(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j)) & 
+                  - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i,j-1))  &
 !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(0.25d0*Th(i+1,j)+0.25d0*Th(i+1,j-1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
-                  + 0.5d0*CrossCoeff*( &
-                  + (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j)) & 
-                        *( dual%Th(i,j) - dual%Th(i,j-1) )/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-                  + (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j)) & 
-                        *( dual%Th(i-1,j-1) - dual%Th(i-1,j) )/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-                  + (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j)) & 
-                        *( dual%Th(i-1,j) - dual%Th(i,j) )/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-                  + (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j)) & 
-                        *( dual%Th(i,j-1) - dual%Th(i-1,j-1) )/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
+                  + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j))*( dual%Th(i,j) - dual%Th(i,j-1) ) &
+                  + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j))*( dual%Th(i-1,j-1) - dual%Th(i-1,j) ) &
+                  + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j))*( dual%Th(i-1,j) - dual%Th(i,j) ) &
+                  + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j))*( dual%Th(i,j-1) - dual%Th(i-1,j-1) ) &
                   ) &
                   +(-CouplingH(i,j)+SourceH(i,j))*CellVol(i,j)) & 
                   /Ch(i,j)*dt*InvCellVol(i,j)+mesh%Th(i,j)
             
 
          else !convection scheme
+
+            !TODO: This must be optmised !
             UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-0.5d0*( & 
                    ((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) & 
                   +((VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) & 
