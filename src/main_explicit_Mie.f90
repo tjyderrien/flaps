@@ -352,23 +352,23 @@ CALL read_msh_file(namefile_msh, vertices, points, segments, triangles, quadrang
 & id_physical_entities, name_physical_entities, idvertices)
 ! We verify if the triangles are sorted in trigonometric sense and we bring correction if necessary
 IF (associated(triangles)) THEN
-	CALL correct_orientation(vertices, triangles)
+    CALL correct_orientation(vertices, triangles)
 END IF
 ! We verify if the quadrangles are sorted in trigonometric sense and we bring correction if necessary
 IF (associated(quadrangles)) THEN
-	CALL correct_orientation(vertices, quadrangles)
+    CALL correct_orientation(vertices, quadrangles)
 END IF
 
 nb_vertices = size(vertices,1)
 IF (associated(triangles)) THEN
-	nb_triangles = size(triangles,1)
+    nb_triangles = size(triangles,1)
 ELSE
-	nb_triangles = 0
+    nb_triangles = 0
 END IF
 IF (associated(quadrangles)) THEN
-	nb_quadrangles = size(quadrangles,1)
+    nb_quadrangles = size(quadrangles,1)
 ELSE
-	nb_quadrangles = 0
+    nb_quadrangles = 0
 END IF
 nb_edges = size(edges,1)
 nb_boundedges = size(boundedges,1)
@@ -3041,19 +3041,19 @@ if(UseMieScattering.eq.1) then
               - NormalS2(i,j)*ShapeFactorNormalS(i,j)*( kappas(i,j-1)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i,j-1)) &
                 !
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
-	            *( kappas(i,j) + kappas(i+1,j))*( dual%Ts(i,j) - dual%Ts(i,j-1) ) &
+                *( kappas(i,j) + kappas(i+1,j))*( dual%Ts(i,j) - dual%Ts(i,j-1) ) &
 	            !
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
-	            *( kappas(i-1,j) + kappas(i,j))*( dual%Ts(i-1,j-1) - dual%Ts(i-1,j) ) &
+                *( kappas(i-1,j) + kappas(i,j))*( dual%Ts(i-1,j-1) - dual%Ts(i-1,j) ) &
                 !
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j) &
-	            *( kappas(i,j+1) + kappas(i,j))*( dual%Ts(i-1,j) - dual%Ts(i,j) ) &
+                *( kappas(i,j+1) + kappas(i,j))*( dual%Ts(i-1,j) - dual%Ts(i,j) ) &
                 !
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
-	            *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
+               *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
                 ) &
                     + 2d0*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) &
-	            ) * InvCellVol(i,j) &
+                ) * InvCellVol(i,j) &
 !                     - ((h1 * h2 + h1 * h3 &
 !                     + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
 !                     /(-h3 + h1) / (-h2 + h1) * CsOld(i,j) + h1 * h3 / (-h2 &
