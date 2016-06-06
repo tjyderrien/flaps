@@ -134,10 +134,10 @@ implicit none
     complex(8), parameter:: Imaginary=(0d0,1d0), Unit=(1d0,0d0), Zero=(0d0,0d0)                ! complex unity
 !                      epsilonStatic0=(11.66570433d0,0.01404457712d0)                ! dielectric constant for static field
     
-    integer(8)         nbiter, i, itwo, jtwo, j, k, l, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
-                Mp, Np, imax, NewtonIteration, RunningIndex
+    integer(8)         nbiter, i, j, k, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
+                Mp, Np, RunningIndex
     logical        Diverged
-    real(8)         t, t0, dx, dy, x0, y0, dt, dt1, dt2, dt3, dt4, h1, h2, h3, h4
+    real(8)         t, t0, dx, dy, x0, y0, dt, dt2, dt3, dt4, h1, h2, h3
     real(8)         Te0, Th0, I0 !initial values of the problem
     real(8)        Ue(1:M, 1:N), & !electron energy
                 Uh(1:M, 1:N), & !hole energy
@@ -148,7 +148,6 @@ implicit none
                 GradNeX(1:M, 1:N),& !Grad(Ne)_x
                 GradNeY(1:M, 1:N),& !Grad(Ne)_y
                 intensity(1:M, 1:N), & !propagated intensity
-                intensity2(1:M-1, 1:N-1), & !test
                 intensityDual(1:M-1,1:N-1), & !intensity dual, just for test of the function
                 reflectivity(1:M,1:N), & ! surface reflectivity
                 absorptionDrudeE(1:M, 1:N), & ! absorption coefficient
@@ -171,7 +170,6 @@ implicit none
                 SourceUe(1:M, 1:N), SourceUh(1:M, 1:N), & ! free carrier thermal energy sources
                 diffNe(1:M, 1:N), diffNh(1:M, 1:N), &         ! just for derivation in time
                 x(1:M, 1:N), y(1:M, 1:N), &                 ! needle position indexes
-                xNew(1:M, 1:N), yNew(1:M, 1:N), &                 ! to make the mesh converge
                 xV(1:Mv, 1:Nv), yV(1:Mv, 1:Nv), &                 ! vessel position indexes
                 xDualSW(1:M, 1:N), yDualSW(1:M, 1:N), &                 ! dual mesh position 
                 xDualSE(1:M, 1:N), yDualSE(1:M, 1:N), &                 
@@ -183,19 +181,15 @@ implicit none
                 TotalElectrons(1:M, 1:N), TotalHoles(1:M, 1:N), &
                 DOSe(1:M, 1:N), DOSh(1:M, 1:N), &
                 FermiRatioE(1:M,1:N), FermiRatioH(1:M,1:N), &
-                OmegaX(1:M, 1:N), OmegaY(1:M, 1:N), & ! drift vectors for energy
                 JeX(1:M, 1:N), JeY(1:M, 1:N), & ! drift vectors for particles
                 JhX(1:M, 1:N), JhY(1:M, 1:N), & ! drift vectors for particles
                 VeX(1:M, 1:N), VeY(1:M, 1:N), &
                 VhX(1:M, 1:N), VhY(1:M, 1:N), &
                 Ex(1:M,1:N), Ey(1:M,1:N), &        ! fields in the main domain
                 potentialNeedle(1:M,1:N), &        ! potential in the needle
-                DummyNeedle(1:M, 1:N), &                ! optional arguments for interpolation
-                DummyDual(1:M-1, 1:N-1), &                ! optional arguments for interpolation
                 epsilonNeedle(1:M,1:N), &        ! dielectric static in the needle
                 MaxHeating(1:M, 1:N), &
                 MaxHeatingTime(1:M, 1:N), &
-                MeshDensity(1:Mv, 1:Nv)        ,&                ! function to adapt Poisson mesh on the needle mesh
                 CellAreaN(1:M, 1:N), CellAreaS(1:M, 1:N), &                        ! area of the finite elements 
                 CellAreaE(1:M, 1:N), CellAreaW(1:M, 1:N), &
                 CellVol(1:M, 1:N), InvCellVol(1:M, 1:N),&          !volume of needle mesh cells
@@ -220,13 +214,11 @@ implicit none
                 ShapeFactorTangentE(1:M, 1:N), ShapeFactorTangentW(1:M, 1:N), &
                 ShapeFactorTangentS(1:M, 1:N), ShapeFactorTangentN(1:M, 1:N), &
                 EintFieldR(1:M,1:N), EintFieldI(1:M, 1:N), &
-                EintFieldDual(1:M-1, N-1), &
                 phiMie(1:M, 1:N), &
                 Radius(1:M, 1:N)
                 
     integer(8)  FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
-                MeshVertice(1:M, 1:N), & ! data from the GMSH file
-                SomeNeighbours(1:4,1:2)   !Neighbours for the fixed potential
+                MeshVertice(1:M, 1:N) ! data from the GMSH file
     
     real(8) phiMie0
     real(8) Int2
@@ -234,7 +226,7 @@ implicit none
     
     real(8), allocatable, target :: FermiTableE(:,:),&
                                      FermiTableH(:,:),& !reduced Fermi level for electrons and holes
-                                     Amatrix(:,:), Bvector(:),         &
+                                     Bvector(:),         &
                                      Xvector(:), XvectorPrev(:),         &
                                      spectralNorm(:),                         & !objects for matrix inversion calculation
                                      xP(:,:), yP(:,:),                        &                 ! vessel position indexes
@@ -254,14 +246,13 @@ implicit none
     integer(8), allocatable, target:: FixedPotentialIndex(:,:)         !array of points where potential has been fixed
 
 ! mesh interface with gmsh management
-    CHARACTER(LEN=60)               :: namefile_msh, namefile_vf
+    CHARACTER(LEN=60)               :: namefile_msh
 !
     DOUBLE PRECISION, DIMENSION(:,:), POINTER :: vertices
     INTEGER, DIMENSION(:,:), POINTER          :: points, segments, triangles, quadrangles, boundedges, edges
     INTEGER, DIMENSION(:), POINTER            :: dim_physical_entities, id_physical_entities, idvertices
     CHARACTER(LEN=200), DIMENSION(:), POINTER :: name_physical_entities
 !     INTEGER                                   :: kmouton
-    CHARACTER(LEN=1)                          :: choice
     INTEGER                           :: nb_vertices, nb_triangles, nb_quadrangles, nb_edges, nb_boundedges
     
     complex(8)         Dielectric(1:M,1:N), &! solid dielectric function under laser illumination
@@ -276,13 +267,13 @@ implicit none
             sigmaTau, sigmaX, sigmaY, &
             maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, &
             maxTe, minTe, maxTh, minTh, maxTs, minTs, maxIntensity, maxNe, minNe, maxNh, minNh, &
-            maxEnergy, maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, maxDiffNe, maxDiffNh, &
+            maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, maxDiffNe, maxDiffNh, &
             TotalLaserEnergy, TotalThermalEnergy, ElectronPotentialEnergy, ElectronKineticEnergy, &
-            cpuefficiency, cpu_timestep_duration, calc_time_begin, calc_time_1, calc_time_2, calc_time_3, &
+            cpuefficiency, cpu_timestep_duration, calc_time_begin, calc_time_2, calc_time_3, &
             NeedleHeight, NeedleA, NeedleB, Needlet0Limit, NeedleXParam, NeedleYParam, NeedleAngle, &
             localT, P2critic, ConstBLx, ConstBLy, TotalNumOfE, TotalNumOfH, &
-            distX, distY, SORsum, xmin2, xmax2, ymin2, ymax2, &
-            ErrorSum, MeshConvergence, MeshConvergenceOld
+            xmin2, xmax2, ymin2, ymax2, &
+            MeshConvergence, MeshConvergenceOld
             
     real(8) sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, sigmaX8, sigmaX9, &
             sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, sigmaY8, sigmaY9, &
@@ -307,9 +298,8 @@ implicit none
     !! FUNCTIONS CALLS
      integer(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, &
-                 Tangent, Normal, AreaElement, AreaTri
+                 Tangent, Normal, AreaElement
             
-    character(len=50)::format
 !OPENMP declarations
     integer :: myid, nthreads
     integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
@@ -1978,7 +1968,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    
    !! defining material index and ionization constants
    epsilonInf=DielectricConstant(lambda)
-   OnePhotonIonizationRate0=OnePhotonIonizationRate(lambda,epsilonInf)
+   OnePhotonIonizationRate0=OnePhotonIonizationRate()
    TwoPhotonIonizationRate0=TwoPhotonIonizationRate(lambda)
    
   write(*,*) 'epsilon(', 1d9*lambda, 'nm)=', epsilonInf
@@ -2334,7 +2324,7 @@ if(UseMieScattering.eq.1) then
         
         nuColl(i,j)=CollisionFrequency()
         nuColleph(i,j)=ephCollisionFrequency(mesh%Ne(i,j))
-        Dielectric(i,j)=DielectricFunction(lambda, epsilonInf, mesh%Ne(i,j), nuColl(i,j))
+        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl(i,j))
         DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl(i,j),me)
         DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl(i,j),mh)
 
@@ -2457,7 +2447,7 @@ if(UseMieScattering.eq.1) then
             intensity(i,j)= (1d0-0e0*reflectivity(i,N))* & 
                             I0*exp(-.5d0*((t-t0)/sigmaTau)**2) & 
                             *( &
-                            exp(-(OnePhotonIonizationRate(lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) & 
+                            exp(-(OnePhotonIonizationRate()+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
                             *abs(y(i,j)-y(i,N)) & !introduce discontinuity !
                             ) & 
                             * exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
@@ -3357,7 +3347,7 @@ if(UseMieScattering.eq.1) then
 
         ! calculation of the absorbed laser energy involved in the simulated slice !
         if((i.eq.1) .AND. (j.eq.(N/2))) then 
-	IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
+          IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) &
                   +absorptionDrudeH(i,j))*intensity(i,j)*CellVol(i,j)*dt
         end if
         LaserIntensityEnergy=LaserIntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
@@ -3687,10 +3677,10 @@ if(UseMieScattering.eq.1) then
       return
     end function DielectricConstant
     
-    function DielectricFunction(lambda, epsilonInf, ne, nuColl)
+    function DielectricFunction(epsilonInf, ne, nuColl)
       complex(8) :: DielectricFunction
       complex(8) epsilonInf
-      real(8) lambda, ne, nuColl, omegape
+      real(8) ne, nuColl, omegape
 !      real(8) ne, nuColl, omegape
       
       omegape=sqrt(ne*ec**2/me/epsilon0)
@@ -3734,10 +3724,8 @@ if(UseMieScattering.eq.1) then
       return
     end function ImpactIonizationRate
     
-    function OnePhotonIonizationRate(lambda,epsilonLinear)
+    function OnePhotonIonizationRate()
       real(8) :: OnePhotonIonizationRate
-      real(8) lambda
-      complex(8) epsilonLinear
 !       OnePhotonIonizationRate=4d0*pi/lambda*aimag(sqrt(epsilonLinear))
       OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
       return
@@ -3824,7 +3812,7 @@ if(UseMieScattering.eq.1) then
 
       real(8) :: r, phi, radius, k=2d0*pi/lambda
       real(8) ireal
-      integer(8) i, j
+      integer(8) i
 
 
       total=Zero
@@ -3857,7 +3845,7 @@ if(UseMieScattering.eq.1) then
 
       real(8) :: r, phi, radius, k=2d0*pi/lambda
       real(8) :: ireal
-      integer(8) :: i, j, besselArray
+      integer(8) :: i, besselArray
 
       !!Careful !! This function is very sensitive to noise.
 
@@ -3886,7 +3874,7 @@ if(UseMieScattering.eq.1) then
 
       real(8) :: r, phi, radius, k=2d0*pi/lambda
       real(8) :: ireal
-      integer(8) :: i, j
+      integer(8) :: i
 
       integer(8) :: besselArray
 
@@ -3921,7 +3909,6 @@ if(UseMieScattering.eq.1) then
       complex(8) :: MieCoeff2, dielectric, Hankel1prime, Hankel1, BesselJ, BesselJprime
       real(8) :: k=2d0*pi/lambda, radius
       real(8) :: order
-      complex(8) value1
       integer(8) :: besselArray
         MieCoeff2= ( (sqrt(dielectric) * BesselJprime(order, k*radius*sqrt(dielectric), besselArray) &
                       * BesselJ(order, Unit*k*radius, besselArray) ) - (BesselJ(order,sqrt(dielectric)*k*radius, besselArray) &
@@ -3944,6 +3931,7 @@ if(UseMieScattering.eq.1) then
       real(8) :: k=2d0*pi/lambda, radius
       real(8) :: order
       integer(8) :: besselArray
+
 !         MieCoeff3=Unit !debug
       MieCoeff3=(BesselJ(order, Unit*k*radius, besselArray) - MieCoeff4(order, radius, dielectric, besselArray)  &
           * Hankel1(order, Unit*k*radius, besselArray)) / (BesselJ(order, k*radius*sqrt(dielectric), besselArray))
@@ -3956,7 +3944,7 @@ if(UseMieScattering.eq.1) then
       real(8) :: k=2d0*pi/lambda, radius
       real(8) :: order
       integer(8) :: besselArray
-      complex(8) value1
+
         MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt(dielectric), besselArray)  &
                      * BesselJ(order, Unit*k*radius, besselArray) ) - sqrt(dielectric) * (BesselJ(order,sqrt(dielectric)*k*radius, besselArray) &
                      * BesselJprime(order, Unit*k*radius, besselArray)) ) &

@@ -33,7 +33,7 @@
 
       real(8), dimension(size(A,1)) :: work  ! work array for LAPACK
       integer, dimension(size(A,1)) :: ipiv   ! pivot indices
-      integer :: n, info, nb, ilaenv
+      integer :: n, info, ilaenv
 
       ! External procedures defined in LAPACK
       external ILAENV
