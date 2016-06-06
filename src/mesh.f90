@@ -44,12 +44,13 @@ subroutine releasemesh( mesh )
 end subroutine releasemesh
 
 !> Copy data from oldmesh to newmesh
-subroutine copy_mesh(oldmesh, newmesh)
+subroutine copy_mesh(newmesh, oldmesh)
   use Types
   implicit none
   type(MeshValues), intent(IN)  :: oldmesh
   type(MeshValues), intent(INOUT) :: newmesh
 
+ !TODO: Print something to error.dat
   if(newmesh%M /= oldmesh%M .or. newmesh%N /= oldmesh%N ) &
     stop 'Invalid meshes used in copy_mesh'
 

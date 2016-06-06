@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------------
-!> @file maths.f90
+!> @file main_explicit_Mie.f90
 !
 ! DESCRIPTION:
 !> @brief **** calculate temperature distribution in 2D in a tip ****
@@ -898,8 +898,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   if(MeshChoice.eq.3) then
     do i=1, M
       do j=1, N
-	x(i,j)=vertices(idvertices(MeshVertice(i,j)),1)
-	y(i,j)=vertices(idvertices(MeshVertice(i,j)),2)
+    x(i,j)=vertices(idvertices(MeshVertice(i,j)),1)
+    y(i,j)=vertices(idvertices(MeshVertice(i,j)),2)
       end do
     end do
 
@@ -1064,7 +1064,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   end do
   ! $ OMP END DO
         
-  call copy_mesh(newmesh, mesh)
+  call copy_mesh(mesh, newmesh)
 
   ! $ OMP DO
   do j=1,N
