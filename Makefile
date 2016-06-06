@@ -16,7 +16,7 @@ OBJS= src/types.o src/mesh.o src/maths.o
  
 all: $(EXEC)
 
-$(EXEC): $(OBJ_LIBS) $(OBJS)
+$(EXEC): external_libs src_files
 	@echo 'Building target: $@'
 	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS) src/main_explicit_Mie.o
 	@echo 'Finished building target: $@'
@@ -24,11 +24,11 @@ $(EXEC): $(OBJ_LIBS) $(OBJS)
 	@echo '************  Compilation OK  ************';
 	@echo '******  You can now do >make test< *******';
 
-$(OBJS): $(OBJ_LIBS) 
+src_files: external_libs 
 	cd src && $(MAKE)
 
 
-$(OBJ_LIBS):
+external_libs:
 	@echo 'Building libraries' 
 	cd libs && $(MAKE)
 	@echo 'Finished building libraries'

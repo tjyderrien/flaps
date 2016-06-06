@@ -6,8 +6,8 @@
 !
 !> @author
 !> Thibault J.Y. Derrien
-!  Laboratoire Hubert Curien, UMR CNRS, St-Etienne
-!  ANR Ultrasonde
+!> Laboratoire Hubert Curien, UMR CNRS, St-Etienne
+!> ANR Ultrasonde
 !
 !> @date
 !> Jul-Dec 2012 - Initial Version
