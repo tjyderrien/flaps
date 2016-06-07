@@ -22,3 +22,4 @@ clean:
 
 main_explicit_Mie.o: main_explicit_Mie.f90 $(OBJ90)
 mesh.o: mesh.f90 types.o
+mie.o: mie.f90 maths.o

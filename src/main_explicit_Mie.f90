@@ -21,6 +21,8 @@ USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interf
 !   use control_file !Script provided by Jason Blevins, Ohio State University
 
 use Types
+use Maths_m
+use Mie_m
 
 implicit none
 
@@ -104,34 +106,23 @@ implicit none
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
 !                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
                             UseMieScattering=-1,&                 ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
-                            maxBesselOrder=20,&                ! Max of terms in series of Bessel for Mie scattering
-                            besselArray=1, &
                             NewtonIterations=1000, &
                             ExpNeedleType=0
         
-    real(8), parameter:: pi=acos(-1d0),&         !pi number
-                          hbar=1.05457d-34  ,&         !planck constant
-                          epsilon0=8.85418781762d-12 ,& !vacuum dielectric permittivity
-                          mu0=4d0*pi*1d-7       ,& ! vacuum magnetic permeability
-                          ec=1.60217646d-19        ,&         !elementary charge
-                          me0=9.10938188d-31        ,&         !electron mass
-                          c=2.99792458d8  ,&         !light speed
-                          kb=1.3806488d-23,&          !Boltzmann constant, 
-                          SiDensity=2.329d3        ,&           !Silicon rest density
+    real(8), parameter::  SiDensity=2.329d3        ,&           !Silicon rest density
                           epsilonStatic0=11.66570433d0 !,0.01404457712d0)                ! dielectric constant for static field
 
-    real(8), parameter:: omegaLaser=2d0*pi*c/lambda        ,& !laser pulsation (s**-1)
-                         me=0.5d0*me0       ,& ! electron effective mass for conductivity !0.24 (source ?)
-                         mh=0.5d0*me0       ,&   ! hole effective mass for conductivity !0.81 (source ?)
-                         meDOS=0.36d0*me0        ,& ! electron effective mass for DOS
-                         mhDOS=0.81d0*me0       ,& ! hole effective mass for DOS
-                         Ne0=1d5                                , &
+    real(8):: omegaLaser  ,& !laser pulsation (s**-1)
+              me       ,&    ! electron effective mass for conductivity !0.24 (source ?)
+              mh       ,&    ! hole effective mass for conductivity !0.81 (source ?)
+              meDOS       ,& ! electron effective mass for DOS
+              mhDOS          ! hole effective mass for DOS
+
+    real(8), parameter:: Ne0=1d5                                , &
                          Nh0=1d5, &                                !initial density (to calculate auto using fermi!) : at 80 K, Ne=1d5
                          Nlimit=1d0       ,&! lowest possible density
                          Nborder=1d23       ,&! density on boundaries to consider defect layer
-                         DefectThickness=1d-7                        
-    
-    complex(8), parameter:: Imaginary=(0d0,1d0), Unit=(1d0,0d0), Zero=(0d0,0d0)                ! complex unity
+                         DefectThickness=1d-7
 !                      epsilonStatic0=(11.66570433d0,0.01404457712d0)                ! dielectric constant for static field
     
     integer(8)         nbiter, i, j, k, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
@@ -303,6 +294,12 @@ implicit none
 !OPENMP declarations
     integer :: myid, nthreads
     integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
+
+  omegaLaser=2d0*Pi*c/lambda
+  me=0.5d0*me0       ! electron effective mass for conductivity !0.24 (source ?)
+  mh=0.5d0*me0       ! hole effective mass for conductivity !0.81 (source ?)
+  meDOS=0.36d0*me0   ! electron effective mass for DOS
+  mhDOS=0.81d0*me0   ! hole effective mass for DOS
 
 ! call omp_set_num_threads(16)
     
@@ -2004,8 +2001,8 @@ if(UseMieScattering.eq.1) then
           if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
-            EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
-            EintField2(i,j)=Zero
+            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, lambda) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
+            EintField2(i,j)=M_ZERO
           ! formula with a super mistake on radius
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
 
@@ -2017,8 +2014,8 @@ if(UseMieScattering.eq.1) then
 
           else !TE polarization
 !             write(*,*) "TE polarization selected."
-            EintField2(i,j)=Unit * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, besselArray)
-            EintField(i,j)=Unit * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, besselArray)
+            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, lambda)
+            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, lambda)
           end if
       end do
     end do
@@ -3619,6 +3616,7 @@ if(UseMieScattering.eq.1) then
   contains 
   
     function DensityOfStateE(Te)
+    use Maths
     implicit none
     real(8) DensityOfStateE, Te
       DensityOfStateE=2d0*(meDOS*kb*Te/(2d0*pi*hbar**2))**(1.5d0)
@@ -3626,6 +3624,7 @@ if(UseMieScattering.eq.1) then
     end function DensityOfStateE
     
     function DensityOfStateH(Th)
+    use Maths
     implicit none
     real(8) DensityOfStateH, Th
       DensityOfStateH=2d0*(mhDOS*kb*Th/(2d0*pi*hbar**2))**(1.5d0)
@@ -3684,7 +3683,7 @@ if(UseMieScattering.eq.1) then
 !      real(8) ne, nuColl, omegape
       
       omegape=sqrt(ne*ec**2/me/epsilon0)
-      DielectricFunction=epsilonInf-(omegape/omegaLaser)**2*Unit/(Unit+Imaginary*nuColl/omegaLaser)
+      DielectricFunction=epsilonInf-(omegape/omegaLaser)**2/(M_ONE+M_IM*nuColl/omegaLaser)
       return
     end function DielectricFunction
     
@@ -3693,7 +3692,7 @@ if(UseMieScattering.eq.1) then
       real(8) density, Collision, omegape, mass
       
       omegape=sqrt(density*ec**2/(mass*epsilon0))
-      DielectricFunctionDrude=Unit-Unit*(omegape/omegaLaser)**2*Unit/(Unit+Imaginary*Collision/omegaLaser)
+      DielectricFunctionDrude=M_ONE-M_ONE*(omegape/omegaLaser)**2/(M_ONE+M_IM*Collision/omegaLaser)
       return
     end function DielectricFunctionDrude
     
@@ -3801,159 +3800,6 @@ if(UseMieScattering.eq.1) then
       end if
       return
     end function FermiIndex
-
-
-
-    function MieScattering(r, phi, radius, dielectric)
-      implicit none
-
-      complex(8) :: MieScattering, dielectric, BesselJ
-      complex(8) total
-
-      real(8) :: r, phi, radius, k=2d0*pi/lambda
-      real(8) ireal
-      integer(8) i
-
-
-      total=Zero
-      ! Just test functions to validate
-!       total=BesselJ(1d0, Unit*k*r) !test: success
-!       total=BesselJ(-1d0, Unit*k*r) !test: success
-!         total=Hankel1(1d0, Unit*k*r) !test: succes, undefined for z=0
-!         total=Hankel1(-1d0, Unit*k*r) !test: success, undefined for z=0
-!         total=BesselJprime(1d0, Unit*k*r) !test: success
-!         total=BesselJprime(-1d0, Unit*k*r) !test: success
-!         total=Hankel1prime(1d0, Unit*k*r) !test: success
-!         total=Hankel1prime(-1d0, Unit*k*r) !test: failed, strong divergence while r->0
-
-      do i=1, 2*maxBesselOrder+1
-        ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
-!         write(*,*) i, ireal
-        total=total+Imaginary**ireal * exp(Imaginary*ireal*phi) * BesselJ(ireal, &
-                sqrt(dielectric)*k*r, besselArray) * MieCoeff1(ireal, radius, dielectric, besselArray)
-      end do
-
-      MieScattering=total
-      return
-    end function MieScattering
-
-    function MieScatteringTE1(r, phi, radius, dielectric, besselArray)
-      implicit none
-
-      complex(8) :: MieScatteringTE1, dielectric, BesselJ
-      complex(8) :: total
-
-      real(8) :: r, phi, radius, k=2d0*pi/lambda
-      real(8) :: ireal
-      integer(8) :: i, besselArray
-
-      !!Careful !! This function is very sensitive to noise.
-
-      total=Zero
-
-      do i=1, 2*maxBesselOrder+1
-        ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
-!         write(*,*) i, ireal
-        total=total + ( Imaginary**ireal * exp(Imaginary*ireal*phi) * BesselJ(ireal, &
-              sqrt(dielectric)*k*r, besselArray) * ireal * MieCoeff3(ireal, radius, dielectric, besselArray) ) !original !!
-      end do
-      if(r.eq.0d0) then
-        MieScatteringTE1=Zero
-      else
-        MieScatteringTE1=-total/(dielectric*k*r)
-!         MieScatteringTE1=Zero
-      end if
-      return
-    end function MieScatteringTE1
-
-    function MieScatteringTE2(r, phi, radius, dielectric, besselArray)
-      implicit none
-
-      complex(8) :: MieScatteringTE2, dielectric, BesselJprime
-      complex(8) :: total
-
-      real(8) :: r, phi, radius, k=2d0*pi/lambda
-      real(8) :: ireal
-      integer(8) :: i
-
-      integer(8) :: besselArray
-
-      total=Zero
-
-      do i=1, 2*maxBesselOrder+1
-        ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
-!         write(*,*) i, ireal
-        total=total + ( Imaginary**ireal * exp(Imaginary*ireal*phi) * &
-              BesselJprime(ireal, sqrt(dielectric)*k*r, besselArray) * MieCoeff3(ireal, radius, dielectric, besselArray) )
-      end do
-
-      MieScatteringTE2=-total*Imaginary/sqrt(dielectric)
-!         MieScatteringTE2=Zero !debug
-      return
-    end function MieScatteringTE2
-
-    function MieCoeff1(order, radius, dielectric, besselArray)
-      implicit none
-      complex(8) MieCoeff1, dielectric, Hankel1, BesselJ
-      real(8) :: k=2d0*pi/lambda, radius
-      real(8) :: order
-      integer(8) :: besselArray
-!         MieCoeff1=Unit !debug
-      MieCoeff1=(BesselJ(order, Unit*k*radius, besselArray) - MieCoeff2(order, radius, dielectric, besselArray)  &
-          * Hankel1(order, Unit*k*radius, besselArray)) / (BesselJ(order, k*radius*sqrt(dielectric), besselArray))
-      return
-    end function MieCoeff1
-
-    function MieCoeff2(order, radius, dielectric, besselArray)
-      implicit none
-      complex(8) :: MieCoeff2, dielectric, Hankel1prime, Hankel1, BesselJ, BesselJprime
-      real(8) :: k=2d0*pi/lambda, radius
-      real(8) :: order
-      integer(8) :: besselArray
-        MieCoeff2= ( (sqrt(dielectric) * BesselJprime(order, k*radius*sqrt(dielectric), besselArray) &
-                      * BesselJ(order, Unit*k*radius, besselArray) ) - (BesselJ(order,sqrt(dielectric)*k*radius, besselArray) &
-                      *BesselJprime(order, Unit*k*radius, besselArray)) ) &
-                    / (( sqrt(dielectric)*BesselJprime(order,k*radius*sqrt(dielectric), besselArray) &
-                        *Hankel1(order, Unit*k*radius,besselArray) ) - ( BesselJ(order, sqrt(dielectric)*k*radius, besselArray) &
-                        *Hankel1prime(order, Unit*k*radius, besselArray) )) !original
-
-!         value1=radius*sqrt(dielectric)
-!         MieCoeff2=BesselJprime(order, value1) !debug
-
-!         MieCoeff2=BesselJprime(order, Unit*k*radius)
-!          write(*,*) order, MieCoeff2
-      return
-    end function MieCoeff2
-
-    function MieCoeff3(order, radius, dielectric, besselArray)
-      implicit none
-      complex(8) MieCoeff3, dielectric, Hankel1, BesselJ
-      real(8) :: k=2d0*pi/lambda, radius
-      real(8) :: order
-      integer(8) :: besselArray
-
-!         MieCoeff3=Unit !debug
-      MieCoeff3=(BesselJ(order, Unit*k*radius, besselArray) - MieCoeff4(order, radius, dielectric, besselArray)  &
-          * Hankel1(order, Unit*k*radius, besselArray)) / (BesselJ(order, k*radius*sqrt(dielectric), besselArray))
-      return
-    end function MieCoeff3
-
-    function MieCoeff4(order, radius, dielectric, besselArray)
-      implicit none
-      complex(8) :: MieCoeff4, dielectric, Hankel1, Hankel1prime, BesselJ, BesselJprime
-      real(8) :: k=2d0*pi/lambda, radius
-      real(8) :: order
-      integer(8) :: besselArray
-
-        MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt(dielectric), besselArray)  &
-                     * BesselJ(order, Unit*k*radius, besselArray) ) - sqrt(dielectric) * (BesselJ(order,sqrt(dielectric)*k*radius, besselArray) &
-                     * BesselJprime(order, Unit*k*radius, besselArray)) ) &
-                    / (( BesselJprime(order,k*radius*sqrt(dielectric), besselArray) * Hankel1(order, Unit*k*radius, besselArray) ) &
-                    - sqrt(dielectric) * ( BesselJ(order, sqrt(dielectric)*k*radius, besselArray) &
-                    * Hankel1prime(order, Unit*k*radius, besselArray) )) !original
-!         MieCoeff4=Unit
-      return
-    end function MieCoeff4
 
 end program Flaps
 
