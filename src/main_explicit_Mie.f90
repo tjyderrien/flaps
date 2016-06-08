@@ -29,7 +29,7 @@ implicit none
     type(MeshValues) :: mesh, dual, newmesh
 
     real(8), parameter:: lambda=515d-9         , & !laser wavelength (m)
-                        fluence=0d0                , & !laser fluence (J.m-2)
+                        fluence=10d0                , & !laser fluence (J.m-2)
                         tau=40d-15                , & !FWHM pulse duration (s)
                         spotX=50d-6                , & !FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
                         spotY=50d-6                , & !FWHM spot size in Y direction
@@ -41,7 +41,7 @@ implicit none
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
-                        tmax=-190d-15,& !stop time
+                        tmax=0d-15,& !stop time
                         coeffDilaDt=2d0        ,& !diltation coeff before dt change
                         xmin=-10d-6       ,& !mesh min
                         xmax=10d-6       ,& !mesh max
@@ -51,7 +51,7 @@ implicit none
                         tmin=tCenter-5d0*tau                     !max absolute time
     
                         
-    integer(8), parameter::  iterOut=1       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
                           M=11   ,& !number of cells main domain X direction
                           N=11     ,& !number of cells main domain Y direection
@@ -3508,7 +3508,8 @@ if(UseMieScattering.eq.1) then
       
 892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
-      
+
+      !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
       write(98,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
                     maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
                     maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, &        !15
@@ -3527,6 +3528,7 @@ if(UseMieScattering.eq.1) then
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E12.5)
                 
+     !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
         write(94,884, advance="YES") t, mesh%Te(1,N/2), mesh%Th(1,N/2), mesh%Ts(1,N/2), mesh%Ne(1,N/2), &                        !5
               mesh%Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
               SourceE(1,N/2), GainsE(1,N/2), SourceH(1,N/2), GainsH(1,N/2), Egap(1,N/2), &                !15
@@ -3541,6 +3543,7 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5)
 
+     !TODO: Remove CPUEfficiency
         write(93,883, advance="YES") t, mesh%Te(M/2,N), mesh%Th(M/2,N), mesh%Ts(M/2,N), mesh%Ne(M/2,N), &
               mesh%Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
               SourceE(M/2,N), GainsE(M/2,N), SourceH(M/2,N), GainsH(M/2,N), Egap(M/2,N), &
@@ -3551,6 +3554,7 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
+     !TODO: Remove CPUEfficiency
         write(92,882, advance="YES") t, mesh%Te(M/2,1), mesh%Th(M/2,1), mesh%Ne(M/2,1), &
               mesh%Nh(M/2,1), intensity(M/2,1), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
               SourceE(M/2,1), GainsE(M/2,1), SourceH(M/2,1), GainsH(M/2,1), Egap(M/2,1), &
