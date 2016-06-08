@@ -14,7 +14,7 @@
 !> Allocate a MeshValues type
 !> @param MeshValues Structure containing Mesh values
 subroutine initmesh( mesh, M, N )
-    use Types
+    use Types_m
     implicit none
     type(MeshValues), intent(INOUT) :: mesh
     integer, intent(IN) :: M, N
@@ -32,7 +32,7 @@ end subroutine initmesh
 !> Deallocate a MeshValues type
 !> @param MeshValues Structure containing Mesh values
 subroutine releasemesh( mesh )
-    use Types
+    use Types_m
     implicit none
     type(MeshValues), intent(INOUT) :: mesh
 
@@ -45,7 +45,7 @@ end subroutine releasemesh
 
 !> Copy data from oldmesh to newmesh
 subroutine copy_mesh(newmesh, oldmesh)
-  use Types
+  use Types_m
   implicit none
   type(MeshValues), intent(IN)  :: oldmesh
   type(MeshValues), intent(INOUT) :: newmesh
@@ -64,7 +64,7 @@ end subroutine copy_mesh
 
 ! interpolation bilineaire ponderee par les aires
 subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
-   use Types
+   use Types_m
    implicit none
    type(MeshValues), intent(INOUT) :: mesh, dual
    real(8), intent(IN)             :: InvCellVol(mesh%M,mesh%N)

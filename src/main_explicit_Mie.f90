@@ -20,22 +20,16 @@ program Flaps
 USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 !   use control_file !Script provided by Jason Blevins, Ohio State University
 
-use Types
 use Maths_m
 use Mie_m
+use Types_m
 
 implicit none
 
     type(MeshValues) :: mesh, dual, newmesh
+    type(LaserParams):: laser
 
-    real(8), parameter:: lambda=515d-9         , & !laser wavelength (m)
-                        fluence=10d0                , & !laser fluence (J.m-2)
-                        tau=40d-15                , & !FWHM pulse duration (s)
-                        spotX=50d-6                , & !FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
-                        spotY=50d-6                , & !FWHM spot size in Y direction
-                        xCenter=1000d-9      ,& ! X position of the max of the intensity (1030nm: 1um 0um, 515nm: idem, 343nm: 100nm x 200nm)
-                        yCenter=0d0*200d-9      ,&! Y position of the max of the intensity
-                        Tout=80d0 ,&  !external temperature (K)
+    real(8), parameter::Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
                         potentialNull=0d0 !, &
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
@@ -47,8 +41,8 @@ implicit none
                         xmax=10d-6       ,& !mesh max
                         ymin=-10d-6       ,&                
                         ymax=10d-6       ,&
-                        tCenter=0d0       ,&         !time of gaussian intensity maximum
-                        tmin=tCenter-5d0*tau                     !max absolute time
+                        tCenter=0d0             !time of gaussian intensity maximum
+     real(8)               tmin                !max absolute time
     
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
@@ -112,8 +106,7 @@ implicit none
     real(8), parameter::  SiDensity=2.329d3        ,&           !Silicon rest density
                           epsilonStatic0=11.66570433d0 !,0.01404457712d0)                ! dielectric constant for static field
 
-    real(8):: omegaLaser  ,& !laser pulsation (s**-1)
-              me       ,&    ! electron effective mass for conductivity !0.24 (source ?)
+    real(8):: me       ,&    ! electron effective mass for conductivity !0.24 (source ?)
               mh       ,&    ! hole effective mass for conductivity !0.81 (source ?)
               meDOS       ,& ! electron effective mass for DOS
               mhDOS          ! hole effective mass for DOS
@@ -295,7 +288,7 @@ implicit none
     integer :: myid, nthreads
     integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
 
-  omegaLaser=2d0*Pi*c/lambda
+
   me=0.5d0*me0       ! electron effective mass for conductivity !0.24 (source ?)
   mh=0.5d0*me0       ! hole effective mass for conductivity !0.81 (source ?)
   meDOS=0.36d0*me0   ! electron effective mass for DOS
@@ -417,6 +410,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 !**** INITIALIZATION
 
+  call init_laser(laser)
+
+  tmin=tCenter-5d0*laser%tau
+
+
   Diverged=.false.
 
   dt=dt0
@@ -437,13 +435,15 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     AugerRateH=0d0
   end if
 
-    sigmaTau=tau/(2d0*sqrt(2d0*log(2e0)))
-    sigmaX=spotX/(2d0*sqrt(2d0*log(2e0)))
-    sigmaY=spotY/(2d0*sqrt(2d0*log(2e0)))
+    !TODO: Move to LaserParams
+    sigmaTau=laser%tau/(2d0*sqrt(2d0*log(2e0)))
+    sigmaX=laser%spotX/(2d0*sqrt(2d0*log(2e0)))
+    sigmaY=laser%spotY/(2d0*sqrt(2d0*log(2e0)))
 
-    I0=fluence/tau * sqrt(4d0 * log(2d0) / pi)
+    !TODO: Move to LaserParams
+    I0=laser%fluence/laser%tau * sqrt(4d0 * log(2d0) / pi)
     
-    if(lambda.eq.515d-9) then
+    if(laser%lambda.eq.515d-9) then
       if(PolarizationSource.eq.0) then
         x1=1.5d-7; y1=0.d0; I1=0d0*I0; spotX1=100d-9; spotY1=50d-9; !
         x2=3.3d-7; y2=0.d0; I2=0d0*9d0*I0; spotX2=50d-9; spotY2=50d-9; !3.53W
@@ -452,12 +452,12 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         x5=9.5d-7; y5=0d0; I5=0d0*7d0*I0; spotX5=50d-9; spotY5=50d-9; !2.74W
         x6=1.2d-6; y6=0d0; I6=0d0*8d0*I0; spotX6=50d-9; spotY6=50d-9; !3.14W
         x7=1.37d-6; y7=0d0; I7=0d0*9d0*I0; spotX7=50d-9; spotY7=50d-9; !3.53W
-        x8=6.2d-7; y8=-40d-9; I8=0d0*0d0*I0; spotX8=250d-9; spotY8=50d-9; 
-        x9=1.3d-6; y9=-20d-9; I9=0d0*0d0*I0; spotX9=500d-9; spotY9=100d-9; 
+        x8=6.2d-7; y8=-40d-9; I8=0d0*0d0*I0; spotX8=250d-9; spotY8=50d-9;
+        x9=1.3d-6; y9=-20d-9; I9=0d0*0d0*I0; spotX9=500d-9; spotY9=100d-9;
       else
         periodX=200d-9; periodY=50d-9
-        x1=1.0d-7; y1=0d-9; I1=13d0*I0; spotX1=120d-9; spotY1=70d-9; !17.15W 
-        x2=2.7d-7; y2=10d-9; I2=10d0*I0; spotX2=70d-9; spotY2=60d-9; !6.6 W 
+        x1=1.0d-7; y1=0d-9; I1=13d0*I0; spotX1=120d-9; spotY1=70d-9; !17.15W
+        x2=2.7d-7; y2=10d-9; I2=10d0*I0; spotX2=70d-9; spotY2=60d-9; !6.6 W
         x3=4.5d-7; y3=30d-9; I3=12d0*I0; spotX3=70d-9; spotY3=70d-9; !9.2 W unstable
         x4=6.2d-7; y4=40d-9; I4=28d0*I0; spotX4=70d-9; spotY4=120d-9; !36 W unstable
         x5=9.0d-7; y5=45d-9; I5=7d0*I0; spotX5=50d-9; spotY5=100d-9; !13.35 W unstable
@@ -487,7 +487,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     sigmaX9=spotX9/(2e0*sqrt(2e0*log(2e0)))
     sigmaY9=spotY9/(2e0*sqrt(2e0*log(2e0)))
     
-    t0=tCenter; x0=xCenter; y0=yCenter;
+    t0=tCenter; x0=laser%xCenter; y0=laser%yCenter;
     
     
   ! opening files
@@ -974,13 +974,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(96,*) "Cone height=", NeedleHeight*1d6, "um"
   write(96,*) "Cone angle=", NeedleAngleDeg, "deg"
   write(96,*) "Cone curvature radius=", NeedleRadius*1d9, "nm"
+  !TODO: Move to source
   write(96,*)
   write(96,*) "=========== LASER PARAMETERS ========"
-  write(96,*) "Laser fluence=", fluence*1d-4, "J.cm-2"
-  write(96,*) "Laser pulse duration=", tau*1d15, "fs"
-  write(96,*) "Laser wavelength=", lambda*1d9, "nm"
+  write(96,*) "Laser fluence=", laser%fluence*1d-4, "J.cm-2"
+  write(96,*) "Laser pulse duration=", laser%tau*1d15, "fs"
+  write(96,*) "Laser wavelength=", laser%lambda*1d9, "nm"
   write(96,*) "Laser spot position: (X,Y)=", x0*1d6, y0*1d6, "um"
-  write(96,*) "Laser spot size: (Sx, Sy)=", spotX*1d6, spotY*1d6, "um"
+  write(96,*) "Laser spot size: (Sx, Sy)=", laser%spotX*1d6, laser%spotY*1d6, "um"
   write(96,*) "Mie scattering:", UseMieScattering
   write(96,*) "Laser polarization", PolarizationSource
   write(96,*)
@@ -1964,11 +1965,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
    
    !! defining material index and ionization constants
-   epsilonInf=DielectricConstant(lambda)
+   epsilonInf=DielectricConstant(laser%lambda)
    OnePhotonIonizationRate0=OnePhotonIonizationRate()
-   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(lambda)
+   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(laser%lambda)
    
-  write(*,*) 'epsilon(', 1d9*lambda, 'nm)=', epsilonInf
+  write(*,*) 'epsilon(', 1d9*laser%lambda, 'nm)=', epsilonInf
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))
 if(UseMieScattering.eq.1) then
   write(*,*) 'Computing the Mie scattering field distribution...'
@@ -2001,21 +2002,21 @@ if(UseMieScattering.eq.1) then
           if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
-            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, lambda) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
+            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%lambda) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
             EintField2(i,j)=M_ZERO
           ! formula with a super mistake on radius
-!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
+!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
 
           ! formulas for an hyperbolic needle
-!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau))
+!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), epsilonInf) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
 
           ! formula for debug, using a constant radius
-!         EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 100d-9, epsilonInf) ! * sqrt(2d0*fluence/(c*epsilon0*tau)) !with a constant radius
+!         EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 100d-9, epsilonInf) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau)) !with a constant radius
 
           else !TE polarization
 !             write(*,*) "TE polarization selected."
-            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, lambda)
-            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, lambda)
+            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%lambda)
+            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%lambda)
           end if
       end do
     end do
@@ -2252,7 +2253,7 @@ if(UseMieScattering.eq.1) then
     maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
     
    !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt1, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, dual, intensityDual, &
+   !$OMP& mesh, dual, intensityDual, laser &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, xDual, yDual, xDualSW, yDualSW, xDualSE, yDualSE, xDualNE, yDualNE, xDualNW, yDualNW, &
@@ -2347,13 +2348,13 @@ if(UseMieScattering.eq.1) then
         
 !         write(*,*) "iter=", nbiter, "mobility=", mobilityE(i,j), mobilityH(i,j)
         if(DrudeHeating==1) then
-          absorptionDrudeE(i,j)=4d0*pi/lambda*aimag(sqrt(DielectricDrudeE(i,j)))
-          absorptionDrudeH(i,j)=4d0*pi/lambda*aimag(sqrt(DielectricDrudeH(i,j)))
+          absorptionDrudeE(i,j)=4d0*pi/laser%lambda*aimag(sqrt(DielectricDrudeE(i,j)))
+          absorptionDrudeH(i,j)=4d0*pi/laser%lambda*aimag(sqrt(DielectricDrudeH(i,j)))
         else
           absorptionDrudeE(i,j)=0d0
           absorptionDrudeH(i,j)=0d0
-!           absorptionDrudeE(i,j)=sqrt(2d0)*sqrt(mu0*omegaLaser*ec*mobilityE(i,j)*Ne(i,j))
-!           absorptionDrudeH(i,j)=sqrt(2d0)*sqrt(mu0*omegaLaser*ec*mobilityH(i,j)*Nh(i,j))
+!           absorptionDrudeE(i,j)=sqrt(2d0)*sqrt(mu0*laser%omega*ec*mobilityE(i,j)*Ne(i,j))
+!           absorptionDrudeH(i,j)=sqrt(2d0)*sqrt(mu0*laser%omega*ec*mobilityH(i,j)*Nh(i,j))
         end if
         
 !         write(*,*) "iter=", nbiter, "absorption=", absorptionDrudeE(i,j), absorptionDrudeH(i,j)
@@ -2362,7 +2363,7 @@ if(UseMieScattering.eq.1) then
         !local intensity
         if(UseMieScattering .eq. -1) then
   !         ! DEBUG ZONE
-  ! !         if(lambda.eq.343d-9) then
+  ! !         if(laser%lambda.eq.343d-9) then
   !         ! uniform distribution like in Elena's paper
           intensity(i,j)=(1d0-0e0*reflectivity(i,j))*real(sqrt(Dielectric(i,j)))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
   !         intensity(i,j)=I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-0.5d0*(((y(i,j)-500d-9)/sigmaY)**2+(x(i,j)/sigmaX)**2))
@@ -2370,7 +2371,7 @@ if(UseMieScattering.eq.1) then
   ! !           intensity(i,j)=(1d0-reflectivity(i,j))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
   !         ! with beer-lambert
   ! !         intensity(i,j)=(-(absorptionDrude(i,j) &
-  ! !                         +4d0*pi/lambda*aimag(sqrt(epsilonInf)))*intensity(i,j-1) &
+  ! !                         +4d0*pi/laser%lambda*aimag(sqrt(epsilonInf)))*intensity(i,j-1) &
   ! !                         -TwoPhotonIonizationRate0*intensity(i,j-1)**2 &
   ! !                         )*x &
   ! !                         +intensity(i,j-1)
@@ -2379,7 +2380,7 @@ if(UseMieScattering.eq.1) then
         else if(UseMieScattering .eq. 0) then
           ! WITH EXTERNALLY ADJUSTED INPUTS
   !        !Lumerical mode already contains the reflectivity. Although, it doesn't consider change of optical index with ionization. 
-          if(lambda.eq.1030d-9) then 
+          if(laser%lambda.eq.1030d-9) then
             ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
                       / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
@@ -2411,7 +2412,7 @@ if(UseMieScattering.eq.1) then
                               absorptionDrudeE(i,j) + absorptionDrudeH(i,j))))
           end if
   ! case 515 nm distribution
-          if(lambda.eq.515d-9) then 
+          if(laser%lambda.eq.515d-9) then
             ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
                       / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
@@ -2440,7 +2441,7 @@ if(UseMieScattering.eq.1) then
                               +absorptionDrudeH(i,j))*abs(y(i,j)-y0))  * ConstBLy * (OnePhotonIonizationRate0 + &
                               absorptionDrudeE(i,j) + absorptionDrudeH(i,j))))
           end if
-          if(lambda.eq.343d-9) then
+          if(laser%lambda.eq.343d-9) then
             intensity(i,j)= (1d0-0e0*reflectivity(i,N))* & 
                             I0*exp(-.5d0*((t-t0)/sigmaTau)**2) & 
                             *( &
@@ -2448,20 +2449,20 @@ if(UseMieScattering.eq.1) then
                             *abs(y(i,j)-y(i,N)) & !introduce discontinuity !
                             ) & 
                             * exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
-  !                           + exp(-(OnePhotonIonizationRate(lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(y(i,j)-y(i,1))) & 
+  !                           + exp(-(OnePhotonIonizationRate(laser%lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(y(i,j)-y(i,1))) &
   !                           *exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
                             )
-  !                           *exp(-(OnePhotonIonizationRate(lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(x(i,j)-x(i,N)))
+  !                           *exp(-(OnePhotonIonizationRate(laser%lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(x(i,j)-x(i,N)))
           end if
 
         ! USING MIE SCATTERING ANALYTICAL FORMULAS
         else if(UseMieScattering .eq. 1) then
         ! calculate electric field inside the tip
-!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), Dielectric(i,j)) !*sqrt(2d0*fluence/(c*epsilon0*tau))
+!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), Dielectric(i,j)) !*sqrt(2d0*laser%fluence/(c*epsilon0*tau))
           ! debug formula for constant cone radius
 !           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
 !           EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real
-          intensity(i,j)=I0 * real(sqrt(Dielectric(i,j))) * EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser fluence and reflectivity is inside the field
+          intensity(i,j)=I0 * real(sqrt(Dielectric(i,j))) * EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser laser%fluence and reflectivity is inside the field
         else 
           write(*,*) "Input ERROR. Check the MieScattering parameter."
           stop
@@ -2495,12 +2496,12 @@ if(UseMieScattering.eq.1) then
         endif
 
         Int2 = intensity(i,j)**2
-        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/omegaLaser &
-                    +TwoPhotonIonizationRate0*Int2/(2d0*hbar*omegaLaser) &
+        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/laser%omega &
+                    +TwoPhotonIonizationRate0*Int2/(2d0*hbar*laser%omega) &
                     +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
                     
-        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/omegaLaser &
-                    +TwoPhotonIonizationRate0*Int2/(2d0*hbar*omegaLaser) &
+        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/laser%omega &
+                    +TwoPhotonIonizationRate0*Int2/(2d0*hbar*laser%omega) &
                     +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
                     
         LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
@@ -2508,10 +2509,10 @@ if(UseMieScattering.eq.1) then
 
         
         ! thermal coefficients
-        kappae(i,j)=kb**2*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)/ec*(6d0*FermiTableE(ColFermi2,FermiIndexE(i,j)) &
+        kappae(i,j)=kb2*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)/ec*(6d0*FermiTableE(ColFermi2,FermiIndexE(i,j)) &
                 /FermiTableE(ColFermi0,FermiIndexE(i,j)) &
                 -4d0*(FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)))**2)
-        kappah(i,j)=kb**2*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)/ec*(6d0*FermiTableH(ColFermi2,FermiIndexH(i,j)) &
+        kappah(i,j)=kb2*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)/ec*(6d0*FermiTableH(ColFermi2,FermiIndexH(i,j)) &
                 /FermiTableH(ColFermi0,FermiIndexH(i,j)) &
                 -4d0*(FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
 !         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K
@@ -2523,17 +2524,17 @@ if(UseMieScattering.eq.1) then
         
 !        ! correction considering Fick diffusion in energy
 !         if(ConductivityFix.eq.1) then 
-!             kappae(i,j)=kappae(i,j) + kb**2*Te(i,j)*Ne(i,j)*mobilityE(i,j) / ec &
+!             kappae(i,j)=kappae(i,j) + kb2*Te(i,j)*Ne(i,j)*mobilityE(i,j) / ec &
 !                       * (etae(i,j) - 2d0*FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) )**2 
-!             kappah(i,j)=kappah(i,j) + kb**2*Th(i,j)*Nh(i,j)*mobilityH(i,j) / ec &
+!             kappah(i,j)=kappah(i,j) + kb2*Th(i,j)*Nh(i,j)*mobilityH(i,j) / ec &
 !                       * (etah(i,j) - 2d0*FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) )**2 
 !         else if(ConductivityFix.eq.2) then 
-!             kappae(i,j)=kappae(i,j) + 2d0*kb**2*Te(i,j)*FermiTableE(ColFermi1,FermiIndexE(i,j))*mobilityE(i,j)*FermiTableE(ColFermiHalf, FermiIndexE(i,j))*Ne(i,j) * &
+!             kappae(i,j)=kappae(i,j) + 2d0*kb2*Te(i,j)*FermiTableE(ColFermi1,FermiIndexE(i,j))*mobilityE(i,j)*FermiTableE(ColFermiHalf, FermiIndexE(i,j))*Ne(i,j) * &
 !                         (2d0*FermiTableE(ColFermi1, FermiIndexE(i,j))*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) & 
 !                         /FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) - 1.5d0) * & 
 !                         (FermiTableE(ColFermi0, FermiIndexE(i,j))*ec*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))**(-1e0)
 !                         
-!             kappah(i,j)=kappah(i,j) + 2d0*kb**2*Te(i,j)*FermiTableH(ColFermi1,FermiIndexH(i,j))*mobilityH(i,j)*FermiTableH(ColFermiHalf, FermiIndexH(i,j))*Ne(i,j) * &
+!             kappah(i,j)=kappah(i,j) + 2d0*kb2*Te(i,j)*FermiTableH(ColFermi1,FermiIndexH(i,j))*mobilityH(i,j)*FermiTableH(ColFermiHalf, FermiIndexH(i,j))*Ne(i,j) * &
 !                         (2d0*FermiTableH(ColFermi1, FermiIndexH(i,j))*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) & 
 !                         /FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) - 1.5d0) * & 
 !                         (FermiTableH(ColFermi0, FermiIndexH(i,j))*ec*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))**(-1.)
@@ -2571,8 +2572,8 @@ if(UseMieScattering.eq.1) then
 !         diffNe(i,j)=0d0 !just for debug !
 !         diffNh(i,j)=0d0 !just for debug !!
 !         
-        SourceE(i,j)= (hbar*omegaLaser-Egap(i,j))/hbar/omegaLaser*((me)/(me+mh))*OnePhotonIonizationRate0*intensity(i,j) &
-                     + (2d0*hbar*omegaLaser - Egap(i,j))/(2d0*hbar*omegaLaser)* ((me)/(me+mh)) * TwoPhotonIonizationRate0*Int2 &
+        SourceE(i,j)= (hbar*laser%omega-Egap(i,j))/hbar/laser%omega*((me)/(me+mh))*OnePhotonIonizationRate0*intensity(i,j) &
+                     + (2d0*hbar*laser%omega - Egap(i,j))/(2d0*hbar*laser%omega)* ((me)/(me+mh)) * TwoPhotonIonizationRate0*Int2 &
                      - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
@@ -2582,8 +2583,8 @@ if(UseMieScattering.eq.1) then
 !         SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
         SourceE(i,j) = SourceE(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
 
-        SourceH(i,j)=(hbar*omegaLaser-Egap(i,j))/hbar/omegaLaser * ((me)/(me+mh)) * OnePhotonIonizationRate0*intensity(i,j) &
-                     + (2d0*hbar*omegaLaser - Egap(i,j))/(2d0*hbar*omegaLaser)* ((me)/(me+mh)) *TwoPhotonIonizationRate0*Int2 &
+        SourceH(i,j)=(hbar*laser%omega-Egap(i,j))/hbar/laser%omega * ((me)/(me+mh)) * OnePhotonIonizationRate0*intensity(i,j) &
+                     + (2d0*hbar*laser%omega - Egap(i,j))/(2d0*hbar*laser%omega)* ((me)/(me+mh)) *TwoPhotonIonizationRate0*Int2 &
                      - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j))*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
@@ -3210,7 +3211,6 @@ if(UseMieScattering.eq.1) then
 !     LatticeEnergy=0d0
     
     !TODO: Replace with Fortran native min and max functions
-
     do i=1,M
 
       do j=1,N
@@ -3218,7 +3218,7 @@ if(UseMieScattering.eq.1) then
         NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
         NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
       
-        if(MaxHeating(i,j) < mesh%Ts(i,j) .AND. t > 100d0*tau) then
+        if(MaxHeating(i,j) < mesh%Ts(i,j) .AND. t > 100d0*laser%tau) then
            MaxHeating(i,j)=mesh%Ts(i,j)
            MaxHeatingTime(i,j)=t
         end if
@@ -3463,13 +3463,13 @@ if(UseMieScattering.eq.1) then
     dt2=dt; 
     ! chaning the timestep based on known behavior of the system
     if(AdaptativeTimeStep.eq.1) then
-      if((t>1d1*tau*coeffDilaDt) .AND. (dt.eq.dt0) .AND. &
+      if((t>1d1*laser%tau*coeffDilaDt) .AND. (dt.eq.dt0) .AND. &
         (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
         dt=10d0*dt0
-      else if ((t > 0.5d2*tau*coeffDilaDt) .AND. (dt.eq.10d0*dt0) .AND. (maxCFLxN+maxCFLyN &
+      else if ((t > 0.5d2*laser%tau*coeffDilaDt) .AND. (dt.eq.10d0*dt0) .AND. (maxCFLxN+maxCFLyN &
         + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
         dt=40d0*dt0
-      else if ((t > 1d3*tau*coeffDilaDt) .AND. (dt.eq.40d0*dt0) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
+      else if ((t > 1d3*laser%tau*coeffDilaDt) .AND. (dt.eq.40d0*dt0) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
         + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
           dt=1d3*dt0
 !           else if (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs > maxCFL) then
@@ -3621,7 +3621,7 @@ if(UseMieScattering.eq.1) then
   contains 
   
     function DensityOfStateE(Te)
-    use Maths
+    use Maths_m
     implicit none
     real(8) DensityOfStateE, Te
       DensityOfStateE=2d0*(meDOS*kb*Te/(2d0*pi*hbar**2))**(1.5d0)
@@ -3629,7 +3629,7 @@ if(UseMieScattering.eq.1) then
     end function DensityOfStateE
     
     function DensityOfStateH(Th)
-    use Maths
+    use Maths_m
     implicit none
     real(8) DensityOfStateH, Th
       DensityOfStateH=2d0*(mhDOS*kb*Th/(2d0*pi*hbar**2))**(1.5d0)
@@ -3663,19 +3663,19 @@ if(UseMieScattering.eq.1) then
       complex(8) :: DielectricConstant
       real(8) lambda
       
-      if(lambda.eq.1030d-9) then 
+      if(lambda.eq.1030d-9) then
         DielectricConstant=(12.8d0,0.001414418d0)
       end if
       
-      if(lambda.eq.800d-9) then 
+      if(lambda.eq.800d-9) then
         DielectricConstant=(13.46d0,0.048d0)
       end if
       
-      if(lambda.eq.515d-9) then 
+      if(lambda.eq.515d-9) then
         DielectricConstant=(17.8254d0,0.50669d0) !refractiveindex.info
       end if
       
-      if(lambda.eq.343d-9) then 
+      if(lambda.eq.343d-9) then
         DielectricConstant=(18.81766303d0,31.5464d0)
       end if
       return
@@ -3688,7 +3688,7 @@ if(UseMieScattering.eq.1) then
 !      real(8) ne, nuColl, omegape
       
       omegape=sqrt(ne*ec**2/me/epsilon0)
-      DielectricFunction=epsilonInf-(omegape/omegaLaser)**2/(M_ONE+M_IM*nuColl/omegaLaser)
+      DielectricFunction=epsilonInf-(omegape/laser%omega)**2/(M_ONE+M_IM*nuColl/laser%omega)
       return
     end function DielectricFunction
     
@@ -3697,7 +3697,7 @@ if(UseMieScattering.eq.1) then
       real(8) density, Collision, omegape, mass
       
       omegape=sqrt(density*ec**2/(mass*epsilon0))
-      DielectricFunctionDrude=M_ONE-M_ONE*(omegape/omegaLaser)**2/(M_ONE+M_IM*Collision/omegaLaser)
+      DielectricFunctionDrude=M_ONE-M_ONE*(omegape/laser%omega)**2/(M_ONE+M_IM*Collision/laser%omega)
       return
     end function DielectricFunctionDrude
     
@@ -3730,29 +3730,29 @@ if(UseMieScattering.eq.1) then
     
     function OnePhotonIonizationRate()
       real(8) :: OnePhotonIonizationRate
-!       OnePhotonIonizationRate=4d0*pi/lambda*aimag(sqrt(epsilonLinear))
+!       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
       OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
       return
     end function OnePhotonIonizationRate
-    
+
     function TwoPhotonIonizationRate(lambda)
       real(8) :: TwoPhotonIonizationRate
       real(8) lambda
-      if(lambda.eq.1030d-9) then 
+      if(lambda.eq.1030d-9) then
         TwoPhotonIonizationRate=1.933288399d-11
       end if
       
-      if(lambda.eq.800d-9) then 
+      if(lambda.eq.800d-9) then
         TwoPhotonIonizationRate=1.857135194d-11
 !         TwoPhotonIonizationRate=0d0
       end if
       
-      if(lambda.eq.515d-9) then 
+      if(lambda.eq.515d-9) then
         TwoPhotonIonizationRate=1.512238197d-11
 !                TwoPhotonIonizationRate=0d0
       end if
       
-      if(lambda.eq.343d-9) then 
+      if(lambda.eq.343d-9) then
         TwoPhotonIonizationRate=0d0
       end if
       return

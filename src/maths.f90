@@ -10,7 +10,7 @@
 !
 !> @date
 !> 01 Jun 2016 - Initial Version
-!> 07 Jun 2016 -
+!> 07 Jun 2016 - Creating the Maths_m module - NTD
 !------------------------------------------------------------------------------
 
 module Maths_m
@@ -31,11 +31,12 @@ module Maths_m
   !TODO: More digits here, otherwise real(8) does not make sense
   real(8), public, parameter    :: hbar     = 1.05457d-34             !> Planck constant
   real(8), public, parameter    :: epsilon0 = 8.85418781762d-12       !> vacuum dielectric permittivity
-  real(8), public, parameter    :: mu0      = 16d0*atan(1.0d0)*1d-7   !> vacuum magnetic permeability
+  real(8), public, parameter    :: mu0      = 4d0*Pi*1d-7   !> vacuum magnetic permeability
   real(8), public, parameter    :: ec       = 1.60217646d-19          !> elementary charge
   real(8), public, parameter    :: me0      = 9.10938188d-31          !> electron mass
   real(8), public, parameter    :: c        = 2.99792458d8            !> speed of light
   real(8), public, parameter    :: kb       = 1.3806488d-23           !> Boltzmann constant
+  real(8), public, parameter    :: kb2      = kb*kb
 
 end module Maths_m
 

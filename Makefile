@@ -9,16 +9,16 @@ EXEC=Flaps_explicit.out
 
 #LDFLAGS=-L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -lm
 
-OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $( wildcards libs/amos/*.o) libs/gmsh/libmsh2vf.o libs/control_file.o
+OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $(wildcard libs/amos/*.o) libs/gmsh/libmsh2vf.o libs/control_file.o
 
-OBJS= src/types.o src/mesh.o src/maths.o
+OBJS = $(wildcard src/*.o)
 
  
 all: $(EXEC)
 
 $(EXEC): external_libs src_files
 	@echo 'Building target: $@'
-	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS) src/main_explicit_Mie.o
+	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	@echo '************  Compilation OK  ************';
@@ -36,7 +36,7 @@ external_libs:
  
 
 clean: 
-	rm -fr *.o
+	rm -fr *.o *.mod
 	cd src && $(MAKE) clean
 	cd libs && $(MAKE) clean
 
