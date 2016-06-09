@@ -25,7 +25,7 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
                             DistDualN(1:M,1:N), DistDualS(1:M,1:N)
 
   integer :: i, j
-!TODO: The CeallAreaX and DistDualX are redundant, one must be removed
+
    do j=2,N-1
       do i=2,M-1
 
@@ -637,3 +637,73 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
         CurviWy(1,N)=CurviWy(2,N)
 
 end subroutine compute_norm_tan_curv
+
+subroutine compute_cellvol(M, N, x, y, CellVol, InvCellVol )
+  implicit none
+
+  integer, intent(in)    :: M, N
+  real(8), intent(in)    :: x(1:M, 1:N), y(1:M, 1:N)                 ! needle position indexes
+  real(8), intent(inout) :: CellVol(1:M,1:N), InvCellVol(1:M,1:N)
+
+  real(8) :: AreaElement
+  integer :: i, j
+
+  do j=2, N-1
+    do i=2, M-1
+      ! define the volume of elementary cell around a point everywhere but not on boundaries
+!         CellVol(i,j)=0.25d0*(AreaElement(x(i-1,j-1),y(i-1,j-1),x(i+1,j-1),y(i+1,j-1),x(i+1,j+1),y(i+1,j+1),x(i-1,j+1),y(i-1,j+1)))
+      CellVol(i,j)=AreaElement(0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)), & !x(i-1/2,j-1/2)
+                               0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j)), &
+                               0.25d0*(x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)), &        !x(i+1/2,j-1/2)
+                               0.25d0*(y(i,j-1)+y(i+1,j-1)+y(i+1,j)+y(i,j)), &
+                               0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), &        !x(i+1/2,j+1/2)
+                               0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
+                               0.25d0*(x(i-1,j)+x(i,j)+x(i,j+1)+x(i-1,j+1)), &        !x(i-1/2,j+1/2)
+                               0.25d0*(y(i-1,j)+y(i,j)+y(i,j+1)+y(i-1,j+1)))
+
+      InvCellVol(i,j) = 1.0d0/CellVol(i,j)
+    end do
+  end do
+
+  do i=2,M-1
+    ! NORTH
+    CellVol(i,N)=0.25d0*AreaElement(x(i-1,N),y(i-1,N),x(i+1,N),y(i+1,N),x(i+1,N-1),y(i+1,N-1),x(i-1,N-1),y(i-1,N-1))
+    ! SOUTH
+    CellVol(i,1)=0.25d0*AreaElement(x(i+1,1),y(i+1,1),x(i+1,2),y(i+1,2),x(i-1,2),y(i-1,2),x(i-1,1),y(i-1,1))
+  end do
+
+  do j=2,N-1
+     ! WEST
+     CellVol(1,j)=0.25d0*AreaElement(x(1,j-1),y(1,j-1),x(2,j-1),y(2,j-1),x(2,j+1),y(2,j+1),x(1,j+1),y(1,j+1))
+     ! EAST
+     CellVol(M,j)=0.25d0*AreaElement(x(M-1,j-1),y(M-1,j-1),x(M,j-1),y(M,j-1),x(M,j+1),y(M,j+1),x(M-1,j+1),y(M-1,j+1))
+  end do
+
+  !North-East
+  CellVol(M,N)=AreaElement(0.25d0*(x(M-1, N-1)+x(M, N-1)+x(M, N)+x(M-1, N)),0.25d0*(y(M-1,N-1)+y(M-1,N) &
+                      +y(M,N)+y(M,N-1)), 0.5d0*(x(M, N)+x(M, N-1)),0.5d0*(y(M, N)+y(M, N-1)), x(M,N),y(M,N), &
+                      0.5d0*(x(M-1, N)+x(M, N)),0.5d0*(y(M-1, N)+y(M, N)))
+!         CellVol(M,N)=0.25d0*AreaElement(x(M-1,N-1),y(M-1,N-1),x(M,N-1),y(M,N-1), x(M,N), y(M,N), x(M-1, N), y(M-1, N))
+  !South-East
+  CellVol(M,1)=AreaElement(0.5d0*(x(M-1, 1)+x(M, 1)),0.5d0*(y(M-1, 1)+y(M, 1)), x(M,1),y(M,1), &
+                      0.5d0*(x(M, 1)+x(M, 2)),0.5d0*(y(M, 1)+y(M, 2)), 0.25d0*(x(M-1, 1)+x(M-1, 2) &
+                      +x(M, 1)+x(M, 2)),0.25d0*(y(M-1, 1)+y(M-1, 2)+y(M, 1)+y(M, 2)))
+!         CellVol(M,1)=0.25d0*AreaElement(x(M-1,1),y(M-1,1),x(M,1),y(M,1),x(M,2),y(M,2),x(M-1,2),y(M-1,2))
+  !South-West
+  CellVol(1,1)=AreaElement(x(1,1),y(1,1),0.5d0*(x(1, 1)+x(2, 1)),0.5d0*(y(1, 1)+y(2, 1)), &
+                      0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2)+y(2, 1) &
+                      +y(2, 2)),0.5d0*(x(1, 1)+x(1, 2)),0.5d0*(y(1, 1)+y(1, 2)))
+!         CellVol(1,1)=0.25d0*AreaElement(x(1,1),y(1,1),x(2,1),y(2,1),x(2,2),y(2,2),x(1,2),y(1,2))
+!         CellVol(1,1)=2d0*CellVol(1,1)
+  !North-West
+  CellVol(1,N)=AreaElement(0.5d0*(x(1, N-1)+x(1, N)), &
+                                0.5d0*(y(1, N-1)+y(1, N)), &
+                                0.25d0*(x(1, N-1)+x(1, N)+x(2, N)+x(2, N-1)), &
+                                0.25d0*(y(1, N-1)+y(1, N)+y(2, N)+y(2, N-1)), &
+                                0.5d0*(x(1, N)+x(2, N)), &
+                                0.5d0*(y(1, N)+y(2, N)), &
+                                x(1,N), &
+                                y(1,N))
+!         CellVol(1,N)=0.25d0*AreaElement(x(1,N-1),y(1,N-1),x(2,N-1),y(2,N-1),x(2,N),y(2,N),x(1,N),y(1,N))
+!         CellVol(1,N)=2d0*CellVol(1,N)
+end subroutine compute_cellvol

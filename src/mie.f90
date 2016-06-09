@@ -147,7 +147,7 @@ contains
     function MieCoeff3(order, radius, dielectric, k)
       implicit none
       complex(8) MieCoeff3, dielectric
-      real(8) :: k, radius, lambda
+      real(8) :: k, radius
       real(8) :: order
 
 
@@ -160,7 +160,7 @@ contains
     function MieCoeff4(order, radius, dielectric, k)
       implicit none
       complex(8) :: MieCoeff4, dielectric
-      real(8) :: k, radius, lambda
+      real(8) :: k, radius
       real(8) :: order
 
 
