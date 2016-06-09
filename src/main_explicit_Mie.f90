@@ -2002,7 +2002,7 @@ if(UseMieScattering.eq.1) then
           if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
-            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%lambda) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
+            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%k) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
             EintField2(i,j)=M_ZERO
           ! formula with a super mistake on radius
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
@@ -2015,8 +2015,8 @@ if(UseMieScattering.eq.1) then
 
           else !TE polarization
 !             write(*,*) "TE polarization selected."
-            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%lambda)
-            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%lambda)
+            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%k)
+            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%k)
           end if
       end do
     end do
