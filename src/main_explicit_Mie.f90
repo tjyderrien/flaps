@@ -185,10 +185,6 @@ implicit none
                 TangentEx(1:M,1:N), TangentEy(1:M,1:N), &                
                 TangentNx(1:M,1:N), TangentNy(1:M,1:N), &
                 TangentSx(1:M,1:N), TangentSy(1:M,1:N), &
-                CurviWx(1:M,1:N), CurviWy(1:M,1:N), &                 ! Unit vector between cell centers
-                CurviEx(1:M,1:N), CurviEy(1:M,1:N), &                
-                CurviNx(1:M,1:N), CurviNy(1:M,1:N), &
-                CurviSx(1:M,1:N), CurviSy(1:M,1:N), &
                 DistW(1:M,1:N), DistE(1:M,1:N), &                 ! distance to the center of neighboor cells
                 DistN(1:M,1:N), DistS(1:M,1:N), &
                 DistDualW(1:M,1:N), DistDualE(1:M,1:N), &                 ! distance of the element side (equal to area in 2D)
@@ -201,6 +197,11 @@ implicit none
                 phiMie(1:M, 1:N), &
                 Radius(1:M, 1:N)
                 
+    real(8), allocatable :: CurviWx(:,:), CurviWy(:,:), &                 ! Unit vector between cell centers
+                            CurviEx(:,:), CurviEy(:,:), &
+                            CurviNx(:,:), CurviNy(:,:), &
+                            CurviSx(:,:), CurviSy(:,:)
+
     integer(8)  FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
                 MeshVertice(1:M, 1:N) ! data from the GMSH file
     
@@ -502,7 +503,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     open(99,FILE='mesh.dat',access='sequential',status='unknown')                ! format 885, 8852
     open(100,FILE='meshVessel.dat',access='sequential',status='unknown')
     open(101,FILE='DepthVessel.dat',access='sequential',status='unknown')         ! format 889
-    open(102,FILE='meshElements.dat', access='sequential',status='unknown') ! format 881
     open(103,FILE='DualDepth.dat', access='sequential', status='unknown') ! format 890
     open(104,FILE='Field.dat', access='sequential', status='unknown') ! format 891
     open(105,FILE='EnergyConservation.dat', access='sequential', status='unknown') !format 892
@@ -1141,6 +1141,15 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    ! and normal vectors (Nx, Ny) the four poles of quadrangle elements
    write(*,*) "[Mesh] Calculation of normals and distances."
 
+   allocate(CurviWx(1:M,1:N))
+   allocate(CurviWy(1:M,1:N))
+   allocate(CurviEx(1:M,1:N))
+   allocate(CurviEy(1:M,1:N))
+   allocate(CurviNx(1:M,1:N))
+   allocate(CurviNy(1:M,1:N))
+   allocate(CurviSx(1:M,1:N))
+   allocate(CurviSy(1:M,1:N))
+
    call compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
    !
    call compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, NormalWx, NormalWy, TangentNx, TangentNy, TangentSx, TangentSy, &
@@ -1509,6 +1518,29 @@ if(UseMieScattering.eq.1) then
     end do
   end do
   
+
+  open(102,FILE='meshElements.dat', access='sequential',status='unknown') ! format 881
+  do i=1,M
+        do j=1,N
+          write(102, 881, advance="YES") i, j, x(i,j), y(i,j), NormalNx(i,j), & !5
+                                  NormalNy(i,j), NormalSx(i,j), NormalSy(i,j), NormalEx(i,j), NormalEy(i,j), & !10
+                                  NormalWx(i,j), NormalWy(i,j), CellAreaN(i,j), CellAreaS(i,j), CellAreaE(i,j), & !15
+                                  CellAreaW(i,j), CellVol(i,j), TangentNx(i,j), TangentNy(i,j), TangentSx(i,j), & !20
+                                  TangentSy(i,j), TangentEx(i,j), TangentEy(i,j), TangentWx(i,j), TangentWy(i,j), & !25
+                                  CurviNx(i,j), CurviNy(i,j), CurviSx(i,j), CurviSy(i,j), CurviEx(i,j), & !30
+                                  CurviEy(i,j), CurviWx(i,j), CurviWy(i,j), DistN(i,j), DistS(i,j), & !35
+                                  DistE(i,j), DistW(i,j), DistDualN(i,j), DistDualS(i,j), DistDualE(i,j),  & !40
+                                  DistDualW(i,j), xDualSW(i,j), yDualSW(i,j), xDualSE(i,j), yDualSE(i,j), & !45
+                                  xDualNE(i,j), yDualNE(i,j), xDualNW(i,j), yDualNW(i,j) !, xDual(i,j), & !50
+!                                  yDual(i,j)
+
+881 FORMAT (2(I3, 3x), 2(1E16.8, 3x), 45(3x, 1E12.5))
+        end do
+      end do
+   close(102)
+
+   deallocate(CurviWx,CurviWy,CurviEx,CurviEy,CurviNx,CurviNy,CurviSx,CurviSy)
+
   ! Steps for 3rd order integration
   
   h1=dt
@@ -1556,8 +1588,8 @@ if(UseMieScattering.eq.1) then
    !$OMP& NormalN2,NormalNx, NormalNy, NormalS2, NormalSx, NormalSy, NormalE2, NormalEx, NormalEy, NormalW2, NormalWx, NormalWy, &
    !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP, &
    !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, TangentWx, TangentWy, TangentNx, &
-   !$OMP& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, &
-   !$OMP& CurviWy, ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
+   !$OMP& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, &
+   !$OMP& ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal, &
    !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
    !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW ), &
@@ -2857,34 +2889,7 @@ if(UseMieScattering.eq.1) then
 
     end if
     
-    if(nbiter < 2) then
-      do i=1,M
-        do j=1,N
-          write(102, 881, advance="YES") i, j, x(i,j), y(i,j), NormalNx(i,j), & !5
-                                  NormalNy(i,j), NormalSx(i,j), NormalSy(i,j), NormalEx(i,j), NormalEy(i,j), & !10
-                                  NormalWx(i,j), NormalWy(i,j), CellAreaN(i,j), CellAreaS(i,j), CellAreaE(i,j), & !15
-                                  CellAreaW(i,j), CellVol(i,j), TangentNx(i,j), TangentNy(i,j), TangentSx(i,j), & !20
-                                  TangentSy(i,j), TangentEx(i,j), TangentEy(i,j), TangentWx(i,j), TangentWy(i,j), & !25
-                                  CurviNx(i,j), CurviNy(i,j), CurviSx(i,j), CurviSy(i,j), CurviEx(i,j), & !30
-                                  CurviEy(i,j), CurviWx(i,j), CurviWy(i,j), DistN(i,j), DistS(i,j), & !35
-                                  DistE(i,j), DistW(i,j), DistDualN(i,j), DistDualS(i,j), DistDualE(i,j),  & !40
-                                  DistDualW(i,j), xDualSW(i,j), yDualSW(i,j), xDualSE(i,j), yDualSE(i,j), & !45
-                                  xDualNE(i,j), yDualNE(i,j), xDualNW(i,j), yDualNW(i,j) !, xDual(i,j), & !50
-!                                  yDual(i,j)
-                                  
-881 FORMAT (I3, 3x, I3, 3x, 1E16.8, 3x, 1E16.8, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
-        end do
-      end do
-    end if
+
     
 890 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
