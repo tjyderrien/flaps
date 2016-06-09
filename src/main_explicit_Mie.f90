@@ -180,11 +180,7 @@ implicit none
                 NormalWx(1:M,1:N), NormalWy(1:M,1:N), NormalW2(1:M,1:N), &
                 NormalEx(1:M,1:N), NormalEy(1:M,1:N), NormalE2(1:M,1:N),  &                ! normal to quadrangle elements
                 NormalNx(1:M,1:N), NormalNy(1:M,1:N), NormalN2(1:M,1:N),  &
-                NormalSx(1:M,1:N), NormalSy(1:M,1:N), NormalS2(1:M,1:N),  &
-                TangentWx(1:M,1:N), TangentWy(1:M,1:N), &                ! Tangent to quadrangle elements
-                TangentEx(1:M,1:N), TangentEy(1:M,1:N), &                
-                TangentNx(1:M,1:N), TangentNy(1:M,1:N), &
-                TangentSx(1:M,1:N), TangentSy(1:M,1:N), &
+                NormalSx(1:M,1:N), NormalSy(1:M,1:N), NormalS2(1:M,1:N), &
                 DistW(1:M,1:N), DistE(1:M,1:N), &                 ! distance to the center of neighboor cells
                 DistN(1:M,1:N), DistS(1:M,1:N), &
                 DistDualW(1:M,1:N), DistDualE(1:M,1:N), &                 ! distance of the element side (equal to area in 2D)
@@ -200,7 +196,11 @@ implicit none
     real(8), allocatable :: CurviWx(:,:), CurviWy(:,:), &                 ! Unit vector between cell centers
                             CurviEx(:,:), CurviEy(:,:), &
                             CurviNx(:,:), CurviNy(:,:), &
-                            CurviSx(:,:), CurviSy(:,:)
+                            CurviSx(:,:), CurviSy(:,:),  &
+                            TangentWx(:,:), TangentWy(:,:), &                ! Tangent to quadrangle elements
+                            TangentEx(:,:), TangentEy(:,:), &
+                            TangentNx(:,:), TangentNy(:,:), &
+                            TangentSx(:,:), TangentSy(:,:)
 
     integer(8)  FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
                 MeshVertice(1:M, 1:N) ! data from the GMSH file
@@ -1141,14 +1141,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    ! and normal vectors (Nx, Ny) the four poles of quadrangle elements
    write(*,*) "[Mesh] Calculation of normals and distances."
 
-   allocate(CurviWx(1:M,1:N))
-   allocate(CurviWy(1:M,1:N))
-   allocate(CurviEx(1:M,1:N))
-   allocate(CurviEy(1:M,1:N))
-   allocate(CurviNx(1:M,1:N))
-   allocate(CurviNy(1:M,1:N))
-   allocate(CurviSx(1:M,1:N))
-   allocate(CurviSy(1:M,1:N))
+   allocate(CurviWx(1:M,1:N));   allocate(CurviWy(1:M,1:N))
+   allocate(CurviEx(1:M,1:N));   allocate(CurviEy(1:M,1:N))
+   allocate(CurviNx(1:M,1:N));   allocate(CurviNy(1:M,1:N))
+   allocate(CurviSx(1:M,1:N));   allocate(CurviSy(1:M,1:N))
+   allocate(TangentWx(1:M,1:N));   allocate(TangentWy(1:M,1:N))
+   allocate(TangentEx(1:M,1:N));   allocate(TangentEy(1:M,1:N))
+   allocate(TangentNx(1:M,1:N));   allocate(TangentNy(1:M,1:N))
+   allocate(TangentSx(1:M,1:N));   allocate(TangentSy(1:M,1:N))
 
    call compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
    !
@@ -1541,6 +1541,8 @@ if(UseMieScattering.eq.1) then
 
    deallocate(CurviWx,CurviWy,CurviEx,CurviEy,CurviNx,CurviNy,CurviSx,CurviSy)
 
+   deallocate(TangentWx,TangentWy,TangentEx,TangentEy,TangentNx,TangentNy,TangentSx,TangentSy)
+
   ! Steps for 3rd order integration
   
   h1=dt
@@ -1587,8 +1589,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
    !$OMP& NormalN2,NormalNx, NormalNy, NormalS2, NormalSx, NormalSy, NormalE2, NormalEx, NormalEy, NormalW2, NormalWx, NormalWy, &
    !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP, &
-   !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, TangentWx, TangentWy, TangentNx, &
-   !$OMP& TangentNy, TangentSx, TangentSy, TangentEx, TangentEy, &
+   !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, &
    !$OMP& ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal, &
    !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
