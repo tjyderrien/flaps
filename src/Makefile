@@ -1,7 +1,14 @@
 FC90=gfortran
 FCFLAGS=-O2 -g -pg -Wall -ffree-line-length-none -I../libs/gmsh
 
-F90_SRCS=mesh.f90 maths.f90 types.f90 mie.f90 source.f90
+F90_SRCS= mesh.f90   \
+          maths.f90  \
+          types.f90  \
+          mie.f90    \
+          source.f90 \
+          grid.f90
+          
+         
 OBJ90= $(F90_SRCS:.f90=.o)
 
 
@@ -24,3 +31,4 @@ main_explicit_Mie.o: main_explicit_Mie.f90 $(OBJ90)
 mesh.o: mesh.f90 types.o
 mie.o: mie.f90 maths.o
 source.o: source.f90 maths.o types.o
+grid.o: grid.f90 maths.o
