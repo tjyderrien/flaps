@@ -2108,27 +2108,27 @@ if(UseMieScattering.eq.1) then
 !                 -1d0*((kappae(i,j)+kappae(i,j-1))/(Ce(i,j)+Ce(i,j-1)))*(Ue(i,j)-Ue(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 & 
 !                 -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
                 )*dt*InvCellVol(i,j) & 
-                !TODO: It seems that there is a bug here, as CrossCoef is missing
+                !
                 +0.5d0*5d0/3d0*( &
                     NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)/Ce(i,j)+kappae(i+1,j)/Ce(i+1,j))*(Ue(i+1,j)-Ue(i,j))  &
                     !
-                  - (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*ShapeFactorNormalE(i,j)*(kappae(i,j) &
-                          /Ce(i,j)+kappae(i+1,j)/Ce(i+1,j))*0.25d0*(Ue(i+1,j+1)+Ue(i,j+1)-Ue(i+1,j-1)-Ue(i,j-1))/DistDualE(i,j) &
+                  - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j) &
+                          /Ce(i,j)+kappae(i+1,j)/Ce(i+1,j))*0.25d0*(Ue(i+1,j+1)+Ue(i,j+1)-Ue(i+1,j-1)-Ue(i,j-1)) &
                     !
                   + NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)/Ce(i-1,j)+kappae(i,j)/Ce(i,j))*(Ue(i,j)-Ue(i-1,j)) &
                     !
-                  - (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*ShapeFactorNormalW(i,j)*(kappae(i-1,j) &
-                          /Ce(i-1,j)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i,j+1)+Ue(i-1,j+1)-Ue(i-1,j-1)-Ue(i,j-1))/DistDualW(i,j) &
+                  - ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j) &
+                          /Ce(i-1,j)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i,j+1)+Ue(i-1,j+1)-Ue(i-1,j-1)-Ue(i,j-1)) &
                     !
                   + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)/Ce(i,j+1)+kappae(i,j)/Ce(i,j))*(Ue(i,j+1)-Ue(i,j)) &
                     !
-                  - (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*ShapeFactorNormalN(i,j)*(kappae(i,j+1) &
-                          /Ce(i,j+1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j+1)+Ue(i+1,j)-Ue(i-1,j)-Ue(i-1,j+1))/DistDualN(i,j) &
+                  - ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1) &
+                          /Ce(i,j+1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j+1)+Ue(i+1,j)-Ue(i-1,j)-Ue(i-1,j+1)) &
                     !
                   + NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)/Ce(i,j-1)+kappae(i,j)/Ce(i,j))*(Ue(i,j)-Ue(i,j-1)) &
                     !
-                  - (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*ShapeFactorNormalS(i,j)*(kappae(i,j-1) &
-                          /Ce(i,j-1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j)+Ue(i+1,j-1)-Ue(i-1,j-1)-Ue(i-1,j))/DistDualS(i,j) &
+                  - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1) &
+                          /Ce(i,j-1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j)+Ue(i+1,j-1)-Ue(i-1,j-1)-Ue(i-1,j)) &
 !                     Korfiatis 2007 equation
 !                     0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappae(i,j)*diffusionE(i,j)/Ne(i,j)+kappae(i+1,j)*diffusionE(i+1,j)/Ne(i+1,j))*(Ne(i+1,j)-Ne(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j)*diffusionE(i,j)/Ne(i,j)+kappae(i+1,j)*diffusionE(i+1,j)/Ne(i+1,j))*(0.25d0*Ne(i+1,j+1)+0.25d0*Ne(i,j+1)-0.25d0*Ne(i+1,j-1)-0.25d0*Ne(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
@@ -2162,23 +2162,23 @@ if(UseMieScattering.eq.1) then
                 +0.5d0*( & 
                     NormalE2(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j)/Ch(i,j)+kappah(i+1,j)/Ch(i+1,j))*(Uh(i+1,j)-Uh(i,j))    &
                     !
-                  - (CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*ShapeFactorNormalE(i,j)*(kappah(i,j)/Ch(i,j)     &
-                          +kappah(i+1,j)/Ch(i+1,j))*0.25d0*(Uh(i+1,j+1)+Uh(i,j+1)-Uh(i+1,j-1)-Uh(i,j-1))/DistDualE(i,j)        &
+                  - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)/Ch(i,j)     &
+                          +kappah(i+1,j)/Ch(i+1,j))*0.25d0*(Uh(i+1,j+1)+Uh(i,j+1)-Uh(i+1,j-1)-Uh(i,j-1))        &
                     !
                   + NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)/Ch(i-1,j)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i-1,j))    &
                     !
-                  - (CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*ShapeFactorNormalS(i,j)*(kappah(i-1,j)/Ch(i-1,j) &
-                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i,j+1)+Uh(i-1,j+1)-Uh(i-1,j-1)-Uh(i,j-1))/DistDualW(i,j) &
+                  - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i-1,j)/Ch(i-1,j) &
+                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i,j+1)+Uh(i-1,j+1)-Uh(i-1,j-1)-Uh(i,j-1)) &
                     !
                   + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1)+kappah(i,j)/Ch(i,j))*(Uh(i,j+1)-Uh(i,j))    &
                     !
-                  - (CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1) &
-                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j+1)+Uh(i+1,j)-Uh(i-1,j)-Uh(i-1,j+1))/DistDualN(i,j)            &
+                  - ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1) &
+                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j+1)+Uh(i+1,j)-Uh(i-1,j)-Uh(i-1,j+1))            &
                     !
                   + NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i,j-1))    &
                     !
-                  - (CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1) &
-                        +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j)+Uh(i+1,j-1)-Uh(i-1,j-1)-Uh(i-1,j))/DistDualS(i,j) &
+                  - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1) &
+                        +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j)+Uh(i+1,j-1)-Uh(i-1,j-1)-Uh(i-1,j)) &
 ! ! Korfiatis 2007 equation
 !                     0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappah(i,j)*diffusionH(i,j)/Nh(i,j)+kappah(i+1,j)*diffusionH(i+1,j)/Nh(i+1,j))*(Nh(i+1,j)-Nh(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)*diffusionH(i,j)/Nh(i,j)+kappah(i+1,j)*diffusionH(i+1,j)/Nh(i+1,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i,j+1)-0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
