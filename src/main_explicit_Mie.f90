@@ -1252,12 +1252,12 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     end do
   end do
 
-      do i=2,M-1
-
-         !TODO: I think that this should not be here
-         GradNeX(i,N) = GradNeX(i,N-1)
-         GradNeY(i,N) = GradNeY(i,N-1)
-      end do
+!      do i=2,M-1
+!
+!         !TODO: I think that this should not be here
+!         GradNeX(i,N) = GradNeX(i,N-1)
+!         GradNeY(i,N) = GradNeY(i,N-1)
+!      end do
 
       
    write(*,*) "VESSEL CHECK"
@@ -1472,6 +1472,7 @@ if(UseMieScattering.eq.1) then
         end do
       end do
   
+  !TODO : Initialise all fo this for borders
   ! interpolation and preparation of resolution
   do j=2,N-1
     do i=2,M-1
@@ -1534,7 +1535,7 @@ if(UseMieScattering.eq.1) then
                                   xDualNE(i,j), yDualNE(i,j), xDualNW(i,j), yDualNW(i,j) !, xDual(i,j), & !50
 !                                  yDual(i,j)
 
-881 FORMAT (2(I3, 3x), 2(1E16.8, 3x), 45(3x, 1E12.5))
+881 FORMAT (2(I3, 3x), 2(1E16.8, 3x), 44(1E12.5,3x), 1E12.5)
         end do
       end do
    close(102)
