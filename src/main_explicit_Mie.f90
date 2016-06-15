@@ -1472,26 +1472,8 @@ if(UseMieScattering.eq.1) then
         end do
       end do
   
-  !TODO : Initialise all fo this for borders
-  ! interpolation and preparation of resolution
-  do j=2,N-1
-    do i=2,M-1
-        !Dual mesh calculation
-        xDualSW(i,j) = 0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)) !x(i-1/2,j-1/2)
-        yDualSW(i,j) = 0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j))
-        xDualSE(i,j) = 0.25d0*(x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)) !x(i+1/2,j-1/2)
-        yDualSE(i,j) = 0.25d0*(y(i,j-1)+y(i+1,j-1)+y(i+1,j)+y(i,j))
-        xDualNE(i,j) = 0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)) !x(i+1/2,j+1/2)
-        yDualNE(i,j) = 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1))
-        xDualNW(i,j) = 0.25d0*(x(i-1,j)+x(i,j)+x(i,j+1)+x(i-1,j+1)) !x(i-1/2,j+1/2)
-        yDualNW(i,j) = 0.25d0*(y(i-1,j)+y(i,j)+y(i,j+1)+y(i-1,j+1))
-                                
-        xDual(i-1,j-1) = xDualSW(i,j); yDual(i-1,j-1)=yDualSW(i,j) ! to make for (i,j) from 2,2 to M,N
-        xDual(i-1,N-1) = xDualNW(i,N-1); yDual(i-1,N-1) = yDualNW(i,N-1); 
-        xDual(M-1,j-1) = xDualSE(M-1,j); yDual(M-1,j-1) = yDualSE(M-1,j)
-        xDual(M-1,N-1) = xDualNE(M-1,N-1); yDual(M-1,N-1) = yDualNE(M-1,N-1); 
-    end do
-  end do
+  call poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
+                           xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
   
   do j=1,N
     do i=1,M
@@ -1580,8 +1562,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& mesh, dual, intensityDual, laser &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
-   !$OMP& x, y, xDual, yDual, xDualSW, yDualSW, xDualSE, yDualSE, xDualNE, yDualNE, xDualNW, yDualNW, &
-   !$OMP& diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
+   !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
    !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
    !$OMP& nuColl, nuColleph, mobilityE, mobilityH, etae, etah, Egap, & 
    !$OMP& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
@@ -1636,14 +1617,7 @@ if(UseMieScattering.eq.1) then
 !      intensity(i,1)=(1d0-reflectivity(i,1))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2.-.5d0*((x(i,1)-x0)/sigmaX)**2.-.5d0*((y(i,1)-y0)/sigmaY)**2.)
 
         ! optical coefficients
-        
-!         ! DEBUG
-
-
-!         Ex(i,j)=0d0 !-1d9
-!         Ey(i,j)=0d0*        -1d9
-        
-        nuColl(i,j)=CollisionFrequency()
+        nuColl(i,j)=CollisionFrequency() !TODO: Move out of temporal loop
         nuColleph(i,j)=ephCollisionFrequency(mesh%Ne(i,j))
         Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl(i,j))
         DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl(i,j),me)
@@ -1673,7 +1647,7 @@ if(UseMieScattering.eq.1) then
         if(DrudeHeating==1) then
           absorptionDrudeE(i,j)=4d0*pi/laser%lambda*aimag(sqrt(DielectricDrudeE(i,j)))
           absorptionDrudeH(i,j)=4d0*pi/laser%lambda*aimag(sqrt(DielectricDrudeH(i,j)))
-        else
+        else !TODO: Move out of temporal loop
           absorptionDrudeE(i,j)=0d0
           absorptionDrudeH(i,j)=0d0
 !           absorptionDrudeE(i,j)=sqrt(2d0)*sqrt(mu0*laser%omega*ec*mobilityE(i,j)*Ne(i,j))
@@ -1810,8 +1784,8 @@ if(UseMieScattering.eq.1) then
 
         JeX(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ex(i,j)
         JeY(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ey(i,j)
-        JhX(i,j)=mobilityH(i,j)*mesh%Nh(i,j)*Ex(i,j)
-        JhY(i,j)=mobilityH(i,j)*mesh%Nh(i,j)*Ey(i,j)
+        JhX(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ex(i,j)
+        JhY(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ey(i,j)
 
         if(DriftOn.eq.0) then 
           JeX(i,j)=0d0; JeY(i,j)=0d0; 
@@ -1840,7 +1814,7 @@ if(UseMieScattering.eq.1) then
                 -4d0*(FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
 !         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K
         kappas(i,j)=(-8.992d0+68.265d0/(1d0+exp(-.4075612391d-1*mesh%Ts(i,j)+2.315984470d0))*(1d0-1d0/ &
-                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0)))) !Elena fit sur Kazan (2010)
+                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0)))) !Elena fit sur Kazan (2010) !TODO: More explicit reference
         if(kappas(i,j).lt.0d0) then
           kappas(i,j)=0d0
         end if
@@ -1924,6 +1898,7 @@ if(UseMieScattering.eq.1) then
 
         ! third order precision in already included in the scheme (Maple generated since complexity increases substancially)
         
+        !TODO: to be implemented
         VeX(i,j)=0d0
         VeY(i,j)=0d0
         VhX(i,j)=0d0
@@ -1933,32 +1908,6 @@ if(UseMieScattering.eq.1) then
     end do
     !$OMP END DO
 
-    
-    ! interpolation on dual mesh
-    ! InterpolateBiCubic(phi_source, x_s, y_s, x_t, y_t, SizeXs, SizeYs, SizeXt, SizeYt, phi_target, Grad(phi)_targetX, Grad(phi)_targetY)
-    
-!     if(UseInterpolation.eq.1) then
-!     !$OMP SECTIONS
-!       !$OMP SECTION
-!       call InterpolateBiCubic(Ne, x, y, xDual, yDual, M, N, M-1, N-1, NeDual, DummyDual, DummyDual)
-!       !$OMP SECTION
-!       call InterpolateBiCubic(Nh, x, y, xDual, yDual, M, N, M-1, N-1, NhDual, DummyDual, DummyDual)
-!       !$OMP SECTION
-!       call InterpolateBiCubic(Te, x, y, xDual, yDual, M, N, M-1, N-1, TeDual, DummyDual, DummyDual)
-!       !$OMP SECTION
-!       call InterpolateBiCubic(Th, x, y, xDual, yDual, M, N, M-1, N-1, ThDual, DummyDual, DummyDual)
-!       !$OMP SECTION
-!       call InterpolateBiCubic(Ts, x, y, xDual, yDual, M, N, M-1, N-1, TsDual, DummyDual, DummyDual)
-!       !$OMP SECTION
-!   !     call InterpolateBiCubic(intensity, x, y, xDual, yDual, M, N, M-1, N-1, intensityDual, DummyDual, DummyDual)
-!   !     intensityDual=InterpolateSelner(intensity, x, y, xDual, yDual, M, N, M-1, N-1)
-!         
-!   ! !       DEBUG: test de la fonction d'interpolation
-!       call InterpolateBiCubic(intensity, x, y, xDual, yDual, M, N, M-1, N-1, intensityDual, DummyDual, DummyDual)
-!   !     intensityDual=InterpolateSelner(intensity, x, y, xDual, yDual, M, N, M-1, N-1)
-! 
-!     !$OMP END SECTIONS
-!     end if
 
       ! interpolation bilineaire ponderee par les aires
       call bilinear_interpol_dual(mesh, dual, InvCellVol)

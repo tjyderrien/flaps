@@ -72,6 +72,32 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    integer :: i,j
    real(8) :: weight
 
+    ! interpolation on dual mesh
+    ! InterpolateBiCubic(phi_source, x_s, y_s, x_t, y_t, SizeXs, SizeYs, SizeXt, SizeYt, phi_target, Grad(phi)_targetX, Grad(phi)_targetY)
+
+!     if(UseInterpolation.eq.1) then
+!     !$OMP SECTIONS
+!       !$OMP SECTION
+!       call InterpolateBiCubic(Ne, x, y, xDual, yDual, M, N, M-1, N-1, NeDual, DummyDual, DummyDual)
+!       !$OMP SECTION
+!       call InterpolateBiCubic(Nh, x, y, xDual, yDual, M, N, M-1, N-1, NhDual, DummyDual, DummyDual)
+!       !$OMP SECTION
+!       call InterpolateBiCubic(Te, x, y, xDual, yDual, M, N, M-1, N-1, TeDual, DummyDual, DummyDual)
+!       !$OMP SECTION
+!       call InterpolateBiCubic(Th, x, y, xDual, yDual, M, N, M-1, N-1, ThDual, DummyDual, DummyDual)
+!       !$OMP SECTION
+!       call InterpolateBiCubic(Ts, x, y, xDual, yDual, M, N, M-1, N-1, TsDual, DummyDual, DummyDual)
+!       !$OMP SECTION
+!   !     call InterpolateBiCubic(intensity, x, y, xDual, yDual, M, N, M-1, N-1, intensityDual, DummyDual, DummyDual)
+!   !     intensityDual=InterpolateSelner(intensity, x, y, xDual, yDual, M, N, M-1, N-1)
+!
+!   ! !       DEBUG: test de la fonction d'interpolation
+!       call InterpolateBiCubic(intensity, x, y, xDual, yDual, M, N, M-1, N-1, intensityDual, DummyDual, DummyDual)
+!   !     intensityDual=InterpolateSelner(intensity, x, y, xDual, yDual, M, N, M-1, N-1)
+!
+!     !$OMP END SECTIONS
+!     end if
+
    !$OMP DO  COLLAPSE(2)
       do j=1, dual%N
         do i=1, dual%M
