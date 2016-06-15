@@ -282,7 +282,7 @@ implicit none
 
     !! FUNCTIONS CALLS
      integer(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
-     real(8) ConeExp1, ConeExp2, AreaElement
+     real(8) ConeExp1, ConeExp2
             
 !OPENMP declarations
     integer :: myid, nthreads
@@ -1178,95 +1178,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    write(*,*) "West", NormalWx(M-1,N-1), NormalWy(M-1,N-1)
    write(*,*) CellAreaN(M/2,N/2), CellAreaS(M/2,N/2), CellAreaE(M/2,N/2), CellAreaW(M/2,N/2)
    
-   do j=2,Np-1
-    do i=2,Mp-1
-        NormalNxP(i,j)=4d0*(0.25d0*yP(i-1,j)+0.25d0*yP(i-1,j+1)-0.25d0*yP(i+1,j+1)-0.25d0*yP(i+1,j))/(xP(i-1,j)**2 & 
-                      +2d0*xP(i-1,j)*xP(i-1,j+1)-2d0*xP(i-1,j)*xP(i+1,j+1)-2d0*xP(i-1,j)*xP(i+1,j)+xP(i-1,j+1)**2 & 
-                      -2d0*xP(i-1,j+1)*xP(i+1,j+1)-2d0*xP(i-1,j+1)*xP(i+1,j)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j) & 
-                      +xP(i+1,j)**2+yP(i-1,j)**2+2d0*yP(i-1,j)*yP(i-1,j+1)-2d0*yP(i-1,j)*yP(i+1,j+1)-2d0*yP(i-1,j)*yP(i+1,j) & 
-                      +yP(i-1,j+1)**2-2d0*yP(i-1,j+1)*yP(i+1,j+1)-2d0*yP(i-1,j+1)*yP(i+1,j)+yP(i+1,j+1)**2 & 
-                      +2d0*yP(i+1,j+1)*yP(i+1,j)+yP(i+1,j)**2)**(0.5d0)
-        NormalNyP(i,j)=-4d0*(0.25d0*xP(i-1,j)+0.25d0*xP(i-1,j+1)-0.25d0*xP(i+1,j+1)-0.25d0*xP(i+1,j))/(xP(i-1,j)**2 & 
-                +2d0*xP(i-1,j)*xP(i-1,j+1)-2d0*xP(i-1,j)*xP(i+1,j+1)-2d0*xP(i-1,j)*xP(i+1,j)+xP(i-1,j+1)**2 & 
-                -2d0*xP(i-1,j+1)*xP(i+1,j+1)-2d0*xP(i-1,j+1)*xP(i+1,j)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j) & 
-                +xP(i+1,j)**2+yP(i-1,j)**2+2d0*yP(i-1,j)*yP(i-1,j+1)-2d0*yP(i-1,j)*yP(i+1,j+1)-2d0*yP(i-1,j)*yP(i+1,j) & 
-                +yP(i-1,j+1)**2-2d0*yP(i-1,j+1)*yP(i+1,j+1)-2d0*yP(i-1,j+1)*yP(i+1,j)+yP(i+1,j+1)**2 & 
-                +2d0*yP(i+1,j+1)*yP(i+1,j)+yP(i+1,j)**2)**(0.5d0)
-        NormalSxP(i,j)=-4d0*(0.25d0*yP(i-1,j-1)+0.25d0*yP(i-1,j)-0.25d0*yP(i+1,j)-0.25d0*yP(i+1,j-1))/(xP(i-1,j-1)**2 & 
-                +2d0*xP(i-1,j-1)*xP(i-1,j)-2d0*xP(i-1,j-1)*xP(i+1,j)-2d0*xP(i-1,j-1)*xP(i+1,j-1)+xP(i-1,j)**2 & 
-                -2d0*xP(i-1,j)*xP(i+1,j)-2d0*xP(i-1,j)*xP(i+1,j-1)+xP(i+1,j)**2+2d0*xP(i+1,j)*xP(i+1,j-1) & 
-                +xP(i+1,j-1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i-1,j)-2d0*yP(i-1,j-1)*yP(i+1,j) & 
-                -2d0*yP(i-1,j-1)*yP(i+1,j-1)+yP(i-1,j)**2-2d0*yP(i-1,j)*yP(i+1,j)-2d0*yP(i-1,j)*yP(i+1,j-1) & 
-                +yP(i+1,j)**2+2d0*yP(i+1,j)*yP(i+1,j-1)+yP(i+1,j-1)**2)**(0.5d0)
-        NormalSyP(i,j)=4d0*(0.25d0*xP(i-1,j-1)+0.25d0*xP(i-1,j)-0.25d0*xP(i+1,j)-0.25d0*xP(i+1,j-1))/(xP(i-1,j-1)**2 &
-                      +2d0*xP(i-1,j-1)*xP(i-1,j)-2d0*xP(i-1,j-1)*xP(i+1,j)-2d0*xP(i-1,j-1)*xP(i+1,j-1)+xP(i-1,j)**2 & 
-                      -2d0*xP(i-1,j)*xP(i+1,j)-2d0*xP(i-1,j)*xP(i+1,j-1)+xP(i+1,j)**2+2d0*xP(i+1,j)*xP(i+1,j-1) & 
-                      +xP(i+1,j-1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i-1,j)-2d0*yP(i-1,j-1)*yP(i+1,j) & 
-                      -2d0*yP(i-1,j-1)*yP(i+1,j-1)+yP(i-1,j)**2-2d0*yP(i-1,j)*yP(i+1,j)-2d0*yP(i-1,j)*yP(i+1,j-1) & 
-                      +yP(i+1,j)**2+2d0*yP(i+1,j)*yP(i+1,j-1)+yP(i+1,j-1)**2)**(0.5d0)
-        NormalExP(i,j)=-4d0*(0.25d0*yP(i+1,j-1)+0.25d0*yP(i,j-1)-0.25d0*yP(i+1,j+1)-0.25d0*yP(i,j+1))/(xP(i+1,j-1)**2 & 
-                +2d0*xP(i+1,j-1)*xP(i,j-1)-2d0*xP(i+1,j-1)*xP(i+1,j+1)-2d0*xP(i+1,j-1)*xP(i,j+1)+xP(i,j-1)**2 & 
-                -2d0*xP(i,j-1)*xP(i+1,j+1)-2d0*xP(i,j-1)*xP(i,j+1)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1) & 
-                +xP(i,j+1)**2+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1)-2d0*yP(i+1,j-1)*yP(i+1,j+1) & 
-                -2d0*yP(i+1,j-1)*yP(i,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i+1,j+1)-2d0*yP(i,j-1)*yP(i,j+1) & 
-                +yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)+yP(i,j+1)**2)**(0.5d0)
-        NormalEyP(i,j)=4d0*(0.25d0*xP(i+1,j-1)+0.25d0*xP(i,j-1)-0.25d0*xP(i+1,j+1)-0.25d0*xP(i,j+1))/(xP(i+1,j-1)**2 & 
-                      +2d0*xP(i+1,j-1)*xP(i,j-1)-2d0*xP(i+1,j-1)*xP(i+1,j+1)-2d0*xP(i+1,j-1)*xP(i,j+1)+xP(i,j-1)**2 & 
-                      -2d0*xP(i,j-1)*xP(i+1,j+1)-2d0*xP(i,j-1)*xP(i,j+1)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1) & 
-                      +xP(i,j+1)**2+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1)-2d0*yP(i+1,j-1)*yP(i+1,j+1) & 
-                      -2d0*yP(i+1,j-1)*yP(i,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i+1,j+1)-2d0*yP(i,j-1)*yP(i,j+1) & 
-                      +yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)+yP(i,j+1)**2)**(0.5d0)
-        NormalWxP(i,j)=4d0*(0.25d0*yP(i-1,j-1)+0.25d0*yP(i,j-1)-0.25d0*yP(i,j+1)-0.25d0*yP(i-1,j+1))/(xP(i-1,j-1)**2 & 
-                      +2d0*xP(i-1,j-1)*xP(i,j-1)-2d0*xP(i-1,j-1)*xP(i,j+1)-2d0*xP(i-1,j-1)*xP(i-1,j+1)+xP(i,j-1)**2 & 
-                      -2d0*xP(i,j-1)*xP(i,j+1)-2d0*xP(i,j-1)*xP(i-1,j+1)+xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1) & 
-                      +xP(i-1,j+1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i,j-1)-2d0*yP(i-1,j-1)*yP(i,j+1) & 
-                      -2d0*yP(i-1,j-1)*yP(i-1,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i,j+1)-2d0*yP(i,j-1)*yP(i-1,j+1) & 
-                      +yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(0.5d0)
-        NormalWyP(i,j)=-4d0*(0.25d0*xP(i-1,j-1)+0.25d0*xP(i,j-1)-0.25d0*xP(i,j+1)-0.25d0*xP(i-1,j+1))/(xP(i-1,j-1)**2 & 
-                +2d0*xP(i-1,j-1)*xP(i,j-1)-2d0*xP(i-1,j-1)*xP(i,j+1)-2d0*xP(i-1,j-1)*xP(i-1,j+1)+xP(i,j-1)**2 & 
-                -2d0*xP(i,j-1)*xP(i,j+1)-2d0*xP(i,j-1)*xP(i-1,j+1)+xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1) & 
-                +xP(i-1,j+1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i,j-1)-2d0*yP(i-1,j-1)*yP(i,j+1) & 
-                -2d0*yP(i-1,j-1)*yP(i-1,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i,j+1)-2d0*yP(i,j-1)*yP(i-1,j+1) & 
-                +yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(0.5d0)
-        
-        CellAreaNP(i,j)=0.25d0*(xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j)-2d0*xP(i+1,j+1)*xP(i-1,j) & 
-                -2d0*xP(i+1,j+1)*xP(i-1,j+1)+xP(i+1,j)**2-2d0*xP(i+1,j)*xP(i-1,j)-2d0*xP(i+1,j)*xP(i-1,j+1) & 
-                +xP(i-1,j)**2+2d0*xP(i-1,j)*xP(i-1,j+1)+xP(i-1,j+1)**2+yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i+1,j) & 
-                -2d0*yP(i+1,j+1)*yP(i-1,j)-2d0*yP(i+1,j+1)*yP(i-1,j+1)+yP(i+1,j)**2-2d0*yP(i+1,j)*yP(i-1,j) & 
-                -2d0*yP(i+1,j)*yP(i-1,j+1)+yP(i-1,j)**2+2d0*yP(i-1,j)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(0.5d0)
-        CellAreaSP(i,j)=0.25d0*(xP(i+1,j)**2+2d0*xP(i+1,j)*xP(i+1,j-1)-2d0*xP(i+1,j)*xP(i-1,j-1)-2d0*xP(i+1,j)*xP(i-1,j) & 
-                +xP(i+1,j-1)**2-2d0*xP(i+1,j-1)*xP(i-1,j-1)-2d0*xP(i+1,j-1)*xP(i-1,j)+xP(i-1,j-1)**2 & 
-                +2d0*xP(i-1,j-1)*xP(i-1,j)+xP(i-1,j)**2+yP(i+1,j)**2+2d0*yP(i+1,j)*yP(i+1,j-1) & 
-                -2d0*yP(i+1,j)*yP(i-1,j-1)-2d0*yP(i+1,j)*yP(i-1,j)+yP(i+1,j-1)**2-2d0*yP(i+1,j-1)*yP(i-1,j-1) & 
-                -2d0*yP(i+1,j-1)*yP(i-1,j)+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i-1,j)+yP(i-1,j)**2)**(0.5d0)
-        CellAreaEP(i,j)=0.25d0*(xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1)-2d0*xP(i+1,j+1)*xP(i+1,j-1)-2d0*xP(i+1,j+1)*xP(i,j-1) & 
-                +xP(i,j+1)**2-2d0*xP(i,j+1)*xP(i+1,j-1)-2d0*xP(i,j+1)*xP(i,j-1)+xP(i+1,j-1)**2+2d0*xP(i+1,j-1)*xP(i,j-1) & 
-                +xP(i,j-1)**2+yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)-2d0*yP(i+1,j+1)*yP(i+1,j-1)-2d0*yP(i+1,j+1)*yP(i,j-1) & 
-                +yP(i,j+1)**2-2d0*yP(i,j+1)*yP(i+1,j-1)-2d0*yP(i,j+1)*yP(i,j-1)+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1) & 
-                +yP(i,j-1)**2)**(0.5d0)
-        CellAreaWP(i,j)=0.25d0*(xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1)-2d0*xP(i,j+1)*xP(i-1,j-1)-2d0*xP(i,j+1)*xP(i,j-1) & 
-                +xP(i-1,j+1)**2-2d0*xP(i-1,j+1)*xP(i-1,j-1)-2d0*xP(i-1,j+1)*xP(i,j-1)+xP(i-1,j-1)**2+2d0*xP(i-1,j-1)*xP(i,j-1) & 
-                +xP(i,j-1)**2+yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)-2d0*yP(i,j+1)*yP(i-1,j-1)-2d0*yP(i,j+1)*yP(i,j-1) & 
-                +yP(i-1,j+1)**2-2d0*yP(i-1,j+1)*yP(i-1,j-1)-2d0*yP(i-1,j+1)*yP(i,j-1)+yP(i-1,j-1)**2 & 
-                +2d0*yP(i-1,j-1)*yP(i,j-1)+yP(i,j-1)**2)**(0.5d0)
-    end do
-  end do
-
-!      do i=2,M-1
-!
-!         !TODO: I think that this should not be here
-!         GradNeX(i,N) = GradNeX(i,N-1)
-!         GradNeY(i,N) = GradNeY(i,N-1)
-!      end do
-
-      
-   write(*,*) "VESSEL CHECK"
-   write(*,*) "North", NormalNxP(Mp/2,Np-1), NormalNyP(Mp/2,Np-1)
-   write(*,*) "South", NormalSxP(Mp/2,2), NormalSyP(Mp/2,2)
-   write(*,*) "East", NormalExP(Mp-1,Np-1), NormalEyP(Mp-1,Np-1)
-   write(*,*) "West", NormalWxP(Mp-1,Np-1), NormalWyP(Mp-1,Np-1)
-   write(*,*) CellAreaNP(Mp/2,Np/2), CellAreaSP(Mp/2,Np/2), CellAreaEP(Mp/2,Np/2), CellAreaWP(Mp/2,Np/2)
    
+   call poisson_init_normal_cellarea( Mp, Np, xP, yP, NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, &
+                                            NormalWxP, NormalWyP, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP )
+
+
+  call poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
+                           xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
+
    ! Drift initialization
    JeX(:,:)=0d0
    JeY(:,:)=0d0
@@ -1471,9 +1390,7 @@ if(UseMieScattering.eq.1) then
         
         end do
       end do
-  
-  call poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
-                           xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
+
   
   do j=1,N
     do i=1,M
@@ -1558,6 +1475,8 @@ if(UseMieScattering.eq.1) then
     maxNe=0d0; minNe=1d50; maxNh=0d0; minNh=1d50; maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; 
     maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
     
+    !TODO: Use DEFAULT(NONE) here, this is safer
+
    !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt1, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP& mesh, dual, intensityDual, laser &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
@@ -1570,8 +1489,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
    !$OMP& NormalN2,NormalNx, NormalNy, NormalS2, NormalSx, NormalSy, NormalE2, NormalEx, NormalEy, NormalW2, NormalWx, NormalWy, &
-   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP, &
-   !$OMP& NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, NormalWxP, NormalWyP, &
+   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
    !$OMP& ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal, &
    !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
