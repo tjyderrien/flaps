@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------------
-!> @file mie.f90
+!> @file poisson.f90
 !
 ! DESCRIPTION:
 !> @brief This is for the future Poisson calculation

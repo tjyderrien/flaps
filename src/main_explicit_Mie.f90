@@ -282,7 +282,10 @@ implicit none
 
     !! FUNCTIONS CALLS
      integer(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
-     real(8) ConeExp1, ConeExp2
+     real(8) ConeExp1, ConeExp2, DensityOfState, EgapValue, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
+             CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate, ephCollisionFrequency
+     complex(8) DielectricFunction, DielectricFunctionDrude, DielectricConstant
+
             
 !OPENMP declarations
     integer :: myid, nthreads
@@ -964,7 +967,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   ! importing Fermi functions
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
-   call TabCreateFL !(FermiTableE, FermiTableH)
+   call TabCreateFL(M, N, FermiTableE, FermiTableH)
     FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
@@ -1058,12 +1061,12 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     do i=1,M
         
         ! initialise variables to calculate Ce, Ch
-        DOSe(i,j)=DensityOfStateE(mesh%Te(i,j))
-        DOSh(i,j)=DensityOfStateH(mesh%Th(i,j))
+        DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
+        DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
+        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j))
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
@@ -1081,14 +1084,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) & 
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-         CsOld(i,j)=LatticeHeatCapacity(Tout)
-         CsPrev(i,j)=LatticeHeatCapacity(Tout)
-         CsPrev2(i,j)=LatticeHeatCapacity(Tout)
+         CsOld(i,j)=LatticeHeatCapacity(Tout, SiDensity)
+         CsPrev(i,j)=LatticeHeatCapacity(Tout, SiDensity)
+         CsPrev2(i,j)=LatticeHeatCapacity(Tout, SiDensity)
 
         
         Ce(i,j)=CeOld(i,j)
         Ch(i,j)=ChOld(i,j)
-        Cs(i,j)=LatticeHeatCapacity(Tout)
+        Cs(i,j)=LatticeHeatCapacity(Tout, SiDensity)
         
         UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
         UhNew(i,j)=newmesh%Th(i,j)*ChOld(i,j)
@@ -1537,24 +1540,24 @@ if(UseMieScattering.eq.1) then
         ! optical coefficients
         nuColl(i,j)=CollisionFrequency() !TODO: Move out of temporal loop
         nuColleph(i,j)=ephCollisionFrequency(mesh%Ne(i,j))
-        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl(i,j))
-        DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl(i,j),me)
-        DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl(i,j),mh)
+        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl(i,j), me, laser)
+        DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl(i,j),me, laser)
+        DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl(i,j),mh, laser)
 
         !         write(*,*) "Esprit es-tu la ?"
         
 !         write(*,*) i,j,TeNew(i,j)
-        DOSe(i,j)=DensityOfStateE(mesh%Te(i,j))
-        DOSh(i,j)=DensityOfStateH(mesh%Th(i,j))
+        DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
+        DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
+        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j)) 
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
 !         write(*,*) "iter=", nbiter, "NeNc=", Ne(i,j)/DOSe(i,j), Nh(i,j)/DOSh(i,j)
-!         write(*,*) "iter=", nbiter, "FermiIndex=", FermiIndex(Ne(i,j)/DOSe(i,j)), FermiIndex(Nh(i,j)/DOSh(i,j))
+!         write(*,*) "iter=", nbiter, "FermiIndex=", FermiIndex(Ne(i,j)/DOSe(i,j), FermiMaxLines), FermiIndex(Nh(i,j)/DOSh(i,j), FermiMaxLines)
 !         write(*,*) "iter=", nbiter, "eta=", etae(i,j), etah(i,j)
 !         write(*,*) "FermiTables: etaE,etaH=", FermiTableE(3,463), FermiTableH(3,450)
 
@@ -1713,11 +1716,11 @@ if(UseMieScattering.eq.1) then
         Int2 = intensity(i,j)**2
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/laser%omega &
                     +TwoPhotonIonizationRate0*Int2/(2d0*hbar*laser%omega) &
-                    +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
+                    +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
                     
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)/hbar/laser%omega &
                     +TwoPhotonIonizationRate0*Int2/(2d0*hbar*laser%omega) &
-                    +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+                    +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
                     
         LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
         LossesH(i,j)=LossesE(i,j)
@@ -1768,7 +1771,7 @@ if(UseMieScattering.eq.1) then
         Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
                   -etah(i,j)*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))))
-        Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
+        Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j), SiDensity)
 
 !         Ce(i,j)=Ch(i,j) ! DEBUG test
         
@@ -1789,7 +1792,7 @@ if(UseMieScattering.eq.1) then
 !         
         SourceE(i,j)= (hbar*laser%omega-Egap(i,j))/hbar/laser%omega*((me)/(me+mh))*OnePhotonIonizationRate0*intensity(i,j) &
                      + (2d0*hbar*laser%omega - Egap(i,j))/(2d0*hbar*laser%omega)* ((me)/(me+mh)) * TwoPhotonIonizationRate0*Int2 &
-                     - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j))*mesh%Ne(i,j) &
+                     - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
 
@@ -1800,7 +1803,7 @@ if(UseMieScattering.eq.1) then
 
         SourceH(i,j)=(hbar*laser%omega-Egap(i,j))/hbar/laser%omega * ((me)/(me+mh)) * OnePhotonIonizationRate0*intensity(i,j) &
                      + (2d0*hbar*laser%omega - Egap(i,j))/(2d0*hbar*laser%omega)* ((me)/(me+mh)) *TwoPhotonIonizationRate0*Int2 &
-                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j))*mesh%Nh(i,j) &
+                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
                      
@@ -2781,193 +2784,6 @@ if(UseMieScattering.eq.1) then
   call releasemesh(dual)
   call releasemesh(newmesh)
 
-  contains 
-  
-    function DensityOfStateE(Te)
-    use Maths_m
-    implicit none
-    real(8) DensityOfStateE, Te
-      DensityOfStateE=2d0*(meDOS*kb*Te/(2d0*pi*hbar**2))**(1.5d0)
-      return
-    end function DensityOfStateE
-    
-    function DensityOfStateH(Th)
-    use Maths_m
-    implicit none
-    real(8) DensityOfStateH, Th
-      DensityOfStateH=2d0*(mhDOS*kb*Th/(2d0*pi*hbar**2))**(1.5d0)
-      return
-    end function DensityOfStateH
-  
-    subroutine TabCreateFL !(FermiTableE, FermiTableH)
-      implicit none
-      integer :: unit1, unit2
-      unit1=15; unit2=16
-      open (unit1,file='FermiDatasE.dat')
-      open (unit2,file='FermiDatasH.dat')
-      read (unit1,*) FermiTableE(:,:) !, FermiTableE(2,:) !, FermiTableE(:,3), FermiTableE(:,4), &
-!             FermiTableE(:,5), FermiTableE(:,6), FermiTableE(:,7), FermiTableE(:,8), &
-!             FermiTableE(:,9)
-      read (unit2,*) FermiTableH(:,:) !1), FermiTableH(:,2), FermiTableH(:,3), FermiTableH(:,4), &
-!              FermiTableH(:,5), FermiTableH(:,6), FermiTableH(:,7), FermiTableH(:,8), &
-!             FermiTableH(:,9) 
-! 222        format (1F10.2, 3x, 1F10.2, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x)
-      close(unit1); close(unit2)
-
-      !    fi_min=0.012d0
-      !    fistep=0.2d0
-      !    fi_max=fi_num*fistep
-      write(*,*) FermiTableE(3,463), FermiTableH(3,450)
-! stop
-      return
-    end subroutine TabCreateFL
-
-    function DielectricConstant(lambda)
-      complex(8) :: DielectricConstant
-      real(8) lambda
-      
-      if(lambda.eq.1030d-9) then
-        DielectricConstant=(12.8d0,0.001414418d0)
-      end if
-      
-      if(lambda.eq.800d-9) then
-        DielectricConstant=(13.46d0,0.048d0)
-      end if
-      
-      if(lambda.eq.515d-9) then
-        DielectricConstant=(17.8254d0,0.50669d0) !refractiveindex.info
-      end if
-      
-      if(lambda.eq.343d-9) then
-        DielectricConstant=(18.81766303d0,31.5464d0)
-      end if
-      return
-    end function DielectricConstant
-    
-    function DielectricFunction(epsilonInf, ne, nuColl)
-      complex(8) :: DielectricFunction
-      complex(8) epsilonInf
-      real(8) ne, nuColl, omegape
-!      real(8) ne, nuColl, omegape
-      
-      omegape=sqrt(ne*ec**2/me/epsilon0)
-      DielectricFunction=epsilonInf-(omegape/laser%omega)**2/(M_ONE+M_IM*nuColl/laser%omega)
-      return
-    end function DielectricFunction
-    
-    function DielectricFunctionDrude(density, Collision, mass)
-      complex(8) :: DielectricFunctionDrude
-      real(8) density, Collision, omegape, mass
-      
-      omegape=sqrt(density*ec**2/(mass*epsilon0))
-      DielectricFunctionDrude=M_ONE-M_ONE*(omegape/laser%omega)**2/(M_ONE+M_IM*Collision/laser%omega)
-      return
-    end function DielectricFunctionDrude
-    
-    function ephCollisionFrequency(ne)
-      real(8) :: ephCollisionFrequency, ne
-      real(8) nth
-      nth=6.02d26 !m-3 (Sjodin, PRL 1998)
-      ephCollisionFrequency=((240d-15)*(1d0+(ne/nth)**2))**(-1d0)
-!       CollisionFrequency=1d14 ! 
-      ! CollisionFrequency=1d13 !
-      !CollisionFrequency=5d13 ! 
-      return
-    end function ephCollisionFrequency
-  
-    function CollisionFrequency()
-      real(8) :: CollisionFrequency    
-      CollisionFrequency=1d15
-      return
-    end function CollisionFrequency
-  
-    function ImpactIonizationRate(Te, Ne, Ts)
-      real(8) :: ImpactIonizationRate
-      real(8) Te, Ne, Ts
-      ImpactIonizationRate=3.6d10*exp(-1.5d0*EgapValue(Ne, Ts)/kb/Te)
-      if(ImpactOff.eq.1) then
-        ImpactIonizationRate=0d0
-      end if
-      return
-    end function ImpactIonizationRate
-    
-    function OnePhotonIonizationRate()
-      real(8) :: OnePhotonIonizationRate
-!       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
-      OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
-      return
-    end function OnePhotonIonizationRate
-
-    function TwoPhotonIonizationRate(lambda)
-      real(8) :: TwoPhotonIonizationRate
-      real(8) lambda
-      if(lambda.eq.1030d-9) then
-        TwoPhotonIonizationRate=1.933288399d-11
-      end if
-      
-      if(lambda.eq.800d-9) then
-        TwoPhotonIonizationRate=1.857135194d-11
-!         TwoPhotonIonizationRate=0d0
-      end if
-      
-      if(lambda.eq.515d-9) then
-        TwoPhotonIonizationRate=1.512238197d-11
-!                TwoPhotonIonizationRate=0d0
-      end if
-      
-      if(lambda.eq.343d-9) then
-        TwoPhotonIonizationRate=0d0
-      end if
-      return
-    end function TwoPhotonIonizationRate
-    
-    function EgapValue(Ne, Ts)
-      real(8) :: EgapValue
-      real(8) Ne, Ts
-
-      EgapValue=ec*1.16d0
-!        EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0)-1.5d-10*Ne**(1d0/3d0)) !Korfiatis 2007
-
-!      EgapValue=ec*(1.16d0-(7.02d-4*Ts**2)/(Ts+1108d0)-1.5d-10*Ne**(0.33333d0)) !Driel 1987
-!       EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0))
-!         EgapValue=ec*(1.1692d0) !-4.9d-4*Ts**2/(Ts+655d0))
-
-      if(EgapValue < 0d0) then 
-        EgapValue=0d0
-      end if
-      return
-    end function EgapValue
-
-    function LatticeHeatCapacity(T)
-      implicit none
-      real(8) :: LatticeHeatCapacity
-      real(8) T
-!       LatticeHeatCapacity=1d3*SiDensity*0.2703d0/(exp(63.456d0/T)+0.84586d0) !bad fit ...
-!         LatticeHeatCapacity=1d3*SiDensity*0.412920554599445d0/(exp(88.1830102582422d0/T)-0.676494557497076d0) !!better fit on Flubacher BUT INDUCES A SUPER BUG (+170 K with 3rd order time integration).
-!         LatticeHeatCapacity=1d6*(1.978d0+3.54d-4*T-3.68d0*T**(-2)) !Driel 1987 - not very good, BUT WORKS.
-!       LatticeHeatCapacity=1d3*SiDensity*(0.899d0*dexp(5.455d-05*T)-0.959d0*dexp(-0.004218d0*T))! very good exp fit on Okothin, BUT INDUCES A nonlinearity at the beginning (+50 K with 3rd order integration)
-!         LatticeHeatCapacity=1D3*SiDensity*(1.239d0*sin(0.001413d0*T-0.1806d0) + 0.3168d0*sin(0.003343d0*T+0.7648d0) + 0.01947d0*sin(0.00904d0*T+0.4528d0) + 0.04943d0*sin(0.007262d0*T-0.6642d0)) !Fitted on Otokhin, but is it stable ?
-!         LatticeHeatCapacity=1D3*SiDensity*(2.36d-16*T**5 -1.707d-12*T**4 + 4.619d-09*T**3 -5.912d-06*T**2 + 0.003733d0*T -0.0494d0) ! 5th order polynomial fit on Okhonin
-!         LatticeHeatCapacity=1d3*SiDensity*(0.4135d0*T-0.4071d0*T**1.002d0) !Driel style (1)
-        LatticeHeatCapacity=1d3*SiDensity*(-0.003592d0*T+0.01458d0*T**0.8316d0) !Driel style (2, better ?)
-    end function LatticeHeatCapacity
-
-     
-    function FermiIndex(NeNc)
-      implicit none
-      ! Input: Value of density/DOS
-      ! returns the index to take in the Fermi files
-      real(8) NeNc, NeNc0, dNeNc
-      integer(8) FermiIndex
-      NeNc0=1d-38
-      dNeNc=1.03d0 !NeNc=NeNc0*dNeNc**n
-      
-      FermiIndex=nint(log10(NeNc/NeNc0)/log10(dNeNc)+1d0)
-      if(FermiIndex < 1 .OR. FermiIndex > FermiMaxLines) then
-        write(*,*) "FermiIndex problem: NeNc=", NeNc, "FermiIndex=", FermiIndex
-      end if
-      return
-    end function FermiIndex
 
 end program Flaps
 
