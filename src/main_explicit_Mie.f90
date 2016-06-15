@@ -120,7 +120,6 @@ implicit none
     
     integer(8)         nbiter, i, j, k, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
                 Mp, Np, RunningIndex
-    logical        Diverged
     real(8)         t, t0, dx, dy, x0, y0, dt, dt2, dt3, dt4, h1, h2, h3
     real(8)         Te0, Th0, I0 !initial values of the problem
     real(8)        Ue(1:M, 1:N), & !electron energy
@@ -417,8 +416,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
   tmin=tCenter-5d0*laser%tau
 
-
-  Diverged=.false.
 
   dt=dt0
   dt2=dt0
@@ -2416,7 +2413,7 @@ if(UseMieScattering.eq.1) then
            MaxHeatingTime(i,j)=t
         end if
 
-              if(maxCFLxN < CFLxN(i,j)) then 
+        if(maxCFLxN < CFLxN(i,j)) then
           maxCFLxN=CFLxN(i,j)
         end if
         
@@ -2558,38 +2555,11 @@ if(UseMieScattering.eq.1) then
         HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
         
         LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
-        
-        !TODO: What the f...? I do not understant
-        if(mesh%Te(i,j).ne.mesh%Te(i,j)) then
-          write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
-          Diverged=.true.
-        end if
-        if((mesh%Th(i,j)).ne.mesh%Th(i,j)) then
-          write(95,*) "Divergence of Th at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
-          Diverged=.true.
-        end if
-        if((mesh%Ts(i,j)).ne.mesh%Ts(i,j)) then
-          write(95,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
-          Diverged=.true.
-        end if
-        if((mesh%Ne(i,j)).ne.mesh%Ne(i,j)) then
-          write(95,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
-          Diverged=.true.
-        end if
-        if((mesh%Nh(i,j)).ne.mesh%Nh(i,j)) then
-          write(95,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x(i,j), "y(",i,j,")=",y(i,j)
-          Diverged=.true.
-        end if
 
-        if(maxCFLxT.gt.1d0 .OR. maxCFLyT.gt.1d0) then 
-          write(95,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
-          Diverged=.true.
-        end if
-        if(maxCFLxN.gt.1d0 .OR. maxCFLyN.gt.1d0) then
-          write(95,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
-          Diverged=.true.
-        end if
-        
+
+        call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN,  i, j, x(i,j), y(i,j), t)
+
+
         if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < 1d0) then
           write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
         end if
@@ -2603,10 +2573,7 @@ if(UseMieScattering.eq.1) then
         
         call flush(95)
         
-        if(Diverged .eqv. .true.) then
-          write(*,*) "Divergence detected. Please check error.dat for more information."
-          stop
-        end if
+
 
               ! lets change dt when fast reponse is finished in order to catch the long one. 
 

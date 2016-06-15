@@ -8,6 +8,7 @@
 !> Nicolas Tancogne-Dejean
 !> @date
 !> 01 Jun 2016 - Initial Version
+!> 15 Jun 2016 - Adding the check_divergences routine
 !------------------------------------------------------------------------------
 
 
@@ -120,3 +121,52 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
       !$OMP END DO
 
  end subroutine
+
+ subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, i, j, x, y, t)
+   use Types_m
+   implicit none
+
+   type(MeshValues), intent(IN) :: mesh
+   integer, intent(in)          :: i, j
+   real(8), intent(in)          :: x, y, t, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN
+
+   logical Diverged
+
+   Diverged = .false.
+
+    if(isnan(mesh%Te(i,j))) then
+      write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+      Diverged=.true.
+    end if
+    if(isnan(mesh%Th(i,j))) then
+      write(95,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+      Diverged=.true.
+    end if
+    if(isnan(mesh%Ts(i,j))) then
+      write(95,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+      Diverged=.true.
+    end if
+    if(isnan(mesh%Ne(i,j))) then
+      write(95,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+      Diverged=.true.
+    end if
+    if(isnan(mesh%Nh(i,j))) then
+      write(95,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+      Diverged=.true.
+    end if
+
+    if(maxCFLxT.gt.1d0 .OR. maxCFLyT.gt.1d0) then
+      write(95,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
+      Diverged=.true.
+    end if
+    if(maxCFLxN.gt.1d0 .OR. maxCFLyN.gt.1d0) then
+      write(95,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
+      Diverged=.true.
+    end if
+
+    if(Diverged .eqv. .true.) then
+          write(*,*) "Divergence detected. Please check error.dat for more information."
+          stop
+    end if
+
+ end subroutine check_divergences
