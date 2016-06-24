@@ -1826,25 +1826,35 @@ if(UseMieScattering.eq.1) then
     end do
     !$OMP END DO
 
-
+      !
       ! interpolation bilineaire ponderee par les aires
       call bilinear_interpol_dual(mesh, dual, InvCellVol)
-
-
+      !
+      !
       ! solving the 2D problem
-      
-
-      !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
+      !
+      !
+      !
       if(NeOff.eq.0) then
         call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
-      else
+      else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
         newmesh%Ne(:,:)=mesh%Ne(:,:)
         newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
       end if
+      !
+      if(HolesOff.eq.0 .AND. NeOff.eq.0) then
+        call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+      endif
+      !
+      !
 
       !$OMP DO COLLAPSE(2) !(optimized)
 !       do i=2, M-1
@@ -1852,53 +1862,7 @@ if(UseMieScattering.eq.1) then
 !         do j=2, N-1
         do i=2, M-1 !(optimized)
         
-     
-!
-        if(HolesOff.eq.0 .AND. NeOff.eq.0) then
-                     
-        !TODO: This can be frther optimise
-        newmesh%Nh(i,j) = ( &
-              (GainsH(i,j)-LossesH(i,j))*CellVol(i,j) & 
-              ! drift
-!               -((0.5d0*(JhX(i+1,j)+JhX(i,j))*NormalEx(i,j)+0.5d0*(JhY(i+1,j) & 
-!               +JhY(i,j))*NormalEy(i,j))*CellAreaE(i,j)+(0.5d0*(JhX(i,j)+JhX(i-1,j))*NormalWx(i,j)+0.5d0*(JhY(i,j) &
-!               +JhY(i-1,j))*NormalWy(i,j))*CellAreaW(i,j)+(0.5d0*(JhX(i,j)+JhX(i,j+1))*NormalNx(i,j)+0.5d0*(JhY(i,j) & 
-!               +JhY(i,j+1))*NormalNy(i,j))*CellAreaN(i,j)+(0.5d0*(JhX(i,j)+JhX(i,j-1))*NormalSx(i,j)+0.5d0*(JhY(i,j) & 
-!               +JhY(i,j-1))*NormalSy(i,j))*CellAreaS(i,j)) &
-!               ! diffusion operator on regular mesh
-!               +(0.5d0*(Nh(i+1,j)-Nh(i,j))/(x(i+1,j)**2-2d0*x(i+1,j)*x(i,j)+x(i,j)**2 & 
-!               +y(i+1,j)**2-2d0*y(i+1,j)*y(i,j)+y(i,j)**2)**(0.5d0)*(diffusionH(i+1,j)+diffusionH(i,j))*CellAreaE(i,j) & 
-!               -0.5d0/(x(i,j)**2 & 
-!               -2d0*x(i,j)*x(i-1,j)+x(i-1,j)**2+y(i,j)**2-2d0*y(i,j)*y(i-1,j)+y(i-1,j)**2)**(0.5d0)*(diffusionH(i-1,j) & 
-!               +diffusionH(i,j))*(Nh(i,j)-Nh(i-1,j))*CellAreaW(i,j) &
-!               +0.5d0*(diffusionH(i,j+1)+diffusionH(i,j))*(Nh(i,j+1) & 
-!               -Nh(i,j))*CellAreaN(i,j)/(x(i,j+1)**2-2d0*x(i,j+1)*x(i,j)+x(i,j)**2+y(i,j+1)**2-2d0*y(i,j+1)*y(i,j) & 
-!               +y(i,j)**2)**(0.5d0) & 
-!               -0.5d0*(diffusionH(i,j)+diffusionH(i,j-1))*(Nh(i,j)-Nh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 &
-!               -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) & 
-              ! diffusion on irregular mesh
-              +0.5d0*(& 
-              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(mesh%Nh(i+1,j)-mesh%Nh(i,j)) &
-!               - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i,j+1)-0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) & 
-              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i-1,j)) &
-!               - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(0.25d0*Nh(i,j+1)+0.25d0*Nh(i-1,j+1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(mesh%Nh(i,j+1)-mesh%Nh(i,j)) &
-!               - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i+1,j)-0.25d0*Nh(i-1,j)-0.25d0*Nh(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) & 
-              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i,j-1)) &
-!               - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) & 
-!                   ! Cross-diffusion from [Mathur and Murthy (1997)]
-              + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j)) &
-                    *( dual%Nh(i,j) - dual%Nh(i,j-1) ) &
-              + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j)) &
-                    *( dual%Nh(i-1,j-1) - dual%Nh(i-1,j) ) &
-              + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j)) &
-                    *( dual%Nh(i-1,j) - dual%Nh(i,j) ) &
-              + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) &
-                    *( dual%Nh(i,j-1) - dual%Nh(i-1,j-1) ) &
-              ))*dt*InvCellVol(i,j)+mesh%Nh(i,j)
-!         else
-!           NhNew(i,j)=NeNew(i,j)
-        endif
+
 ! ! !  
                      
 ! form with bug corrected in derivatives and (OmegaX, OmegaY) drift transport included in finite volumes

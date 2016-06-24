@@ -34,5 +34,6 @@ main_explicit_Mie.o: main_explicit_Mie.f90 $(OBJ90)
 mesh.o: mesh.f90 types.o
 mie.o: mie.f90 maths.o
 source.o: source.f90 maths.o types.o
+solver.o: solver.f90 types.o
 grid.o: grid.f90 maths.o
 material.o: material.f90 types.o maths.o 
