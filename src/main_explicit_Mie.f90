@@ -47,8 +47,8 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=11   ,& !number of cells main domain X direction
-                          N=11     ,& !number of cells main domain Y direection
+                          M=21   ,& !number of cells main domain X direction
+                          N=21     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
@@ -240,6 +240,7 @@ implicit none
     INTEGER                           :: nb_vertices, nb_triangles, nb_quadrangles, nb_edges, nb_boundedges
     
     complex(8)         Dielectric(1:M,1:N), &! solid dielectric function under laser illumination
+                sqrtDielectric, & ! For performances
                 DielectricDrudeE(1:M,1:N), & ! Drude part of dielectric function under laser illumination
                 DielectricDrudeH(1:M,1:N), &
                 EintField(1:M,1:N), EintField2(1:M,1:N)        !Ez internal field for Mie scattering theory
@@ -1537,7 +1538,8 @@ if(UseMieScattering.eq.1) then
         ! optical coefficients
         nuColl(i,j)=CollisionFrequency() !TODO: Move out of temporal loop
         nuColleph(i,j)=ephCollisionFrequency(mesh%Ne(i,j))
-        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl(i,j), me, laser)
+        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl(i,j), me, laser) !TODO: Do you need to store this for all mesh point, or is the treatment local?
+        sqrtDielectric = sqrt(Dielectric(i,j));
         DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl(i,j),me, laser)
         DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl(i,j),mh, laser)
 
@@ -1573,14 +1575,14 @@ if(UseMieScattering.eq.1) then
         end if
         
 !         write(*,*) "iter=", nbiter, "absorption=", absorptionDrudeE(i,j), absorptionDrudeH(i,j)
-        reflectivity(i,j)=(real(sqrt(Dielectric(i,j)))**2+aimag(sqrt(Dielectric(i,j)))**2-2d0*real(sqrt(Dielectric(i,j)))+1d0) &
-                            /(real(sqrt(Dielectric(i,j)))**2+aimag(sqrt(Dielectric(i,j)))**2+2d0*real(sqrt(Dielectric(i,j))+1d0))
+        reflectivity(i,j)=  ( real(sqrtDielectric)**2 +aimag(sqrtDielectric)**2 -2d0*real(sqrtDielectric)+1d0 ) &
+                            /(real(sqrtDielectric)**2+aimag(sqrtDielectric)**2+2d0*real(sqrtDielectric+1d0))
         !local intensity
         if(UseMieScattering .eq. -1) then
   !         ! DEBUG ZONE
   ! !         if(laser%lambda.eq.343d-9) then
   !         ! uniform distribution like in Elena's paper
-          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*real(sqrt(Dielectric(i,j)))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
+          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*real(sqrtDielectric)*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
   !         intensity(i,j)=I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-0.5d0*(((y(i,j)-500d-9)/sigmaY)**2+(x(i,j)/sigmaX)**2))
   !         ! with just nothing
   ! !           intensity(i,j)=(1d0-reflectivity(i,j))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
@@ -1677,7 +1679,7 @@ if(UseMieScattering.eq.1) then
           ! debug formula for constant cone radius
 !           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
 !           EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real
-          intensity(i,j)=I0 * real(sqrt(Dielectric(i,j))) * EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser laser%fluence and reflectivity is inside the field
+          intensity(i,j)=I0 * real(sqrtDielectric) * EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser laser%fluence and reflectivity is inside the field
         else 
           write(*,*) "Input ERROR. Check the MieScattering parameter."
           stop
@@ -1719,7 +1721,8 @@ if(UseMieScattering.eq.1) then
                     +TwoPhotonIonizationRate0*Int2/(2d0*hbar*laser%omega) &
                     +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
                     
-        LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
+        !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
+        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
         LossesH(i,j)=LossesE(i,j)
 
         
