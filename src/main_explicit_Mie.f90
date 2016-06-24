@@ -47,8 +47,8 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=21   ,& !number of cells main domain X direction
-                          N=21     ,& !number of cells main domain Y direection
+                          M=11   ,& !number of cells main domain X direction
+                          N=11     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
@@ -1725,7 +1725,8 @@ if(UseMieScattering.eq.1) then
         LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
         LossesH(i,j)=LossesE(i,j)
 
-        
+
+        if(ConductivityFix.eq.0) then
         ! thermal coefficients
         kappae(i,j)=kb2*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)/ec*(6d0*FermiTableE(ColFermi2,FermiIndexE(i,j)) &
                 /FermiTableE(ColFermi0,FermiIndexE(i,j)) &
@@ -1734,12 +1735,10 @@ if(UseMieScattering.eq.1) then
                 /FermiTableH(ColFermi0,FermiIndexH(i,j)) &
                 -4d0*(FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
 !         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K
-        kappas(i,j)=(-8.992d0+68.265d0/(1d0+exp(-.4075612391d-1*mesh%Ts(i,j)+2.315984470d0))*(1d0-1d0/ &
-                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0)))) !Elena fit sur Kazan (2010) !TODO: More explicit reference
-        if(kappas(i,j).lt.0d0) then
-          kappas(i,j)=0d0
-        end if
-        
+        kappas(i,j)=max(0.d0, &
+                    (-8.992d0+68.265d0/(1d0+exp(-.4075612391d-1*mesh%Ts(i,j)+2.315984470d0))*(1d0-1d0/ &
+                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0))))) !Elena fit sur Kazan (2010) !TODO: More explicit reference
+
 !        ! correction considering Fick diffusion in energy
 !         if(ConductivityFix.eq.1) then 
 !             kappae(i,j)=kappae(i,j) + kb2*Te(i,j)*Ne(i,j)*mobilityE(i,j) / ec &
@@ -1757,9 +1756,7 @@ if(UseMieScattering.eq.1) then
 !                         /FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) - 1.5d0) * & 
 !                         (FermiTableH(ColFermi0, FermiIndexH(i,j))*ec*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))**(-1.)
 !                         
-!         else if(ConductivityFix.eq.-1) then
-
-        if(ConductivityFix.eq.-1) then
+        else if(ConductivityFix.eq.-1) then
            kappae(i,j)=0d0
            kappah(i,j)=0d0
            kappas(i,j)=0d0
@@ -1776,16 +1773,18 @@ if(UseMieScattering.eq.1) then
 !         Ce(i,j)=Ch(i,j) ! DEBUG test
         
         CouplingE(i,j)=Ce(i,j)*nuColleph(i,j)*(mesh%Te(i,j)-mesh%Ts(i,j))
-        CouplingH(i,j)=Ch(i,j)*nuColleph(i,j)*(mesh%Th(i,j)-mesh%Ts(i,j))
+        if(HolesOff.eq.0) then
+          CouplingH(i,j)=Ch(i,j)*nuColleph(i,j)*(mesh%Th(i,j)-mesh%Ts(i,j))
+        else
+          CouplingH(i,j)=0d0
+        end if
 
         if(CouplingDebug.eq.1) then
           CouplingE(i,j)=0d0
           CouplingH(i,j)=0d0
         end if
 
-        if(HolesOff.eq.1) then
-          CouplingH(i,j)=0d0
-        end if
+
 ! 
 !         diffNe(i,j)=0d0 !just for debug !
 !         diffNh(i,j)=0d0 !just for debug !!

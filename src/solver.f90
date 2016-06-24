@@ -95,6 +95,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
 
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeNe
 
@@ -171,6 +172,7 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
               )
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeNh
 
@@ -221,6 +223,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
                     *( dual%Te(i,j-1) - dual%Te(i-1,j-1) ) ) !source
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeTe
 
@@ -272,6 +275,7 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
 
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeTh
 
@@ -409,6 +413,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeTs
 
@@ -503,6 +508,7 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
 
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeUe
 
@@ -592,6 +598,7 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                   *dt*InvCellVol(i,j)
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeUh
 
@@ -643,6 +650,7 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
 
     end do
   end do
+  !$OMP END DO
 
 end subroutine computeUh_alt
 
