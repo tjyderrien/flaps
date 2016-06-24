@@ -1856,6 +1856,16 @@ if(UseMieScattering.eq.1) then
       !
       !
 
+      if(TeOff.ne.1) then
+        if(ConvectionEnergy.eq.0) then
+          call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce,&
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+         endif
+      endif
+
       !$OMP DO COLLAPSE(2) !(optimized)
 !       do i=2, M-1
         do j=2, N-1 !(optimized)
@@ -1868,28 +1878,7 @@ if(UseMieScattering.eq.1) then
 ! form with bug corrected in derivatives and (OmegaX, OmegaY) drift transport included in finite volumes
 !     if(ConductivityFix < 2) then
         if(TeOff.ne.1) then 
-          if(ConvectionEnergy.eq.0) then
-
-          !TODO: This can be further optimise
-          newmesh%Te(i,j) = &
-                  0.5d0*(&
-                  + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
-                  - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i-1,j)) &
-                  + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i,j+1)-mesh%Te(i,j)) &
-                  - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i,j-1)) &
-                  + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j)) &
-                        *( dual%Te(i,j) - dual%Te(i,j-1) ) &
-                  + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j)) &
-                        *( dual%Te(i-1,j-1) - dual%Te(i-1,j) ) &
-                  + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j)) &
-                        *( dual%Te(i-1,j) - dual%Te(i,j) ) &
-                  + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j)) &
-                        *( dual%Te(i,j-1) - dual%Te(i-1,j-1) ) &
-                  +2.0d0*(-CouplingE(i,j)+SourceE(i,j))*CellVol(i,j)) & !source
-                /Ce(i,j) * dt * InvCellVol(i,j) &
-                +mesh%Te(i,j)
-
-            else !convective term included!
+          if(ConvectionEnergy.eq.1) then !convective term included!
             
                 UeNew(i,j) = ((SourceUe(i,j)-CouplingE(i,j))*CellVol(i,j) & 
                 ! convective term for transport of the energy by the field

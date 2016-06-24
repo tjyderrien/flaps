@@ -173,3 +173,54 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
   end do
 
 end subroutine computeNh
+
+
+
+! This routine computes the electronic temperature for the entire mesh
+! We assume that we are in a OMP parallel environement
+subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce,&
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+  use Types_m
+  implicit none
+
+  type(MeshValues),                   intent(inout) :: newmesh
+  type(MeshValues),                   intent(in)    :: mesh, dual
+  real(8),                            intent(in)    :: dt
+  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, kappae, CouplingE, SourceE, Ce, &
+                                                    NormalW2, NormalE2, NormalN2, NormalS2, &
+                                                    ShapeFactorNormalE, ShapeFactorNormalW, &
+                                                    ShapeFactorNormalS, ShapeFactorNormalN, &
+                                                    ShapeFactorTangentE, ShapeFactorTangentW, &
+                                                    ShapeFactorTangentS, ShapeFactorTangentN
+
+  integer :: i, j
+
+  !$OMP DO COLLAPSE(2)
+  do j=2, mesh%N-1 !(optimized)
+    do i=2, mesh%M-1
+!       do i=2, M-1
+!         do j=2, N-1
+
+      !TODO: This can be further optimise
+      newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))/ Ce(i,j) !TODO: Do we need Ce or can we compute only its inverse?
+      newmesh%Te(i,j) = newmesh%Te(i,j) + 0.5d0 / Ce(i,j) * dt * InvCellVol(i,j)*( &
+              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
+              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i-1,j)) &
+              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i,j+1)-mesh%Te(i,j)) &
+              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i,j-1)) &
+              + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j)) &
+                    *( dual%Te(i,j) - dual%Te(i,j-1) ) &
+              + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j)) &
+                    *( dual%Te(i-1,j-1) - dual%Te(i-1,j) ) &
+              + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j)) &
+                    *( dual%Te(i-1,j) - dual%Te(i,j) ) &
+              + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j)) &
+                    *( dual%Te(i,j-1) - dual%Te(i-1,j-1) ) ) !source
+    end do
+  end do
+
+end subroutine computeTe
+
