@@ -1836,7 +1836,7 @@ if(UseMieScattering.eq.1) then
 
       !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
       if(NeOff.eq.0) then
-        call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, CellVol, diffusionE, &
+        call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &

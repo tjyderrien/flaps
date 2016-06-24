@@ -13,7 +13,8 @@
 
 
 ! This routine computes the electronic density for the entire mesh
-subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, CellVol, diffusionE, &
+! We assume that we are in a OMP parallel environement
+subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
@@ -24,7 +25,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, Cell
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%n), intent(in) :: CellVol, InvCellVol, GainsE, LossesE, diffusionE, &
+  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, GainsE, LossesE, diffusionE, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -41,11 +42,9 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, Cell
 !         do j=2, N-1
 
      ! diffusion is separated from drift
-     newmesh%Ne(i,j) = mesh%Ne(i,j) + dt*InvCellVol(i,j)*(&
-          ( GainsE(i,j)-LossesE(i,j) )*CellVol(i,j)& !TODO: Why do I have CellVol*InvCellVol ?
-              !
-              +0.5d0*( &
-              + ShapeFactorNormalE(i,j) &
+     newmesh%Ne(i,j) = mesh%Ne(i,j) + dt*( GainsE(i,j)-LossesE(i,j) )
+     newmesh%Ne(i,j) = newmesh%Ne(i,j) + 0.5d0*dt*InvCellVol(i,j)*( &
+               ShapeFactorNormalE(i,j) &
               * ( &
                  ! direct diffusion operator over irregular mesh
                  ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1,j)-mesh%Ne(i,j) )* NormalE2(i,j) &
@@ -76,8 +75,9 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, Cell
                   -( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(i,j)-mesh%Ne(i,j-1) )* NormalS2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentS(i,j) &
-                  *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i,j-1) - dual%Ne(i-1,j-1) ) &
-                                                                                                     ) ))
+                  *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i,j-1) - dual%Ne(i-1,j-1) ) ) )
+
+
             ! convection
 !               -((0.5d0*(JeX(i+1,j)+JeX(i,j))*NormalEx(i,j)+0.5d0*(JeY(i+1,j) &
 !               +JeY(i,j))*NormalEy(i,j))*CellAreaE(i,j)+(0.5d0*(JeX(i,j)+JeX(i-1,j))*NormalWx(i,j)+0.5d0*(JeY(i,j) &
