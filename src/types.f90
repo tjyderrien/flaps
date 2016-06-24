@@ -37,6 +37,7 @@ module Types_m
      real(8) :: yCenter   !> Y position of the max of the intensity
      real(8) :: omega     !> Laser frequency
      real(8) :: k
+     real(8) :: inv_omega
    end type LaserParams
 
 end module Types_m

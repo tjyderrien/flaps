@@ -81,8 +81,8 @@
 
       real(8) omegape
 
-      omegape=sqrt(ne*ec**2/me/epsilon0)
-      DielectricFunction=epsilonInf-(omegape/laser%omega)**2/(M_ONE+M_IM*nuColl/laser%omega)
+      omegape=ec*sqrt(ne/me/epsilon0)
+      DielectricFunction=epsilonInf-(omegape*laser%inv_omega)**2/(M_ONE+M_IM*nuColl*laser%inv_omega)
       return
     end function DielectricFunction
 
@@ -97,8 +97,8 @@
 
       real(8) omegape
 
-      omegape=sqrt(density*ec**2/(mass*epsilon0))
-      DielectricFunctionDrude=M_ONE-M_ONE*(omegape/laser%omega)**2/(M_ONE+M_IM*Collision/laser%omega)
+      omegape=ec*sqrt(density/(mass*epsilon0))
+      DielectricFunctionDrude=M_ONE-M_ONE*(omegape*laser%inv_omega)**2/(M_ONE+M_IM*Collision*laser%inv_omega)
       return
     end function DielectricFunctionDrude
 
