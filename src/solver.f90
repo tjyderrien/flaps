@@ -458,3 +458,54 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
 
 end subroutine computeUh
 
+
+! This routine computes Ue for the entire mesh
+! We assume that we are in a OMP parallel environement
+subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
+                      Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
+                      CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
+                      CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
+  use Types_m
+  implicit none
+
+
+  type(MeshValues),                   intent(in)    :: mesh
+  real(8), dimension(mesh%M, mesh%N), intent(inout) :: UhNew
+  real(8),                            intent(in)    :: dt
+  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, CellVol, kappah, CouplingH, SourceUh, &
+                                                    Ch, Uh, VhX, VhY, x, y, &
+                                                    CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
+                                                    CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy
+
+  integer :: i, j
+
+  !$OMP DO COLLAPSE(2)
+  do j=2, mesh%N-1 !(optimized)
+    do i=2, mesh%M-1
+!       do i=2, M-1
+!         do j=2, N-1
+
+     !TODO: This must be optmised !
+        UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-0.5d0*( &
+               ((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) &
+              +((VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) &
+              +((VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
+              +((VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
+              + ( ((kappah(i+1,j)+kappah(i,j))/(Ch(i+1,j)+Ch(i,j))) * (Uh(i+1,j)-Uh(i,j)) &
+              /(x(i+1,j)**2-2d0*x(i+1,j)*x(i,j)+x(i,j)**2 + y(i+1,j)**2-2d0*y(i+1,j)*y(i,j)+y(i,j)**2)**(0.5d0) &
+              *CellAreaE(i,j) &
+              - ((kappah(i-1,j)+kappah(i,j))/(Ch(i-1,j)+Ch(i,j))) * (Uh(i,j)-Uh(i-1,j)) &
+              /(x(i,j)**2-2d0*x(i,j)*x(i-1,j)+x(i-1,j)**2+y(i,j)**2-2d0*y(i,j)*y(i-1,j) + y(i-1,j)**2)**(0.5d0) &
+              *CellAreaW(i,j) &
+              + ((kappah(i,j+1)+kappah(i,j))/(Ch(i,j+1)+Ch(i,j)))*(Uh(i,j+1)-Uh(i,j)) &
+              /(x(i,j+1)**2-2d0*x(i,j+1)*x(i,j) + x(i,j)**2+y(i,j+1)**2-2d0*y(i,j+1)*y(i,j)+y(i,j)**2)**(0.5d0) &
+              *CellAreaN(i,j) &
+              -1d0*((kappah(i,j)+kappah(i,j-1))/(Ch(i,j)+Ch(i,j-1)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 &
+              -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
+              )*dt*InvCellVol(i,j)+Uh(i,j)
+
+    end do
+  end do
+
+end subroutine computeUh_alt
+

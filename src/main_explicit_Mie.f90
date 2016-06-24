@@ -1898,6 +1898,13 @@ if(UseMieScattering.eq.1) then
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
             !
+          else
+            !
+            call computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
+                      Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
+                      CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
+                      CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
+            !
           endif
           !
         endif
@@ -1910,43 +1917,7 @@ if(UseMieScattering.eq.1) then
         do j=2, N-1 !(optimized)
 !         do j=2, N-1
         do i=2, M-1 !(optimized)
-        
 
-! ! !  
-
-        if(TeOff.ne.1) then 
-
-  !  scheme ready for enhanced conductivity and drift of vector (OmegaX, OmegaY). 
-  !         if(ConductivityFix < 2) then
-        if(HolesOff.eq.0) then
-            if(ConvectionEnergy.eq.0) then 
-
-            else !convection scheme
-
-            !TODO: This must be optmised !
-            UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-0.5d0*( & 
-                   ((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) & 
-                  +((VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) & 
-                  +((VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
-                  +((VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
-                  + ( ((kappah(i+1,j)+kappah(i,j))/(Ch(i+1,j)+Ch(i,j))) * (Uh(i+1,j)-Uh(i,j)) & 
-                  /(x(i+1,j)**2-2d0*x(i+1,j)*x(i,j)+x(i,j)**2 + y(i+1,j)**2-2d0*y(i+1,j)*y(i,j)+y(i,j)**2)**(0.5d0) &
-                  *CellAreaE(i,j) &
-                  - ((kappah(i-1,j)+kappah(i,j))/(Ch(i-1,j)+Ch(i,j))) * (Uh(i,j)-Uh(i-1,j)) &
-                  /(x(i,j)**2-2d0*x(i,j)*x(i-1,j)+x(i-1,j)**2+y(i,j)**2-2d0*y(i,j)*y(i-1,j) + y(i-1,j)**2)**(0.5d0) &
-                  *CellAreaW(i,j) & 
-                  + ((kappah(i,j+1)+kappah(i,j))/(Ch(i,j+1)+Ch(i,j)))*(Uh(i,j+1)-Uh(i,j)) & 
-                  /(x(i,j+1)**2-2d0*x(i,j+1)*x(i,j) + x(i,j)**2+y(i,j+1)**2-2d0*y(i,j+1)*y(i,j)+y(i,j)**2)**(0.5d0) & 
-                  *CellAreaN(i,j) &
-                  -1d0*((kappah(i,j)+kappah(i,j-1))/(Ch(i,j)+Ch(i,j-1)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 & 
-                  -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
-                  )*dt*InvCellVol(i,j)+Uh(i,j)
-        end if
-        
-!       else
-!         ThNew(i,j)=TeNew(i,j)
-      end if !hole control
-    end if !Te/Th control
 
     if(TsOff.ne.1) then
       ! version with cross-diffusion
