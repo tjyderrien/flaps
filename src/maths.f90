@@ -36,7 +36,9 @@ module Maths_m
   real(8), public, parameter    :: me0      = 9.10938188d-31          !> electron mass
   real(8), public, parameter    :: c        = 2.99792458d8            !> speed of light
   real(8), public, parameter    :: kb       = 1.3806488d-23           !> Boltzmann constant
+
   real(8), public, parameter    :: kb2      = kb*kb
+  real(8), public, parameter    :: inv_hbar = 1.0d0/hbar
 
 end module Maths_m
 
