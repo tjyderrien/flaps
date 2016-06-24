@@ -187,6 +187,8 @@
 
     end subroutine DielectricFunctionDrude_batch
 
+
+    !TODO: Create a batch version of this routine
     real(8) function ephCollisionFrequency(ne)
       implicit none
 
@@ -201,6 +203,8 @@
       return
     end function ephCollisionFrequency
 
+
+    !TODO: Create a batch version of this routine
     real(8) function CollisionFrequency()
       implicit none
 
@@ -208,6 +212,7 @@
       return
     end function CollisionFrequency
 
+    !TODO: Create a batch version of this routine
     real(8) function ImpactIonizationRate(Te, Ne, Ts, ImpactOff)
       use Maths_m
       implicit none
@@ -256,6 +261,7 @@
       return
     end function TwoPhotonIonizationRate
 
+    !TODO: Create a batch version of this routine
     real(8) function EgapValue(Ne, Ts)
       use Maths_m
 
@@ -276,6 +282,7 @@
       return
     end function EgapValue
 
+    !TODO: Create a batch version of this routine
     real(8) function LatticeHeatCapacity(T, SiDensity)
       implicit none
       real(8) T, SiDensity
@@ -289,6 +296,7 @@
         LatticeHeatCapacity=1d3*SiDensity*(-0.003592d0*T+0.01458d0*T**0.8316d0) !Driel style (2, better ?)
     end function LatticeHeatCapacity
 
+    !TODO: Create a batch version of this routine
     integer(8) function FermiIndex(NeNc, FermiMaxLines)
       implicit none
       ! Input: Value of density/DOS

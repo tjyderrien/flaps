@@ -1669,7 +1669,7 @@ if(UseMieScattering.eq.1) then
           if(laser%lambda.eq.343d-9) then
             intensity(i,j)= (1d0-0e0*reflectivity(i,N))* & 
                             I0*exp(-.5d0*((t-t0)/sigmaTau)**2) & 
-                            *( &
+                            *( & !TODO: Use OnePhotonIonizationRate0 here
                             exp(-(OnePhotonIonizationRate()+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
                             *abs(y(i,j)-y(i,N)) & !introduce discontinuity !
                             ) & 
