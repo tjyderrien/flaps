@@ -79,10 +79,10 @@
       real(8), intent(in) ::  ne, nuColl, me
       type(LaserParams), intent(in) :: laser
 
-      real(8) omegape
+      real(8) omegape2
 
-      omegape=ec*sqrt(ne/me/epsilon0)
-      DielectricFunction=epsilonInf-(omegape*laser%inv_omega)**2/(M_ONE+M_IM*nuColl*laser%inv_omega)
+      omegape2=ec*ec*ne/me/epsilon0
+      DielectricFunction=epsilonInf-omegape2*laser%inv_omega*laser%inv_omega/(M_ONE+M_IM*nuColl*laser%inv_omega)
       return
     end function DielectricFunction
 
@@ -95,10 +95,10 @@
       real(8), intent(in)           :: density, Collision, mass
       type(LaserParams), intent(in) :: laser
 
-      real(8) omegape
+      real(8) omegape2
 
-      omegape=ec*sqrt(density/(mass*epsilon0))
-      DielectricFunctionDrude=M_ONE-M_ONE*(omegape*laser%inv_omega)**2/(M_ONE+M_IM*Collision*laser%inv_omega)
+      omegape2=ec*ec*density/(mass*epsilon0)
+      DielectricFunctionDrude=M_ONE-M_ONE*omegape2*laser%inv_omega*laser%inv_omega/(M_ONE+M_IM*Collision*laser%inv_omega)
       return
     end function DielectricFunctionDrude
 

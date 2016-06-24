@@ -30,5 +30,7 @@ subroutine init_laser( laser )
   laser%omega     = 2d0*Pi*c/laser%lambda !laser pulsation (s**-1)
   laser%k         = 2d0*pi/laser%lambda
   laser%inv_omega = 1.0d0/laser%omega
+  laser%E         = hbar*laser%omega
+  laser%inv_E     = 1.0d0/laser%E
 
 end subroutine init_laser

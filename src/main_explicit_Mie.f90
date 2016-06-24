@@ -47,8 +47,8 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=11   ,& !number of cells main domain X direction
-                          N=11     ,& !number of cells main domain Y direection
+                          M=31   ,& !number of cells main domain X direction
+                          N=31     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
@@ -57,12 +57,12 @@ implicit none
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
                           MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
                           FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
-                          SORiterations=1        ,&        !iteration number for over-relaxation method
-                          InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
-                          UseInterpolation=0        ,&
-                          AdaptativeTimeStep=1, &
-                          SolveImplicit=1, &        ! 0: use explicit schemes, 1: use implicit scheme (band diagonal matrixes)
-                          numberOfNeighbours=4
+                          AdaptativeTimeStep=1
+       !                   SORiterations=1        ,&        !iteration number for over-relaxation method
+       !                   InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
+       !                   UseInterpolation=0        ,&
+       !                   SolveImplicit=1, &        ! 0: use explicit schemes, 1: use implicit scheme (band diagonal matrixes)
+       !                   numberOfNeighbours=4
                           
                           
         
@@ -124,7 +124,9 @@ implicit none
     real(8)         Te0, Th0, I0 !initial values of the problem
 
     real(8)     nuColl, &!        total collision frequency
-                nuColleph !        electron-phonon collision frequency
+                nuColleph,& !        electron-phonon collision frequency
+                etae, etah, &        ! reduced chemical Fermi potential
+                work
 
     real(8)        Ue(1:M, 1:N), & !electron energy
                 Uh(1:M, 1:N), & !hole energy
@@ -149,7 +151,6 @@ implicit none
                 CsPrev(1:M, 1:N), CsPrev2(1:M, 1:N), &
                 CouplingE(1:M, 1:N), CouplingH(1:M, 1:N), &
                 mobilityE(1:M, 1:N), mobilityH(1:M, 1:N), & 
-                etae(1:M,1:N), etah(1:M,1:N), &        ! reduced chemical Fermi potential
                 Egap(1:M, 1:N), &                        ! local gap value
                 SourceE(1:M, 1:N), SourceH(1:M, 1:N), & ! heating sources
                 SourceUe(1:M, 1:N), SourceUh(1:M, 1:N), & ! free carrier thermal energy sources
@@ -1068,19 +1069,19 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
-        etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j))
-        etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
+        etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
+        etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
 
         ! calculate semi-classical heat capacity
         CeOld(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
-                  -etae(i,j)*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) & 
+                  -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
                   (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) & 
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))))
         ChOld(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
-                  -etah(i,j)*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) & 
+                  -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) & 
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
@@ -1486,7 +1487,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
    !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
-   !$OMP& mobilityE, mobilityH, etae, etah, Egap, &
+   !$OMP& mobilityE, mobilityH, Egap, &
    !$OMP& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
    !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
    !$OMP& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
@@ -1555,11 +1556,11 @@ if(UseMieScattering.eq.1) then
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
-        etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j)) 
-        etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
+        etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
+        etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
 !         write(*,*) "iter=", nbiter, "NeNc=", Ne(i,j)/DOSe(i,j), Nh(i,j)/DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "FermiIndex=", FermiIndex(Ne(i,j)/DOSe(i,j), FermiMaxLines), FermiIndex(Nh(i,j)/DOSh(i,j), FermiMaxLines)
-!         write(*,*) "iter=", nbiter, "eta=", etae(i,j), etah(i,j)
+!         write(*,*) "iter=", nbiter, "eta=", etae, etah
 !         write(*,*) "FermiTables: etaE,etaH=", FermiTableE(3,463), FermiTableH(3,450)
 
         mobilityE(i,j)=(ec/(me*nuColl))*FermiTableE(ColFermi0, FermiIndexE(i,j))/FermiTableE(ColFermiHalf, FermiIndexE(i,j))
@@ -1715,12 +1716,12 @@ if(UseMieScattering.eq.1) then
         endif
 
         Int2 = intensity(i,j)**2
-        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*inv_hbar*laser%inv_omega &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*inv_hbar*laser%inv_omega &
+        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
                     +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
                     
-        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*inv_hbar*laser%inv_omega &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*inv_hbar*laser%inv_omega &
+        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
                     +ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
                     
 
@@ -1746,9 +1747,9 @@ if(UseMieScattering.eq.1) then
 !        ! correction considering Fick diffusion in energy
 !         if(ConductivityFix.eq.1) then 
 !             kappae(i,j)=kappae(i,j) + kb2*Te(i,j)*Ne(i,j)*mobilityE(i,j) / ec &
-!                       * (etae(i,j) - 2d0*FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) )**2 
+!                       * (etae - 2d0*FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) )**2
 !             kappah(i,j)=kappah(i,j) + kb2*Th(i,j)*Nh(i,j)*mobilityH(i,j) / ec &
-!                       * (etah(i,j) - 2d0*FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) )**2 
+!                       * (etah - 2d0*FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) )**2
 !         else if(ConductivityFix.eq.2) then 
 !             kappae(i,j)=kappae(i,j) + 2d0*kb2*Te(i,j)*FermiTableE(ColFermi1,FermiIndexE(i,j))*mobilityE(i,j)*FermiTableE(ColFermiHalf, FermiIndexE(i,j))*Ne(i,j) * &
 !                         (2d0*FermiTableE(ColFermi1, FermiIndexE(i,j))*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) & 
@@ -1766,12 +1767,12 @@ if(UseMieScattering.eq.1) then
            kappas(i,j)=0d0
         end if
         
-        Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
-                  -etae(i,j)*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
-                  (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))))
-        Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
-                  -etah(i,j)*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
-                  (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))))
+        Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
+                      -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
+                                      (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
+        Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
+                      -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
+                                      (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
         Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j), SiDensity)
 
 !         Ce(i,j)=Ch(i,j) ! DEBUG test
@@ -1793,8 +1794,8 @@ if(UseMieScattering.eq.1) then
 !         diffNe(i,j)=0d0 !just for debug !
 !         diffNh(i,j)=0d0 !just for debug !!
 !         
-        SourceE(i,j)= (hbar*laser%omega-Egap(i,j))*inv_hbar*laser%inv_omega*((me)/(me+mh))*OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*hbar*laser%omega - Egap(i,j))*inv_hbar*laser%inv_omega* ((me)/(me+mh)) * TwoPhotonIonizationRate0*Int2 &
+        SourceE(i,j)= ((laser%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*laser%inv_E*((me)/(me+mh))&
                      - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
@@ -1804,8 +1805,8 @@ if(UseMieScattering.eq.1) then
 !         SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
         SourceE(i,j) = SourceE(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
 
-        SourceH(i,j)=(hbar*laser%omega-Egap(i,j))*inv_hbar*laser%inv_omega * ((me)/(me+mh)) * OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*hbar*laser%omega - Egap(i,j))*inv_hbar*laser%inv_omega* ((me)/(me+mh)) *TwoPhotonIonizationRate0*Int2 &
+        SourceH(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
                      - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
@@ -1963,9 +1964,12 @@ if(UseMieScattering.eq.1) then
         
         
     ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
-    LaserEnergy(i,j)=OnePhotonIonizationRate0*intensity(i,j)/(1d0-reflectivity(i,j))+ & !energy loss by interband absorption
-               TwoPhotonIonizationRate0*intensity(i,j)**2/(1d0-reflectivity(i,j))**2+ & !energy loss by two photon absorption
-              (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*intensity(i,j)/(1d0-reflectivity(i,j)) !energy loss by carrrier heating
+
+
+    work = intensity(i,j)/(1d0-reflectivity(i,j))
+    LaserEnergy(i,j) = OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
+                     + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
+             + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
         
       end do
     end do

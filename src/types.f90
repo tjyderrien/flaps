@@ -38,6 +38,7 @@ module Types_m
      real(8) :: omega     !> Laser frequency
      real(8) :: k
      real(8) :: inv_omega
+     real(8) :: E, inv_E  !> Laser Photon energy, and its inverse
    end type LaserParams
 
 end module Types_m
