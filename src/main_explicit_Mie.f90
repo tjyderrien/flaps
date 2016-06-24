@@ -1833,6 +1833,19 @@ if(UseMieScattering.eq.1) then
 
       ! solving the 2D problem
       
+
+      !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
+      if(NeOff.eq.0) then
+        call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, CellVol, diffusionE, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+      else
+        newmesh%Ne(:,:)=mesh%Ne(:,:)
+        newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
+      end if
+
       !$OMP DO COLLAPSE(2) !(optimized)
 !       do i=2, M-1
         do j=2, N-1 !(optimized)
@@ -1840,82 +1853,7 @@ if(UseMieScattering.eq.1) then
         do i=2, M-1 !(optimized)
         
      
-!          ! diffusion is separated from drift
-         newmesh%Ne(i,j) = mesh%Ne(i,j) + dt*InvCellVol(i,j)*(&
-              ( GainsE(i,j)-LossesE(i,j) )*CellVol(i,j)& 
-                  !         
-                  +0.5d0*( &
-                  + ShapeFactorNormalE(i,j) &
-                  * ( &
-                     ! direct diffusion operator over irregular mesh
-                     ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1,j)-mesh%Ne(i,j) )* NormalE2(i,j) &
-                     ! Cross-diffusion from [Mathur and Murthy (1997)]
-                     !TODO: put proper ref here
-                     + ShapeFactorTangentE(i,j) &
-                     *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i,j) - dual%Ne(i,j-1))  &
-                                                                                                        ) &
-                  + ShapeFactorNormalW(i,j) &
-                    *( &
-                       ! direct diffusion operator over irregular mesh
-                      -( diffusionE(i-1,j)+diffusionE(i,j) )*( mesh%Ne(i,j)-mesh%Ne(i-1,j) )* NormalW2(i,j)  &
-                       ! Cross-diffusion from [Mathur and Murthy (1997)]
-                      +ShapeFactorTangentW(i,j) &
-                      *(diffusionE(i-1,j)+diffusionE(i,j))*( dual%Ne(i-1,j-1) - dual%Ne(i-1,j) ) &
-                                                                                                             ) &     
-                  + ShapeFactorNormalN(i,j) &
-                    *( &
-                       ! direct diffusion operator over irregular mesh
-                      +( diffusionE(i,j+1)+diffusionE(i,j) )*( mesh%Ne(i,j+1)-mesh%Ne(i,j) )* NormalN2(i,j)  &
-                       ! Cross-diffusion from [Mathur and Murthy (1997)]
-                      +ShapeFactorTangentN(i,j) &
-                      *(diffusionE(i,j+1)+diffusionE(i,j))*( dual%Ne(i-1,j) - dual%Ne(i,j) ) &
-                                                                                                         ) &     
-                  + ShapeFactorNormalS(i,j) &
-                    *( &
-                       ! direct diffusion operator over irregular mesh
-                      -( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(i,j)-mesh%Ne(i,j-1) )* NormalS2(i,j)  &
-                       ! Cross-diffusion from [Mathur and Murthy (1997)]
-                      +ShapeFactorTangentS(i,j) &
-                      *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i,j-1) - dual%Ne(i-1,j-1) ) &
-                                                                                                         ) ))
-            !      +  CrossCoeff*( CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j) ) &
-            !        *( diffusionE(i,j)+diffusionE(i+1,j) )*( NeDual(i,j) - NeDual(i,j-1) )/DistDualE(i,j)&
-            !        * CellAreaE(i,j)/( CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j) ) & 
-                      ! Cross-diffusion from [Mathur and Murthy (1997)]
-            !      +  CrossCoeff*( CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j) )*CellAreaW(i,j) &
-            !        *(diffusionE(i-1,j)+diffusionE(i,j))*( NeDual(i-1,j-1) - NeDual(i-1,j) ) &
-            !        /( (CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j) )*DistDualW(i,j)) &
-                      ! Cross-diffusion from [Mathur and Murthy (1997)]
-            !      +  CrossCoeff*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j) &
-            !        *(diffusionE(i,j+1)+diffusionE(i,j))*( NeDual(i-1,j) - NeDual(i,j) ) &
-            !        /( (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))*DistDualN(i,j) ) &
-                     ! Cross-diffusion from [Mathur and Murthy (1997)]
-            !      +  CrossCoeff*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j) &
-            !        *(diffusionE(i,j-1)+diffusionE(i,j))*( NeDual(i,j-1) - NeDual(i-1,j-1) ) &
-            !        /( (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))*DistDualS(i,j) ) & 
-            !       &
-            !
-            !
-                ! convection
-!               -((0.5d0*(JeX(i+1,j)+JeX(i,j))*NormalEx(i,j)+0.5d0*(JeY(i+1,j) & 
-!               +JeY(i,j))*NormalEy(i,j))*CellAreaE(i,j)+(0.5d0*(JeX(i,j)+JeX(i-1,j))*NormalWx(i,j)+0.5d0*(JeY(i,j) &
-!               +JeY(i-1,j))*NormalWy(i,j))*CellAreaW(i,j)+(0.5d0*(JeX(i,j)+JeX(i,j+1))*NormalNx(i,j)+0.5d0*(JeY(i,j) & 
-!               +JeY(i,j+1))*NormalNy(i,j))*CellAreaN(i,j)+(0.5d0*(JeX(i,j)+JeX(i,j-1))*NormalSx(i,j)+0.5d0*(JeY(i,j) & 
-!               +JeY(i,j-1))*NormalSy(i,j))*CellAreaS(i,j)) &
 !
-!                   ! Cross-diffusion from Mathur and Murthy 2007 without interpolation
-!                   + 0d0*(&
-!                     0.5d0*CellAreaE(i,j)*(diffusionE(i,j)+diffusionE(i+1,j)) * ( 0.5d0* (GradNeX(i,j)+GradNeX(i+1,j) )*NormalEx(i,j) + 0.5d0* (GradNeY(i,j)+GradNeY(i+1,j) )*NormalEy(i,j) - 0.5d0*( (GradNeX(i,j)+GradNeX(i+1,j) )*CurviEx(i,j) + ( GradNeY(i,j)+GradNeY(i+1,j) )*CurviEy(i,j) )/(NormalEx(i,j)*CurviEx(i,j)+NormalEy(i,j)*CurviEy(i,j))) &
-!                   + 0.5d0*CellAreaW(i,j)*(diffusionE(i,j)+diffusionE(i-1,j)) * ( 0.5d0* (GradNeX(i,j)+GradNeX(i-1,j) )*NormalWx(i,j) + 0.5d0* (GradNeY(i,j)+GradNeY(i-1,j) )*NormalWy(i,j) - 0.5d0*( (GradNeX(i,j)+GradNeX(i-1,j) )*CurviWx(i,j) + ( GradNeY(i,j)+GradNeY(i-1,j) )*CurviWy(i,j) )/(NormalWx(i,j)*CurviWx(i,j)+NormalWy(i,j)*CurviWy(i,j))) &
-!                   + 0.5d0*CellAreaN(i,j)*(diffusionE(i,j)+diffusionE(i,j+1)) * ( 0.5d0* (GradNeX(i,j)+GradNeX(i,j+1) )*NormalNx(i,j) + 0.5d0* (GradNeY(i,j)+GradNeY(i,j+1) )*NormalNy(i,j) - 0.5d0*( (GradNeX(i,j)+GradNeX(i,j+1) )*CurviNx(i,j) + ( GradNeY(i,j)+GradNeY(i,j+1) )*CurviNy(i,j) )/(NormalNx(i,j)*CurviNx(i,j)+NormalNy(i,j)*CurviNy(i,j))) &
-!                   + 0.5d0*CellAreaS(i,j)*(diffusionE(i,j)+diffusionE(i,j-1)) * ( 0.5d0* (GradNeX(i,j)+GradNeX(i,j-1) )*NormalSx(i,j) + 0.5d0* (GradNeY(i,j)+GradNeY(i,j-1) )*NormalSy(i,j) - 0.5d0*( (GradNeX(i,j)+GradNeX(i,j-1) )*CurviSx(i,j) + ( GradNeY(i,j)+GradNeY(i,j-1) )*CurviSy(i,j) )/(NormalSx(i,j)*CurviSx(i,j)+NormalSy(i,j)*CurviSy(i,j))) &
-!                   ) &
-            
-        !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
-        if(NeOff.eq.1) then
-          newmesh%Ne(i,j)=mesh%Ne(i,j); newmesh%Nh(i,j)=mesh%Nh(i,j)
-        end if
-        
         if(HolesOff.eq.0 .AND. NeOff.eq.0) then
                      
         !TODO: This can be frther optimise
