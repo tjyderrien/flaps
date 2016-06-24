@@ -122,6 +122,10 @@ implicit none
                 Mp, Np, RunningIndex
     real(8)         t, t0, dx, dy, x0, y0, dt, dt2, dt3, dt4, h1, h2, h3
     real(8)         Te0, Th0, I0 !initial values of the problem
+
+    real(8)     nuColl, &!        total collision frequency
+                nuColleph !        electron-phonon collision frequency
+
     real(8)        Ue(1:M, 1:N), & !electron energy
                 Uh(1:M, 1:N), & !hole energy
                 UeNew(1:M, 1:N), & !electron energy
@@ -144,8 +148,6 @@ implicit none
                 CeOld(1:M, 1:N), ChOld(1:M,1:N), CsOld(1:M, 1:N), &
                 CsPrev(1:M, 1:N), CsPrev2(1:M, 1:N), &
                 CouplingE(1:M, 1:N), CouplingH(1:M, 1:N), &
-                nuColl(1:M, 1:N) , &!        total collision frequency
-                nuColleph(1:M, 1:N) , &!        electron-phonon collision frequency
                 mobilityE(1:M, 1:N), mobilityH(1:M, 1:N), & 
                 etae(1:M,1:N), etah(1:M,1:N), &        ! reduced chemical Fermi potential
                 Egap(1:M, 1:N), &                        ! local gap value
@@ -1484,7 +1486,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
    !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
-   !$OMP& nuColl, nuColleph, mobilityE, mobilityH, etae, etah, Egap, & 
+   !$OMP& mobilityE, mobilityH, etae, etah, Egap, &
    !$OMP& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
    !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
    !$OMP& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
@@ -1536,12 +1538,12 @@ if(UseMieScattering.eq.1) then
 !      intensity(i,1)=(1d0-reflectivity(i,1))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2.-.5d0*((x(i,1)-x0)/sigmaX)**2.-.5d0*((y(i,1)-y0)/sigmaY)**2.)
 
         ! optical coefficients
-        nuColl(i,j)=CollisionFrequency() !TODO: Move out of temporal loop
-        nuColleph(i,j)=ephCollisionFrequency(mesh%Ne(i,j))
-        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl(i,j), me, laser) !TODO: Do you need to store this for all mesh point, or is the treatment local?
+        nuColl=CollisionFrequency() !TODO: Move out of temporal loop
+        nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
+        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl, me, laser) !TODO: Do you need to store this for all mesh point, or is the treatment local?
         sqrtDielectric = sqrt(Dielectric(i,j));
-        DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl(i,j),me, laser)
-        DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl(i,j),mh, laser)
+        DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl,me, laser)
+        DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl,mh, laser)
 
         !         write(*,*) "Esprit es-tu la ?"
         
@@ -1560,8 +1562,8 @@ if(UseMieScattering.eq.1) then
 !         write(*,*) "iter=", nbiter, "eta=", etae(i,j), etah(i,j)
 !         write(*,*) "FermiTables: etaE,etaH=", FermiTableE(3,463), FermiTableH(3,450)
 
-        mobilityE(i,j)=(ec/(me*nuColl(i,j)))*FermiTableE(ColFermi0, FermiIndexE(i,j))/FermiTableE(ColFermiHalf, FermiIndexE(i,j))
-        mobilityH(i,j)=(ec/(mh*nuColl(i,j)))*FermiTableH(ColFermi0, FermiIndexH(i,j))/FermiTableH(ColFermiHalf, FermiIndexH(i,j))
+        mobilityE(i,j)=(ec/(me*nuColl))*FermiTableE(ColFermi0, FermiIndexE(i,j))/FermiTableE(ColFermiHalf, FermiIndexE(i,j))
+        mobilityH(i,j)=(ec/(mh*nuColl))*FermiTableH(ColFermi0, FermiIndexH(i,j))/FermiTableH(ColFermiHalf, FermiIndexH(i,j))
         
 !         write(*,*) "iter=", nbiter, "mobility=", mobilityE(i,j), mobilityH(i,j)
         if(DrudeHeating==1) then
@@ -1772,9 +1774,9 @@ if(UseMieScattering.eq.1) then
 
 !         Ce(i,j)=Ch(i,j) ! DEBUG test
         
-        CouplingE(i,j)=Ce(i,j)*nuColleph(i,j)*(mesh%Te(i,j)-mesh%Ts(i,j))
+        CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
         if(HolesOff.eq.0) then
-          CouplingH(i,j)=Ch(i,j)*nuColleph(i,j)*(mesh%Th(i,j)-mesh%Ts(i,j))
+          CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
         else
           CouplingH(i,j)=0d0
         end if
