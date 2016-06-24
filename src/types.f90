@@ -41,5 +41,6 @@ module Types_m
      real(8) :: E, inv_E  !> Laser Photon energy, and its inverse
    end type LaserParams
 
+
 end module Types_m
 

@@ -287,7 +287,7 @@ implicit none
      integer(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, DensityOfState, EgapValue, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
              CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate, ephCollisionFrequency
-     complex(8) DielectricFunction, DielectricFunctionDrude, DielectricConstant
+     complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
 
             
 !OPENMP declarations
@@ -1531,6 +1531,11 @@ if(UseMieScattering.eq.1) then
    call copy_mesh(mesh, newmesh)
 
     
+   call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, epsilonInf, nuColl, me, laser)
+   call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, nuColl, me, laser)
+   call DielectricFunctionDrude_batch(mesh, mesh%Nh, DielectricDrudeH, nuColl, mh, laser)
+   call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
+
 !!!! thermal calculations in the main domain
 ! calculation of sources
     !$OMP DO  COLLAPSE(2) 
@@ -1541,16 +1546,16 @@ if(UseMieScattering.eq.1) then
         ! optical coefficients
         nuColl=CollisionFrequency() !TODO: Move out of temporal loop
         nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-        Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl, me, laser) !TODO: Do you need to store this for all mesh point, or is the treatment local?
+     !   Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl, me, laser)
         sqrtDielectric = sqrt(Dielectric(i,j));
-        DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl,me, laser)
-        DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl,mh, laser)
+      !  DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl,me, laser)
+      !  DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl,mh, laser)
 
         !         write(*,*) "Esprit es-tu la ?"
         
 !         write(*,*) i,j,TeNew(i,j)
-        DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
-        DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
+   !     DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
+   !     DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1

@@ -11,13 +11,6 @@
 !> 15 Jun 2016 - Initial Version
 !------------------------------------------------------------------------------
 
-    real(8) function DensityOfState(mDOS, T)
-    use Maths_m
-    implicit none
-    real(8), intent(in) :: mDOS, T
-      DensityOfState = 2d0*(mDOS*kb*T/(2d0*pi*hbar**2))**(1.5d0)
-      return
-    end function DensityOfState
 
     subroutine TabCreateFL( M, N, FermiTableE, FermiTableH)
       implicit none
@@ -70,6 +63,43 @@
       return
     end function DielectricConstant
 
+    real(8) function DensityOfState(mDOS, T)
+    use Maths_m
+    implicit none
+    real(8), intent(in) :: mDOS, T
+      DensityOfState = 2d0*(mDOS*kb*T/(2d0*pi*hbar**2))**(1.5d0)
+      return
+    end function DensityOfState
+
+  !Routine that computes both electron and hole density of states, on the full grid
+  subroutine DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
+    use Maths_m
+    use Types_m
+    implicit none
+
+    type(MeshValues),  intent(in)    :: mesh
+    real(8),           intent(inout)    :: DOSe(mesh%M,mesh%N), DOSh(mesh%M,mesh%N)
+    real(8), intent(in) :: meDOS, mhDOS
+
+    real(8) :: coefE, coefH
+    integer :: i, j
+
+    coefE = meDOS*kb/(2d0*pi*hbar**2)
+    coefH = mhDOS*kb/(2d0*pi*hbar**2)
+
+    !$OMP DO COLLAPSE(2)
+    do j=2, mesh%N-1 !(optimized)
+      do i=2, mesh%M-1
+        DOSe(i,j) = 2d0*(coefE*mesh%Te(i,j))**(1.5d0)
+        DOSh(i,j) = 2d0*(coefH*mesh%Th(i,j))**(1.5d0)
+      end do
+    end do
+    !$OMP END DO
+
+  end subroutine DensitiesOfState_batch
+
+
+    !TODO: Do we need DielectricFunctionDrude? Is it just possible to compute it with epsilonInf=1 ?
     complex(8) function DielectricFunction(epsilonInf, ne, nuColl, me, laser)
       use Maths_m
       use Types_m
@@ -86,6 +116,34 @@
       return
     end function DielectricFunction
 
+   !This routine computes the dielectric function for the entire grid with one call
+    subroutine DielectricFunction_batch(mesh, N, Dielectric, epsilonInf, nuColl, me, laser)
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(in)    :: N(mesh%M,mesh%N)
+      complex(8),        intent(inout) :: Dielectric(mesh%M, mesh%N)
+      complex(8),        intent(in)    :: epsilonInf
+      real(8),           intent(in)    :: nuColl, me
+      type(LaserParams), intent(in)    :: laser
+
+      complex(8) :: coef
+      integer :: i, j
+
+      coef=ec*ec/me/epsilon0*laser%inv_omega**2/(M_ONE+M_IM*nuColl*laser%inv_omega)
+
+      !$OMP DO COLLAPSE(2)
+      do j=2, mesh%N-1 !(optimized)
+        do i=2, mesh%M-1
+          Dielectric(i,j) =epsilonInf-N(i,j)*coef
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine DielectricFunction_batch
+
     complex(8) function DielectricFunctionDrude(density, Collision, mass, laser)
       use Maths_m
       use Types_m
@@ -101,6 +159,33 @@
       DielectricFunctionDrude=M_ONE-M_ONE*omegape2*laser%inv_omega*laser%inv_omega/(M_ONE+M_IM*Collision*laser%inv_omega)
       return
     end function DielectricFunctionDrude
+
+       !This routine computes the Drude dielectric function for the entire grid with one call
+    subroutine DielectricFunctionDrude_batch(mesh, N, Dielectric, Collision, mass, laser)
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(in)    :: N(mesh%M,mesh%N)
+      complex(8),        intent(inout) :: Dielectric(mesh%M,mesh%N)
+      real(8),           intent(in)    :: Collision, mass
+      type(LaserParams), intent(in)    :: laser
+
+      complex(8) :: coef
+      integer :: i, j
+
+      coef= M_ONE*ec*ec/(mass*epsilon0)*laser%inv_omega**2/(M_ONE+M_IM*Collision*laser%inv_omega)
+
+      !$OMP DO COLLAPSE(2)
+      do j=2, mesh%N-1 !(optimized)
+        do i=2, mesh%M-1
+          Dielectric(i,j) =M_ONE-coef*N(i,j)
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine DielectricFunctionDrude_batch
 
     real(8) function ephCollisionFrequency(ne)
       implicit none
