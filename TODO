@@ -1,0 +1,54 @@
+grid.f90:        !TODO: Optimise by defining a stencil object
+main_explicit_Mie.f90:    !TODO: Move to LaserParams
+main_explicit_Mie.f90:    !TODO: Move to LaserParams
+main_explicit_Mie.f90:  !TODO: Move to source
+main_explicit_Mie.f90:  !TODO: Why DistX are recomputed here? Same for CellAreaX
+main_explicit_Mie.f90:    !TODO: Use DEFAULT(NONE) here, this is safer
+main_explicit_Mie.f90:        nuColl=CollisionFrequency() !TODO: Move out of temporal loop
+main_explicit_Mie.f90:        else !TODO: Move out of temporal loop
+main_explicit_Mie.f90:                            *( & !TODO: Use OnePhotonIonizationRate0 here
+main_explicit_Mie.f90:        !TODO: Arg mes yeux !!!!
+main_explicit_Mie.f90:                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0))))) !Elena fit sur Kazan (2010) !TODO: More explicit reference
+main_explicit_Mie.f90:        !TODO: to be implemented
+main_explicit_Mie.f90:      else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
+main_explicit_Mie.f90:        newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
+main_explicit_Mie.f90:    !TODO: Optimise
+main_explicit_Mie.f90:    !TODO: Optimise
+main_explicit_Mie.f90:    !TODO:Optimise
+main_explicit_Mie.f90:    !TODO: Replace with Fortran native min and max functions
+main_explicit_Mie.f90:      !TODO: Please use short notation with prenthesis !!
+main_explicit_Mie.f90:  889 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, & !TODO: Please use short notation with prenthesis !!
+main_explicit_Mie.f90:892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
+main_explicit_Mie.f90:      !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
+main_explicit_Mie.f90:888 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1F12.8, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
+main_explicit_Mie.f90:     !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
+main_explicit_Mie.f90:884 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
+main_explicit_Mie.f90:     !TODO: Remove CPUEfficiency
+main_explicit_Mie.f90:883 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
+main_explicit_Mie.f90:     !TODO: Remove CPUEfficiency
+main_explicit_Mie.f90:882 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
+main_explicit_Mie.f90:890 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
+material.f90:    !TODO: Do we need DielectricFunctionDrude? Is it just possible to compute it with epsilonInf=1 ?
+material.f90:    !TODO: Create a batch version of this routine
+material.f90:    !TODO: Create a batch version of this routine
+material.f90:    !TODO: Create a batch version of this routine
+material.f90:      if(ImpactOff.eq.1) then !TODO: This is dirty, should be putted outside
+material.f90:    !TODO: Create a batch version of this routine
+material.f90:    !TODO: Create a batch version of this routine
+material.f90:    !TODO: Create a batch version of this routine
+maths.f90:  !TODO: More digits here, otherwise real(8) does not make sense
+maths.f90:      !TODO: More general and automatize
+maths.f90:      else !TODO: What to return here??
+mesh.f90: !TODO: Print something to error.dat
+mie.f90:  integer, private, parameter :: besselArray=1      !TODO: Explain what it is, if really useful
+poisson.f90:  !TODO: OpemMP parallelisation here?
+poisson.f90:  !TODO: Variables should be Np and Mp, xP and yP here no?
+poisson.f90:!         !TODO: I think that this should not be here
+solver.f90:                 !TODO: put proper ref here
+solver.f90:      !TODO: This can be frther optimise
+solver.f90:              !TODO: Warning, the commented code will have a problem of a factror ofd 0.5
+solver.f90:      !TODO: This can be further optimise
+solver.f90:      newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))/ Ce(i,j) !TODO: Do we need Ce or can we compute only its inverse?
+solver.f90:  !TODO: This can be further optimised
+solver.f90:                  !TODO: The mixing should not be done here!
+solver.f90:     !TODO: This must be optmised !
