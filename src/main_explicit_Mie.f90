@@ -1890,22 +1890,20 @@ if(UseMieScattering.eq.1) then
         !
         if(ConvectionEnergy.eq.0) then
           !
-          call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce,&
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+          call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                       &
+                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N,                       &
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                       &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
           !
         else
           !
-          call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
-                      Ce, Ue, UeNew, VeX, VeY, CellVol, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N, &
-                      CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
-                      CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
+          call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
+                      Ce, Ue, UeNew, VeX, VeY, CellVol,                                                 &
+                      ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                      CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
+                      NormalN, NormalS, NormalE, NormalW  )
           !
           call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       Ch, Uh, UhNew, VhX, VhY, CellVol, &
