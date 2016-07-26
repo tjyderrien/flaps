@@ -12,7 +12,7 @@ implicit none
   real(8) fle, fi, fi0, flh, fl, eta, etah, etae, Nc, Nv, nh, ne,na, eta0, dNe
   real(8) fi3, fi4,dTe, Ce, deta, SigmaE, De, Ke, mu0, nuColl, DeChen
   real(8) Fermi0, Fermi1, Fermi2, FermiHalf, FermiThreeHalf, FermiMenusHalf
-  integer i,j,k, PrevIndex
+  integer i,j,k, PrevIndex, maxiter
 
   !Te=T
   !Th=T
@@ -97,11 +97,13 @@ do k=1,maxiter !Balayage sur Ne
      FermiThreeHalf=fermi_integral(1.5,eta)
      FermiMenusHalf=fermi_integral(-0.5,eta)
      
-     fi4=fermi_integral(1.5, eta)/fermi_integral(0.5, eta)-eta*(1d0-(fermi_integral(1.5,eta)/fermi_integral(0.5,eta))*(fermi_integral(-0.5,eta)/fermi_integral(0.5,eta)))
+     fi4=fermi_integral(1.5, eta)/fermi_integral(0.5, eta) &
+        -eta*(1d0-(fermi_integral(1.5,eta)/fermi_integral(0.5,eta))*(fermi_integral(-0.5,eta)/fermi_integral(0.5,eta)))
      Ce=1.5d0*kb*ne*fi4
 
      SigmaE=qe*ne*mu0*(fermi_integral(0.,eta)/fermi_integral(0.5,eta))
-     Ke=kb**2*SigmaE*Te/qe**2*(6d0*fermi_integral(2.0,eta)/fermi_integral(0.,eta)-4d0*(fermi_integral(1.,eta)/fermi_integral(0.,eta))**2)
+     Ke=kb**2*SigmaE*Te/qe**2*(6d0*fermi_integral(2.0,eta)/fermi_integral(0.,eta) &
+          -4d0*(fermi_integral(1.,eta)/fermi_integral(0.,eta))**2)
      De=Ke/Ce
      DeChen=-kb*ne*mu0*fermi_integral(0.,eta)/fermi_integral(0.5,eta)*(eta-2*fermi_integral(1.,eta)/fermi_integral(0.,eta))
 

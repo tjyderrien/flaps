@@ -1,5 +1,7 @@
 DebugLine=-g -pg -fbounds-check -w -fbacktrace -Wno-unused-variable -Wall
-Optimization=$(DebugLine) -O2 -ffree-line-length-none -ffixed-line-length-none -finteger-4-integer-8 -mcmodel=small -I/usr/include -llapack -fopenmp -lm
+Optimization=$(DebugLine) -O2 -ffree-line-length-none -ffixed-line-length-none -mcmodel=small -I/usr/include -llapack -fopenmp -lm
+
+#-finteger-4-integer-8
 
 CC=gfortran
 CFLAGS=$(Optimization)
@@ -7,20 +9,34 @@ EXEC=Flaps_explicit.out
 
 #LDFLAGS=-L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -lm
 
-OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $( wildcards libs/amos/*.o) libs/gmsh/libmsh2vf.o libs/control_file.o
+OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $(wildcard libs/amos/*.o) libs/gmsh/libmsh2vf.o libs/control_file.o
 
-all: linking main_explicit_Mie.o
+OBJS = $(wildcard src/*.o)
 
-linking: main_explicit_Mie.o $(OBJ_LIBS)
-	$(CC) $(CFLAGS) $(OBJ_LIBS) -o $(EXEC)
+ 
+all: $(EXEC)
 
-main_explicit_Mie.o: $(OBJ_LIBS)
-	$(CC) -c $(CFLAGS) -I./libs/gmsh src/main_explicit_Mie.f90
+$(EXEC): external_libs src_files
+	@echo 'Building target: $@'
+	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS)
+	@echo 'Finished building target: $@'
+	@echo ' '
+	@echo '************  Compilation OK  ************';
+	@echo '******  You can now do >make test< *******';
 
-$(OBJ_LIBS): 
+src_files: external_libs 
+	cd src && $(MAKE)
+
+
+external_libs:
+	@echo 'Building libraries' 
 	cd libs && $(MAKE)
+	@echo 'Finished building libraries'
+	@echo ' '
+ 
 
 clean: 
-	rm -fr *.o
-	cd src && rm -fr *.o 
+	rm -fr *.o *.mod
+	cd src && $(MAKE) clean
 	cd libs && $(MAKE) clean
+
