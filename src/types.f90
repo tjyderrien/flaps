@@ -32,11 +32,11 @@ module Types_m
 
   !> Parameters for defining the mesh
   type MeshValues
-    real(8), allocatable, dimension( :, :) :: Te !> electron temperature
-    real(8), allocatable, dimension( :, :) :: Th !> hole temperature
-    real(8), allocatable, dimension( :, :) :: Ts !> lattice temperature
-    real(8), allocatable, dimension( :, :) :: Ne !> electron density
-    real(8), allocatable, dimension( :, :) :: Nh !> hole density
+    real(8), allocatable, dimension(:,:) :: Te !> electron temperature
+    real(8), allocatable, dimension(:,:) :: Th !> hole temperature
+    real(8), allocatable, dimension(:,:) :: Ts !> lattice temperature
+    real(8), allocatable, dimension(:,:) :: Ne !> electron density
+    real(8), allocatable, dimension(:,:) :: Nh !> hole density
 
     integer :: M,N !> Mesh dimension
    end type MeshValues
@@ -56,6 +56,11 @@ module Types_m
      real(8) :: E, inv_E  !> Laser Photon energy, and its inverse
    end type LaserParams
 
+  !> A vector field structure
+  type VectorField
+    real(8), allocatable, dimension(:,:) :: x, y !> x, y components of a vector
+    real(8), allocatable, dimension(:,:) :: N    !> Norm of this vector
+  end type VectorField
 
 end module Types_m
 
