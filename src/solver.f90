@@ -528,12 +528,11 @@ end subroutine computeUe
 ! We assume that we are in a OMP parallel environement
 subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       Ch, Uh, UhNew, VhX, VhY, CellVol, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2, &
-                      CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
-                      CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
+                      ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                      CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
+                      NormalN, NormalS, NormalE, NormalW )
+
   use Types_m
   implicit none
 
@@ -541,15 +540,15 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   type(MeshValues),                   intent(in)    :: mesh
   real(8), dimension(mesh%M, mesh%N), intent(inout) :: UhNew
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, CellVol, kappah, CouplingH, SourceUh, &
-                                                    Ch, Uh, VhX, VhY, &
-                                                    NormalW2, NormalE2, NormalN2, NormalS2, &
-                                                    ShapeFactorNormalE, ShapeFactorNormalW, &
-                                                    ShapeFactorNormalS, ShapeFactorNormalN, &
-                                                    ShapeFactorTangentE, ShapeFactorTangentW, &
-                                                    ShapeFactorTangentS, ShapeFactorTangentN, &
-                                                    CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
-                                                    CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy
+  real(8), dimension(mesh%M, mesh%N), intent(in)    :: InvCellVol, CellVol, kappah, CouplingH, SourceUh, &
+                                                       Ch, Uh, VhX, VhY,                                 &
+                                                       ShapeFactorNormalE, ShapeFactorNormalW,           &
+                                                       ShapeFactorNormalS, ShapeFactorNormalN,           &
+                                                       ShapeFactorTangentE, ShapeFactorTangentW,         &
+                                                       ShapeFactorTangentS, ShapeFactorTangentN,         &
+                                                       CellAreaE, CellAreaW, CellAreaN, CellAreaS
+  type(VectorField)                 , intent(in)    :: NormalN, NormalS, NormalE, NormalW
+
 
   integer :: i, j
 
@@ -561,10 +560,10 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
 
       UhNew(i,j) = Uh(i,j) + ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j) &
                 ! convective term for transport of the energy by the field
-                -0.5d0*(((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) &
-                +( (VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) &
-                +( (VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
-                +( (VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
+                -0.5d0*(((VhX(i+1,j)+VhX(i,j))*NormalE%x(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalE%y(i,j)) * CellAreaE(i,j) &
+                +( (VhX(i,j)+VhX(i-1,j))*NormalW%x(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalW%y(i,j)) * CellAreaW(i,j) &
+                +( (VhX(i,j)+VhX(i,j+1))*NormalN%x(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalN%y(i,j)) * CellAreaN(i,j) &
+                +( (VhX(i,j)+VhX(i,j-1))*NormalS%x(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalS%y(i,j)) * CellAreaS(i,j)) &
                 ! diffusive term for energy - rewrite correctly
 !                 + ( (Uh(i+1,j)-Uh(i,j))/(x(i+1,j)**2-2d0*x(i+1,j)*x(i,j)+x(i,j)**2 &
 !                 + y(i+1,j)**2-2d0*y(i+1,j)*y(i,j)+y(i,j)**2)**(0.5d0)*( (kappah(i+1,j)+kappah(i,j))/(Ch(i+1,j)+Ch(i,j)) )*CellAreaE(i,j) &
@@ -577,22 +576,22 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                 )*dt*InvCellVol(i,j)
 
      UhNew(i,j) = UhNew(i,j) +0.5d0*( &
-                    NormalE2(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j)/Ch(i,j)+kappah(i+1,j)/Ch(i+1,j))*(Uh(i+1,j)-Uh(i,j))    &
+                    NormalE%N(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j)/Ch(i,j)+kappah(i+1,j)/Ch(i+1,j))*(Uh(i+1,j)-Uh(i,j))    &
                     !
                   - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)/Ch(i,j)     &
                           +kappah(i+1,j)/Ch(i+1,j))*0.25d0*(Uh(i+1,j+1)+Uh(i,j+1)-Uh(i+1,j-1)-Uh(i,j-1))        &
                     !
-                  + NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)/Ch(i-1,j)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i-1,j))    &
+                  + NormalW%N(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)/Ch(i-1,j)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i-1,j))    &
                     !
                   - ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)/Ch(i-1,j) &
                           +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i,j+1)+Uh(i-1,j+1)-Uh(i-1,j-1)-Uh(i,j-1)) &
                     !
-                  + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1)+kappah(i,j)/Ch(i,j))*(Uh(i,j+1)-Uh(i,j))    &
+                  + NormalN%N(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1)+kappah(i,j)/Ch(i,j))*(Uh(i,j+1)-Uh(i,j))    &
                     !
                   - ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1) &
                           +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j+1)+Uh(i+1,j)-Uh(i-1,j)-Uh(i-1,j+1))            &
                     !
-                  + NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i,j-1))    &
+                  + NormalS%N(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i,j-1))    &
                     !
                   - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1) &
                         +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j)+Uh(i+1,j-1)-Uh(i-1,j-1)-Uh(i-1,j)) &

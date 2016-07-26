@@ -1905,14 +1905,13 @@ if(UseMieScattering.eq.1) then
                       CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
                       NormalN, NormalS, NormalE, NormalW  )
           !
-          call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
-                      Ch, Uh, UhNew, VhX, VhY, CellVol, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N, &
-                      CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
-                      CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
+          !TODO: Should probably not be here
+          call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
+                      Ch, Uh, UhNew, VhX, VhY, CellVol,                                                 &
+                      ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                      CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
+                      NormalN, NormalS, NormalE, NormalW  )
           !
         endif
         !
@@ -1928,6 +1927,7 @@ if(UseMieScattering.eq.1) then
             !
           else
             !
+            !TODO: Check that we need that and not computeUh
             call computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
                       CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
