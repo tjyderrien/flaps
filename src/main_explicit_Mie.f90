@@ -194,9 +194,6 @@ implicit none
                 CellAreaN(1:M, 1:N), CellAreaS(1:M, 1:N), &                        ! area of the finite elements 
                 CellAreaE(1:M, 1:N), CellAreaW(1:M, 1:N), &
                 CellVol(1:M, 1:N), InvCellVol(1:M, 1:N),&          !volume of needle mesh cells
-                NormalEx(1:M,1:N), NormalEy(1:M,1:N), NormalE2(1:M,1:N),  &                ! normal to quadrangle elements
-                NormalNx(1:M,1:N), NormalNy(1:M,1:N), NormalN2(1:M,1:N),  &
-                NormalSx(1:M,1:N), NormalSy(1:M,1:N), NormalS2(1:M,1:N), &
                 DistW(1:M,1:N), DistE(1:M,1:N), &                 ! distance to the center of neighboor cells
                 DistN(1:M,1:N), DistS(1:M,1:N), &
                 DistDualW(1:M,1:N), DistDualE(1:M,1:N), &                 ! distance of the element side (equal to area in 2D)
@@ -1161,6 +1158,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    ! and normal vectors (Nx, Ny) the four poles of quadrangle elements
    write(*,*) "[Mesh] Calculation of normals and distances."
 
+   allocate(NormalN%x(1:M,1:N));  allocate(NormalN%y(1:M,1:N)); allocate(NormalN%N(1:M,1:N))
+   allocate(NormalS%x(1:M,1:N));  allocate(NormalS%y(1:M,1:N)); allocate(NormalS%N(1:M,1:N))
+   allocate(NormalE%x(1:M,1:N));  allocate(NormalE%y(1:M,1:N)); allocate(NormalE%N(1:M,1:N))
    allocate(NormalW%x(1:M,1:N));  allocate(NormalW%y(1:M,1:N)); allocate(NormalW%N(1:M,1:N))
 
    allocate(CurviWx(1:M,1:N));   allocate(CurviWy(1:M,1:N))
@@ -1174,7 +1174,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
    call compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
    !
-   call compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, NormalW%x, NormalW%y, TangentNx, TangentNy, TangentSx, TangentSy, &
+   call compute_norm_tan_curv(M, N, x, y, NormalN%x, NormalN%y, NormalS%x, NormalS%y, NormalE%x, NormalE%y, NormalW%x, NormalW%y, TangentNx, TangentNy, TangentSx, TangentSy, &
       TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
    !
    call compute_cellvol(M, N, x, y, CellVol, InvCellVol )
@@ -1187,16 +1187,16 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !       TangentEx(:,:)=0d0; TangentEy(:,:)=0d0
 !       TangentWx(:,:)=0d0; TangentWy(:,:)=0d0
 !       ! unnormalize flux normal to element boundaries
-!       CurviNx(:,:)=NormalNx(:,:); CurviNy(:,:)=NormalNy(:,:)
-!       CurviSx(:,:)=NormalSx(:,:); CurviSy(:,:)=NormalSy(:,:)
-!       CurviEx(:,:)=NormalEx(:,:); CurviEy(:,:)=NormalEy(:,:)
+!       CurviNx(:,:)=NormalN%x(:,:); CurviNy(:,:)=NormalN%y(:,:)
+!       CurviSx(:,:)=NormalS%x(:,:); CurviSy(:,:)=NormalS%y(:,:)
+!       CurviEx(:,:)=NormalE%x(:,:); CurviEy(:,:)=NormalE%y(:,:)
 !       CurviWx(:,:)=NormalW%x(:,:); CurviWy(:,:)=NormalW%y(:,:)
 !     end if
    
    write(*,*) "NEEDLE CHECK"
-   write(*,*) "North", NormalNx(M/2,N-1), NormalNy(M/2,N-1)
-   write(*,*) "South", NormalSx(M/2,2), NormalSy(M/2,2)
-   write(*,*) "East", NormalEx(M-1,N-1), NormalEy(M-1,N-1)
+   write(*,*) "North", NormalN%x(M/2,N-1), NormalN%y(M/2,N-1)
+   write(*,*) "South", NormalS%x(M/2,2), NormalS%y(M/2,2)
+   write(*,*) "East", NormalE%x(M-1,N-1), NormalE%y(M-1,N-1)
    write(*,*) "West", NormalW%x(M-1,N-1), NormalW%y(M-1,N-1)
    write(*,*) CellAreaN(M/2,N/2), CellAreaS(M/2,N/2), CellAreaE(M/2,N/2), CellAreaW(M/2,N/2)
    
@@ -1395,15 +1395,15 @@ if(UseMieScattering.eq.1) then
         ! Calcul de Grad(Ne) sur le maillage direct
         ! Première estimation peu stable
         GradNeX(i,j) = 0.5d0 * InvCellVol(i,j) * &
-                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalNx(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalSx(i,j) &
+                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalN%x(i,j) &
+                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalS%x(i,j) &
                       + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalW%x(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalEx(i,j) )
+                      + (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalE%x(i,j) )
         GradNeY(i,j) = 0.5d0 * InvCellVol(i,j) * &
-                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalNy(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalSy(i,j) &
+                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalN%y(i,j) &
+                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalS%y(i,j) &
                       + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalW%y(i,j) &
-                      * (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalEy(i,j) )
+                      * (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalE%y(i,j) )
                       
         ! interpolation lineaire des valeurs de phi sur les bords de cellules
 !         phiN=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j)+xDual(i-1,j)))+GradNeY(i,j)*(0.5d0*(yDual(i,j)+yDual(i-1,j)))
@@ -1416,23 +1416,23 @@ if(UseMieScattering.eq.1) then
   
   do j=1,N
     do i=1,M
-       NormalN2(i,j) = (NormalNx(i,j)**2+NormalNy(i,j)**2)
-       NormalE2(i,j) = (NormalEx(i,j)**2+NormalEy(i,j)**2)
+       NormalN%N(i,j) = (NormalN%x(i,j)**2+NormalN%y(i,j)**2)
+       NormalE%N(i,j) = (NormalE%x(i,j)**2+NormalE%y(i,j)**2)
        NormalW%N(i,j) = (NormalW%x(i,j)**2+NormalW%y(i,j)**2)
-       NormalS2(i,j) = (NormalSx(i,j)**2+NormalSy(i,j)**2)
+       NormalS%N(i,j) = (NormalS%x(i,j)**2+NormalS%y(i,j)**2)
     end do
   end do
   
   do j=2, N-1
     do i=2, M-1
-      NormalN2(i,j) = NormalN2(i,j)/DistN(i,j)
+      NormalN%N(i,j) = NormalN%N(i,j)/DistN(i,j)
       NormalW%N(i,j) = NormalW%N(i,j)/DistW(i,j)
-      NormalE2(i,j) = NormalE2(i,j)/DistE(i,j)
-      NormalS2(i,j) = NormalS2(i,j)/DistS(i,j)
-      ShapeFactorNormalE(i,j)  = CellAreaE(i,j) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))
+      NormalE%N(i,j) = NormalE%N(i,j)/DistE(i,j)
+      NormalS%N(i,j) = NormalS%N(i,j)/DistS(i,j)
+      ShapeFactorNormalE(i,j)  = CellAreaE(i,j) / (CurviEx(i,j)*NormalE%x(i,j)+CurviEy(i,j)*NormalE%y(i,j))
       ShapeFactorNormalW(i,j)  = CellAreaW(i,j) / (CurviWx(i,j)*NormalW%x(i,j)+CurviWy(i,j)*NormalW%y(i,j))
-      ShapeFactorNormalN(i,j)  = CellAreaN(i,j) / (CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))
-      ShapeFactorNormalS(i,j)  = CellAreaS(i,j) / (CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))
+      ShapeFactorNormalN(i,j)  = CellAreaN(i,j) / (CurviNx(i,j)*NormalN%x(i,j)+CurviNy(i,j)*NormalN%y(i,j))
+      ShapeFactorNormalS(i,j)  = CellAreaS(i,j) / (CurviSx(i,j)*NormalS%x(i,j)+CurviSy(i,j)*NormalS%y(i,j))
       ShapeFactorTangentE(i,j) = CrossCoeff * ( CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j) ) / DistDualE(i,j)
       ShapeFactorTangentW(i,j) = CrossCoeff * ( CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j) ) / DistDualW(i,j)
       ShapeFactorTangentN(i,j) = CrossCoeff * ( CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j) ) / DistDualN(i,j)
@@ -1444,8 +1444,8 @@ if(UseMieScattering.eq.1) then
   open(102,FILE='meshElements.dat', access='sequential',status='unknown') ! format 881
   do i=1,M
         do j=1,N
-          write(102, 881, advance="YES") i, j, x(i,j), y(i,j), NormalNx(i,j), & !5
-                                  NormalNy(i,j), NormalSx(i,j), NormalSy(i,j), NormalEx(i,j), NormalEy(i,j), & !10
+          write(102, 881, advance="YES") i, j, x(i,j), y(i,j), NormalN%x(i,j), & !5
+                                  NormalN%y(i,j), NormalS%x(i,j), NormalS%y(i,j), NormalE%x(i,j), NormalE%y(i,j), & !10
                                   NormalW%x(i,j), NormalW%y(i,j), CellAreaN(i,j), CellAreaS(i,j), CellAreaE(i,j), & !15
                                   CellAreaW(i,j), CellVol(i,j), TangentNx(i,j), TangentNy(i,j), TangentSx(i,j), & !20
                                   TangentSy(i,j), TangentEx(i,j), TangentEy(i,j), TangentWx(i,j), TangentWy(i,j), & !25
@@ -1510,7 +1510,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
    !$OMP& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
-   !$OMP& NormalN2,NormalNx, NormalNy, NormalS2, NormalSx, NormalSy, NormalE2, NormalEx, NormalEy, NormalW, &
+   !$OMP& NormalN, NormalS, NormalE, NormalW, &
    !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
    !$OMP& ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal, &
@@ -1867,10 +1867,10 @@ if(UseMieScattering.eq.1) then
       !
       if(NeOff.eq.0) then
         call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
       else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
         newmesh%Ne(:,:)=mesh%Ne(:,:)
         newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
@@ -1878,10 +1878,10 @@ if(UseMieScattering.eq.1) then
       !
       if(HolesOff.eq.0 .AND. NeOff.eq.0) then
         call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
       endif
       !
       !
@@ -1891,30 +1891,30 @@ if(UseMieScattering.eq.1) then
         if(ConvectionEnergy.eq.0) then
           !
           call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce,&
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
           !
         else
           !
           call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
                       Ce, Ue, UeNew, VeX, VeY, CellVol, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2, &
-                      CellAreaE, NormalEx, NormalEy, CellAreaW, NormalW%x, NormalW%y, &
-                      CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N, &
+                      CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
+                      CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
           !
           call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       Ch, Uh, UhNew, VhX, VhY, CellVol, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2, &
-                      CellAreaE, NormalEx, NormalEy, CellAreaW, NormalW%x, NormalW%y, &
-                      CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N, &
+                      CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
+                      CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
           !
         endif
         !
@@ -1923,17 +1923,17 @@ if(UseMieScattering.eq.1) then
           if(ConvectionEnergy.eq.0) then
             !
             call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, Ch,&
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
             !
           else
             !
             call computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
-                      CellAreaE, NormalEx, NormalEy, CellAreaW, NormalW%x, NormalW%y, &
-                      CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
+                      CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
+                      CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
             !
           endif
           !
@@ -1945,10 +1945,10 @@ if(UseMieScattering.eq.1) then
         !
         call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, CouplingE, &
                       h1, h2, h3, Cs, TsPrev, TsOld, CellVol, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
         !
       end if
       !
@@ -2461,6 +2461,11 @@ if(UseMieScattering.eq.1) then
   call releasemesh(mesh)
   call releasemesh(dual)
   call releasemesh(newmesh)
+
+  deallocate(NormalN%x, NormalN%y, NormalN%N)
+  deallocate(NormalS%x, NormalS%y, NormalS%N)
+  deallocate(NormalE%x, NormalE%y, NormalE%N)
+  deallocate(NormalW%x, NormalW%y, NormalW%N)
 
 
 end program Flaps
