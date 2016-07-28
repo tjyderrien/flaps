@@ -445,7 +445,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   ColFermiThreeHalf=8; ColFermiMenusHalf=9;
 
 ! test field
-
+!TODO: move to material.f90
   if(AugerOff.eq.0) then
     AugerRateE=2.3d-43
     AugerRateH=7.8d-44
@@ -1747,11 +1747,11 @@ if(UseMieScattering.eq.1) then
         kappah(i,j)=kb2*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)/ec*(6d0*FermiTableH(ColFermi2,FermiIndexH(i,j)) &
                 /FermiTableH(ColFermi0,FermiIndexH(i,j)) &
                 -4d0*(FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
-!         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K
+!         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
         !TODO: Arg mes yeux !!!!
         kappas(i,j)=max(0.d0, &
                     (-8.992d0+68.265d0/(1d0+exp(-.4075612391d-1*mesh%Ts(i,j)+2.315984470d0))*(1d0-1d0/ &
-                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0))))) !Elena fit sur Kazan (2010) !TODO: More explicit reference
+                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0))))) !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
 
 !        ! correction considering Fick diffusion in energy
 !         if(ConductivityFix.eq.1) then 
