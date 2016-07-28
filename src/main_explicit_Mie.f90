@@ -2366,61 +2366,56 @@ if(UseMieScattering.eq.1) then
 892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
-      !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
       write(TimeMax%unit,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
-                    maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
-                    maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, &        !15
-                    maxDiffNe, maxDiffNh, TotalNumOfE, TotalNumOfH, real(maxFermiIndexE), &        !20
-                    real(maxFermiIndexH), NeTotal, NhTotal, maxCFLxT, maxCFLyT, &        !25
-                    maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, IntensityEnergy, &        !30
-                    TotalMeshVolume, ElectronEnergy, HoleEnergy, LatticeEnergy, LaserIntensityEnergy, &         !35
-                    ElectronKineticEnergy, ElectronPotentialEnergy, cpu_timestep_duration    !38
+                    maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, &        !9
+                    maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, &        !14
+                    maxDiffNe, maxDiffNh, TotalNumOfE, TotalNumOfH, real(maxFermiIndexE), &        !19
+                    real(maxFermiIndexH), NeTotal, NhTotal, maxCFLxT, maxCFLyT, &        !24
+                    maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, IntensityEnergy, &        !29
+                    TotalMeshVolume, ElectronEnergy, HoleEnergy, LatticeEnergy, LaserIntensityEnergy, &         !34
+                    ElectronKineticEnergy, ElectronPotentialEnergy    !36
                     
 888 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1F12.8, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
+3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
-3x, 1E19.11, 3x, 1E19.11, 3x, 1E12.5)
+3x, 1E19.11, 3x, 1E19.11)
                 
-     !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
         write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,N/2), mesh%Th(1,N/2), mesh%Ts(1,N/2), mesh%Ne(1,N/2), &                        !5
-              mesh%Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
-              SourceE(1,N/2), GainsE(1,N/2), SourceH(1,N/2), GainsH(1,N/2), Egap(1,N/2), &                !15
-              diffNe(1,N/2), diffNh(1,N/2), real(FermiIndexE(1,N/2)), real(FermiIndexH(1,N/2)), Ce(2,N/2), &                !20
-              CeOld(2,N/2), Ch(2,N/2), ChOld(2,N/2), Cs(2,N/2), CsOld(2,N/2), &                                !25
-              cpu_timestep_duration !26
+              mesh%Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
+              SourceE(1,N/2), GainsE(1,N/2), SourceH(1,N/2), GainsH(1,N/2), Egap(1,N/2), &                !14
+              diffNe(1,N/2), diffNh(1,N/2), real(FermiIndexE(1,N/2)), real(FermiIndexH(1,N/2)), Ce(2,N/2), &                !19
+              CeOld(2,N/2), Ch(2,N/2), ChOld(2,N/2), Cs(2,N/2), CsOld(2,N/2)                               !24
               
 884 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5)
+3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
-     !TODO: Remove CPUEfficiency
         write(TimeUp%unit,883, advance="YES") t, mesh%Te(M/2,N), mesh%Th(M/2,N), mesh%Ts(M/2,N), mesh%Ne(M/2,N), &
-              mesh%Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
+              mesh%Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(M/2,N), GainsE(M/2,N), SourceH(M/2,N), GainsH(M/2,N), Egap(M/2,N), &
               diffNe(M/2,N), diffNh(M/2,N), real(FermiIndexE(M/2,N)), real(FermiIndexH(M/2,N))
               
 883 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
-     !TODO: Remove CPUEfficiency
+
         write(TimeBottom%unit,882, advance="YES") t, mesh%Te(M/2,1), mesh%Th(M/2,1), mesh%Ne(M/2,1), &
-              mesh%Nh(M/2,1), intensity(M/2,1), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
+              mesh%Nh(M/2,1), intensity(M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(M/2,1), GainsE(M/2,1), SourceH(M/2,1), GainsH(M/2,1), Egap(M/2,1), &
               diffNe(M/2,1), diffNh(M/2,1), real(FermiIndexE(M/2,1)), real(FermiIndexH(M/2,1))
               
 882 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
     end if
     
