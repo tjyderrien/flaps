@@ -17,7 +17,7 @@
 !> @file solver.f90
 !
 ! DESCRIPTION:
-!> @brief All the routine computing the physical quantities
+!> @brief All the routines for computing the physical quantities
 !
 !> @author
 !> Nicolas Tancogne-Dejean

@@ -37,6 +37,7 @@ USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interf
 
 use Maths_m
 use Mie_m
+use Output_m
 use Types_m
 
 implicit none
@@ -323,10 +324,11 @@ implicit none
   !$OMP shared(nthreads)
   ! Determine the number of threads and their id
         myid = OMP_GET_THREAD_NUM()
-        PRINT *, 'Hello from thread =', myid
+        PRINT *, 'Hello from thread =', myid !TODO: Replace the print*,... by stdout, in the perspective of MPI
         nthreads = OMP_GET_NUM_THREADS()
   !$OMP BARRIER
   
+  !TODO: Replace the write(*,... by stdout, in the perspective of MPI
   if (myid==0) then 
     write(*,'(a)') 'OpenMP TEST'
     write(*,'(a,i1)') 'Number of Threads = ', nthreads
@@ -506,26 +508,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     
     t0=tCenter; x0=laser%xCenter; y0=laser%yCenter;
     
+    ! We open the different files
+    call InitOutputs()
     
-  ! opening files
-    open(90,FILE='LaplaceConvergence.dat', access='sequential',status='unknown')
-    open(91,FILE='LaplaceMatrix.dat',access='sequential',status='unknown')
-    open(92,FILE='TimeBottom.dat', access='sequential', status='unknown')         ! format 882
-    open(93,FILE='TimeUp.dat', access='sequential', status='unknown')         ! format 883
-    open(94,FILE='TimeApex.dat', access='sequential', status='unknown')         ! format 884
-    open(95,FILE='error.dat', access='sequential', status='unknown')
-    open(96,FILE='parameters.dat', access='sequential', status='unknown')
-    open(97,FILE='Depth.dat',access='sequential',status='unknown')                ! format 887
-    open(98,FILE='TimeMax.dat',access='sequential',status='unknown')                 ! format 888
-    open(99,FILE='mesh.dat',access='sequential',status='unknown')                ! format 885, 8852
-    open(100,FILE='meshVessel.dat',access='sequential',status='unknown')
-    open(101,FILE='DepthVessel.dat',access='sequential',status='unknown')         ! format 889
-    open(103,FILE='DualDepth.dat', access='sequential', status='unknown') ! format 890
-    open(104,FILE='Field.dat', access='sequential', status='unknown') ! format 891
-    open(105,FILE='EnergyConservation.dat', access='sequential', status='unknown') !format 892
-    ! FORMAT numbers already used for writing: 887, 886, 888, 885, 882, 883
     
-  
   TotalLaserEnergy=0d0; 
   IntensityEnergy=0d0;
   LaserIntensityEnergy=0d0; 
@@ -562,9 +548,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
       do j=1,N
         x(i,j)=dx*real(i)+xmin
         y(i,j)=dy*real(j)+ymin
-        write(99,885, advance='yes') x(i,j), y(i,j), i, j ! writing as main mesh
+        write(MeshInfo%unit,885, advance='yes') x(i,j), y(i,j), i, j ! writing as main mesh
       end do
-      write(99,*) " "
+      write(MeshInfo%unit,*) " "
     end do
   end if
 !   else ! conical mesh as main domain
@@ -794,11 +780,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     !writing of the mesh
     do i=1,M
       do j=1,N
-        write(99, 885, advance='yes') x(i,j), y(i,j), i, j
+        write(MeshInfo%unit, 885, advance='yes') x(i,j), y(i,j), i, j
         885        FORMAT (1E15.8, 3x, 1E15.8, 3x, I4, 3X, I4)
         !write(99,*)
         end do
-        write(99,*) " "
+        write(MeshInfo%unit,*) " "
     end do
 
     
@@ -912,11 +898,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     !writing of the mesh
     do i=1,M
       do j=1,N
-        write(99, 8852, advance='yes') x(i,j), y(i,j), i, j, MeshVertice(i,j)
+        write(MeshInfo%unit, 8852, advance='yes') x(i,j), y(i,j), i, j, MeshVertice(i,j)
         8852        FORMAT (1E15.8, 3x, 1E15.8, 3x, I4, 3X, I4, 3X, I8)
         !write(99,*)
         end do
-        write(99,*) " "
+        write(MeshInfo%unit,*) " "
     end do
     
   end if
@@ -939,9 +925,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
   do i=1,Mp
     do j=1,Np
-      write(100,885) xP(i,j), yP(i,j), i, j
+      write(MeshVessel%unit,885) xP(i,j), yP(i,j), i, j
     end do
-    write(100,*) " "
+    write(MeshVessel%unit,*) " "
   end do
       
   
@@ -969,7 +955,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   allocate(CellAreaNP(1:Mp,1:Np)); allocate(CellAreaSP(1:Mp,1:Np))
   allocate(CellAreaEP(1:Mp,1:Np)); allocate(CellAreaWP(1:Mp,1:Np))
   
-  call flush(99); call flush(100)
+  call flush(MeshInfo%unit); call flush(MeshVessel%unit)
   
   ! test of neighboors ! USEFUL FOR POISSON EQUATION ONLY
 !  write(*,*) "[TEST] Testing neighborhood of a internal point..."
@@ -985,36 +971,36 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
-  write(96,*) "========== CONE PARAMETERS ========="
-  write(96,*) "Cone length=", NeedleLength*1d6, "um"
-  write(96,*) "Cone height=", NeedleHeight*1d6, "um"
-  write(96,*) "Cone angle=", NeedleAngleDeg, "deg"
-  write(96,*) "Cone curvature radius=", NeedleRadius*1d9, "nm"
+  write(Parameters%unit,*) "========== CONE PARAMETERS ========="
+  write(Parameters%unit,*) "Cone length=", NeedleLength*1d6, "um"
+  write(Parameters%unit,*) "Cone height=", NeedleHeight*1d6, "um"
+  write(Parameters%unit,*) "Cone angle=", NeedleAngleDeg, "deg"
+  write(Parameters%unit,*) "Cone curvature radius=", NeedleRadius*1d9, "nm"
   !TODO: Move to source
-  write(96,*)
-  write(96,*) "=========== LASER PARAMETERS ========"
-  write(96,*) "Laser fluence=", laser%fluence*1d-4, "J.cm-2"
-  write(96,*) "Laser pulse duration=", laser%tau*1d15, "fs"
-  write(96,*) "Laser wavelength=", laser%lambda*1d9, "nm"
-  write(96,*) "Laser spot position: (X,Y)=", x0*1d6, y0*1d6, "um"
-  write(96,*) "Laser spot size: (Sx, Sy)=", laser%spotX*1d6, laser%spotY*1d6, "um"
-  write(96,*) "Mie scattering:", UseMieScattering
-  write(96,*) "Laser polarization", PolarizationSource
-  write(96,*)
-  write(96,*) "============ MESH PARAMETERS =========="
-  write(96,*) "Mesh size", M, "x", N
-  write(96,*) "Dilatation time ratio=", coeffDilaDt
-  write(96,*) "Mesh shift=", MeshShift
-  write(96,*)
-  write(96,*) "============ TIME CONTROL =========="
-  write(96,*) "Initial timestep=", dt0
-  write(96,*) "Maximal timestep=", tmin
-  write(96,*) "Maximum time t=", tmax
-  write(96,*) "Enable adaptative timestep=", AdaptativeTimeStep
-  write(96,*) "Time output each ", iterOut, "iterations."
-  write(96,*) "Map output each", iterOutMaps*iterOut, "iterations."
+  write(Parameters%unit,*)
+  write(Parameters%unit,*) "=========== LASER PARAMETERS ========"
+  write(Parameters%unit,*) "Laser fluence=", laser%fluence*1d-4, "J.cm-2"
+  write(Parameters%unit,*) "Laser pulse duration=", laser%tau*1d15, "fs"
+  write(Parameters%unit,*) "Laser wavelength=", laser%lambda*1d9, "nm"
+  write(Parameters%unit,*) "Laser spot position: (X,Y)=", x0*1d6, y0*1d6, "um"
+  write(Parameters%unit,*) "Laser spot size: (Sx, Sy)=", laser%spotX*1d6, laser%spotY*1d6, "um"
+  write(Parameters%unit,*) "Mie scattering:", UseMieScattering
+  write(Parameters%unit,*) "Laser polarization", PolarizationSource
+  write(Parameters%unit,*)
+  write(Parameters%unit,*) "============ MESH PARAMETERS =========="
+  write(Parameters%unit,*) "Mesh size", M, "x", N
+  write(Parameters%unit,*) "Dilatation time ratio=", coeffDilaDt
+  write(Parameters%unit,*) "Mesh shift=", MeshShift
+  write(Parameters%unit,*)
+  write(Parameters%unit,*) "============ TIME CONTROL =========="
+  write(Parameters%unit,*) "Initial timestep=", dt0
+  write(Parameters%unit,*) "Maximal timestep=", tmin
+  write(Parameters%unit,*) "Maximum time t=", tmax
+  write(Parameters%unit,*) "Enable adaptative timestep=", AdaptativeTimeStep
+  write(Parameters%unit,*) "Time output each ", iterOut, "iterations."
+  write(Parameters%unit,*) "Map output each", iterOutMaps*iterOut, "iterations."
   
-  call flush(96)
+  call flush(Parameters%unit)
   
   ! initialisation
   call cpu_time(calc_time_begin) !initialisation time
@@ -1280,7 +1266,7 @@ if(UseMieScattering.eq.1) then
     
     do j=1,N
       do i=1,M
-        write(104, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**0.5d0, Radius(i,j)
+        write(Field%unit, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**0.5d0, Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
     end do
@@ -1440,7 +1426,7 @@ if(UseMieScattering.eq.1) then
     end do
   end do
   
-
+  !TODO: Use an OutputData here
   open(102,FILE='meshElements.dat', access='sequential',status='unknown') ! format 881
   do i=1,M
         do j=1,N
@@ -2280,7 +2266,7 @@ if(UseMieScattering.eq.1) then
           write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
         end if
         
-        call flush(95)
+        call flush(Error%unit)
         
 
 
@@ -2291,7 +2277,7 @@ if(UseMieScattering.eq.1) then
         
                 
         if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
-          write(97,887, advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
+          write(Depth%unit,887, advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
                         mesh%Th(i,j), mesh%Ts(i,j), mesh%Ne(i,j), mesh%Nh(i,j), reflectivity(i,j), & !10
                         absorptionDrudeE(i,j), absorptionDrudeH(i,j), diffNe(i,j), diffNh(i,j), TotalElectrons(i,j), & !15
                         TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !20
@@ -2313,14 +2299,14 @@ if(UseMieScattering.eq.1) then
   3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
   3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
   3x, 1E12.5)        
-!          write(97,886, advance='yes')
-          call flush(97); 
+!          write(Depth%unit,886, advance='yes')
+          call flush(Depth%unit);
         end if
         
       end do !on Y
       
        if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
-        write(97,886, advance="yes")
+        write(Depth%unit,886, advance="yes")
 886        FORMAT (3x)
        end if
     end do !on X
@@ -2352,11 +2338,11 @@ if(UseMieScattering.eq.1) then
       do i=1,Mp
         do j=1,Np
           ! ecriture des donnees dans un fichier different
-          write(101,889, advance="yes") t, xP(i,j), yP(i,j), real(potential(i,j)), real(ExPoisson(i,j)), & !
+          write(DepthVessel%unit,889, advance="yes") t, xP(i,j), yP(i,j), real(potential(i,j)), real(ExPoisson(i,j)), & !
                 real(EyPoisson(i,j)), DielectricStatic(i,j), NeP(i,j), NhP(i,j)
   889 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, & !TODO: Please use short notation with prenthesis !!
   1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5) 
-          call flush(101); 
+          call flush(DepthVessel%unit);
         end do
       end do
       
@@ -2371,16 +2357,17 @@ if(UseMieScattering.eq.1) then
     cpu_timestep_duration = (calc_time_3-calc_time_begin) / real(nbiter)
     cpuefficiency=real(nbiter)/(calc_time_3-calc_time_begin)*real(nthreads)
     
+    !This should be moved to output.F90 file
     if(mod(nbiter,iterOut).eq.0) then 
       
-      write(105,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, & !5
+      write(EnergyConservation%unit,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, & !5
           TotalMeshVolume, LaserIntensityEnergy, ElectronKineticEnergy, ElectronPotentialEnergy !9
       
 892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
       !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
-      write(98,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
+      write(TimeMax%unit,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
                     maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
                     maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, &        !15
                     maxDiffNe, maxDiffNh, TotalNumOfE, TotalNumOfH, real(maxFermiIndexE), &        !20
@@ -2399,7 +2386,7 @@ if(UseMieScattering.eq.1) then
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E12.5)
                 
      !TODO: Remove CPUEfficiency and CUP_TIMESTEP_duration
-        write(94,884, advance="YES") t, mesh%Te(1,N/2), mesh%Th(1,N/2), mesh%Ts(1,N/2), mesh%Ne(1,N/2), &                        !5
+        write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,N/2), mesh%Th(1,N/2), mesh%Ts(1,N/2), mesh%Ne(1,N/2), &                        !5
               mesh%Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &        !10
               SourceE(1,N/2), GainsE(1,N/2), SourceH(1,N/2), GainsH(1,N/2), Egap(1,N/2), &                !15
               diffNe(1,N/2), diffNh(1,N/2), real(FermiIndexE(1,N/2)), real(FermiIndexH(1,N/2)), Ce(2,N/2), &                !20
@@ -2414,7 +2401,7 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5)
 
      !TODO: Remove CPUEfficiency
-        write(93,883, advance="YES") t, mesh%Te(M/2,N), mesh%Th(M/2,N), mesh%Ts(M/2,N), mesh%Ne(M/2,N), &
+        write(TimeUp%unit,883, advance="YES") t, mesh%Te(M/2,N), mesh%Th(M/2,N), mesh%Ts(M/2,N), mesh%Ne(M/2,N), &
               mesh%Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
               SourceE(M/2,N), GainsE(M/2,N), SourceH(M/2,N), GainsH(M/2,N), Egap(M/2,N), &
               diffNe(M/2,N), diffNh(M/2,N), real(FermiIndexE(M/2,N)), real(FermiIndexH(M/2,N))
@@ -2425,7 +2412,7 @@ if(UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
      !TODO: Remove CPUEfficiency
-        write(92,882, advance="YES") t, mesh%Te(M/2,1), mesh%Th(M/2,1), mesh%Ne(M/2,1), &
+        write(TimeBottom%unit,882, advance="YES") t, mesh%Te(M/2,1), mesh%Th(M/2,1), mesh%Ne(M/2,1), &
               mesh%Nh(M/2,1), intensity(M/2,1), TotalLaserEnergy, TotalThermalEnergy, cpuefficiency, &
               SourceE(M/2,1), GainsE(M/2,1), SourceH(M/2,1), GainsH(M/2,1), Egap(M/2,1), &
               diffNe(M/2,1), diffNh(M/2,1), real(FermiIndexE(M/2,1)), real(FermiIndexH(M/2,1))
@@ -2447,13 +2434,13 @@ if(UseMieScattering.eq.1) then
       do i=1,M-1
         do j=1,N-1
           
-          write(103, 890, advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
+          write(DualDepth%unit, 890, advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
                                           dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9
                   
         end do
       end do        
     end if
-    call flush(98); call flush(94); call flush(93); call flush(101)
+    call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
   end do
   
   call releasemesh(mesh)
@@ -2465,6 +2452,7 @@ if(UseMieScattering.eq.1) then
   deallocate(NormalE%x, NormalE%y, NormalE%N)
   deallocate(NormalW%x, NormalW%y, NormalW%N)
 
+  !TODO: Sorry but where are the file stream closed???
 
 end program Flaps
 
