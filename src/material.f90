@@ -24,9 +24,11 @@
 !
 !> @date
 !> 15 Jun 2016 - Initial Version
+!> 31 Jul 2016 - NTD : Adding the routine ComputeConductivities_batch
 !------------------------------------------------------------------------------
 
 
+!------------------------------------------------------------------
     subroutine TabCreateFL( M, N, FermiTableE, FermiTableH)
       implicit none
       integer, intent(in)    :: M, N
@@ -55,6 +57,7 @@
 
 
 
+!------------------------------------------------------------------
     complex(8) function DielectricConstant(lambda)
       implicit none
 
@@ -78,6 +81,7 @@
       return
     end function DielectricConstant
 
+!------------------------------------------------------------------
     real(8) function DensityOfState(mDOS, T)
     use Maths_m
     implicit none
@@ -86,6 +90,7 @@
       return
     end function DensityOfState
 
+!------------------------------------------------------------------
   !Routine that computes both electron and hole density of states, on the full grid
   subroutine DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
     use Maths_m
@@ -114,6 +119,7 @@
   end subroutine DensitiesOfState_batch
 
 
+!------------------------------------------------------------------
     !TODO: Do we need DielectricFunctionDrude? Is it just possible to compute it with epsilonInf=1 ?
     complex(8) function DielectricFunction(epsilonInf, ne, nuColl, me, laser)
       use Maths_m
@@ -131,6 +137,7 @@
       return
     end function DielectricFunction
 
+!------------------------------------------------------------------
    !This routine computes the dielectric function for the entire grid with one call
     subroutine DielectricFunction_batch(mesh, N, Dielectric, epsilonInf, nuColl, me, laser)
       use Maths_m
@@ -159,6 +166,7 @@
 
     end subroutine DielectricFunction_batch
 
+!------------------------------------------------------------------
     complex(8) function DielectricFunctionDrude(density, Collision, mass, laser)
       use Maths_m
       use Types_m
@@ -175,6 +183,7 @@
       return
     end function DielectricFunctionDrude
 
+!------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
     subroutine DielectricFunctionDrude_batch(mesh, N, Dielectric, Collision, mass, laser)
       use Maths_m
@@ -202,6 +211,8 @@
 
     end subroutine DielectricFunctionDrude_batch
 
+
+!------------------------------------------------------------------
 
     !TODO: Create a batch version of this routine
     real(8) function ephCollisionFrequency(ne)
@@ -243,6 +254,86 @@
       end if
       return
     end function ImpactIonizationRate
+
+   !-------------------------------------------------------------------------------------
+   !> Computes the conductivities for the entire mesh
+   !-------------------------------------------------------------------------------------
+    subroutine ComputeConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                           ColFermi0, ColFermi1, ColFermi2, ConductivityFix)
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(inout) :: kappae(mesh%M,mesh%N)
+      real(8),           intent(inout) :: kappah(mesh%M,mesh%N)
+      real(8),           intent(inout) :: kappas(mesh%M,mesh%N)
+      real(8),           intent(in)    :: mobilityE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: mobilityH(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+      integer(8),           intent(in)    :: ColFermi0, ColFermi1, ColFermi2, ConductivityFix
+
+      integer :: i, j
+
+      !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
+      real(8), parameter :: aa = -8.992d0
+      real(8), parameter :: bb = 68.265d0
+      real(8), parameter :: cc = -.4075612391d0
+      real(8), parameter :: dd = .315984470d0
+      real(8), parameter :: ee = -.4756634637d0
+      real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
+
+      if(ConductivityFix.eq.-1) then
+        kappae(:,:) = 0.d0
+        kappah(:,:) = 0.d0
+        kappas(:,:) = 0.d0
+        return
+      end if
+
+      !$OMP DO COLLAPSE(2)
+      do j=2, mesh%N-1 !(optimized)
+        do i=2, mesh%M-1
+
+          !TODO: These FermiTable etc, can we precompute them?
+          ! thermal coefficients
+          kappae(i,j)=kb2*inv_ec*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)* &
+             ( 6d0*  FermiTableE(ColFermi2,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) &
+              -4d0*( FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)))**2 )
+
+          kappah(i,j)=kb2*inv_ec*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)* &
+            (  6d0*  FermiTableH(ColFermi2,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) &
+              -4d0*( FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
+!         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
+
+          !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
+          kappas(i,j)=max(0.d0, &
+                    (aa + bb/(1d0+exp(cc-1.0d0*mesh%Ts(i,j)+dd))*(1d0-1d0/(1d0+exp(ee-2.0d0*mesh%Ts(i,j)+ff)))))
+!        ! correction considering Fick diffusion in energy
+!         if(ConductivityFix.eq.1) then
+!             kappae(i,j)=kappae(i,j) + kb2*Te(i,j)*Ne(i,j)*mobilityE(i,j) / ec &
+!                       * (etae - 2d0*FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) )**2
+!             kappah(i,j)=kappah(i,j) + kb2*Th(i,j)*Nh(i,j)*mobilityH(i,j) / ec &
+!                       * (etah - 2d0*FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) )**2
+!         else if(ConductivityFix.eq.2) then
+!             kappae(i,j)=kappae(i,j) + 2d0*kb2*Te(i,j)*FermiTableE(ColFermi1,FermiIndexE(i,j))*mobilityE(i,j)*FermiTableE(ColFermiHalf, FermiIndexE(i,j))*Ne(i,j) * &
+!                         (2d0*FermiTableE(ColFermi1, FermiIndexE(i,j))*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) &
+!                         /FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) - 1.5d0) * &
+!                         (FermiTableE(ColFermi0, FermiIndexE(i,j))*ec*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))**(-1e0)
+!
+!             kappah(i,j)=kappah(i,j) + 2d0*kb2*Te(i,j)*FermiTableH(ColFermi1,FermiIndexH(i,j))*mobilityH(i,j)*FermiTableH(ColFermiHalf, FermiIndexH(i,j))*Ne(i,j) * &
+!                         (2d0*FermiTableH(ColFermi1, FermiIndexH(i,j))*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
+!                         /FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) - 1.5d0) * &
+!                         (FermiTableH(ColFermi0, FermiIndexH(i,j))*ec*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))**(-1.)
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine ComputeConductivities_batch
+
 
     real(8) function OnePhotonIonizationRate()
       implicit none

@@ -54,6 +54,7 @@ module Maths_m
 
   real(8), public, parameter    :: kb2      = kb*kb
   real(8), public, parameter    :: inv_hbar = 1.0d0/hbar
+  real(8), public, parameter    :: inv_ec   = 1.0d0/ec
 
 end module Maths_m
 

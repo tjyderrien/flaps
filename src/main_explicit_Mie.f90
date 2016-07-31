@@ -1648,7 +1648,7 @@ if(UseMieScattering.eq.1) then
             ConstBLy=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
                       / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*y0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
-            intensity(i,j)=(1d0-0d0*reflectivity(i,N))*exp(-.5d0*((t-t0)/sigmaTau)**2) &
+            intensity(i,j)=(1d0-0d0*reflectivity(i,N))*exp(-.5d0*((t-t0)/sigmaTau)**2) & !TODO: How could you code something like that??
                           *( &
                           I1*exp(-.5d0*((x(i,j)-x1)/sigmaX1)**2)*exp(-.5d0*((y(i,j)-y1)/sigmaY1)**2) + &
                           I2*exp(-.5d0*((x(i,j)-x2)/sigmaX2)**2)*exp(-.5d0*((y(i,j)-y2)/sigmaY2)**2) + &
@@ -1739,43 +1739,7 @@ if(UseMieScattering.eq.1) then
         LossesH(i,j)=LossesE(i,j)
 
 
-        if(ConductivityFix.eq.0) then
-        ! thermal coefficients
-        kappae(i,j)=kb2*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)/ec*(6d0*FermiTableE(ColFermi2,FermiIndexE(i,j)) &
-                /FermiTableE(ColFermi0,FermiIndexE(i,j)) &
-                -4d0*(FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)))**2)
-        kappah(i,j)=kb2*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)/ec*(6d0*FermiTableH(ColFermi2,FermiIndexH(i,j)) &
-                /FermiTableH(ColFermi0,FermiIndexH(i,j)) &
-                -4d0*(FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
-!         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
-        !TODO: Arg mes yeux !!!!
-        kappas(i,j)=max(0.d0, &
-                    (-8.992d0+68.265d0/(1d0+exp(-.4075612391d-1*mesh%Ts(i,j)+2.315984470d0))*(1d0-1d0/ &
-                    (1d0+exp(-.4756634637d-2*mesh%Ts(i,j)+2.403533689d0))))) !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
 
-!        ! correction considering Fick diffusion in energy
-!         if(ConductivityFix.eq.1) then 
-!             kappae(i,j)=kappae(i,j) + kb2*Te(i,j)*Ne(i,j)*mobilityE(i,j) / ec &
-!                       * (etae - 2d0*FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) )**2
-!             kappah(i,j)=kappah(i,j) + kb2*Th(i,j)*Nh(i,j)*mobilityH(i,j) / ec &
-!                       * (etah - 2d0*FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) )**2
-!         else if(ConductivityFix.eq.2) then 
-!             kappae(i,j)=kappae(i,j) + 2d0*kb2*Te(i,j)*FermiTableE(ColFermi1,FermiIndexE(i,j))*mobilityE(i,j)*FermiTableE(ColFermiHalf, FermiIndexE(i,j))*Ne(i,j) * &
-!                         (2d0*FermiTableE(ColFermi1, FermiIndexE(i,j))*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) & 
-!                         /FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) - 1.5d0) * & 
-!                         (FermiTableE(ColFermi0, FermiIndexE(i,j))*ec*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))**(-1e0)
-!                         
-!             kappah(i,j)=kappah(i,j) + 2d0*kb2*Te(i,j)*FermiTableH(ColFermi1,FermiIndexH(i,j))*mobilityH(i,j)*FermiTableH(ColFermiHalf, FermiIndexH(i,j))*Ne(i,j) * &
-!                         (2d0*FermiTableH(ColFermi1, FermiIndexH(i,j))*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) & 
-!                         /FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) - 1.5d0) * & 
-!                         (FermiTableH(ColFermi0, FermiIndexH(i,j))*ec*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))**(-1.)
-!                         
-        else if(ConductivityFix.eq.-1) then
-           kappae(i,j)=0d0
-           kappah(i,j)=0d0
-           kappas(i,j)=0d0
-        end if
-        
         Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
                       -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
                                       (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
@@ -1841,6 +1805,11 @@ if(UseMieScattering.eq.1) then
       end do
     end do
     !$OMP END DO
+
+    !Compute the new conductivites, based on the knowledge of densities and mobilities
+    call ComputeConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                     ColFermi0, ColFermi1, ColFermi2, ConductivityFix)
 
       !
       ! interpolation bilineaire ponderee par les aires
