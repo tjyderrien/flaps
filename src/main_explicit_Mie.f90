@@ -1810,147 +1810,140 @@ if(UseMieScattering.eq.1) then
     call ComputeConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                      FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                      ColFermi0, ColFermi1, ColFermi2, ConductivityFix)
-
-      !
-      ! interpolation bilineaire ponderee par les aires
-      call bilinear_interpol_dual(mesh, dual, InvCellVol)
-      !
-      !
-      ! solving the 2D problem
-      !
-      !
-      !
-      if(NeOff.eq.0) then
-        call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
+    !
+    ! interpolation bilineaire ponderee par les aires
+    call bilinear_interpol_dual(mesh, dual, InvCellVol)
+    !
+    !
+    ! solving the 2D problem
+    !
+    !
+    !
+    if(NeOff.eq.0) then
+      call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-      else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
-        newmesh%Ne(:,:)=mesh%Ne(:,:)
-        newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
-      end if
-      !
-      if(HolesOff.eq.0 .AND. NeOff.eq.0) then
-        call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
+    else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
+      newmesh%Ne(:,:)=mesh%Ne(:,:)
+      newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
+    end if
+    !
+    if(HolesOff.eq.0 .AND. NeOff.eq.0) then
+      call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+    endif
+    !
+    !
+    !
+    if(TeOff.ne.1) then
+      !
+      if(ConvectionEnergy.eq.0) then
+        !
+        call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce, &
+                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                       &
+                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N,                       &
+                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                       &
+                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+        !
+      else
+        !
+        call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
+                    Ce, Ue, UeNew, VeX, VeY, CellVol,                                                 &
+                    ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                    ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                    CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
+                    NormalN, NormalS, NormalE, NormalW  )
+        !
+        !TODO: Should probably not be here
+        call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
+                    Ch, Uh, UhNew, VhX, VhY, CellVol,                                                 &
+                    ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                    ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                    CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
+                    NormalN, NormalS, NormalE, NormalW  )
+        !
       endif
       !
-      !
-      !
-      if(TeOff.ne.1) then
+      if(HolesOff.eq.0) then
         !
         if(ConvectionEnergy.eq.0) then
           !
-          call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                       &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N,                       &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                       &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+          call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, Ch,&
+                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
           !
         else
           !
-          call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
-                      Ce, Ue, UeNew, VeX, VeY, CellVol,                                                 &
-                      ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                      CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
-                      NormalN, NormalS, NormalE, NormalW  )
-          !
-          !TODO: Should probably not be here
-          call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
-                      Ch, Uh, UhNew, VhX, VhY, CellVol,                                                 &
-                      ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                      CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
-                      NormalN, NormalS, NormalE, NormalW  )
-          !
-        endif
-        !
-        if(HolesOff.eq.0) then
-          !
-          if(ConvectionEnergy.eq.0) then
-            !
-            call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, Ch,&
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-            !
-          else
-            !
-            !TODO: Check that we need that and not computeUh
-            call computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
-                      Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
-                      CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
-                      CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
-            !
-          endif
+          !TODO: Check that we need that and not computeUh
+          call computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
+                    Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
+                    CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
+                    CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
           !
         endif
         !
       endif
       !
-      if(TsOff.ne.1) then
-        !
-        call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, CouplingE, &
-                      h1, h2, h3, Cs, TsPrev, TsOld, CellVol, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-        !
-      end if
+    endif
+    !
+    if(TsOff.ne.1) then
       !
-
-      !$OMP DO COLLAPSE(2) !(optimized)
-!       do i=2, M-1
-        do j=2, N-1 !(optimized)
-!         do j=2, N-1
-        do i=2, M-1 !(optimized)
-
-    if(ConvectionEnergy.eq.1) then !define temperatures from energy
-      newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
-          *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) / Ce(i,j)
-      newmesh%Th(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(newmesh%Nh(i,j) - mesh%Nh(i,j)) &
-          *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) / Ch(i,j)
+      call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, CouplingE, &
+                    h1, h2, h3, Cs, TsPrev, TsOld, CellVol, &
+                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+      !
     end if
+    !
+    !$OMP DO COLLAPSE(2) !(optimized)
+    do j=2, N-1 !(optimized)
+      do i=2, M-1 !(optimized)
+
+      if(ConvectionEnergy.eq.1) then !define temperatures from energy
+        newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
+            *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) / Ce(i,j)
+        newmesh%Th(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(newmesh%Nh(i,j) - mesh%Nh(i,j)) &
+            *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) / Ch(i,j)
+      end if
                       
 
-    !TODO: Optimise
-    CFLxT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-    CFLyT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
-    CFLxTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-    CFLyTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
-          
-!         end if
+      !TODO: Optimise
+      CFLxT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+      CFLyT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+      CFLxTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+      CFLyTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
         
-    !TODO: Optimise
-    CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
-    CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
+      !TODO: Optimise
+      CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
+      CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
         
-    !TODO:Optimise
-    TotalElectrons(i,j)=newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                    -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-    TotalHoles(i,j)=newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                    -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+      !TODO:Optimise
+      TotalElectrons(i,j)=newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                      -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+      TotalHoles(i,j)=newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                      -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
         
         
-    ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
+      ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
 
 
-    work = intensity(i,j)/(1d0-reflectivity(i,j))
-    LaserEnergy(i,j) = OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
-                     + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
-             + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
+      work = intensity(i,j)/(1d0-reflectivity(i,j))
+      LaserEnergy(i,j) = OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
+                       + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
+                  + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
         
-      end do
     end do
-    !$OMP END DO
-
+  end do
+  !$OMP END DO
   !$OMP END PARALLEL
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of parallel section
     
