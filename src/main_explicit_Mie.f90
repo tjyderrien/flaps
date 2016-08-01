@@ -29,7 +29,7 @@
 !------------------------------------------------------------------------------
 
 program Flaps
-
+USE OMP_LIB
 ! include 'Bivariate.f'
 ! USE Bivariate
 USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
@@ -307,8 +307,9 @@ implicit none
             
 !OPENMP declarations
     integer :: myid, nthreads
-    integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
-
+!#IFDEF (OMP_NUM_THREADS)
+!    integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
+!#ENDIF
 
   !TODO: move to material.f90
   !TODO: Should be a parameter, to guaranty no modification
