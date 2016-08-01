@@ -142,7 +142,7 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    implicit none
 
    type(MeshValues), intent(IN) :: mesh
-   integer, intent(in)          :: i, j
+   integer(8), intent(in)          :: i, j
    real(8), intent(in)          :: x, y, t, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN
 
    logical Diverged
