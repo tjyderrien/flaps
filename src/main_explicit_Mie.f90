@@ -1503,7 +1503,9 @@ if(UseMieScattering.eq.1) then
    !$OMP& ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP& EintField, EintFieldI, EintFieldR, NeTotal, NhTotal, &
    !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
-   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW ) &
+   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
+   !$OMP& ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
+   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf)
    !$OMP& FIRSTPRIVATE (t, t0, x0, y0, I0, I1, I2, I3, I4, I5, I6, I7, &
    !$OMP& I8, I9, &
    !$OMP& x1, x2, x3, x4, x5, x6, x7, x8, x9, &
@@ -1514,8 +1516,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, &
    !$OMP& sigmaY8, sigmaY9, &
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, nbiter, &
-   !$OMP& cpuefficiency, ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
-   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, Mp, Np)
+   !$OMP& cpuefficiency, Mp, Np)
 
    nthreads = OMP_GET_NUM_THREADS()
 
