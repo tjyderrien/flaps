@@ -41,7 +41,7 @@ module Types_m
     integer :: M,N !> Mesh dimension
    end type MeshValues
 
-   !> Paramters of the laser
+   !> Parameters of the laser
    type LaserParams
      real(8) :: lambda    !> laser wavelength (m)
      real(8) :: fluence   !> laser fluence (J.m-2)
@@ -61,6 +61,12 @@ module Types_m
     real(8), allocatable, dimension(:,:) :: x, y !> x, y components of a vector
     real(8), allocatable, dimension(:,:) :: N    !> Norm of this vector
   end type VectorField
+
+  !> This structure contains to the information for one output file
+  type OutputData
+    integer :: unit       !> The unit for input/output
+  end type OutputData
+
 
 end module Types_m
 
