@@ -29,10 +29,10 @@
 
 
 !------------------------------------------------------------------
-    subroutine TabCreateFL( M, N, FermiTableE, FermiTableH)
+    subroutine TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
       implicit none
-      integer, intent(in)    :: M, N
-      real(8) :: FermiTableE(1:M,1:N), FermiTableH(1:M,1:N)
+      integer, intent(in)    :: FermiMaxLines
+      real(8) :: FermiTableE(1:9,1:FermiMaxLines), FermiTableH(1:9,1:FermiMaxLines)
 
       integer :: unit1, unit2
       unit1=15; unit2=16
