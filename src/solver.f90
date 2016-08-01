@@ -206,7 +206,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, kappae, CouplingE, SourceE, Ce, &
+  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, kappae, CouplingE, SourceE, Ce, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &

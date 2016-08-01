@@ -1494,7 +1494,7 @@ if(UseMieScattering.eq.1) then
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
    !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
-   !$OMP& mobilityE, mobilityH, Egap, &
+   !$OMP& mobilityE, mobilityH, Egap, me, mh, meDOS, mhDOS, DOSe, DOSh, &
    !$OMP& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
    !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
    !$OMP& JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, & !Amatrix
