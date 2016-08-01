@@ -2077,9 +2077,33 @@ if(UseMieScattering.eq.1) then
 !     HoleEnergy=0d0
 !     LatticeEnergy=0d0
     
-    !TODO: Replace with Fortran native minval and maxval functions
-    do i=1,M
+    maxCFLxN   = maxval(CFLxN)
+    maxCFLyN   = maxval(CFLyN)
+    maxCFLxT   = maxval(CFLxT)
+    maxCFLyT   = maxval(CFLyT)
+    maxCFLxTs  = maxval(CFLxTs)
+    maxCFLyTs  = maxval(CFLyTs)
+    maxTe      = maxval(newmesh%Te)
+    minTe      = minval(newmesh%Te)
+    maxTh      = maxval(newmesh%Th)
+    minTh      = minval(newmesh%Th)
+    maxTs      = maxval(newmesh%Ts)
+    minTs      = minval(newmesh%Ts)
+    maxNe      = maxval(newmesh%Ne)
+    minNe      = minval(newmesh%Ne)
+    maxNh      = maxval(newmesh%Nh)
+    minNh      = minval(newmesh%Nh)
+    maxIntensity = maxval(intensity)
+    maxSourceE = maxval(SourceE)
+    maxGainsE  = maxval(GainsE)
+    maxSourceH = maxval(SourceH)
+    maxGainsH  = maxval(GainsH)
+    maxGap     = maxval(Egap)
+    maxDiffNe  = maxval(diffNe)
+    maxDiffNh  = maxval(diffNh)
 
+    !TODO: Should be parallelized
+    do i=1,M
       do j=1,N
 
         NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
@@ -2090,102 +2114,6 @@ if(UseMieScattering.eq.1) then
            MaxHeatingTime(i,j)=t
         end if
 
-        if(maxCFLxN < CFLxN(i,j)) then
-          maxCFLxN=CFLxN(i,j)
-        end if
-        
-        if(maxCFLyN < CFLyN(i,j)) then 
-          maxCFLyN=CFLyN(i,j)
-        end if
-        
-        if(maxCFLxT < CFLxT(i,j)) then 
-          maxCFLxT=CFLxT(i,j)
-        end if
-        
-        if(maxCFLyT < CFLyT(i,j)) then 
-          maxCFLyT=CFLyT(i,j)
-        end if
-        
-        if(maxCFLxTs < CFLxTs(i,j)) then 
-          maxCFLxTs=CFLxTs(i,j)
-        end if
-        
-        if(maxCFLyTs < CFLyTs(i,j)) then 
-          maxCFLyTs=CFLyTs(i,j)
-        end if
-        
-        if(maxTe < newmesh%Te(i,j)) then
-          maxTe=newmesh%Te(i,j)
-        end if
-        
-        if(minTe > newmesh%Te(i,j)) then
-          minTe=newmesh%Te(i,j)
-        end if
-        
-        if(maxTh < newmesh%Th(i,j)) then
-          maxTh=newmesh%Th(i,j)
-        end if        
-        
-        if(minTh > newmesh%Th(i,j)) then
-          minTh=newmesh%Th(i,j)
-        end if
-
-        if(maxTs < newmesh%Ts(i,j)) then
-          maxTs=newmesh%Ts(i,j)
-        end if
-        
-        if(minTs > newmesh%Ts(i,j)) then
-          minTs=newmesh%Ts(i,j)
-        end if
-        
-        if(maxNe < newmesh%Ne(i,j)) then
-          maxNe=newmesh%Ne(i,j)
-        end if
-        
-        if(minNe > newmesh%Ne(i,j)) then
-          minNe=newmesh%Ne(i,j)
-        end if
-        
-        if(maxNh < newmesh%Nh(i,j)) then
-          maxNh=newmesh%Nh(i,j)
-        end if
-        
-        if(minNh > newmesh%Nh(i,j)) then
-          minNh=newmesh%Nh(i,j)
-        end if
-        
-        if(maxIntensity < intensity(i,j)) then 
-          maxIntensity=intensity(i,j)
-        end if
-        
-        if(maxSourceE < SourceE(i,j)) then 
-          maxSourceE=SourceE(i,j)
-        end if
-        
-        if(maxGainsE < GainsE(i,j)) then 
-          maxGainsE=GainsE(i,j)
-        end if
-                
-        if(maxSourceH < SourceH(i,j)) then 
-          maxSourceH=SourceH(i,j)
-        end if
-        
-        if(maxGainsH < GainsH(i,j)) then 
-          maxGainsH=GainsH(i,j)
-        end if
-        
-        if(maxGap < Egap(i,j)) then 
-          maxGap=Egap(i,j)
-        end if
-        
-        if(maxDiffNe < diffNe(i,j)) then 
-          maxDiffNe=diffNe(i,j)
-        end if
-        
-        if(maxDiffNh < diffNh(i,j)) then 
-          maxDiffNh=diffNh(i,j)
-        end if
-        
         if(real(maxFermiIndexE) < real(FermiIndexE(i,j))) then
           maxFermiIndexE=FermiIndexE(i,j)
         end if
