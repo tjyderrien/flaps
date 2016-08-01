@@ -8,6 +8,7 @@ CFLAGS=$(Optimization)
 EXEC=Flaps_explicit.out
 
 #LDFLAGS=-L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -lm
+LDFLAGS=-L/usr/lib/lapack -llapack
 
 OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $(wildcard libs/amos/*.o) libs/gmsh/libmsh2vf.o libs/control_file.o
 
@@ -18,7 +19,7 @@ all: $(EXEC)
 
 $(EXEC): external_libs src_files
 	@echo 'Building target: $@'
-	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS)
+	$(CC) $(CFLAGS) -o $@  $(OBJ_LIBS) $(OBJS) $(LDFLAGS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	@echo '************  Compilation OK  ************';

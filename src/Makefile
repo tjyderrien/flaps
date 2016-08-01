@@ -1,5 +1,7 @@
 FC90=gfortran
 FCFLAGS=-O2 -g -pg -Wall -ffree-line-length-none -I../libs/gmsh
+#LDFLAGS=-L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -lm
+#LDFLAGS=-L/usr/lib/lapack -llapack
 
 F90_SRCS= grid.f90     \
           material.f90 \
