@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # export KMP_STACKSIZE=104857600
-export OMP_STACKSIZE=10485760
+export OMP_STACKSIZE=10M
 # export OMP_NUM_THREADS=8
 # export MKL_NUM_THREADS=8
 export MKL_DYNAMIC="FALSE"

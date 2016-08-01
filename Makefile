@@ -1,9 +1,9 @@
-DebugLine=-g -pg -fbounds-check -w -fbacktrace -Wno-unused-variable -Wall
-Optimization=$(DebugLine) -O2 -ffree-line-length-none -ffixed-line-length-none -mcmodel=small -I/usr/include -llapack -fopenmp -lm
+DebugLine=-g -check all -warn all -backtrace #-pg -fbounds-check -w -fbacktrace -Wno-unused-variable -Wall
+Optimization=$(DebugLine) -O2 -I/usr/include -llapack -lm -openmp #-mcmodel=large
 
 #-finteger-4-integer-8
 
-CC=gfortran
+CC=ifort #gfortran
 CFLAGS=$(Optimization)
 EXEC=Flaps_explicit.out
 

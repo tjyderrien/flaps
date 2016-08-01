@@ -63,15 +63,15 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=11   ,& !number of cells main domain X direction
-                          N=11     ,& !number of cells main domain Y direection
+                          M=2001   ,& !number of cells main domain X direction
+                          N=151     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
                           MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: Experimental cones, 2: Cone in a vessel (HS), 3: import GMSH (working)
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
-                          MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
+                          MeshShift=101       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
                           FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
                           AdaptativeTimeStep=1
        !                   SORiterations=1        ,&        !iteration number for over-relaxation method
@@ -298,7 +298,7 @@ implicit none
                ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf
 
     !! FUNCTIONS CALLS
-     integer(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
+     real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, DensityOfState, EgapValue, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
              CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate, ephCollisionFrequency
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
@@ -1487,35 +1487,35 @@ if(UseMieScattering.eq.1) then
     
     !TODO: Use DEFAULT(NONE) here, this is safer
 
-   !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt1, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, dual, intensityDual, laser &
-   !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, intensity2, reflectivity, FermiTableE, FermiTableH, &
+   !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
+   !$OMP& mesh, dual, intensityDual, laser, &
+   !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
    !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
    !$OMP& mobilityE, mobilityH, Egap, &
    !$OMP& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
    !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
-   !$OMP& OmegaX, OmegaY, JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Amatrix, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, &
+   !$OMP& JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, & !Amatrix
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
    !$OMP& NormalN, NormalS, NormalE, NormalW, &
    !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
    !$OMP& ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
-   !$OMP& EintField, EintFieldDual, EintFieldI, EintFieldR, NeTotal, NhTotal, &
+   !$OMP& EintField, EintFieldI, EintFieldR, NeTotal, NhTotal, &
    !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
-   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW ), &
+   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW ) &
    !$OMP& FIRSTPRIVATE (t, t0, x0, y0, I0, I1, I2, I3, I4, I5, I6, I7, &
    !$OMP& I8, I9, &
    !$OMP& x1, x2, x3, x4, x5, x6, x7, x8, x9, &
    !$OMP& y1, y2, y3, y4, y5, y6, y7, y8, y9, &
-   !$OMP& h1, h2, h3, h4, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+   !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
    !$OMP& sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, &
    !$OMP& sigmaX8, sigmaX9, &
    !$OMP& sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, &
    !$OMP& sigmaY8, sigmaY9, &
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, nbiter, &
    !$OMP& cpuefficiency, ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
-   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, SORsum, Mp, Np)
+   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, Mp, Np)
 
    nthreads = OMP_GET_NUM_THREADS()
 

@@ -19,8 +19,8 @@
 LIB		= 
 INC		=
 
-F90FLAGS	= -C -g -w -fbacktrace
-F90			= gfortran
+F90FLAGS	= -C -g -w -backtrace
+F90			= ifort #gfortran
 
 LD		= $(F90)
 

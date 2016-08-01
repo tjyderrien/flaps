@@ -1,5 +1,5 @@
-CC=gfortran
-LDFLAGS=-O2 -g -pg
+CC=ifort #gfortran
+LDFLAGS=-O3 #-g -pg
 SRC=$(wildcard *.f)
 OBJ=$(SRC:.f=.o)
 

@@ -1,5 +1,5 @@
-CC=gfortran
-LDFLAGS=-O2 -g -pg
+CC=ifort #gfortran
+LDFLAGS=-O3 #-g -pg
 
 SRC=Bivariate.f zeroin.f
 SRC90=control_file.f90
