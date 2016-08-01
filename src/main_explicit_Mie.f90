@@ -63,15 +63,15 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=2001   ,& !number of cells main domain X direction
-                          N=151     ,& !number of cells main domain Y direection
+                          M=11   ,& !number of cells main domain X direction
+                          N=11     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
                           MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: Experimental cones, 2: Cone in a vessel (HS), 3: import GMSH (working)
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
-                          MeshShift=101       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
+                          MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
                           FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
                           AdaptativeTimeStep=1
        !                   SORiterations=1        ,&        !iteration number for over-relaxation method
@@ -1444,7 +1444,7 @@ if(UseMieScattering.eq.1) then
                                   xDualNE(i,j), yDualNE(i,j), xDualNW(i,j), yDualNW(i,j) !, xDual(i,j), & !50
 !                                  yDual(i,j)
 
-881 FORMAT (2(I3, 3x), 2(1E16.8, 3x), 44(1E12.5,3x), 1E12.5)
+881 FORMAT (2(I5, 3x), 2(1E16.8, 3x), 44(1E12.5,3x), 1E12.5)
         end do
       end do
    close(102)
