@@ -298,7 +298,7 @@ implicit none
                ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf
 
     !! FUNCTIONS CALLS
-     integer(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
+     real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, DensityOfState, EgapValue, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
              CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate, ephCollisionFrequency
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
@@ -720,39 +720,37 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !           end do
 !         end do
         
-        ! resolution of laplace (sequential)
+!         ! resolution of laplace (sequential)
+!         do i=2, M-1
+!           do j=2,N-1
+!             x(i,j)=(x(i+1,j)+x(i-1,j)+x(i,j+1)+x(i,j-1))/4d0
+!             y(i,j)=(y(i+1,j)+y(i-1,j)+y(i,j+1)+y(i,j-1))/4d0
+!           end do
+!         end do
+        
+        
+        ! attempt of optimization using OpenMP
+        !$OMP PARALLEL DEFAULT(private) SHARED(x, y, xNew, yNew)
+        
+        ! save the contours (can be optimized)
+        
+        xNew(:,:)=x(:,:)
+        yNew(:,:)=y(:,:)
+        
+        !$OMP DO COLLAPSE(2) !(optimized)
         do i=2, M-1
           do j=2,N-1
-            x(i,j)=(x(i+1,j)+x(i-1,j)+x(i,j+1)+x(i,j-1))/4d0
-            y(i,j)=(y(i+1,j)+y(i-1,j)+y(i,j+1)+y(i,j-1))/4d0
-          end do
+            xNew(i,j)=(x(i+1,j)+x(i-1,j)+x(i,j+1)+x(i,j-1))*.25d0
+            yNew(i,j)=(y(i+1,j)+y(i-1,j)+y(i,j+1)+y(i,j-1))*.25d0
+          end do        
         end do
+        !$OMP END DO
         
+        ! replace with the new mesh
+        x(:,:)=xNew(:,:)
+        y(:,:)=yNew(:,:)
         
-!         ! attempt of optimization using OpenMP
-!         !$OMP PARALLEL DEFAULT(private) SHARED(x, y, xNew, yNew)
-!         
-!         ! save the contours (can be optimized)
-!         
-!         xNew(:,:)=x(:,:)
-!         yNew(:,:)=y(:,:)
-!         
-!         !$OMP DO !(optimized)
-!         do i=2, M-1
-!         !$OMP PARALLEL DO !(optimized)
-!           do j=2,N-1
-!             xNew(i,j)=(x(i+1,j)+x(i-1,j)+x(i,j+1)+x(i,j-1))/4d0
-!             yNew(i,j)=(y(i+1,j)+y(i-1,j)+y(i,j+1)+y(i,j-1))/4d0
-!           end do        
-!         !$OMP END PARALLEL DO
-!         end do
-!         !$OMP END DO
-!         
-!         ! replace with the new mesh
-!         x(:,:)=xNew(:,:)
-!         y(:,:)=yNew(:,:)
-!         
-!         !$OMP END PARALLEL
+        !$OMP END PARALLEL
 
         
         
