@@ -1488,7 +1488,7 @@ if(UseMieScattering.eq.1) then
     !TODO: Use DEFAULT(NONE) here, this is safer
 
    !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, dual, intensityDual, laser, &
+   !$OMP& mesh, newmesh, dual, intensityDual, laser, &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
