@@ -255,6 +255,43 @@
       return
     end function ImpactIonizationRate
 
+
+   !-------------------------------------------------------------------------------------
+   !> Computes the electron and mobilities for the entire mesh
+   !-------------------------------------------------------------------------------------
+    subroutine ComputeMobilities_batch(mesh, mobilityE, mobilityH, &
+                                       FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                       ColFermi0, ColFermiHalf, nuColl, me)
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(inout) :: mobilityE(mesh%M,mesh%N)
+      real(8),           intent(inout) :: mobilityH(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: ColFermi0, ColFermiHalf
+      real(8),           intent(in)    :: nuColl, me
+
+      integer :: i, j
+      real(8) :: coef
+
+      coef = ec/(me*nuColl)
+
+      !$OMP DO COLLAPSE(2)
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
+          mobilityE(i,j)=coef*FermiTableE(ColFermi0, FermiIndexE(i,j))/FermiTableE(ColFermiHalf, FermiIndexE(i,j))
+          mobilityH(i,j)=coef*FermiTableH(ColFermi0, FermiIndexH(i,j))/FermiTableH(ColFermiHalf, FermiIndexH(i,j))
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine ComputeMobilities_batch
+
    !-------------------------------------------------------------------------------------
    !> Computes the conductivities for the entire mesh
    !-------------------------------------------------------------------------------------
@@ -273,9 +310,9 @@
       real(8),           intent(in)    :: mobilityH(mesh%M,mesh%N)
       real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
       real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
-      real(8),           intent(in)    :: FermiIndexE(mesh%M,mesh%N)
-      real(8),           intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),           intent(in)    :: ColFermi0, ColFermi1, ColFermi2, ConductivityFix
+      integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, ConductivityFix
 
       integer :: i, j
 
@@ -295,8 +332,8 @@
       end if
 
       !$OMP DO COLLAPSE(2)
-      do j=2, mesh%N-1 !(optimized)
-        do i=2, mesh%M-1
+      do j=1, mesh%N
+        do i=1, mesh%M
 
           !TODO: These FermiTable etc, can we precompute them?
           ! thermal coefficients

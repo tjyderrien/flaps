@@ -309,6 +309,8 @@ implicit none
     integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
 
 
+  !TODO: move to material.f90
+  !TODO: Should be a parameter, to guaranty no modification
   me=0.5d0*me0       ! electron effective mass for conductivity !0.24 (source ?)
   mh=0.5d0*me0       ! hole effective mass for conductivity !0.81 (source ?)
   meDOS=0.36d0*me0   ! electron effective mass for DOS
@@ -1533,12 +1535,19 @@ if(UseMieScattering.eq.1) then
    CsOld(:,:)=Cs(:,:)
    
    call copy_mesh(mesh, newmesh)
-
-    
+   !
+   !TODO: Does this depends on the position. If yes, this has
+   nuColl=CollisionFrequency()
+   !
    call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, epsilonInf, nuColl, me, laser)
+   !
    call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, nuColl, me, laser)
+   !
    call DielectricFunctionDrude_batch(mesh, mesh%Nh, DielectricDrudeH, nuColl, mh, laser)
+   !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
+   !
+   !
 
 !!!! thermal calculations in the main domain
 ! calculation of sources
@@ -1548,7 +1557,6 @@ if(UseMieScattering.eq.1) then
 !      intensity(i,1)=(1d0-reflectivity(i,1))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2.-.5d0*((x(i,1)-x0)/sigmaX)**2.-.5d0*((y(i,1)-y0)/sigmaY)**2.)
 
         ! optical coefficients
-        nuColl=CollisionFrequency() !TODO: Move out of temporal loop
         nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
      !   Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl, me, laser)
         sqrtDielectric = sqrt(Dielectric(i,j));
@@ -1572,9 +1580,6 @@ if(UseMieScattering.eq.1) then
 !         write(*,*) "iter=", nbiter, "eta=", etae, etah
 !         write(*,*) "FermiTables: etaE,etaH=", FermiTableE(3,463), FermiTableH(3,450)
 
-        mobilityE(i,j)=(ec/(me*nuColl))*FermiTableE(ColFermi0, FermiIndexE(i,j))/FermiTableE(ColFermiHalf, FermiIndexE(i,j))
-        mobilityH(i,j)=(ec/(mh*nuColl))*FermiTableH(ColFermi0, FermiIndexH(i,j))/FermiTableH(ColFermiHalf, FermiIndexH(i,j))
-        
 !         write(*,*) "iter=", nbiter, "mobility=", mobilityE(i,j), mobilityH(i,j)
         if(DrudeHeating==1) then
           absorptionDrudeE(i,j)=4d0*pi/laser%lambda*aimag(sqrt(DielectricDrudeE(i,j)))
@@ -1701,6 +1706,21 @@ if(UseMieScattering.eq.1) then
           intensity(i,j)=0d0
         end if
         
+      end do
+   end do
+   !$OMP END DO
+   !
+   !
+   !Computes the electron and mobilities for the entire mesh
+   call ComputeMobilities_batch(mesh, mobilityE, mobilityH, &
+                                FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                ColFermi0, ColFermiHalf, nuColl, me)
+   !
+   !
+   ! calculation of sources
+   !$OMP DO  COLLAPSE(2)
+   do j=1,N
+     do i=1,M
 
         ! free-carrier balance sources
         Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
@@ -2057,7 +2077,7 @@ if(UseMieScattering.eq.1) then
 !     HoleEnergy=0d0
 !     LatticeEnergy=0d0
     
-    !TODO: Replace with Fortran native min and max functions
+    !TODO: Replace with Fortran native minval and maxval functions
     do i=1,M
 
       do j=1,N
