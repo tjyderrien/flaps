@@ -139,13 +139,13 @@
 
 !------------------------------------------------------------------
    !This routine computes the dielectric function for the entire grid with one call
-    subroutine DielectricFunction_batch(mesh, N, Dielectric, epsilonInf, nuColl, me, laser)
+    subroutine DielectricFunction_batch(mesh, Ne, Dielectric, epsilonInf, nuColl, me, laser)
       use Maths_m
       use Types_m
       implicit none
 
       type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(in)    :: N(mesh%M,mesh%N)
+      real(8),           intent(in)    :: Ne(mesh%M,mesh%N)
       complex(8),        intent(inout) :: Dielectric(mesh%M, mesh%N)
       complex(8),        intent(in)    :: epsilonInf
       real(8),           intent(in)    :: nuColl, me
@@ -159,7 +159,7 @@
       !$OMP DO COLLAPSE(2)
       do j=2, mesh%N-1 !(optimized)
         do i=2, mesh%M-1
-          Dielectric(i,j) =epsilonInf-N(i,j)*coef
+          Dielectric(i,j) =epsilonInf-Ne(i,j)*coef
         end do
       end do
       !$OMP END DO
