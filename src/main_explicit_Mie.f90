@@ -172,6 +172,7 @@ implicit none
                 SourceUe(1:M, 1:N), SourceUh(1:M, 1:N), & ! free carrier thermal energy sources
                 diffNe(1:M, 1:N), diffNh(1:M, 1:N), &         ! just for derivation in time
                 x(1:M, 1:N), y(1:M, 1:N), &                 ! needle position indexes
+                xNew(1:M, 1:N), yNew(1:M, 1:N), &           ! used to converge the mesh parallely
                 xV(1:Mv, 1:Nv), yV(1:Mv, 1:Nv), &                 ! vessel position indexes
                 xDualSW(1:M, 1:N), yDualSW(1:M, 1:N), &                 ! dual mesh position 
                 xDualSE(1:M, 1:N), yDualSE(1:M, 1:N), &                 
