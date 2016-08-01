@@ -967,8 +967,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   ! importing Fermi functions
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
-   call TabCreateFL(M, N, FermiTableE, FermiTableH)
-    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
+   call TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
+    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise! 
+    !uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
   write(Parameters%unit,*) "========== CONE PARAMETERS ========="
