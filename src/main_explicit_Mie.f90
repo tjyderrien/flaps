@@ -1444,7 +1444,7 @@ if(UseMieScattering.eq.1) then
                                   xDualNE(i,j), yDualNE(i,j), xDualNW(i,j), yDualNW(i,j) !, xDual(i,j), & !50
 !                                  yDual(i,j)
 
-881 FORMAT (2(I3, 3x), 2(1E16.8, 3x), 44(1E12.5,3x), 1E12.5)
+881 FORMAT (2(I5, 3x), 2(1E16.8, 3x), 44(1E12.5,3x), 1E12.5)
         end do
       end do
    close(102)
@@ -1488,7 +1488,7 @@ if(UseMieScattering.eq.1) then
     !TODO: Use DEFAULT(NONE) here, this is safer
 
    !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, dual, intensityDual, laser, &
+   !$OMP& mesh, newmesh, dual, intensityDual, laser, &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
