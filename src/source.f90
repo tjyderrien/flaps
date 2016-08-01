@@ -35,7 +35,7 @@ subroutine init_laser( laser )
  type(LaserParams), intent(inout) :: laser
 
   laser%lambda    = 515d-9          !laser wavelength (m)
-  laser%fluence   = 10d0            !laser fluence (J.m-2)
+  laser%fluence   = 0d0            !laser fluence (J.m-2)
   laser%tau       = 40d-15          !FWHM pulse duration (s)
   laser%spotX     = 50d-6           !FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
   laser%spotY     = 50d-6           !FWHM spot size in Y direction

@@ -2347,7 +2347,7 @@ if(UseMieScattering.eq.1) then
       end do        
     end if
     call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
-  end do
+  end do !end of time loop
   
   call releasemesh(mesh)
   call releasemesh(dual)
