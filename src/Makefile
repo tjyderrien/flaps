@@ -15,9 +15,9 @@ F90_SRCS= grid.f90     \
           source.f90   \
           solver.f90   \
           types.f90    \
-          utils/string.f90   \
-          utils/timer.f90    \
-          utils/utils.f90 
+          string.f90   \
+          timer.f90    \
+          utils.f90 
           
          
 OBJ90= $(F90_SRCS:.f90=.o)
@@ -46,7 +46,7 @@ output.o: output.f90 types.o
 source.o: source.f90 maths.o types.o
 solver.o: solver.f90 types.o
 grid.o: grid.f90 maths.o
-input.o: input.f90 types.o utils/string.o utils/utils.o
-utils/string.o: utils/string.f90
-utils/timer.o: utils/timer.f90
-utils/utils.o: utils/utils.f90
+input.o: input.f90 types.o string.o utils.o
+string.o: string.f90
+timer.o: timer.f90
+utils.o: utils.f90
