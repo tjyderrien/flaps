@@ -730,15 +730,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !           end do
 !         end do
         
-        
-        ! attempt of optimization using OpenMP
-        !$OMP PARALLEL DEFAULT(private) SHARED(x, y, xNew, yNew)
-        
+
         ! save the contours (can be optimized)
-        
         xNew(:,:)=x(:,:)
         yNew(:,:)=y(:,:)
-        
+        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, xNew, yNew)
         !$OMP DO COLLAPSE(2) !(optimized)
         do i=2, M-1
           do j=2,N-1
@@ -747,14 +743,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           end do        
         end do
         !$OMP END DO
-        
+        !$OMP END PARALLEL
         ! replace with the new mesh
         x(:,:)=xNew(:,:)
         y(:,:)=yNew(:,:)
-        
-        !$OMP END PARALLEL
 
-        
         
         MeshConvergenceOld=MeshConvergence
         MeshConvergence=0d0
