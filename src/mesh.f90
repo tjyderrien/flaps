@@ -121,15 +121,20 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
         weight = 1.0d0/ ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
 
         ! interpolation bilineaire ponderee par les aires
-        dual%Ne(i,j) = ( mesh%Ne(i,j)* InvCellVol(i,j) + mesh%Ne(i+1,j)*InvCellVol(i+1,j) + mesh%Ne(i,j+1)*InvCellVol(i,j+1) + mesh%Ne(i+1,j+1) &
+        dual%Ne(i,j) = ( mesh%Ne(i,j)* InvCellVol(i,j) + mesh%Ne(i+1,j)*InvCellVol(i+1,j)&
+                       + mesh%Ne(i,j+1)*InvCellVol(i,j+1) + mesh%Ne(i+1,j+1) &
                 *InvCellVol(i+1,j+1) ) * weight
-        dual%Nh(i,j) = ( mesh%Nh(i,j)*InvCellVol(i,j) + mesh%Nh(i+1,j)*InvCellVol(i+1,j) + mesh%Nh(i,j+1)*InvCellVol(i,j+1) + mesh%Nh(i+1,j+1) &
+        dual%Nh(i,j) = ( mesh%Nh(i,j)*InvCellVol(i,j) + mesh%Nh(i+1,j)*InvCellVol(i+1,j) &
+                       + mesh%Nh(i,j+1)*InvCellVol(i,j+1) + mesh%Nh(i+1,j+1) &
                 *InvCellVol(i+1,j+1) ) * weight
-        dual%Te(i,j) = ( mesh%Te(i,j)*InvCellVol(i,j) + mesh%Te(i+1,j)*InvCellVol(i+1,j) + mesh%Te(i,j+1)*InvCellVol(i,j+1) + mesh%Te(i+1,j+1) &
+        dual%Te(i,j) = ( mesh%Te(i,j)*InvCellVol(i,j) + mesh%Te(i+1,j)*InvCellVol(i+1,j) &
+                       + mesh%Te(i,j+1)*InvCellVol(i,j+1) + mesh%Te(i+1,j+1) &
                 *InvCellVol(i+1,j+1) ) * weight
-        dual%Th(i,j) = ( mesh%Th(i,j)*InvCellVol(i,j) + mesh%Th(i+1,j)*InvCellVol(i+1,j) + mesh%Th(i,j+1)*InvCellVol(i,j+1) + mesh%Th(i+1,j+1) &
+        dual%Th(i,j) = ( mesh%Th(i,j)*InvCellVol(i,j) + mesh%Th(i+1,j)*InvCellVol(i+1,j) &
+                       + mesh%Th(i,j+1)*InvCellVol(i,j+1) + mesh%Th(i+1,j+1) &
                 *InvCellVol(i+1,j+1) ) * weight
-        dual%Ts(i,j) = ( mesh%Ts(i,j)*InvCellVol(i,j) + mesh%Ts(i+1,j)*InvCellVol(i+1,j) + mesh%Ts(i,j+1)*InvCellVol(i,j+1) + mesh%Ts(i+1,j+1) &
+        dual%Ts(i,j) = ( mesh%Ts(i,j)*InvCellVol(i,j) + mesh%Ts(i+1,j)*InvCellVol(i+1,j) &
+                       + mesh%Ts(i,j+1)*InvCellVol(i,j+1) + mesh%Ts(i+1,j+1) &
                 *InvCellVol(i+1,j+1) ) * weight
         end do
       end do

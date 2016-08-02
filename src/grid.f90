@@ -26,7 +26,8 @@
 !> 07 Jun 2016 - Initial Version
 !------------------------------------------------------------------------------
 
-subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CellAreaW )
+subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, &
+                                         DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CellAreaW )
   implicit none
 
   integer, intent(in) :: M, N
@@ -67,7 +68,8 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
          CellAreaS(i,N)=0.25d0*(x(i+1,N)**2+2d0*x(i+1,N)*x(i+1,N-1)-2d0*x(i+1,N)*x(i-1,N-1)-2d0*x(i+1,N)*x(i-1,N) &
                 +x(i+1,N-1)**2-2d0*x(i+1,N-1)*x(i-1,N-1)-2d0*x(i+1,N-1)*x(i-1,N)+x(i-1,N-1)**2+2d0*x(i-1,N)*x(i-1,N-1) &
                 +x(i-1,N)**2+y(i+1,N)**2+2d0*y(i+1,N)*y(i+1,N-1)-2d0*y(i+1,N)*y(i-1,N-1)-2d0*y(i+1,N)*y(i-1,N) &
-                +y(i+1,N-1)**2-2d0*y(i+1,N-1)*y(i-1,N-1)-2d0*y(i+1,N-1)*y(i-1,N)+y(i-1,N-1)**2+2d0*y(i-1,N)*y(i-1,N-1)+y(i-1,N)**2)**0.5d0
+                +y(i+1,N-1)**2-2d0*y(i+1,N-1)*y(i-1,N-1)-2d0*y(i+1,N-1)*y(i-1,N)+y(i-1,N-1)**2 &
+                                                             +2d0*y(i-1,N)*y(i-1,N-1)+y(i-1,N)**2)**0.5d0
          CellAreaW(i,N)=0.25d0*(x(i,N)**2+2d0*x(i,N)*x(i-1,N)-2d0*x(i,N)*x(i-1,N-1)-2d0*x(i,N)*x(i,N-1)+x(i-1,N)**2 &
                 -2d0*x(i-1,N)*x(i-1,N-1)-2d0*x(i-1,N)*x(i,N-1)+x(i-1,N-1)**2+2d0*x(i-1,N-1)*x(i,N-1)+x(i,N-1)**2 &
                 +y(i,N)**2+2d0*y(i,N)*y(i-1,N)-2d0*y(i,N)*y(i-1,N-1)-2d0*y(i,N)*y(i,N-1)+y(i-1,N)**2 &
@@ -91,12 +93,17 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
                  -2d0*y(i+1,1)*y(i-1,1)-2d0*y(i+1,1)*y(i-1,2)+y(i-1,1)**2+2d0*y(i-1,1)*y(i-1,2)+y(i-1,2)**2)**(0.5d0)
          CellAreaS(i,1)=0d0 !sqrt((0.5d0*(x(i+1,1)+x(i,1))-0.5d0*(x(i-1,1)+x(i,1)))**2+(0.5d0*(y(i+1,1)+y(i,1))-0.5d0*(y(i-1,1)+y(i,1)))**2)
          CellAreaW(i,1)=0.25d0*(x(i,1)**2-2d0*x(i,1)*x(i,2)+2d0*x(i,1)*x(i-1,1)-2d0*x(i,1)*x(i-1,2)+x(i,2)**2 &
-                  -2d0*x(i,2)*x(i-1,1)+2d0*x(i,2)*x(i-1,2)+x(i-1,1)**2-2d0*x(i-1,1)*x(i-1,2)+x(i-1,2)**2+y(i,1)**2-2d0*y(i,1)*y(i,2) &
-                  +2d0*y(i,1)*y(i-1,1)-2d0*y(i,1)*y(i-1,2)+y(i,2)**2-2d0*y(i,2)*y(i-1,1)+2d0*y(i,2)*y(i-1,2)+y(i-1,1)**2 &
+                  -2d0*x(i,2)*x(i-1,1)+2d0*x(i,2)*x(i-1,2)+x(i-1,1)**2&
+                 -2d0*x(i-1,1)*x(i-1,2)+x(i-1,2)**2+y(i,1)**2-2d0*y(i,1)*y(i,2) &
+                  +2d0*y(i,1)*y(i-1,1)-2d0*y(i,1)*y(i-1,2)+y(i,2)**2 &
+                  -2d0*y(i,2)*y(i-1,1)+2d0*y(i,2)*y(i-1,2)+y(i-1,1)**2 &
                   -2d0*y(i-1,1)*y(i-1,2)+y(i-1,2)**2)**(0.5d0)
-         CellAreaE(i,1)=0.25d0*(x(i+1,2)**2-2d0*x(i+1,2)*x(i+1,1)-2d0*x(i+1,2)*x(i,1)+2d0*x(i+1,2)*x(i,2)+x(i+1,1)**2+2d0*x(i+1,1)*x(i,1) &
-                  -2d0*x(i+1,1)*x(i,2)+x(i,1)**2-2d0*x(i,1)*x(i,2)+x(i,2)**2+y(i+1,2)**2-2d0*y(i+1,2)*y(i+1,1)-2d0*y(i+1,2)*y(i,1) &
-                  +2d0*y(i+1,2)*y(i,2)+y(i+1,1)**2+2d0*y(i+1,1)*y(i,1)-2d0*y(i+1,1)*y(i,2)+y(i,1)**2-2d0*y(i,1)*y(i,2)+y(i,2)**2)**(0.5d0)
+         CellAreaE(i,1)=0.25d0*(x(i+1,2)**2-2d0*x(i+1,2)*x(i+1,1)-2d0*x(i+1,2)*x(i,1)&
+                                +2d0*x(i+1,2)*x(i,2)+x(i+1,1)**2+2d0*x(i+1,1)*x(i,1) &
+                                -2d0*x(i+1,1)*x(i,2)+x(i,1)**2-2d0*x(i,1)*x(i,2)+x(i,2)**2 &
+                                +y(i+1,2)**2-2d0*y(i+1,2)*y(i+1,1)-2d0*y(i+1,2)*y(i,1) &
+                                +2d0*y(i+1,2)*y(i,2)+y(i+1,1)**2+2d0*y(i+1,1)*y(i,1)&
+                                -2d0*y(i+1,1)*y(i,2)+y(i,1)**2-2d0*y(i,1)*y(i,2)+y(i,2)**2)**(0.5d0)
 
          DistN(i,1)=sqrt( (x(i,2)-x(i,1))**2 + (y(i,2)-y(i,1))**2 )
          DistS(i,1)=0d0
@@ -227,8 +234,10 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
 
 end subroutine compute_distances
 
-subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, NormalWx, NormalWy, TangentNx, TangentNy, TangentSx, TangentSy, &
-      TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, &
+                                 NormalWx, NormalWy, TangentNx, TangentNy, TangentSx, TangentSy, &
+                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
+                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
   implicit none
 
   integer, intent(in)    :: M, N
@@ -328,8 +337,8 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
                   0.5d0*(x(i+1,N)+x(i,N)), 0.5d0*(y(i+1,N)+y(i,N)), 1)
          TangentEy(i,N)=-Tangent(0.25d0*(x(i+1,N-1)+x(i,N-1)+x(i+1,N)+x(i,N)), 0.25d0*(y(i+1,N-1)+y(i,N-1)+y(i+1,N)+y(i,N)), &
                   0.5d0*(x(i+1,N)+x(i,N)), 0.5d0*(y(i+1,N)+y(i,N)), 2)
-         TangentNx(i,N)=-Tangent(0.5d0*(x(i,N)+x(i+1,N)),0.5d0*(y(i,N)+y(i+1,N)), 0.5d0*(x(i,N)+x(i-1,N)), 0.5d0*(y(i,N)+y(i-1,N)),1)
-         TangentNy(i,N)=-Tangent(0.5d0*(x(i,N)+x(i+1,N)),0.5d0*(y(i,N)+y(i+1,N)), 0.5d0*(x(i,N)+x(i-1,N)), 0.5d0*(y(i,N)+y(i-1,N)),2)
+         TangentNx(i,N)=-Tangent(0.5d0*(x(i,N)+x(i+1,N)),0.5d0*(y(i,N)+y(i+1,N)),0.5d0*(x(i,N)+x(i-1,N)),0.5d0*(y(i,N)+y(i-1,N)),1)
+         TangentNy(i,N)=-Tangent(0.5d0*(x(i,N)+x(i+1,N)),0.5d0*(y(i,N)+y(i+1,N)),0.5d0*(x(i,N)+x(i-1,N)),0.5d0*(y(i,N)+y(i-1,N)),2)
          TangentSx(i,N)=-Tangent(0.25d0*(x(i-1,N-1)+x(i,N-1)+x(i-1,N)+x(i,N)), 0.25d0*(y(i-1,N-1)+y(i,N-1)+y(i-1,N)+y(i,N)),  &
                   0.25d0*(x(i+1,N-1)+x(i,N-1)+x(i+1,N)+x(i,N)), 0.25d0*(y(i+1,N-1)+y(i,N-1)+y(i+1,N)+y(i,N)),1)
          TangentSy(i,N)=-Tangent(0.25d0*(x(i-1,N-1)+x(i,N-1)+x(i-1,N)+x(i,N)), 0.25d0*(y(i-1,N-1)+y(i,N-1)+y(i-1,N)+y(i,N)), &

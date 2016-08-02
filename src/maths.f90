@@ -506,7 +506,8 @@ end module Maths_m
       !TODO: More general and automatize
       if(t <= 0.2361d0 .AND. t >= -0.2531506894d0) then !reduced cone size for calculation acceleration
 !       if(t <= 2.471556d0 .AND. t >= -3.35d0) then
-        ConeExp1=(p1*(t-tc)**4+p2*(t-tc)**3+p3*(t-tc)**2+p4*(t-tc)+p5)/((t-tc)**4 + q1*(t-tc)**3 + q2*(t-tc)**2 + q3*(t-tc) + q4) + x0
+        ConeExp1=(p1*(t-tc)**4+p2*(t-tc)**3+p3*(t-tc)**2+p4*(t-tc)+p5)&
+                  /((t-tc)**4 + q1*(t-tc)**3 + q2*(t-tc)**2 + q3*(t-tc) + q4) + x0
       end if
 
     end function ConeExp1

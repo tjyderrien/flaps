@@ -1,4 +1,4 @@
-CC=ifort #gfortran
+CC=gfortran #ifort
 LDFLAGS=-O3 #-g -pg
 
 SRC=Bivariate.f zeroin.f

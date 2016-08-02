@@ -1161,10 +1161,13 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(TangentNx(1:M,1:N));   allocate(TangentNy(1:M,1:N))
    allocate(TangentSx(1:M,1:N));   allocate(TangentSy(1:M,1:N))
 
-   call compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
+   call compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, &
+                          DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
    !
-   call compute_norm_tan_curv(M, N, x, y, NormalN%x, NormalN%y, NormalS%x, NormalS%y, NormalE%x, NormalE%y, NormalW%x, NormalW%y, TangentNx, TangentNy, TangentSx, TangentSy, &
-      TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+   call compute_norm_tan_curv(M, N, x, y, NormalN%x, NormalN%y, NormalS%x, NormalS%y, &
+                              NormalE%x, NormalE%y, NormalW%x, NormalW%y, TangentNx, TangentNy, TangentSx, TangentSy, &
+                              TangentEx, TangentEy, TangentWx, TangentWy, &
+                              CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
    !
    call compute_cellvol(M, N, x, y, CellVol, InvCellVol )
    
@@ -1477,7 +1480,8 @@ if(UseMieScattering.eq.1) then
       write(*,*) minNe, "< Ne <", maxNe
       write(*,*) minNh, "< Nh <", maxNh
       write(*,*) "CFL_Te=", maxCFLxT+maxCFLyT, "maxCFL_Ne=", maxCFLxN+maxCFLyN, &
-                   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
+                   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, &
+                   "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
       write(*,*) "CFL_Limit=", maxCFL
       write(*,*) "dt_init=", dt0, "dt=", dt
     end if
@@ -2154,9 +2158,11 @@ if(UseMieScattering.eq.1) then
           + (mesh%Ne(i,j)*(EgapValue(newmesh%Ne(i,j), newmesh%Ts(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
               + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
               
-        ElectronKineticEnergy=ElectronKineticEnergy+(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
-        ElectronPotentialEnergy=ElectronPotentialEnergy+(mesh%Ne(i,j)*(EgapValue(newmesh%Ne(i,j), newmesh%Ts(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
-              + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
+        ElectronKineticEnergy=ElectronKineticEnergy &
+                   +(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
+        ElectronPotentialEnergy=ElectronPotentialEnergy &
+                   +(mesh%Ne(i,j)*(EgapValue(newmesh%Ne(i,j), newmesh%Ts(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
+                   + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
 !         ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
         
         HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
