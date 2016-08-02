@@ -47,6 +47,8 @@ module Output_m
   type(OutputData) :: DualDepth
   type(OutputData) :: Field
   type(OutputData) :: EnergyConservation
+  type(OutputData) :: Temperature
+  type(OutputData) :: Density
 
   contains
 
@@ -104,6 +106,12 @@ module Output_m
 
     EnergyConservation%unit = 105
     open(EnergyConservation%unit, FILE='output/EnergyConservation.dat', access='sequential', status='unknown') !format 892
+    
+    Temperature%unit = 106
+    open(Temperature%unit, FILE='output/Temperature.dat', access='sequential', status='unknown') !format 893
+    
+    Temperature%unit = 107
+    open(Density%unit, FILE='output/Density.dat', access='sequential', status='unknown') !format 894
 
   end subroutine InitOutputs
 
