@@ -116,6 +116,7 @@ implicit none
                             InterpolateOff=0,         &        !just to test speedup...
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
 !                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
+                            !TODO: MieScattering=1 crashed!
                             NewtonIterations=1000, &
                             ExpNeedleType=0
         
@@ -1359,7 +1360,8 @@ if(Params%UseMieScattering.eq.1) then
   maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; maxCFLyTs=0d0; 
   maxFermiIndexE=0; maxFermiIndexH=0; 
  
-  !TODO: Why DistX are recomputed here? Same for CellAreaX
+  !TODO: NTD: Why DistX are recomputed here? Same for CellAreaX
+  !TODO: TJYD: To treat boundary conditions and treat everything with a loop on the complete mesh. This should be kept. 
   do i=1,M
     CellAreaN(i,N)=0d0 
 !     CellAreaN(i,N-1)=0d0
