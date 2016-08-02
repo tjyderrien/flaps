@@ -44,6 +44,7 @@ implicit none
 
     type(MeshValues) :: mesh, dual, newmesh
     type(LaserParams):: laser
+    type(InputParameters) :: Params
 
     real(8), parameter::Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
@@ -115,7 +116,6 @@ implicit none
                             InterpolateOff=0,         &        !just to test speedup...
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
 !                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
-                            UseMieScattering=-1,&                 ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
                             NewtonIterations=1000, &
                             ExpNeedleType=0
         
@@ -317,6 +317,12 @@ implicit none
   mh=0.5d0*me0       ! hole effective mass for conductivity !0.81 (source ?)
   meDOS=0.36d0*me0   ! electron effective mass for DOS
   mhDOS=0.81d0*me0   ! hole effective mass for DOS
+
+
+
+  call InitInputParameter( Params )
+  call LoadInputParameters( 'flaps.in', Params )
+  call CheckValidityInputParameters( Params )
 
 ! call omp_set_num_threads(16)
     
@@ -963,7 +969,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
-    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise! 
+   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
     !uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
@@ -980,7 +986,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Laser wavelength=", laser%lambda*1d9, "nm"
   write(Parameters%unit,*) "Laser spot position: (X,Y)=", x0*1d6, y0*1d6, "um"
   write(Parameters%unit,*) "Laser spot size: (Sx, Sy)=", laser%spotX*1d6, laser%spotY*1d6, "um"
-  write(Parameters%unit,*) "Mie scattering:", UseMieScattering
+  write(Parameters%unit,*) "Mie scattering:", Params%UseMieScattering
   write(Parameters%unit,*) "Laser polarization", PolarizationSource
   write(Parameters%unit,*)
   write(Parameters%unit,*) "============ MESH PARAMETERS =========="
@@ -1207,7 +1213,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    
   write(*,*) 'epsilon(', 1d9*laser%lambda, 'nm)=', epsilonInf
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))
-if(UseMieScattering.eq.1) then
+if(Params%UseMieScattering.eq.1) then
   write(*,*) 'Computing the Mie scattering field distribution...'
   write(*,*) 'Angle Mie =', phiMie0
   write(*,*) 'Polarization TM ? ', PolarizationSource
@@ -1486,7 +1492,7 @@ if(UseMieScattering.eq.1) then
     !TODO: Use DEFAULT(NONE) here, this is safer
 
    !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, newmesh, dual, intensityDual, laser, I0, &
+   !$OMP& mesh, newmesh, dual, intensityDual, laser, Params, I0, &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
@@ -1518,7 +1524,6 @@ if(UseMieScattering.eq.1) then
 
    nthreads = OMP_GET_NUM_THREADS()
 
-   
    NeTotal=0d0; NhTotal=0d0
    
    ! replacing old datas
@@ -1594,7 +1599,7 @@ if(UseMieScattering.eq.1) then
         reflectivity(i,j)=  ( real(sqrtDielectric)**2 +aimag(sqrtDielectric)**2 -2d0*real(sqrtDielectric)+1d0 ) &
                             /(real(sqrtDielectric)**2+aimag(sqrtDielectric)**2+2d0*real(sqrtDielectric+1d0))
         !local intensity
-        if(UseMieScattering .eq. -1) then
+        if(Params%UseMieScattering .eq. -1) then
   !         ! DEBUG ZONE
   ! !         if(laser%lambda.eq.343d-9) then
   !         ! uniform distribution like in Elena's paper
@@ -1610,7 +1615,7 @@ if(UseMieScattering.eq.1) then
   ! !                         +intensity(i,j-1)
   ! !          end if
         
-        else if(UseMieScattering .eq. 0) then
+        else if(Params%UseMieScattering .eq. 0) then
           ! WITH EXTERNALLY ADJUSTED INPUTS
   !        !Lumerical mode already contains the reflectivity. Although, it doesn't consider change of optical index with ionization. 
           if(laser%lambda.eq.1030d-9) then
@@ -1689,7 +1694,7 @@ if(UseMieScattering.eq.1) then
           end if
 
         ! USING MIE SCATTERING ANALYTICAL FORMULAS
-        else if(UseMieScattering .eq. 1) then
+        else if(Params%UseMieScattering .eq. 1) then
         ! calculate electric field inside the tip
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), Dielectric(i,j)) !*sqrt(2d0*laser%fluence/(c*epsilon0*tau))
           ! debug formula for constant cone radius
@@ -2141,20 +2146,21 @@ if(UseMieScattering.eq.1) then
           IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) &
                   +absorptionDrudeH(i,j))*intensity(i,j)*CellVol(i,j)*dt
         end if
-        LaserIntensityEnergy=LaserIntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
-                  +absorptionDrudeH(i,j))*I0*real(sqrt(Dielectric(i,j))) & 
+        LaserIntensityEnergy = LaserIntensityEnergy &
+               +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*I0*real(sqrt(Dielectric(i,j))) &
                   *exp(-.5d0*((t-t0)/sigmaTau)**2)*CellVol(i,j)*dt
-        
+
+        work = EgapValue(newmesh%Ne(i,j),newmesh%Ts(i,j)) - Egap(i,j)
         ! calculation of the energy contained in the solid
         ElectronEnergy=ElectronEnergy &
           + (Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
-          + (mesh%Ne(i,j)*(EgapValue(newmesh%Ne(i,j), newmesh%Ts(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
+          + (mesh%Ne(i,j)*work  &
               + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
               
         ElectronKineticEnergy=ElectronKineticEnergy &
                    +(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
         ElectronPotentialEnergy=ElectronPotentialEnergy &
-                   +(mesh%Ne(i,j)*(EgapValue(newmesh%Ne(i,j), newmesh%Ts(i,j))-EgapValue(mesh%Ne(i,j),mesh%Ts(i,j)))  &
+                   +(mesh%Ne(i,j)*work  &
                    + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
 !         ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
         
@@ -2359,6 +2365,8 @@ if(UseMieScattering.eq.1) then
   deallocate(NormalW%x, NormalW%y, NormalW%N)
 
   !TODO: Sorry but where are the file stream closed???
+
+  call ReleaseInputParameters( Params )
 
 end program Flaps
 

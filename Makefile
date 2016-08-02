@@ -1,6 +1,6 @@
 #DebugLine=-g -check all -warn all -backtrace 
 DebugLine=-g -fbounds-check -w -fbacktrace -Wno-unused-variable -Wall
-Optimization=$(DebugLine) -O2 -I/usr/include -llapack -lm -fopenmp #-mcmodel=large
+Optimization=$(DebugLine) -O2 -I/usr/include -llapack -lm  -fopenmp #-mcmodel=large
 
 #-finteger-4-integer-8
 

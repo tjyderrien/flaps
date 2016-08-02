@@ -506,7 +506,7 @@ end module Maths_m
       !TODO: More general and automatize
       if(t <= 0.2361d0 .AND. t >= -0.2531506894d0) then !reduced cone size for calculation acceleration
 !       if(t <= 2.471556d0 .AND. t >= -3.35d0) then
-        ConeExp1=(p1*(t-tc)**4+p2*(t-tc)**3+p3*(t-tc)**2+p4*(t-tc)+p5)&
+        ConeExp1=(p1*(t-tc)**4+p2*(t-tc)**3+p3*(t-tc)**2+p4*(t-tc)+p5) &
                   /((t-tc)**4 + q1*(t-tc)**3 + q2*(t-tc)**2 + q3*(t-tc) + q4) + x0
       end if
 
@@ -542,6 +542,7 @@ end module Maths_m
       real(8):: t
       real(8) a0, a1, a2, a3, a4, a5, a6, a7, a8, w, x0
 
+      ConeExp2 = 0.d0
       a0=6.486d0; a1=-6.901d0; a2=1.874d0; a3=-0.7881d0; a4=-0.2992d0; a5=-0.05438d0;
       a6=-0.1377d0; a7=-0.08898d0; a8=-0.05379d0; w=2.162d0; x0=-0.040850d0
 
@@ -549,8 +550,6 @@ end module Maths_m
       if(t <= 0.7866818869d0 .AND. t >= -0.7866818869d0) then !to limit maxX to 5 um
         ConeExp2=a0+a1*cos(1d0*w*t)+a2*cos(2d0*w*t)+a3*cos(3d0*w*t)+a4*cos(4d0*w*t) &
                   +a5*cos(5d0*w*t)+a6*cos(6d0*w*t)+a7*cos(7d0*w*t)+a8*cos(8d0*w*t)+x0
-      else !TODO: What to return here??
-        ConeExp2 = 0.d0
       end if
     end function ConeExp2
 

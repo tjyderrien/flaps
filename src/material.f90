@@ -38,10 +38,10 @@
       unit1=15; unit2=16
       open (unit1,file='FermiDatasE.dat')
       open (unit2,file='FermiDatasH.dat')
-      read (unit1,*) FermiTableE(:,:) !, FermiTableE(2,:) !, FermiTableE(:,3), FermiTableE(:,4), &
+      read (unit1,*) FermiTableE(1:9,1:FermiMaxLines) !, FermiTableE(2,:) !, FermiTableE(:,3), FermiTableE(:,4), &
 !             FermiTableE(:,5), FermiTableE(:,6), FermiTableE(:,7), FermiTableE(:,8), &
 !             FermiTableE(:,9)
-      read (unit2,*) FermiTableH(:,:) !1), FermiTableH(:,2), FermiTableH(:,3), FermiTableH(:,4), &
+      read (unit2,*) FermiTableH(1:9,1:FermiMaxLines) !1), FermiTableH(:,2), FermiTableH(:,3), FermiTableH(:,4), &
 !              FermiTableH(:,5), FermiTableH(:,6), FermiTableH(:,7), FermiTableH(:,8), &
 !             FermiTableH(:,9)
 ! 222        format (1F10.2, 3x, 1F10.2, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x)
