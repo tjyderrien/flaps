@@ -1,6 +1,6 @@
 FC90=gfortran #ifort
-DebugLine= -g -w -fbacktrace  #-backtrace -check all -warn all 
-FCFLAGS=$(DebugLine) -O2 -I../libs/gmsh  -fopenmp #-mcmodel=large 
+DebugLine= #-g -w -fbacktrace  #-backtrace -check all -warn all 
+FCFLAGS=$(DebugLine) -O3 -I../libs/gmsh  -fopenmp #-mcmodel=large 
 #LDFLAGS=-L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -lm
 #LDFLAGS=-L/usr/lib/lapack -llapack
 

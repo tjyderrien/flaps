@@ -816,7 +816,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         xNew(:,:)=x(:,:)
         yNew(:,:)=y(:,:)
         !$OMP PARALLEL DEFAULT(none) SHARED(x, y, xNew, yNew, Params)
-        !$OMP DO COLLAPSE(2) !(optimized)
+        !$OMP DO COLLAPSE(2)
         do i=2, Params%M-1
           do j=2,Params%N-1
             xNew(i,j)=(x(i+1,j)+x(i-1,j)+x(i,j+1)+x(i,j-1))*.25d0
@@ -832,11 +832,15 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         
         MeshConvergenceOld=MeshConvergence
         MeshConvergence=0d0
+        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, Params, MeshConvergence)
+        !$OMP DO COLLAPSE(2) REDUCTION(+:MeshConvergence)
         do i=1, Params%M
           do j=1, Params%N
             MeshConvergence=MeshConvergence+(x(i,j)**2+y(i,j)**2)
           end do
         end do
+        !$OMP END DO
+        !$OMP END PARALLEL
         
         if(mod(k,MeshIterations/1000).eq.0) then
           write(*,*) "[Mesh] Convergence (", k, ")=", 1d-6*abs(MeshConvergence-MeshConvergenceOld)
@@ -1310,7 +1314,10 @@ if(Params%UseMieScattering.eq.1) then
   write(*,*) 'Computing the Mie scattering field distribution...'
   write(*,*) 'Angle Mie =', phiMie0
   write(*,*) 'Polarization TM ? ', PolarizationSource
-  ! $ O M P DO
+
+  !$OMP PARALLEL DEFAULT(none) SHARED(x, y, Params, &
+  !$OMP phiMie, Radius, phiMie0)
+  !$OMP DO COLLAPSE(2)
   do j=1,Params%N
     do i=1,Params%M
         if(y(i,j)<0d0) then
@@ -1327,11 +1334,13 @@ if(Params%UseMieScattering.eq.1) then
         end if
       end do
     end do
-    ! $ O MP E ND DO
-
+  !$OMP END DO
+  !$OMP END PARALLEL
     
 
-    ! $ O MP DO
+  !$OMP PARALLEL DEFAULT(none) SHARED(x, y, laser, Params, epsilonInf, &
+  !$OMP phiMie, Radius, EintField,EintField2, PolarizationSource)
+  !$OMP DO COLLAPSE(2)
    do j=1,Params%N
     do i=1,Params%M
           if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
@@ -1355,7 +1364,8 @@ if(Params%UseMieScattering.eq.1) then
           end if
       end do
     end do
-    ! $ O MP EN D DO
+    !$OMP END DO
+    !$OMP END PARALLEL
 
 !     EintFieldR=sqrt(EintField * conjg(EintField))
     EintFieldR=real(sqrt( EintField * conjg(EintField) + EintField2 * conjg(EintField2) ))
