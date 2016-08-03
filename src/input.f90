@@ -6,6 +6,8 @@ subroutine InitInputParameter( Params )
     type(InputParameters) :: Params
 
     Params%UseMieScattering = -2
+    Params%M = -1
+    Params%N = -1
 
 end subroutine InitInputParameter
 
@@ -15,8 +17,6 @@ subroutine ReleaseInputParameters( Params )
     use Types_m
     implicit none
     type(InputParameters) :: Params
-
-    Params%UseMieScattering = -2
 
 end subroutine ReleaseInputParameters
 
@@ -33,6 +33,16 @@ subroutine CheckValidityInputParameters( Params )
         call StopProgram()
     end if
 
+    if( Params%M <= 3) then
+        print *, 'Bad value for M'
+        call StopProgram()
+    end if
+
+    if( Params%N <= 3) then
+        print *, 'Bad value for N'
+        call StopProgram()
+    end if
+
 end subroutine CheckValidityInputParameters
 
 subroutine LoadInputParameters( filename, Params )
@@ -45,16 +55,21 @@ subroutine LoadInputParameters( filename, Params )
 
     CHARACTER( LEN=512 ) :: line, id
     LOGICAL :: IsOK, ReadLine
-    integer ios, k
+    integer ios, k, unit
 
-      OPEN( UNIT=1, FILE=filename, FORM="formatted", &
+    unit = 1
+
+      OPEN( UNIT=unit, FILE=filename, FORM="formatted", &
         ACCESS="sequential", STATUS="old", ACTION="read", &
         POSITION="rewind", IOSTAT=ios )
     if ( ios /= 0 ) then ! Probleme ea l'ouverture
         print *, 'Error opening Input Parameters file'
         call StopProgram()
     else
-         IsOK=ReadLine( 1, line )
+         IsOK=ReadLine( unit, line )
+
+         !TODO: change to select case, if working
+
          do while( IsOK .eqv. .true. )
               !Si la ligne est vide, on la passe
               if( len_trim(line) == 0 ) then
@@ -79,6 +94,18 @@ subroutine LoadInputParameters( filename, Params )
                 goto 999
               endif
 
+              !M
+              if( id .equals. 'M' ) then
+                call ParseInt( line, Params%M )
+                goto 999
+              endif
+
+              !N
+              if( id .equals. 'N' ) then
+                call ParseInt( line, Params%N )
+                goto 999
+              endif
+
 ! Some examples
 
 !              !Type de la base d'orbitales
@@ -100,10 +127,10 @@ subroutine LoadInputParameters( filename, Params )
               print *,'line : ',trim(line)
               call StopProgram()
 
-999      IsOK=ReadLine( 1, line )
+999      IsOK=ReadLine( unit, line )
          end do
     endif
-    CLOSE( UNIT=1 )
+    CLOSE( UNIT=unit )
 
 end subroutine LoadInputParameters
 

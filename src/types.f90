@@ -67,8 +67,10 @@ module Types_m
     integer :: unit       !> The unit for input/output
   end type OutputData
 
+  !> This structure contains input parameters, to be read from the input file
   type InputParameters
     integer :: UseMieScattering  ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
+    integer :: M,N !> Mesh dimension
   end type
 
 end module Types_m

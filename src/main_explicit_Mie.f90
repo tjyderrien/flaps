@@ -64,8 +64,6 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
-                          M=11   ,& !number of cells main domain X direction
-                          N=11     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
@@ -145,72 +143,74 @@ implicit none
                 etae, etah, &        ! reduced chemical Fermi potential
                 work
 
-    real(8)        Ue(1:M, 1:N), & !electron energy
-                Uh(1:M, 1:N), & !hole energy
-                UeNew(1:M, 1:N), & !electron energy
-                UhNew(1:M, 1:N), & !hole energy
-                TsOld(1:M, 1:N), & !lattice temperature (time n-1)
-                TsPrev(1:M,1:N), & !lattice temperature (time n-2)
-                GradNeX(1:M, 1:N),& !Grad(Ne)_x
-                GradNeY(1:M, 1:N),& !Grad(Ne)_y
-                intensity(1:M, 1:N), & !propagated intensity
-                intensityDual(1:M-1,1:N-1), & !intensity dual, just for test of the function
-                reflectivity(1:M,1:N), & ! surface reflectivity
-                absorptionDrudeE(1:M, 1:N), & ! absorption coefficient
-                absorptionDrudeH(1:M, 1:N), & ! absorption coefficient
-                diffusionE(1:M, 1:N), & !fick diffusion coefficient for electrons
-                diffusionH(1:M,1:N), & !fick diffusion coefficient for holes
-                GainsE(1:M, 1:N), GainsH(1:M, 1:N), &
-                LossesE(1:M, 1:N), LossesH(1:M, 1:N), &
-                kappae(1:M, 1:N), kappah(1:M, 1:N), kappas(1:M,1:N), &
-                Ce(1:M, 1:N), Ch(1:M, 1:N), Cs(1:M, 1:N), &
-                CeOld(1:M, 1:N), ChOld(1:M,1:N), CsOld(1:M, 1:N), &
-                CsPrev(1:M, 1:N), CsPrev2(1:M, 1:N), &
-                CouplingE(1:M, 1:N), CouplingH(1:M, 1:N), &
-                mobilityE(1:M, 1:N), mobilityH(1:M, 1:N), & 
-                Egap(1:M, 1:N), &                        ! local gap value
-                SourceE(1:M, 1:N), SourceH(1:M, 1:N), & ! heating sources
-                SourceUe(1:M, 1:N), SourceUh(1:M, 1:N), & ! free carrier thermal energy sources
-                diffNe(1:M, 1:N), diffNh(1:M, 1:N), &         ! just for derivation in time
-                x(1:M, 1:N), y(1:M, 1:N), &                 ! needle position indexes
-                xNew(1:M, 1:N), yNew(1:M, 1:N), &           ! used to converge the mesh parallely
-                xV(1:Mv, 1:Nv), yV(1:Mv, 1:Nv), &                 ! vessel position indexes
-                xDualSW(1:M, 1:N), yDualSW(1:M, 1:N), &                 ! dual mesh position 
-                xDualSE(1:M, 1:N), yDualSE(1:M, 1:N), &                 
-                xDualNE(1:M, 1:N), yDualNE(1:M, 1:N), &                 
-                xDualNW(1:M, 1:N), yDualNW(1:M, 1:N), &
-                xDual(1:M-1,1:N-1), yDual(1:M-1, 1:N-1), &
-                CFLxT(1:M, 1:N), CFLyT(1:M, 1:N), CFLxN(1:M, 1:N), CFLyN(1:M, 1:N), CFLxTs(1:M,1:N), CFLyTs(1:M,1:N), &
-                ThermalEnergy(1:M, 1:N), LaserEnergy(1:M, 1:N), &
-                TotalElectrons(1:M, 1:N), TotalHoles(1:M, 1:N), &
-                DOSe(1:M, 1:N), DOSh(1:M, 1:N), &
-                FermiRatioE(1:M,1:N), FermiRatioH(1:M,1:N), &
-                JeX(1:M, 1:N), JeY(1:M, 1:N), & ! drift vectors for particles
-                JhX(1:M, 1:N), JhY(1:M, 1:N), & ! drift vectors for particles
-                VeX(1:M, 1:N), VeY(1:M, 1:N), &
-                VhX(1:M, 1:N), VhY(1:M, 1:N), &
-                Ex(1:M,1:N), Ey(1:M,1:N), &        ! fields in the main domain
-                potentialNeedle(1:M,1:N), &        ! potential in the needle
-                epsilonNeedle(1:M,1:N), &        ! dielectric static in the needle
-                MaxHeating(1:M, 1:N), &
-                MaxHeatingTime(1:M, 1:N), &
-                CellAreaN(1:M, 1:N), CellAreaS(1:M, 1:N), &                        ! area of the finite elements 
-                CellAreaE(1:M, 1:N), CellAreaW(1:M, 1:N), &
-                CellVol(1:M, 1:N), InvCellVol(1:M, 1:N),&          !volume of needle mesh cells
-                DistW(1:M,1:N), DistE(1:M,1:N), &                 ! distance to the center of neighboor cells
-                DistN(1:M,1:N), DistS(1:M,1:N), &
-                DistDualW(1:M,1:N), DistDualE(1:M,1:N), &                 ! distance of the element side (equal to area in 2D)
-                DistDualN(1:M,1:N), DistDualS(1:M,1:N), &
-                ShapeFactorNormalE(1:M, 1:N), ShapeFactorNormalW(1:M, 1:N), &
-                ShapeFactorNormalS(1:M, 1:N), ShapeFactorNormalN(1:M, 1:N), &
-                ShapeFactorTangentE(1:M, 1:N), ShapeFactorTangentW(1:M, 1:N), &
-                ShapeFactorTangentS(1:M, 1:N), ShapeFactorTangentN(1:M, 1:N), &
-                EintFieldR(1:M,1:N), EintFieldI(1:M, 1:N), &
-                phiMie(1:M, 1:N), &
-                Radius(1:M, 1:N)
+    real(8), allocatable, dimension(:,:) :: &
+                Ue, & !electron energy
+                Uh, & !hole energy
+                UeNew, & !electron energy
+                UhNew, & !hole energy
+                TsOld, & !lattice temperature (time n-1)
+                TsPrev, & !lattice temperature (time n-2)
+                GradNeX,& !Grad(Ne)_x
+                GradNeY,& !Grad(Ne)_y
+                intensity, & !propagated intensity
+                intensityDual, & !intensity dual, just for test of the function
+                reflectivity, & ! surface reflectivity
+                absorptionDrudeE, & ! absorption coefficient
+                absorptionDrudeH, & ! absorption coefficient
+                diffusionE, & !fick diffusion coefficient for electrons
+                diffusionH, & !fick diffusion coefficient for holes
+                GainsE, GainsH, &
+                LossesE, LossesH, &
+                kappae, kappah, kappas, &
+                Ce, Ch, Cs, &
+                CeOld, ChOld, CsOld, &
+                CsPrev, CsPrev2, &
+                CouplingE, CouplingH, &
+                mobilityE, mobilityH, &
+                Egap, &                        ! local gap value
+                SourceE, SourceH, & ! heating sources
+                SourceUe, SourceUh, & ! free carrier thermal energy sources
+                diffNe, diffNh, &         ! just for derivation in time
+                x, y, &                 ! needle position indexes
+                xNew, yNew, &           ! used to converge the mesh parallely
+                xV, yV, &                 ! vessel position indexes
+                xDualSW, yDualSW, &                 ! dual mesh position
+                xDualSE, yDualSE, &
+                xDualNE, yDualNE, &
+                xDualNW, yDualNW, &
+                xDual, yDual, &
+                CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
+                ThermalEnergy, LaserEnergy, &
+                TotalElectrons, TotalHoles, &
+                DOSe, DOSh, &
+                FermiRatioE, FermiRatioH, &
+                JeX, JeY, & ! drift vectors for particles
+                JhX, JhY, & ! drift vectors for particles
+                VeX, VeY, &
+                VhX, VhY, &
+                Ex, Ey, &        ! fields in the main domain
+                potentialNeedle, &        ! potential in the needle
+                epsilonNeedle, &        ! dielectric static in the needle
+                MaxHeating, &
+                MaxHeatingTime, &
+                CellAreaN, CellAreaS, &                        ! area of the finite elements
+                CellAreaE, CellAreaW, &
+                CellVol, InvCellVol,&          !volume of needle mesh cells
+                DistW, DistE, &                 ! distance to the center of neighboor cells
+                DistN, DistS, &
+                DistDualW, DistDualE, &                 ! distance of the element side (equal to area in 2D)
+                DistDualN, DistDualS, &
+                ShapeFactorNormalE, ShapeFactorNormalW, &
+                ShapeFactorNormalS, ShapeFactorNormalN, &
+                ShapeFactorTangentE, ShapeFactorTangentW, &
+                ShapeFactorTangentS, ShapeFactorTangentN, &
+                EintFieldR, EintFieldI, &
+                phiMie, &
+                Radius
 
     type(VectorField) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
                 
+                 !TODO: Use dimension
     real(8), allocatable :: CurviWx(:,:), CurviWy(:,:), &                 ! Unit vector between cell centers
                             CurviEx(:,:), CurviEy(:,:), &
                             CurviNx(:,:), CurviNy(:,:), &
@@ -220,8 +220,9 @@ implicit none
                             TangentNx(:,:), TangentNy(:,:), &
                             TangentSx(:,:), TangentSy(:,:)
 
-    integer(8)  FermiIndexE(1:M,1:N), FermiIndexH(1:M,1:N), &
-                MeshVertice(1:M, 1:N) ! data from the GMSH file
+    integer(8), allocatable, dimension(:,:) :: &
+                FermiIndexE, FermiIndexH, &
+                MeshVertice ! data from the GMSH file
     
     real(8) phiMie0
     real(8) Int2
@@ -258,16 +259,18 @@ implicit none
 !     INTEGER                                   :: kmouton
     INTEGER                           :: nb_vertices, nb_triangles, nb_quadrangles, nb_edges, nb_boundedges
     
-    complex(8)         Dielectric(1:M,1:N), &! solid dielectric function under laser illumination
-                sqrtDielectric, & ! For performances
-                DielectricDrudeE(1:M,1:N), & ! Drude part of dielectric function under laser illumination
-                DielectricDrudeH(1:M,1:N), &
-                EintField(1:M,1:N), EintField2(1:M,1:N)        !Ez internal field for Mie scattering theory
+    complex(8), allocatable, dimension(:,:) :: &
+                Dielectric, &! solid dielectric function under laser illumination
+                DielectricDrudeE, & ! Drude part of dielectric function under laser illumination
+                DielectricDrudeH, &
+                EintField, EintField2        !Ez internal field for Mie scattering theory
 
                 
-    complex(8) epsilonInf !, SORsum !material constant
+    complex(8) epsilonInf, & !, SORsum !material constant
+               sqrtDielectric ! For performances
+
    
-    real(8) AugerRateE, AugerRateH, &
+    real(8) AugerRateE, AugerRateH, & ! For performances
             sigmaTau, sigmaX, sigmaY, &
             maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, &
             maxTe, minTe, maxTh, minTh, maxTs, minTs, maxIntensity, maxNe, minNe, maxNh, minNh, &
@@ -320,11 +323,6 @@ implicit none
   mhDOS=0.81d0*me0   ! hole effective mass for DOS
 
 
-
-  call InitInputParameter( Params )
-  call LoadInputParameters( "flaps.in", Params )
-  call CheckValidityInputParameters( Params )
-
 ! call omp_set_num_threads(16)
     
    !  !!********OpenMP Test*************
@@ -338,7 +336,7 @@ implicit none
         PRINT *, 'Hello from thread =', myid !TODO: Replace the print*,... by stdout, in the perspective of MPI
         nthreads = OMP_GET_NUM_THREADS()
   !$OMP BARRIER
-  
+
   !TODO: Replace the write(*,... by stdout, in the perspective of MPI
   if (myid==0) then 
     write(*,'(a)') 'OpenMP TEST'
@@ -348,6 +346,82 @@ implicit none
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
+
+  call InitInputParameter( Params )
+  call LoadInputParameters( "flaps.in", Params )
+  call CheckValidityInputParameters( Params )
+
+  allocate(Ue(1:Params%M, 1:Params%N))
+  allocate(Uh(1:Params%M, 1:Params%N), & !hole energy
+                 UeNew(1:Params%M, 1:Params%N), & !electron energy
+  UhNew(1:Params%M, 1:Params%N), & !hole energy
+                TsOld(1:Params%M, 1:Params%N), & !lattice temperature (time n-1)
+                TsPrev(1:Params%M,1:Params%N), & !lattice temperature (time n-2)
+                GradNeX(1:Params%M, 1:Params%N),& !Grad(Ne)_x
+                GradNeY(1:Params%M, 1:Params%N),& !Grad(Ne)_y
+                intensity(1:Params%M, 1:Params%N), & !propagated intensity
+                intensityDual(1:(Params%M-1),1:(Params%N-1)), & !intensity dual, just for test of the function
+                reflectivity(1:Params%M,1:Params%N), & ! surface reflectivity
+                absorptionDrudeE(1:Params%M, 1:Params%N), & ! absorption coefficient
+                absorptionDrudeH(1:Params%M, 1:Params%N), & ! absorption coefficient
+                diffusionE(1:Params%M, 1:Params%N), & !fick diffusion coefficient for electrons
+                diffusionH(1:Params%M,1:Params%N), & !fick diffusion coefficient for holes
+                GainsE(1:Params%M, 1:Params%N), GainsH(1:Params%M, 1:Params%N), &
+                LossesE(1:Params%M, 1:Params%N), LossesH(1:Params%M, 1:Params%N), &
+                kappae(1:Params%M, 1:Params%N), kappah(1:Params%M, 1:Params%N), kappas(1:Params%M,1:Params%N), &
+                Ce(1:Params%M, 1:Params%N), Ch(1:Params%M, 1:Params%N), Cs(1:Params%M, 1:Params%N), &
+                CeOld(1:Params%M, 1:Params%N), ChOld(1:Params%M,1:Params%N), CsOld(1:Params%M, 1:Params%N), &
+                CsPrev(1:Params%M, 1:Params%N), CsPrev2(1:Params%M, 1:Params%N), &
+                CouplingE(1:Params%M, 1:Params%N), CouplingH(1:Params%M, 1:Params%N), &
+                mobilityE(1:Params%M, 1:Params%N), mobilityH(1:Params%M, 1:Params%N), &
+                Egap(1:Params%M, 1:Params%N), &                        ! local gap value
+                SourceE(1:Params%M, 1:Params%N), SourceH(1:Params%M, 1:Params%N), & ! heating sources
+                SourceUe(1:Params%M, 1:Params%N), SourceUh(1:Params%M, 1:Params%N), & ! free carrier thermal energy sources
+                diffNe(1:Params%M, 1:Params%N), diffNh(1:Params%M, 1:Params%N), &         ! just for derivation in time
+                x(1:Params%M, 1:Params%N), y(1:Params%M, 1:Params%N), &                 ! needle position indexes
+                xNew(1:Params%M, 1:Params%N), yNew(1:Params%M, 1:Params%N), &           ! used to converge the mesh parallely
+                xV(1:Mv, 1:Nv), yV(1:Mv, 1:Nv), &                 ! vessel position indexes
+                xDualSW(1:Params%M, 1:Params%N), yDualSW(1:Params%M, 1:Params%N), &                 ! dual mesh position
+                xDualSE(1:Params%M, 1:Params%N), yDualSE(1:Params%M, 1:Params%N), &
+                xDualNE(1:Params%M, 1:Params%N), yDualNE(1:Params%M, 1:Params%N), &
+                xDualNW(1:Params%M, 1:Params%N), yDualNW(1:Params%M, 1:Params%N), &
+                xDual(1:(Params%M-1), 1:(Params%N-1)), yDual(1:(Params%M-1), 1:(Params%N-1)), &
+                CFLxT(1:Params%M, 1:Params%N), CFLyT(1:Params%M, 1:Params%N), &
+                CFLxN(1:Params%M, 1:Params%N), CFLyN(1:Params%M, 1:Params%N), &
+                CFLxTs(1:Params%M,1:Params%N), CFLyTs(1:Params%M,1:Params%N), &
+                ThermalEnergy(1:Params%M, 1:Params%N), LaserEnergy(1:Params%M, 1:Params%N), &
+                TotalElectrons(1:Params%M, 1:Params%N), TotalHoles(1:Params%M, 1:Params%N), &
+                DOSe(1:Params%M, 1:Params%N), DOSh(1:Params%M, 1:Params%N), &
+                FermiRatioE(1:Params%M,1:Params%N), FermiRatioH(1:Params%M,1:Params%N), &
+                JeX(1:Params%M, 1:Params%N), JeY(1:Params%M, 1:Params%N), & ! drift vectors for particles
+                JhX(1:Params%M, 1:Params%N), JhY(1:Params%M, 1:Params%N), & ! drift vectors for particles
+                VeX(1:Params%M, 1:Params%N), VeY(1:Params%M, 1:Params%N), &
+                VhX(1:Params%M, 1:Params%N), VhY(1:Params%M, 1:Params%N), &
+                Ex(1:Params%M,1:Params%N), Ey(1:Params%M,1:Params%N), &        ! fields in the main domain
+                potentialNeedle(1:Params%M,1:Params%N), &        ! potential in the needle
+                epsilonNeedle(1:Params%M,1:Params%N), &        ! dielectric static in the needle
+                MaxHeating(1:Params%M, 1:Params%N), &
+                MaxHeatingTime(1:Params%M, 1:Params%N), &
+                CellAreaN(1:Params%M, 1:Params%N), CellAreaS(1:Params%M, 1:Params%N), &                        ! area of the finite elements
+                CellAreaE(1:Params%M, 1:Params%N), CellAreaW(1:Params%M, 1:Params%N), &
+                CellVol(1:Params%M, 1:Params%N), InvCellVol(1:Params%M, 1:Params%N),&          !volume of needle mesh cells
+                DistW(1:Params%M,1:Params%N), DistE(1:Params%M,1:Params%N), &                 ! distance to the center of neighboor cells
+                DistN(1:Params%M,1:Params%N), DistS(1:Params%M,1:Params%N), &
+                DistDualW(1:Params%M,1:Params%N), DistDualE(1:Params%M,1:Params%N), &                 ! distance of the element side (equal to area in 2D)
+                DistDualN(1:Params%M,1:Params%N), DistDualS(1:Params%M,1:Params%N), &
+                ShapeFactorNormalE(1:Params%M, 1:Params%N), ShapeFactorNormalW(1:Params%M, 1:Params%N), &
+                ShapeFactorNormalS(1:Params%M, 1:Params%N), ShapeFactorNormalN(1:Params%M, 1:Params%N), &
+                ShapeFactorTangentE(1:Params%M, 1:Params%N), ShapeFactorTangentW(1:Params%M, 1:Params%N), &
+                ShapeFactorTangentS(1:Params%M, 1:Params%N), ShapeFactorTangentN(1:Params%M, 1:Params%N), &
+                EintFieldR(1:Params%M,1:Params%N), EintFieldI(1:Params%M, 1:Params%N), &
+                phiMie(1:Params%M, 1:Params%N), &
+                Radius(1:Params%M, 1:Params%N))
+ allocate(  FermiIndexE(1:Params%M,1:Params%N), FermiIndexH(1:Params%M,1:Params%N), &
+                MeshVertice(1:Params%M, 1:Params%N) )
+ allocate(  Dielectric(1:Params%M,1:Params%N), &! solid dielectric function under laser illumination
+                DielectricDrudeE(1:Params%M,1:Params%N), & ! Drude part of dielectric function under laser illumination
+                DielectricDrudeH(1:Params%M,1:Params%N), &
+                EintField(1:Params%M,1:Params%N), EintField2(1:Params%M,1:Params%N))
 
 !******** READ PARAMETER INPUT FILE ***********
 CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
@@ -405,30 +479,30 @@ RunningIndex=VirtualPoints
 
 ! Corners
 RunningIndex=RunningIndex+1; MeshVertice(1,1) = RunningIndex
-RunningIndex=RunningIndex+1; MeshVertice(M,1) = RunningIndex
-RunningIndex=RunningIndex+1; MeshVertice(M,N) = RunningIndex
-RunningIndex=RunningIndex+1; MeshVertice(1,N) = RunningIndex
+RunningIndex=RunningIndex+1; MeshVertice(Params%M,1) = RunningIndex
+RunningIndex=RunningIndex+1; MeshVertice(Params%M,Params%N) = RunningIndex
+RunningIndex=RunningIndex+1; MeshVertice(1,Params%N) = RunningIndex
 
 !North
-do i=2, M-1
+do i=2, Params%M-1
   RunningIndex=RunningIndex+1; MeshVertice(i, 1)=RunningIndex
 end do
 !East
-do j=2, N-1
-  RunningIndex=RunningIndex+1; MeshVertice(M, j)=RunningIndex
+do j=2, Params%N-1
+  RunningIndex=RunningIndex+1; MeshVertice(Params%M, j)=RunningIndex
 end do
 !South
-do i=M-1,2, -1
-  RunningIndex=RunningIndex+1; MeshVertice(i,N)=RunningIndex
+do i=Params%M-1,2, -1
+  RunningIndex=RunningIndex+1; MeshVertice(i,Params%N)=RunningIndex
 end do
 !West
-do j=N-1, 2, -1
+do j=Params%N-1, 2, -1
   RunningIndex=RunningIndex+1; MeshVertice(1,j)=RunningIndex
 end do
 
 !rest of the domain
-do i=2,M-1
-  do j=2, N-1
+do i=2,Params%M-1
+  do j=2, Params%N-1
     RunningIndex=RunningIndex+1; MeshVertice(i,j)=RunningIndex
   end do
 end do
@@ -538,15 +612,15 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 
   !Allocate the mesh and the dual mesh
-  call initmesh(mesh, M, N)
-  call initmesh(dual, M-1, N-1)
-  call initmesh(newmesh, M, N)
+  call initmesh(mesh, Params%M, Params%N)
+  call initmesh(dual, Params%M-1, Params%N-1)
+  call initmesh(newmesh, Params%M, Params%N)
 
   ! building rectangular mesh 
-  dx=(xmax-xmin)/(M+1)
-  dy=(ymax-ymin)/(N+1)
-  do i=1,M
-    do j=1,N
+  dx=(xmax-xmin)/(Params%M+1)
+  dy=(ymax-ymin)/(Params%N+1)
+  do i=1,Params%M
+    do j=1,Params%N
       x(i,j)=0d0
       y(i,j)=0d0
     end do
@@ -555,8 +629,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(*,*)
 
   if(MeshChoice.eq.0) then  !rectangular mesh as main domain
-    do i=1,M
-      do j=1,N
+    do i=1,Params%M
+      do j=1,Params%N
         x(i,j)=dx*real(i)+xmin
         y(i,j)=dy*real(j)+ymin
         write(MeshInfo%unit,885, advance='yes') x(i,j), y(i,j), i, j ! writing as main mesh
@@ -568,8 +642,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     
   if(MeshChoice==1 .OR. MeshChoice==2) then !conical mesh as main domain
     !boudary definition
-    NeedleIndexX=M
-    NeedleIndexY=N
+    NeedleIndexX=Params%M
+    NeedleIndexY=Params%N
     NeedleAngle=NeedleAngleDeg*pi/180d0
     NeedleA=NeedleRadius/(tan(NeedleAngle/2d0)**2)
     NeedleB=NeedleRadius/tan(NeedleAngle/2d0)
@@ -580,7 +654,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     NeedleXParam=(Needlet0Limit-0d0)/NeedleIndexX !dt0 for X (0,t0)
     NeedleYParam=(Needlet0Limit-0d0)/NeedleIndexY !dt0 for Y (0,t0)
     
-    P2critic=(real(N)-1d0)**2/(2d0*real(j)-real(N)-1)
+    P2critic=(real(Params%N)-1d0)**2/(2d0*real(j)-real(Params%N)-1)
     !! this limit applies if hyperbolic contour is chosen
 !     if(real(MeshShift)**2 > P2critic) then
 !       write(*,*) "Dilatation of the apex is too large. Reduce <= ", floor(sqrt(P2critic))
@@ -638,7 +712,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           meshParameterTmax=0.2361d0 !maximum t parameter
           meshParameterTmin=-0.2531506894d0        !minimum t parameter
         end if
-        meshStepDt=(meshParameterTmax-meshParameterTmin)/(real(2*(M-1)+N)) !step of parameter t to define corners of the mesh
+        meshStepDt=(meshParameterTmax-meshParameterTmin)/(real(2*(Params%M-1)+Params%N)) !step of parameter t to define corners of the mesh
 
         !!! BOTTOM
         localTmin=meshParameterTmin !tmin in the segment (e.g. contour section)
@@ -649,8 +723,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           stop
         end if
         
-        localdT=(localTmax-localTmin)/real(M-1) !parameter t to distribute the nodes on the segment
-        do i=1,M
+        localdT=(localTmax-localTmin)/real(Params%M-1) !parameter t to distribute the nodes on the segment
+        do i=1,Params%M
           localT=localTmax-real(i-1)*localdT
           if(ExpNeedleType.eq.1) then
             x(i,1)=ConeExp2(localT)
@@ -669,8 +743,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           stop
         end if
         
-        localdT=(localTmax-localTmin)/real(N-1) !parameter t to distribute the nodes on the segment
-        do j=2,N
+        localdT=(localTmax-localTmin)/real(Params%N-1) !parameter t to distribute the nodes on the segment
+        do j=2,Params%N
           localT=localTmin+real(j-1)*localdT
           if(ExpNeedleType.eq.1) then
             x(1,j)=ConeExp2(localT)
@@ -689,29 +763,29 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           stop
         end if
         
-        localdT=(localTmax-localTmin)/real(M-1) !parameter t to distribute the nodes on the segment
-        do i=1,M
+        localdT=(localTmax-localTmin)/real(Params%M-1) !parameter t to distribute the nodes on the segment
+        do i=1,Params%M
           localT=localTmin+real(i-1)*localdT
           if(ExpNeedleType.eq.1) then
-            x(i,N)=ConeExp2(localT)
+            x(i,Params%N)=ConeExp2(localT)
           else
-            x(i,N)=ConeExp1(localT)
+            x(i,Params%N)=ConeExp1(localT)
           end if
-          y(i,N)=localT
+          y(i,Params%N)=localT
         end do
 
         !!! BACKSIDE
         localTmin=meshParameterTmin !tmin in the segment (e.g. contour section)
         localTmax=meshParameterTmax !tmax in the line (e.g. contour section)
-        localdT=(localTmax-localTmin)/real(N-1) !parameter t to distribute the nodes on the segment
-        do j=1,N
+        localdT=(localTmax-localTmin)/real(Params%N-1) !parameter t to distribute the nodes on the segment
+        do j=1,Params%N
           localT=localTmin+real(j-1)*localdT
           if(ExpNeedleType.eq.1) then
-            x(M,j)=ConeExp2(localTmax)
+            x(Params%M,j)=ConeExp2(localTmax)
           else
-            x(M,j)=ConeExp1(localTmax)
+            x(Params%M,j)=ConeExp1(localTmax)
           end if
-          y(M,j)=localT
+          y(Params%M,j)=localT
         end do
 !         
         
@@ -741,10 +815,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         ! save the contours (can be optimized)
         xNew(:,:)=x(:,:)
         yNew(:,:)=y(:,:)
-        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, xNew, yNew)
+        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, xNew, yNew, Params)
         !$OMP DO COLLAPSE(2) !(optimized)
-        do i=2, M-1
-          do j=2,N-1
+        do i=2, Params%M-1
+          do j=2,Params%N-1
             xNew(i,j)=(x(i+1,j)+x(i-1,j)+x(i,j+1)+x(i,j-1))*.25d0
             yNew(i,j)=(y(i+1,j)+y(i-1,j)+y(i,j+1)+y(i,j-1))*.25d0
           end do        
@@ -758,8 +832,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         
         MeshConvergenceOld=MeshConvergence
         MeshConvergence=0d0
-        do i=1, M
-          do j=1, N
+        do i=1, Params%M
+          do j=1, Params%N
             MeshConvergence=MeshConvergence+(x(i,j)**2+y(i,j)**2)
           end do
         end do
@@ -780,8 +854,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     y(:,:)=1d-6*y(:,:)
     
     !writing of the mesh
-    do i=1,M
-      do j=1,N
+    do i=1,Params%M
+      do j=1,Params%N
         write(MeshInfo%unit, 885, advance='yes') x(i,j), y(i,j), i, j
         885        FORMAT (1E15.8, 3x, 1E15.8, 3x, I4, 3X, I4)
         !write(99,*)
@@ -798,7 +872,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !     end do
     ! now we can calculate height of the cone...
     NeedleHeight=2d0*tan(.5d0*NeedleAngle) * sqrt(1d0 - NeedleRadius**2/((tan(NeedleAngle/2d0))**4)* &
-                (x(M,N/2)+NeedleRadius**2/((tan(0.5d0*NeedleAngle))**2)**2)) * (x(M,N/2)+NeedleRadius/(tan(NeedleAngle/2d0))**2)
+                (x(Params%M,Params%N/2)+NeedleRadius**2/((tan(0.5d0*NeedleAngle))**2)**2)) &
+              * (x(Params%M,Params%N/2)+NeedleRadius/(tan(NeedleAngle/2d0))**2)
   end if
 
   !rectangular mesh as Vessel domain, containing the cone
@@ -887,8 +962,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
   !Attribute the node positions
   if(MeshChoice.eq.3) then
-    do i=1, M
-      do j=1, N
+    do i=1, Params%M
+      do j=1, Params%N
     x(i,j)=vertices(idvertices(MeshVertice(i,j)),1)
     y(i,j)=vertices(idvertices(MeshVertice(i,j)),2)
       end do
@@ -898,8 +973,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     y(:,:)=1d-6*y(:,:)
     
     !writing of the mesh
-    do i=1,M
-      do j=1,N
+    do i=1,Params%M
+      do j=1,Params%N
         write(MeshInfo%unit, 8852, advance='yes') x(i,j), y(i,j), i, j, MeshVertice(i,j)
         8852        FORMAT (1E15.8, 3x, 1E15.8, 3x, I4, 3X, I4, 3X, I8)
         !write(99,*)
@@ -917,8 +992,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
      xP(:,:)=xV(:,:)
      yP(:,:)=yV(:,:)
   else 
-     Mp=M
-     Np=N
+     Mp=Params%M
+     Np=Params%N
      allocate(xP(1:Mp, 1:Np))
      allocate(yP(1:Mp, 1:Np))
      xP(:,:)=x(:,:)
@@ -934,7 +1009,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
       
   
   write (*,*) "Vessel cells:", Mp, "*", Np,"=", Mp*Np
-  write (*,*) "Matter cells:", M, "*", N, "=", M*N
+  write (*,*) "Matter cells:", Params%M, "*", Params%N, "=", Params%M*Params%N
   
 !   allocate(Amatrix(1:Mp*Np,1:Mp*Np))
   allocate(Bvector(1:Mp*Np))
@@ -948,7 +1023,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   allocate(DummyVessel(1:Mp, 1:Np))
   allocate(NeP(1:Mp, 1:Np))
   allocate(NhP(1:Mp, 1:Np))
-  allocate(FixedPotentialIndex(1:N, 1:2))
+  allocate(FixedPotentialIndex(1:Params%N, 1:2))
   allocate(CellVolume(1:Mp, 1:Np))
   allocate(NormalNxP(1:Mp,1:Np)); allocate(NormalNyP(1:Mp,1:Np))
   allocate(NormalSxP(1:Mp,1:Np)); allocate(NormalSyP(1:Mp,1:Np))
@@ -991,7 +1066,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Laser polarization", PolarizationSource
   write(Parameters%unit,*)
   write(Parameters%unit,*) "============ MESH PARAMETERS =========="
-  write(Parameters%unit,*) "Mesh size", M, "x", N
+  write(Parameters%unit,*) "Mesh size", Params%M, "x", Params%N
   write(Parameters%unit,*) "Dilatation time ratio=", coeffDilaDt
   write(Parameters%unit,*) "Mesh shift=", MeshShift
   write(Parameters%unit,*)
@@ -1018,8 +1093,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   Th0=Tout
   
   ! $ OMP DO
-  do j=1,N
-    do i=1,M
+  do j=1,Params%N
+    do i=1,Params%M
         
         VeX(i,j)=0d0
         VeY(i,j)=0d0
@@ -1032,14 +1107,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         TsPrev(i,j)=Tout
         
         if(BandBendingInFDTD.eq.1) then
-                  newmesh%Ne(i,j)=Ne0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,N))**2+(y(i,j)-y(i,N))**2) &
+           newmesh%Ne(i,j)=Ne0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
                     /(2d0*sqrt(2d0*log(2d0))))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
                     /(2d0*sqrt(2d0*log(2d0))))**2)) &
                   )
-                  newmesh%Nh(i,j)=Nh0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,N))**2+(y(i,j)-y(i,N))**2) &
+          newmesh%Nh(i,j)=Nh0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
                     /(2d0*sqrt(2d0*log(2d0))))**2)) &
@@ -1060,8 +1135,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   call copy_mesh(mesh, newmesh)
 
   ! $ OMP DO
-  do j=1,N
-    do i=1,M
+  do j=1,Params%N
+    do i=1,Params%M
         
         ! initialise variables to calculate Ce, Ch
         DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
@@ -1141,35 +1216,51 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    potential(:,Np)=potentialNull
    potential(1,:)=potentialNull
    ! potential on right boundary on the needle
-   potentialNeedle(M,:)=potential0
+   potentialNeedle(Params%M,:)=potential0
    
    ! areas of the cell boudaries e.g. distances in this 2D code 
    ! and normal vectors (Nx, Ny) the four poles of quadrangle elements
    write(*,*) "[Mesh] Calculation of normals and distances."
 
-   allocate(NormalN%x(1:M,1:N));  allocate(NormalN%y(1:M,1:N)); allocate(NormalN%N(1:M,1:N))
-   allocate(NormalS%x(1:M,1:N));  allocate(NormalS%y(1:M,1:N)); allocate(NormalS%N(1:M,1:N))
-   allocate(NormalE%x(1:M,1:N));  allocate(NormalE%y(1:M,1:N)); allocate(NormalE%N(1:M,1:N))
-   allocate(NormalW%x(1:M,1:N));  allocate(NormalW%y(1:M,1:N)); allocate(NormalW%N(1:M,1:N))
+   allocate(NormalN%x(1:Params%M,1:Params%N));
+   allocate(NormalN%y(1:Params%M,1:Params%N));
+   allocate(NormalN%N(1:Params%M,1:Params%N))
+   allocate(NormalS%x(1:Params%M,1:Params%N));
+   allocate(NormalS%y(1:Params%M,1:Params%N));
+   allocate(NormalS%N(1:Params%M,1:Params%N))
+   allocate(NormalE%x(1:Params%M,1:Params%N));
+   allocate(NormalE%y(1:Params%M,1:Params%N));
+   allocate(NormalE%N(1:Params%M,1:Params%N))
+   allocate(NormalW%x(1:Params%M,1:Params%N));
+   allocate(NormalW%y(1:Params%M,1:Params%N));
+   allocate(NormalW%N(1:Params%M,1:Params%N))
 
-   allocate(CurviWx(1:M,1:N));   allocate(CurviWy(1:M,1:N))
-   allocate(CurviEx(1:M,1:N));   allocate(CurviEy(1:M,1:N))
-   allocate(CurviNx(1:M,1:N));   allocate(CurviNy(1:M,1:N))
-   allocate(CurviSx(1:M,1:N));   allocate(CurviSy(1:M,1:N))
-   allocate(TangentWx(1:M,1:N));   allocate(TangentWy(1:M,1:N))
-   allocate(TangentEx(1:M,1:N));   allocate(TangentEy(1:M,1:N))
-   allocate(TangentNx(1:M,1:N));   allocate(TangentNy(1:M,1:N))
-   allocate(TangentSx(1:M,1:N));   allocate(TangentSy(1:M,1:N))
+    allocate(CurviWx(1:Params%M,1:Params%N));
+    allocate(CurviWy(1:Params%M,1:Params%N))
+    allocate(CurviEx(1:Params%M,1:Params%N));
+    allocate(CurviEy(1:Params%M,1:Params%N))
+    allocate(CurviNx(1:Params%M,1:Params%N));
+    allocate(CurviNy(1:Params%M,1:Params%N))
+    allocate(CurviSx(1:Params%M,1:Params%N));
+    allocate(CurviSy(1:Params%M,1:Params%N))
+    allocate(TangentWx(1:Params%M,1:Params%N));
+    allocate(TangentWy(1:Params%M,1:Params%N))
+    allocate(TangentEx(1:Params%M,1:Params%N));
+    allocate(TangentEy(1:Params%M,1:Params%N))
+    allocate(TangentNx(1:Params%M,1:Params%N));
+    allocate(TangentNy(1:Params%M,1:Params%N))
+    allocate(TangentSx(1:Params%M,1:Params%N));
+    allocate(TangentSy(1:Params%M,1:Params%N))
 
-   call compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, &
+   call compute_distances(Params%M, Params%N, x, y, DistN, DistS, DistE, DistW, DistDualN, &
                           DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
    !
-   call compute_norm_tan_curv(M, N, x, y, NormalN%x, NormalN%y, NormalS%x, NormalS%y, &
+   call compute_norm_tan_curv(Params%M, Params%N, x, y, NormalN%x, NormalN%y, NormalS%x, NormalS%y, &
                               NormalE%x, NormalE%y, NormalW%x, NormalW%y, TangentNx, TangentNy, TangentSx, TangentSy, &
                               TangentEx, TangentEy, TangentWx, TangentWy, &
                               CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
    !
-   call compute_cellvol(M, N, x, y, CellVol, InvCellVol )
+   call compute_cellvol(Params%M, Params%N, x, y, CellVol, InvCellVol )
    
 
 !     if(DisableCrossDiffusion.eq.1) then
@@ -1186,18 +1277,19 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !     end if
    
    write(*,*) "NEEDLE CHECK"
-   write(*,*) "North", NormalN%x(M/2,N-1), NormalN%y(M/2,N-1)
-   write(*,*) "South", NormalS%x(M/2,2), NormalS%y(M/2,2)
-   write(*,*) "East", NormalE%x(M-1,N-1), NormalE%y(M-1,N-1)
-   write(*,*) "West", NormalW%x(M-1,N-1), NormalW%y(M-1,N-1)
-   write(*,*) CellAreaN(M/2,N/2), CellAreaS(M/2,N/2), CellAreaE(M/2,N/2), CellAreaW(M/2,N/2)
+   write(*,*) "North", NormalN%x(Params%M/2,Params%N-1), NormalN%y(Params%M/2,Params%N-1)
+   write(*,*) "South", NormalS%x(Params%M/2,2), NormalS%y(Params%M/2,2)
+   write(*,*) "East", NormalE%x(Params%M-1,Params%N-1), NormalE%y(Params%M-1,Params%N-1)
+   write(*,*) "West", NormalW%x(Params%M-1,Params%N-1), NormalW%y(Params%M-1,Params%N-1)
+   write(*,*) CellAreaN(Params%M/2,Params%N/2), CellAreaS(Params%M/2,Params%N/2), &
+              CellAreaE(Params%M/2,Params%N/2), CellAreaW(Params%M/2,Params%N/2)
    
    
    call poisson_init_normal_cellarea( Mp, Np, xP, yP, NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, &
                                             NormalWxP, NormalWyP, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP )
 
 
-  call poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
+  call poisson_init_dual( Params%M,Params%N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
                            xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
 
    ! Drift initialization
@@ -1219,8 +1311,8 @@ if(Params%UseMieScattering.eq.1) then
   write(*,*) 'Angle Mie =', phiMie0
   write(*,*) 'Polarization TM ? ', PolarizationSource
   ! $ O M P DO
-  do j=1,N
-    do i=1,M
+  do j=1,Params%N
+    do i=1,Params%M
         if(y(i,j)<0d0) then
           phiMie(i,j)=phiMie0+pi
         else
@@ -1240,8 +1332,8 @@ if(Params%UseMieScattering.eq.1) then
     
 
     ! $ O MP DO
-   do j=1,N
-    do i=1,M
+   do j=1,Params%N
+    do i=1,Params%M
           if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
@@ -1270,8 +1362,8 @@ if(Params%UseMieScattering.eq.1) then
     
 
     
-    do j=1,N
-      do i=1,M
+    do j=1,Params%N
+      do i=1,Params%M
         write(Field%unit, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**0.5d0, Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
@@ -1362,29 +1454,31 @@ if(Params%UseMieScattering.eq.1) then
  
   !TODO: NTD: Why DistX are recomputed here? Same for CellAreaX
   !TODO: TJYD: To treat boundary conditions and treat everything with a loop on the complete mesh. This should be kept. 
-  do i=1,M
-    CellAreaN(i,N)=0d0 
+  do i=1,Params%M
+    CellAreaN(i,Params%N)=0d0
 !     CellAreaN(i,N-1)=0d0
 !     CellAreaS(i,2)=0d0
     CellAreaS(i,1)=0d0
     
-    DistN(i,N-1)=sqrt((0.5d0*(x(i,N-1)+x(i,N))-x(i,N-1))**2+(0.5d0*(y(i,N-1)+y(i,N))-y(i,N-1))**2)
+    DistN(i,Params%N-1)=sqrt((0.5d0*(x(i,Params%N-1)+x(i,Params%N))-x(i,Params%N-1))**2 &
+                            +(0.5d0*(y(i,Params%N-1)+y(i,Params%N))-y(i,Params%N-1))**2)
     DistS(i,2)=sqrt((x(i,2)-0.5d0*(x(i,2)+x(i,1)))**2+(y(i,2)-0.5d0*(y(i,2)+y(i,1)))**2) 
   end do
    
-  do j=1,N
+  do j=1,Params%N
     CellAreaW(1,j)=0d0
 !     CellAreaW(2,j)=0d0
 !     CellAreaE(M-1,j)=0d0
-    CellAreaE(M,j)=0d0
+    CellAreaE(Params%M,j)=0d0
     
     DistW(2,j)=sqrt((x(2,j)-0.5d0*(x(2,j)+x(1,j)))**2+((y(2,j)-0.5d0*(y(2,j)+y(1,j))))**2)
-    DistE(M-1,j)=sqrt((0.5d0*(x(M-1,j)+x(M,j))-x(M-1,j))**2+(0.5d0*(y(M-1,j)+y(M,j))-y(M-1,j))**2)
+    DistE(Params%M-1,j)=sqrt((0.5d0*(x(Params%M-1,j)+x(Params%M,j))-x(Params%M-1,j))**2&
+                            +(0.5d0*(y(Params%M-1,j)+y(Params%M,j))-y(Params%M-1,j))**2)
   end do
   
      
-    do j=2, N-1
-      do i=2, M-1
+    do j=2, Params%N-1
+      do i=2, Params%M-1
         ! Calcul de Grad(Ne) sur le maillage direct
         ! Première estimation peu stable
         GradNeX(i,j) = 0.5d0 * InvCellVol(i,j) * &
@@ -1407,8 +1501,8 @@ if(Params%UseMieScattering.eq.1) then
       end do
 
   
-  do j=1,N
-    do i=1,M
+  do j=1,Params%N
+    do i=1,Params%M
        NormalN%N(i,j) = (NormalN%x(i,j)**2+NormalN%y(i,j)**2)
        NormalE%N(i,j) = (NormalE%x(i,j)**2+NormalE%y(i,j)**2)
        NormalW%N(i,j) = (NormalW%x(i,j)**2+NormalW%y(i,j)**2)
@@ -1416,8 +1510,8 @@ if(Params%UseMieScattering.eq.1) then
     end do
   end do
   
-  do j=2, N-1
-    do i=2, M-1
+  do j=2, Params%N-1
+    do i=2, Params%M-1
       NormalN%N(i,j) = NormalN%N(i,j)/DistN(i,j)
       NormalW%N(i,j) = NormalW%N(i,j)/DistW(i,j)
       NormalE%N(i,j) = NormalE%N(i,j)/DistE(i,j)
@@ -1435,8 +1529,8 @@ if(Params%UseMieScattering.eq.1) then
   
   !TODO: Use an OutputData here
   open(102,FILE='meshElements.dat', access='sequential',status='unknown') ! format 881
-  do i=1,M
-        do j=1,N
+  do i=1,Params%M
+        do j=1,Params%N
           write(102, 881, advance="YES") i, j, x(i,j), y(i,j), NormalN%x(i,j), & !5
                                   NormalN%y(i,j), NormalS%x(i,j), NormalS%y(i,j), NormalE%x(i,j), NormalE%y(i,j), & !10
                                   NormalW%x(i,j), NormalW%y(i,j), CellAreaN(i,j), CellAreaS(i,j), CellAreaE(i,j), & !15
@@ -1558,8 +1652,8 @@ if(Params%UseMieScattering.eq.1) then
 !!!! thermal calculations in the main domain
 ! calculation of sources
     !$OMP DO  COLLAPSE(2) 
-    do j=1,N
-        do i=1,M
+    do j=1,Params%N
+        do i=1,Params%M
 !      intensity(i,1)=(1d0-reflectivity(i,1))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2.-.5d0*((x(i,1)-x0)/sigmaX)**2.-.5d0*((y(i,1)-y0)/sigmaY)**2.)
 
         ! optical coefficients
@@ -1630,15 +1724,15 @@ if(Params%UseMieScattering.eq.1) then
   ! case 1030 nm distribution
             !initial field distribution  
             if(BandBendingInFDTD.eq.0) then
-              intensity(i,j)=(1d0-0d0*reflectivity(i,N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) & 
+              intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
                       *exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
             else 
-            intensity(i,j)=(1d0-0d0*reflectivity(i,N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) & 
+            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
                             *(exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
                             + I0*1d-4*( & 
-                            exp(-0.5d0*(((x(i,j)-x(i,N))**2+(y(i,j)-y(i,N))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
-                            +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
-                            +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
+        exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
+       +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
+       +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
                             ))
             end if
             ! corrections from FDTD calculations and recovering non-linear processes
@@ -1659,7 +1753,7 @@ if(Params%UseMieScattering.eq.1) then
             ConstBLy=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
                       / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*y0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
-            intensity(i,j)=(1d0-0d0*reflectivity(i,N))*exp(-.5d0*((t-t0)/sigmaTau)**2) & !TODO: How could you code something like that??
+            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*exp(-.5d0*((t-t0)/sigmaTau)**2) & !TODO: How could you code something like that??
                           *( &
                           I1*exp(-.5d0*((x(i,j)-x1)/sigmaX1)**2)*exp(-.5d0*((y(i,j)-y1)/sigmaY1)**2) + &
                           I2*exp(-.5d0*((x(i,j)-x2)/sigmaX2)**2)*exp(-.5d0*((y(i,j)-y2)/sigmaY2)**2) + &
@@ -1682,11 +1776,11 @@ if(Params%UseMieScattering.eq.1) then
                               absorptionDrudeE(i,j) + absorptionDrudeH(i,j))))
           end if
           if(laser%lambda.eq.343d-9) then
-            intensity(i,j)= (1d0-0e0*reflectivity(i,N))* & 
+            intensity(i,j)= (1d0-0e0*reflectivity(i,Params%N))* &
                             I0*exp(-.5d0*((t-t0)/sigmaTau)**2) & 
                             *( & !TODO: Use OnePhotonIonizationRate0 here
                             exp(-(OnePhotonIonizationRate()+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
-                            *abs(y(i,j)-y(i,N)) & !introduce discontinuity !
+                            *abs(y(i,j)-y(i,Params%N)) & !introduce discontinuity !
                             ) & 
                             * exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
   !                           + exp(-(OnePhotonIonizationRate(laser%lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(y(i,j)-y(i,1))) &
@@ -1725,8 +1819,8 @@ if(Params%UseMieScattering.eq.1) then
    !
    ! calculation of sources
    !$OMP DO  COLLAPSE(2)
-   do j=1,N
-     do i=1,M
+   do j=1,Params%N
+     do i=1,Params%M
 
         ! free-carrier balance sources
         Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
@@ -1931,8 +2025,8 @@ if(Params%UseMieScattering.eq.1) then
     end if
     !
     !$OMP DO COLLAPSE(2) !(optimized)
-    do j=2, N-1 !(optimized)
-      do i=2, M-1 !(optimized)
+    do j=2, Params%N-1 !(optimized)
+      do i=2, Params%M-1 !(optimized)
 
       if(ConvectionEnergy.eq.1) then !define temperatures from energy
         newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
@@ -1975,13 +2069,13 @@ if(Params%UseMieScattering.eq.1) then
     
     !BOUNDARY CONDITIONS
     
-    do i=1, M !North and South boundaries
+    do i=1, Params%M !North and South boundaries
       ! finite differences finite difference fashion
       if(DriftOn.eq.0) then
         newmesh%Ne(i,1)=newmesh%Ne(i,2)
         newmesh%Nh(i,1)=newmesh%Nh(i,2)
-        newmesh%Ne(i,N)=newmesh%Ne(i,N-1)
-        newmesh%Nh(i,N)=newmesh%Nh(i,N-1)
+        newmesh%Ne(i,Params%N)=newmesh%Ne(i,Params%N-1)
+        newmesh%Nh(i,Params%N)=newmesh%Nh(i,Params%N-1)
       end if
 
         UeNew(i,1)=UeNew(i,2)
@@ -1990,11 +2084,11 @@ if(Params%UseMieScattering.eq.1) then
         newmesh%Th(i,1)=newmesh%Th(i,2)
         newmesh%Ts(i,1)=newmesh%Ts(i,2)
 
-        UeNew(i,N)=UeNew(i,N-1)
-        UhNew(i,N)=UhNew(i,N-1)
-        newmesh%Te(i,N)=newmesh%Te(i,N-1)
-        newmesh%Th(i,N)=newmesh%Th(i,N-1)
-        newmesh%Ts(i,N)=newmesh%Ts(i,N-1)
+        UeNew(i,Params%N)=UeNew(i,Params%N-1)
+        UhNew(i,Params%N)=UhNew(i,Params%N-1)
+        newmesh%Te(i,Params%N)=newmesh%Te(i,Params%N-1)
+        newmesh%Th(i,Params%N)=newmesh%Th(i,Params%N-1)
+        newmesh%Ts(i,Params%N)=newmesh%Ts(i,Params%N-1)
 
         ! includes also the corners... WHy are not they written?
         
@@ -2002,13 +2096,13 @@ if(Params%UseMieScattering.eq.1) then
 !                potential(i,N)=0d0 !(0d0,0d0)
     end do
     
-    do i=2,M-1
+    do i=2,Params%M-1
         
          ! boundary condition v.n = 0 on boundaries. 
         ! NORTH
         
-         GradNeX(i,N) = GradNeX(i,N-1)
-         GradNeY(i,N) = GradNeY(i,N-1)
+         GradNeX(i,Params%N) = GradNeX(i,Params%N-1)
+         GradNeY(i,Params%N) = GradNeY(i,Params%N-1)
 
 ! 
         ! SOUTH
@@ -2018,7 +2112,7 @@ if(Params%UseMieScattering.eq.1) then
      end do
     
     
-      do j=2, N-1 !West and East boundaries
+      do j=2, Params%N-1 !West and East boundaries
       ! finite differences bad fashion
         if(DriftOn.eq.0) then
                 newmesh%Ne(1,j)=newmesh%Ne(2,j)
@@ -2035,8 +2129,8 @@ if(Params%UseMieScattering.eq.1) then
   
         ! conditions on the cone base - most important        
         if(DriftOn.eq.0) then
-                newmesh%Ne(M,j)=newmesh%Ne(M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
-                newmesh%Nh(M,j)=newmesh%Nh(M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+                newmesh%Ne(Params%M,j)=newmesh%Ne(Params%M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+                newmesh%Nh(Params%M,j)=newmesh%Nh(Params%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
         end if
         
         !outlet condition on density and energy
@@ -2049,9 +2143,9 @@ if(Params%UseMieScattering.eq.1) then
 !         UeNew(M,j)=UeNew(M-1,j)
 !         UhNew(M,j)=UhNew(M-1,j)
         
-        newmesh%Te(M,j)=newmesh%Te(M-1,j) !Tout
-        newmesh%Th(M,j)=newmesh%Th(M-1,j) !Tout
-        newmesh%Ts(M,j)=newmesh%Ts(M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
+        newmesh%Te(Params%M,j)=newmesh%Te(Params%M-1,j) !Tout
+        newmesh%Th(Params%M,j)=newmesh%Th(Params%M-1,j) !Tout
+        newmesh%Ts(Params%M,j)=newmesh%Ts(Params%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
         
 !         TeNew(M,j) = -0.5d0*(kappae(M-2,j)+kappae(M-1,j))*(Te(M-1,j)-Te(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappae(M-1,j)-0.5d0*kappae(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Te(M-1,j)
 !         ThNew(M,j) = -0.5d0*(kappah(M-2,j)+kappah(M-1,j))*(Th(M-1,j)-Th(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappah(M-1,j)-0.5d0*kappah(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Th(M-1,j)
@@ -2062,7 +2156,7 @@ if(Params%UseMieScattering.eq.1) then
 
 !       if(DriftOn.eq.1) then
           
-          do j=2,N-1
+          do j=2,Params%N-1
 !         
           ! WEST
           
@@ -2071,8 +2165,8 @@ if(Params%UseMieScattering.eq.1) then
 
          ! EAST
           
-          GradNeX(M,j) = GradNeX(M-1,j)
-          GradNeY(M,j) = GradNeY(M-1,j)
+          GradNeX(Params%M,j) = GradNeX(Params%M-1,j)
+          GradNeY(Params%M,j) = GradNeY(Params%M-1,j)
 
         end do
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2109,8 +2203,8 @@ if(Params%UseMieScattering.eq.1) then
     maxDiffNh  = maxval(diffNh)
 
     !TODO: Should be parallelized
-    do i=1,M
-      do j=1,N
+    do i=1,Params%M
+      do j=1,Params%N
 
         NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
         NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
@@ -2144,7 +2238,7 @@ if(Params%UseMieScattering.eq.1) then
 !         LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
 
         ! calculation of the absorbed laser energy involved in the simulated slice !
-        if((i.eq.1) .AND. (j.eq.(N/2))) then 
+        if((i.eq.1) .AND. (j.eq.(Params%N/2))) then
           IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) &
                   +absorptionDrudeH(i,j))*intensity(i,j)*CellVol(i,j)*dt
         end if
@@ -2303,11 +2397,13 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
 3x, 1E19.11, 3x, 1E19.11)
                 
-        write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,N/2), mesh%Th(1,N/2), mesh%Ts(1,N/2), mesh%Ne(1,N/2), &                        !5
-              mesh%Nh(1,N/2), intensity(1,N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
-              SourceE(1,N/2), GainsE(1,N/2), SourceH(1,N/2), GainsH(1,N/2), Egap(1,N/2), &                !14
-              diffNe(1,N/2), diffNh(1,N/2), real(FermiIndexE(1,N/2)), real(FermiIndexH(1,N/2)), Ce(2,N/2), &                !19
-              CeOld(2,N/2), Ch(2,N/2), ChOld(2,N/2), Cs(2,N/2), CsOld(2,N/2)                               !24
+        write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,Params%N/2), mesh%Th(1,Params%N/2), &
+              mesh%Ts(1,Params%N/2), mesh%Ne(1,Params%N/2), &                        !5
+              mesh%Nh(1,Params%N/2), intensity(1,Params%N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
+              SourceE(1,Params%N/2), GainsE(1,Params%N/2), SourceH(1,Params%N/2), GainsH(1,Params%N/2), Egap(1,Params%N/2), &                !14
+              diffNe(1,Params%N/2), diffNh(1,Params%N/2), real(FermiIndexE(1,Params%N/2)),&
+               real(FermiIndexH(1,Params%N/2)), Ce(2,Params%N/2), &                !19
+              CeOld(2,Params%N/2), Ch(2,Params%N/2), ChOld(2,Params%N/2), Cs(2,Params%N/2), CsOld(2,Params%N/2)                               !24
               
 884 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -2315,10 +2411,13 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
-        write(TimeUp%unit,883, advance="YES") t, mesh%Te(M/2,N), mesh%Th(M/2,N), mesh%Ts(M/2,N), mesh%Ne(M/2,N), &
-              mesh%Nh(M/2,N), intensity(M/2,N), TotalLaserEnergy, TotalThermalEnergy, &
-              SourceE(M/2,N), GainsE(M/2,N), SourceH(M/2,N), GainsH(M/2,N), Egap(M/2,N), &
-              diffNe(M/2,N), diffNh(M/2,N), real(FermiIndexE(M/2,N)), real(FermiIndexH(M/2,N))
+        write(TimeUp%unit,883, advance="YES") t, mesh%Te(Params%M/2,Params%N), mesh%Th(Params%M/2,Params%N),&
+                          mesh%Ts(Params%M/2,Params%N), mesh%Ne(Params%M/2,Params%N), &
+              mesh%Nh(Params%M/2,Params%N), intensity(Params%M/2,Params%N), TotalLaserEnergy, TotalThermalEnergy, &
+              SourceE(Params%M/2,Params%N), GainsE(Params%M/2,Params%N), SourceH(Params%M/2,Params%N),&
+               GainsH(Params%M/2,Params%N), Egap(Params%M/2,Params%N), &
+              diffNe(Params%M/2,Params%N), diffNh(Params%M/2,Params%N), &
+              real(FermiIndexE(Params%M/2,Params%N)), real(FermiIndexH(Params%M/2,Params%N))
               
 883 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -2326,10 +2425,10 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
 
-        write(TimeBottom%unit,882, advance="YES") t, mesh%Te(M/2,1), mesh%Th(M/2,1), mesh%Ne(M/2,1), &
-              mesh%Nh(M/2,1), intensity(M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
-              SourceE(M/2,1), GainsE(M/2,1), SourceH(M/2,1), GainsH(M/2,1), Egap(M/2,1), &
-              diffNe(M/2,1), diffNh(M/2,1), real(FermiIndexE(M/2,1)), real(FermiIndexH(M/2,1))
+        write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2,1), mesh%Th(Params%M/2,1), mesh%Ne(Params%M/2,1), &
+              mesh%Nh(Params%M/2,1), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
+              SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2,1), &
+              diffNe(Params%M/2,1), diffNh(Params%M/2,1), real(FermiIndexE(Params%M/2,1)), real(FermiIndexH(Params%M/2,1))
               
 882 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -2345,8 +2444,8 @@ if(Params%UseMieScattering.eq.1) then
     
     ! write the functions on Dual Mesh
     if(mod(nbiter,iterOut*iterOutMaps).eq.0) then
-      do i=1,M-1
-        do j=1,N-1
+      do i=1,Params%M-1
+        do j=1,Params%N-1
           
           write(DualDepth%unit, 890, advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
                                           dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9

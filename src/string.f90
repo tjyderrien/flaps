@@ -63,7 +63,7 @@ SUBROUTINE ParseInt( line, value )
     value = 0
 
     i = index(line, ' ')
-    read( line(i:), '(i5)' ) value
+    read( line(i:), '(i8)' ) value
 END SUBROUTINE ParseInt
 
 !> Parse un float
@@ -87,7 +87,7 @@ SUBROUTINE ParseDouble( line, value )
     value = 0
 
     i = index(line, ' ')
-    read( line(i:), '(f12.6)' ) value
+    read( line(i:), '(f18.7)' ) value
 END SUBROUTINE ParseDouble
 
 
