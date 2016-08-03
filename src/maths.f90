@@ -623,9 +623,9 @@ end module Maths_m
 !         temp1=zeroin(0d0, 2.471556d0, ConeExp1Equation, 1d-15, value)
 !         temp2=zeroin(-3.35d0, 0d0, ConeExp1Equation, 1d-15, value)
         ! reduced cone size to accelerate calculations
-        write(*,*) 'Solving contour radius...'
+!         write(*,*) 'Solving contour radius...'
         temp1=zeroin(0d0, 0.2361d0, ConeExp1Equation, 1d-15, value)
-        write(*,*) 'Solving contour radius...'
+!         write(*,*) 'Solving contour radius...'
         temp2=zeroin(-0.2531506894d0, 0d0, ConeExp1Equation, 1d-15, value)
 !         write(*,*) 'Solve:', temp
 !       end do
@@ -660,9 +660,9 @@ end module Maths_m
 !         write(*,*) 'Solving contour radius...'
 !         temp1=zeroin(0d0, 1.4d0, ConeExp2Equation, 1d-15, value)
 !         temp2=zeroin(-1.4d0, 0d0, ConeExp2Equation, 1d-15, value)
-write(*,*) 'Solving contour radius...'
+! write(*,*) 'Solving contour radius...'
         temp1=zeroin(0d0, 0.7866818869d0, ConeExp2Equation, 1d-15, value)
-        write(*,*) 'Solving contour radius...'
+!         write(*,*) 'Solving contour radius...'
         temp2=zeroin(-0.7866818869d0, 0d0, ConeExp2Equation, 1d-15, value)
 
         ! choose the maximum value of radius to avoid the non-physical case r>R.
