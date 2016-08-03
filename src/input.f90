@@ -41,7 +41,7 @@ subroutine LoadInputParameters( filename, Params )
 
     implicit none
     type(InputParameters) :: Params
-    CHARACTER( LEN=512 ), intent(in) :: filename
+    CHARACTER( LEN=* ), intent(in) :: filename
 
     CHARACTER( LEN=512 ) :: line, id
     LOGICAL :: IsOK, ReadLine

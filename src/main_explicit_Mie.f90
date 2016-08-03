@@ -322,7 +322,7 @@ implicit none
 
 
   call InitInputParameter( Params )
-  call LoadInputParameters( 'flaps.in', Params )
+  call LoadInputParameters( "flaps.in", Params )
   call CheckValidityInputParameters( Params )
 
 ! call omp_set_num_threads(16)
