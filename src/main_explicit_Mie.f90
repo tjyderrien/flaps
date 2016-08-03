@@ -724,6 +724,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         end if
         
         localdT=(localTmax-localTmin)/real(Params%M-1) !parameter t to distribute the nodes on the segment
+        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, Params, localTmin, localdT, localTmax, &
+        !$OMP meshStepDt, meshParameterTmax, meshParameterTmin) &
+        !$OMP PRIVATE(localT)
+        !$OMP DO
         do i=1,Params%M
           localT=localTmax-real(i-1)*localdT
           if(ExpNeedleType.eq.1) then
@@ -733,17 +737,21 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           end if
           y(i,1)=localT
         end do
+        !$OMP END DO
 
         !!! TIP APEX
         localTmin=-real(MeshShift)*meshStepDt !tmin in the segment (e.g. contour section)
         localTmax=real(MeshShift)*meshStepDt !tmax in the line (e.g. contour section)
         
+        !$OMP MASTER
         if(localTmax<localTmin) then
           write(*,*) "MeshShift is nul ?! MeshShift=", MeshShift
           stop
         end if
+        !$OMP END MASTER
         
         localdT=(localTmax-localTmin)/real(Params%N-1) !parameter t to distribute the nodes on the segment
+        !$OMP DO
         do j=2,Params%N
           localT=localTmin+real(j-1)*localdT
           if(ExpNeedleType.eq.1) then
@@ -753,6 +761,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           end if
           y(1,j)=localT
         end do
+        !$OMP END DO
 
         !!! UP
         localTmin=real(MeshShift)*meshStepDt !tmin in the segment (e.g. contour section)
@@ -764,6 +773,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         end if
         
         localdT=(localTmax-localTmin)/real(Params%M-1) !parameter t to distribute the nodes on the segment
+        !$OMP DO
         do i=1,Params%M
           localT=localTmin+real(i-1)*localdT
           if(ExpNeedleType.eq.1) then
@@ -773,11 +783,15 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           end if
           y(i,Params%N)=localT
         end do
+        !$OMP END DO
+
 
         !!! BACKSIDE
         localTmin=meshParameterTmin !tmin in the segment (e.g. contour section)
         localTmax=meshParameterTmax !tmax in the line (e.g. contour section)
         localdT=(localTmax-localTmin)/real(Params%N-1) !parameter t to distribute the nodes on the segment
+
+        !$OMP DO
         do j=1,Params%N
           localT=localTmin+real(j-1)*localdT
           if(ExpNeedleType.eq.1) then
@@ -787,7 +801,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           end if
           y(Params%M,j)=localT
         end do
-!         
+       !$OMP END DO
+       !$OMP END PARALLEL
         
 !         ! sort points before solving
 !         do j=1,M
@@ -815,8 +830,13 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         ! save the contours (can be optimized)
         xNew(:,:)=x(:,:)
         yNew(:,:)=y(:,:)
-        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, xNew, yNew, Params)
-        !$OMP DO COLLAPSE(2)
+
+
+        MeshConvergenceOld=MeshConvergence
+        MeshConvergence=0d0
+
+        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, xNew, yNew, Params, MeshConvergence)
+        !$OMP DO COLLAPSE(2) SCHEDULE(DYNAMIC, Params%N-2)
         do i=2, Params%M-1
           do j=2,Params%N-1
             xNew(i,j)=(x(i+1,j)+x(i-1,j)+x(i,j+1)+x(i,j-1))*.25d0
@@ -824,23 +844,20 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           end do        
         end do
         !$OMP END DO
-        !$OMP END PARALLEL
-        ! replace with the new mesh
-        x(:,:)=xNew(:,:)
-        y(:,:)=yNew(:,:)
 
-        
-        MeshConvergenceOld=MeshConvergence
-        MeshConvergence=0d0
-        !$OMP PARALLEL DEFAULT(none) SHARED(x, y, Params, MeshConvergence)
-        !$OMP DO COLLAPSE(2) REDUCTION(+:MeshConvergence)
+        !$OMP DO COLLAPSE(2) REDUCTION(+:MeshConvergence)  SCHEDULE(DYNAMIC, Params%N)
         do i=1, Params%M
           do j=1, Params%N
-            MeshConvergence=MeshConvergence+(x(i,j)**2+y(i,j)**2)
+            MeshConvergence=MeshConvergence+(xNew(i,j)**2+yNew(i,j)**2)
           end do
         end do
         !$OMP END DO
         !$OMP END PARALLEL
+
+        ! replace with the new mesh
+        x(:,:)=xNew(:,:)
+        y(:,:)=yNew(:,:)
+
         
         if(mod(k,MeshIterations/1000).eq.0) then
           write(*,*) "[Mesh] Convergence (", k, ")=", 1d-6*abs(MeshConvergence-MeshConvergenceOld)

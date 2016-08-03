@@ -2,8 +2,8 @@
 
 UseMieScattering  1 !This is a comment for this variable
 
-M 11
-N 11
+M 2001
+N 151
 
   !I cam put comments here
 
