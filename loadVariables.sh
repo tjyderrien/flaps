@@ -8,3 +8,5 @@ export OMP_DYNAMIC="FALSE"
 export OMP_SCHEDULE="DYNAMIC,800"
 ulimit -s unlimited
 
+cp FermiDatasE.sav FermiDatasE.dat
+cp FermiDatasH.sav FermiDatasH.dat
