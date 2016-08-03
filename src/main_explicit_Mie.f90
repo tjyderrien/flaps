@@ -1235,11 +1235,11 @@ if(Params%UseMieScattering.eq.1) then
         end if
       end do
     end do
-    ! $ OMP END DO
+    ! $ O MP E ND DO
 
     
 
-    ! $ OMP DO
+    ! $ O MP DO
    do j=1,N
     do i=1,M
           if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
@@ -1263,7 +1263,7 @@ if(Params%UseMieScattering.eq.1) then
           end if
       end do
     end do
-    ! $ OMP END DO
+    ! $ O MP EN D DO
 
 !     EintFieldR=sqrt(EintField * conjg(EintField))
     EintFieldR=real(sqrt( EintField * conjg(EintField) + EintField2 * conjg(EintField2) ))

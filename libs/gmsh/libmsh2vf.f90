@@ -344,11 +344,7 @@ MODULE LIBMSH2VF
                               it = it+1
                         CASE (3, 10, 16)
                               ! The element is a quadrangle
-                              READ(UNIT=1,FMT=*) itemp1, itemp2, itemp3
-                              DO j= 2,(element_tag(i,1)+1)
-                                READ(UNIT=1,FMT=*) element_tag(i,j)
-                              END DO
-                              READ(UNIT=1,FMT=*) quadrangles(iq,1:4)
+                              READ(UNIT=1,FMT=*) itemp1, itemp2, itemp3, element_tag(i,2:(element_tag(i,1)+1)), quadrangles(iq,1:4)
                               quadrangles(iq,5) = element_tag(i,2)
                               iq = iq+1
                   END SELECT
