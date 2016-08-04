@@ -1843,6 +1843,10 @@ if(Params%UseMieScattering.eq.1) then
                                 ColFermi0, ColFermiHalf, nuColl, me)
    !
    !
+   !Computes the diffusion terms for the entire mesh
+   call ComputeDiffusions_batch(mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
+                                       FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                       ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
    ! calculation of sources
    !$OMP DO  COLLAPSE(2)
    do j=1,Params%N
@@ -1850,15 +1854,6 @@ if(Params%UseMieScattering.eq.1) then
 
         ! free-carrier balance sources
         Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
-
-        diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)*inv_ec &
-                *FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))
-        diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i,j)*inv_ec &
-                *FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))
-        if(ConductivityFix.eq.-1) then
-           diffusionE(i,j)=0d0
-           diffusionH(i,j)=0d0
-        end if        
 
         JeX(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ex(i,j)
         JeY(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ey(i,j)

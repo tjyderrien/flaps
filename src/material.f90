@@ -251,8 +251,6 @@
       real(8), intent(in)    :: Te, Eg
       integer(8), intent(in) :: ImpactOff
 
-      real(8) :: EgapValue
-
       ImpactIonizationRate = 3.6d10*exp(-1.5d0*Eg/kb/Te)
       if(ImpactOff.eq.1) then !TODO: This is dirty, should be putted outside
         ImpactIonizationRate=0d0
@@ -296,6 +294,48 @@
       !$OMP END DO
 
     end subroutine ComputeMobilities_batch
+
+   !-------------------------------------------------------------------------------------
+   !> Computes the diffusion terms for the entire mesh
+   !-------------------------------------------------------------------------------------
+    subroutine ComputeDiffusions_batch(mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
+                                       FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                       ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(inout) :: diffusionE(mesh%M,mesh%N)
+      real(8),           intent(inout) :: diffusionH(mesh%M,mesh%N)
+      real(8),           intent(in)    :: mobilityE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: mobilityH(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: ConductivityFix, ColFermiMenusHalf, ColFermiHalf
+
+      integer :: i, j
+
+      if(ConductivityFix.eq.-1) then
+           diffusionE(:,:)=0d0
+           diffusionH(:,:)=0d0
+      end if
+
+
+      !$OMP DO COLLAPSE(2)
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
+          diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)*inv_ec &
+                *FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))
+          diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i,j)*inv_ec &
+                *FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine ComputeDiffusions_batch
 
    !-------------------------------------------------------------------------------------
    !> Computes the conductivities for the entire mesh
