@@ -355,7 +355,7 @@ implicit none
   allocate(Ue(1:Params%M, 1:Params%N))
   allocate(Uh(1:Params%M, 1:Params%N), & !hole energy
                  UeNew(1:Params%M, 1:Params%N), & !electron energy
-  UhNew(1:Params%M, 1:Params%N), & !hole energy
+                         UhNew(1:Params%M, 1:Params%N), & !hole energy
                 TsOld(1:Params%M, 1:Params%N), & !lattice temperature (time n-1)
                 TsPrev(1:Params%M,1:Params%N), & !lattice temperature (time n-2)
                 GradNeX(1:Params%M, 1:Params%N),& !Grad(Ne)_x
@@ -1847,6 +1847,12 @@ if(Params%UseMieScattering.eq.1) then
    call ComputeDiffusions_batch(mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                        ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
+   !
+   !
+   !Computes the drif vectors for the entire mesh
+   call ComputeDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
+   !
+   !
    ! calculation of sources
    !$OMP DO  COLLAPSE(2)
    do j=1,Params%N
@@ -1855,15 +1861,6 @@ if(Params%UseMieScattering.eq.1) then
         ! free-carrier balance sources
         Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
 
-        JeX(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ex(i,j)
-        JeY(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ey(i,j)
-        JhX(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ex(i,j)
-        JhY(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ey(i,j)
-
-        if(DriftOn.eq.0) then 
-          JeX(i,j)=0d0; JeY(i,j)=0d0; 
-          JhX(i,j)=0d0; JhY(i,j)=0d0;
-        endif
 
         Int2 = intensity(i,j)**2
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
@@ -1903,8 +1900,6 @@ if(Params%UseMieScattering.eq.1) then
           CouplingH(i,j)=0d0
         end if
 
-
-! 
 !         diffNe(i,j)=0d0 !just for debug !
 !         diffNh(i,j)=0d0 !just for debug !!
 !         

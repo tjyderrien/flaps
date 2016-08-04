@@ -337,6 +337,43 @@
 
     end subroutine ComputeDiffusions_batch
 
+      !-------------------------------------------------------------------------------------
+   !> Computes the diffusion terms for the entire mesh
+   !-------------------------------------------------------------------------------------
+    subroutine ComputeDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(inout) :: JeX(mesh%M,mesh%N), JeY(mesh%M,mesh%N)
+      real(8),           intent(inout) :: JhX(mesh%M,mesh%N), JhY(mesh%M,mesh%N)
+      real(8),           intent(in)    :: mobilityE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: mobilityH(mesh%M,mesh%N)
+      real(8),           intent(in)    :: Ex(mesh%M,mesh%N)
+      real(8),           intent(in)    :: Ey(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: DriftOn
+
+      integer :: i, j
+
+      if(DriftOn.eq.0) then
+          JeX(:,:)=0d0; JeY(:,:)=0d0;
+          JhX(:,:)=0d0; JhY(:,:)=0d0;
+      endif
+
+      !$OMP DO COLLAPSE(2)
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
+          JeX(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ex(i,j)
+          JeY(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ey(i,j)
+          JhX(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ex(i,j)
+          JhY(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ey(i,j)
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine ComputeDriftVectors_batch
+
    !-------------------------------------------------------------------------------------
    !> Computes the conductivities for the entire mesh
    !-------------------------------------------------------------------------------------
