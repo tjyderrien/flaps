@@ -318,6 +318,7 @@
 
       integer :: i, j
 
+      !TODO: This name is not really explicit
       if(ConductivityFix.eq.-1) then
            diffusionE(:,:)=0d0
            diffusionH(:,:)=0d0
@@ -325,7 +326,7 @@
 
 
       !$OMP DO COLLAPSE(2)
-      do j=1, mesh%N !(optimized)
+      do j=1, mesh%N
         do i=1, mesh%M
           diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)*inv_ec &
                 *FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))
@@ -337,8 +338,8 @@
 
     end subroutine ComputeDiffusions_batch
 
-      !-------------------------------------------------------------------------------------
-   !> Computes the diffusion terms for the entire mesh
+   !-------------------------------------------------------------------------------------
+   !> Computes the drif vectors for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine ComputeDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
       use Maths_m

@@ -277,11 +277,11 @@ implicit none
             maxTe, minTe, maxTh, minTh, maxTs, minTs, maxIntensity, maxNe, minNe, maxNh, minNh, &
             maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, maxDiffNe, maxDiffNh, &
             TotalLaserEnergy, TotalThermalEnergy, ElectronPotentialEnergy, ElectronKineticEnergy, &
-            cpuefficiency, cpu_timestep_duration, calc_time_begin, calc_time_2, calc_time_3, &
             NeedleHeight, NeedleA, NeedleB, Needlet0Limit, NeedleXParam, NeedleYParam, NeedleAngle, &
             localT, P2critic, ConstBLx, ConstBLy, TotalNumOfE, TotalNumOfH, &
             xmin2, xmax2, ymin2, ymax2, &
             MeshConvergence, MeshConvergenceOld
+    real :: cpuefficiency, cpu_timestep_duration, ElapsedTime
             
     real(8) sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, sigmaX8, sigmaX9, &
             sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, sigmaY8, sigmaY9, &
@@ -347,6 +347,7 @@ implicit none
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
+  call TimerInit()
 
   call InitInputParameter( Params )
   call LoadInputParameters( "flaps.in", Params )
@@ -1104,9 +1105,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
   call flush(Parameters%unit)
   
-  ! initialisation
-  call cpu_time(calc_time_begin) !initialisation time
-  
+  call TimerStart( )
+
   nmax=int((tmax-tmin)/dt, 8)
   
   Ex(:,:)=0d0 !-1d10
@@ -1405,7 +1405,7 @@ if(Params%UseMieScattering.eq.1) then
  
   t=tmin
   
-  call cpu_time(calc_time_2)
+  write(*,*) 'Elapsed time : ', ElapsedTime ( )
   write(*,*) "[Poisson eq.] Filling matrix"
 !   if(PoissonOn.eq.1 .AND. PoissonSolver.eq.0) then
 !     !******************* Let's make a Gauss inversion of Amatrix here !
@@ -1589,11 +1589,11 @@ if(Params%UseMieScattering.eq.1) then
   h3=dt+dt2+dt3
   
   write(*,*) "Starting time loop."
+  call TimerStart( )
 
   !***************************************************************
   !***************** temporal loop *******************************
   !***************************************************************
-  
   do nbiter=1, nmax
     
     t=t+dt; 
@@ -1666,7 +1666,7 @@ if(Params%UseMieScattering.eq.1) then
    
    call copy_mesh(mesh, newmesh)
    !
-   !TODO: Does this depends on the position. If yes, this has
+   !TODO: Does this depends on the position? If yes, this has
    nuColl=CollisionFrequency()
    !
    call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, OpticalIndex, OpticalDamping, epsilonInf, nuColl, me, laser)
@@ -1845,8 +1845,8 @@ if(Params%UseMieScattering.eq.1) then
    !
    !Computes the diffusion terms for the entire mesh
    call ComputeDiffusions_batch(mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
-                                       FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                       ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
+                                FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
    !
    !
    !Computes the drif vectors for the entire mesh
@@ -2381,10 +2381,9 @@ if(Params%UseMieScattering.eq.1) then
     end if
        
     ! output to files
-    call cpu_time(calc_time_3)
     
-    cpu_timestep_duration = (calc_time_3-calc_time_begin) / real(nbiter)
-    cpuefficiency=real(nbiter)/(calc_time_3-calc_time_begin)*real(nthreads)
+    cpu_timestep_duration = ElapsedTime() / real(nbiter)
+    cpuefficiency=real(nthreads)/cpu_timestep_duration
     
     !This should be moved to output.F90 file
     if(mod(nbiter,iterOut).eq.0) then 
