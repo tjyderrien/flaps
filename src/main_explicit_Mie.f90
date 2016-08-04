@@ -1851,9 +1851,9 @@ if(Params%UseMieScattering.eq.1) then
         ! free-carrier balance sources
         Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
 
-        diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)/ec &
+        diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)*inv_ec &
                 *FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))
-        diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i,j)/ec &
+        diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i,j)*inv_ec &
                 *FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))
         if(ConductivityFix.eq.-1) then
            diffusionE(i,j)=0d0
@@ -1873,11 +1873,11 @@ if(Params%UseMieScattering.eq.1) then
         Int2 = intensity(i,j)**2
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
                     +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
-                    +ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
+                    +ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
                     
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
                     +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
-                    +ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+                    +ImpactIonizationRate(mesh%Th(i,j),Egap(i,j), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
                     
 
         !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
@@ -1915,7 +1915,7 @@ if(Params%UseMieScattering.eq.1) then
 !         
         SourceE(i,j)= ((laser%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
                      + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*laser%inv_E*((me)/(me+mh))&
-                     - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),mesh%Ne(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Ne(i,j) &
+                     - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
 
@@ -1926,7 +1926,7 @@ if(Params%UseMieScattering.eq.1) then
 
         SourceH(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
                      + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
-                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),mesh%Nh(i,j),mesh%Ts(i,j), ImpactOff)*mesh%Nh(i,j) &
+                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),Egap(i,j), ImpactOff)*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
                      

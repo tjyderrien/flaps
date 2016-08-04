@@ -244,16 +244,16 @@
     end function CollisionFrequency
 
     !TODO: Create a batch version of this routine
-    real(8) function ImpactIonizationRate(Te, Ne, Ts, ImpactOff)
+    real(8) function ImpactIonizationRate(Te, Eg, ImpactOff)
       use Maths_m
       implicit none
 
-      real(8), intent(in)    :: Te, Ne, Ts
+      real(8), intent(in)    :: Te, Eg
       integer(8), intent(in) :: ImpactOff
 
       real(8) :: EgapValue
 
-      ImpactIonizationRate = 3.6d10*exp(-1.5d0*EgapValue(Ne, Ts)/kb/Te)
+      ImpactIonizationRate = 3.6d10*exp(-1.5d0*Eg/kb/Te)
       if(ImpactOff.eq.1) then !TODO: This is dirty, should be putted outside
         ImpactIonizationRate=0d0
       end if
