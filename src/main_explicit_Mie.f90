@@ -1170,7 +1170,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
-        etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
+
+      etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
         etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
 
         ! calculate semi-classical heat capacity
@@ -1178,22 +1179,23 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
                   -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
-                  (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) & 
+                  (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))))
         ChOld(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
                   -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
-                  FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) & 
+                  FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
          CsOld(i,j)=LatticeHeatCapacity(Tout, SiDensity)
          CsPrev(i,j)=LatticeHeatCapacity(Tout, SiDensity)
          CsPrev2(i,j)=LatticeHeatCapacity(Tout, SiDensity)
 
-        
+
         Ce(i,j)=CeOld(i,j)
         Ch(i,j)=ChOld(i,j)
         Cs(i,j)=LatticeHeatCapacity(Tout, SiDensity)
+
         
         UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
         UhNew(i,j)=newmesh%Th(i,j)*ChOld(i,j)
@@ -1671,14 +1673,13 @@ if(Params%UseMieScattering.eq.1) then
    !
    call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, OpticalIndex, OpticalDamping, epsilonInf, nuColl, me, laser)
    !
-   call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, laser, DrudeHeating)
+   call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, DrudeHeating, nuColl, me, laser)
    !
-   call DielectricFunctionDrude_batch(mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeE, nuColl, mh, laser, DrudeHeating)
+   call DielectricFunctionDrude_batch(mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, DrudeHeating, nuColl, mh, laser)
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
    !
-
 !!!! thermal calculations in the main domain
 ! calculation of sources
     !$OMP DO  COLLAPSE(2) 
@@ -1690,7 +1691,7 @@ if(Params%UseMieScattering.eq.1) then
         nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
 
         !         write(*,*) "Esprit es-tu la ?"
-        
+
 !         write(*,*) i,j,TeNew(i,j)
    !     DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
    !     DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
@@ -1699,8 +1700,6 @@ if(Params%UseMieScattering.eq.1) then
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
-        etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
-        etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
 !         write(*,*) "iter=", nbiter, "NeNc=", Ne(i,j)/DOSe(i,j), Nh(i,j)/DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "FermiIndex=", FermiIndex(Ne(i,j)/DOSe(i,j), FermiMaxLines), FermiIndex(Nh(i,j)/DOSh(i,j), FermiMaxLines)
 !         write(*,*) "iter=", nbiter, "eta=", etae, etah
@@ -1844,6 +1843,11 @@ if(Params%UseMieScattering.eq.1) then
    call ComputeDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
    !
    !
+   ! Computes the electron, hole and lattice heat capacities for the entire mesh
+   call ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, &
+                                    FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                    ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity)
+   !
    ! calculation of sources
    !$OMP DO  COLLAPSE(2)
    do j=1,Params%N
@@ -1867,18 +1871,6 @@ if(Params%UseMieScattering.eq.1) then
         LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
         LossesH(i,j)=LossesE(i,j)
 
-
-
-        Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
-                      -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
-                                      (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
-        Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
-                      -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
-                                      (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
-        Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j), SiDensity)
-
-!         Ce(i,j)=Ch(i,j) ! DEBUG test
-        
         CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
         if(HolesOff.eq.0) then
           CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))

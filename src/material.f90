@@ -108,8 +108,8 @@
     coefH = mhDOS*kb/(2d0*pi*hbar**2)
 
     !$OMP DO COLLAPSE(2)
-    do j=2, mesh%N-1 !(optimized)
-      do i=2, mesh%M-1
+    do j=1, mesh%N !(optimized)
+      do i=1, mesh%M
         DOSe(i,j) = 2d0*(coefE*mesh%Te(i,j))**(1.5d0)
         DOSh(i,j) = 2d0*(coefH*mesh%Th(i,j))**(1.5d0)
       end do
@@ -159,8 +159,8 @@
       coef=ec*ec/me/epsilon0*laser%inv_omega**2/(M_ONE+M_IM*nuColl*laser%inv_omega)
 
       !$OMP DO COLLAPSE(2)
-      do j=2, mesh%N-1 !(optimized)
-        do i=2, mesh%M-1
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
           Dielectric(i,j) =epsilonInf-Ne(i,j)*coef
           sqrtEps = sqrt(Dielectric(i,j))
           OpticalIndex(i,j)   = real(sqrtEps)
@@ -209,8 +209,8 @@
       coef= M_ONE*ec*ec/(mass*epsilon0)*laser%inv_omega**2/(M_ONE+M_IM*Collision*laser%inv_omega)
 
       !$OMP DO COLLAPSE(2)
-      do j=2, mesh%N-1 !(optimized)
-        do i=2, mesh%M-1
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
           Dielectric(i,j) =M_ONE-coef*N(i,j)
         end do
       end do
@@ -218,8 +218,8 @@
 
       if(DrudeHeating==1) then
         !$OMP DO COLLAPSE(2)
-        do j=2, mesh%N-1 !(optimized)
-          do i=2, mesh%M-1
+        do j=1, mesh%N !(optimized)
+          do i=1, mesh%M
             absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
           end do
         end do
@@ -390,6 +390,63 @@
     end subroutine ComputeDriftVectors_batch
 
    !-------------------------------------------------------------------------------------
+   !> Computes the electron, hole and lattice heat capacities for the entire mesh
+   !-------------------------------------------------------------------------------------
+    subroutine ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, &
+                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                           ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity  )
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(inout) :: Ce(mesh%M,mesh%N)
+      real(8),           intent(inout) :: Ch(mesh%M,mesh%N)
+      real(8),           intent(inout) :: Cs(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
+      real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
+      real(8),           intent(in)    :: SiDensity
+
+      real(8) :: etae, etah, LatticeHeatCapacity
+      integer :: i, j
+
+      !$OMP DO COLLAPSE(2)
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
+          etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
+          etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
+
+          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
+                      -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
+                                 (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
+          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
+                      -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
+                                 (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
+          Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j), SiDensity)
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine ComputeHeatCapacities_batch
+
+
+      real(8) function LatticeHeatCapacity(T, SiDensity)
+        implicit none
+        real(8) T, SiDensity
+!       LatticeHeatCapacity=1d3*SiDensity*0.2703d0/(exp(63.456d0/T)+0.84586d0) !bad fit ...
+!         LatticeHeatCapacity=1d3*SiDensity*0.412920554599445d0/(exp(88.1830102582422d0/T)-0.676494557497076d0) !!better fit on Flubacher BUT INDUCES A SUPER BUG (+170 K with 3rd order time integration).
+!         LatticeHeatCapacity=1d6*(1.978d0+3.54d-4*T-3.68d0*T**(-2)) !Driel 1987 - not very good, BUT WORKS.
+!       LatticeHeatCapacity=1d3*SiDensity*(0.899d0*dexp(5.455d-05*T)-0.959d0*dexp(-0.004218d0*T))! very good exp fit on Okothin, BUT INDUCES A nonlinearity at the beginning (+50 K with 3rd order integration)
+!         LatticeHeatCapacity=1D3*SiDensity*(1.239d0*sin(0.001413d0*T-0.1806d0) + 0.3168d0*sin(0.003343d0*T+0.7648d0) + 0.01947d0*sin(0.00904d0*T+0.4528d0) + 0.04943d0*sin(0.007262d0*T-0.6642d0)) !Fitted on Otokhin, but is it stable ?
+!         LatticeHeatCapacity=1D3*SiDensity*(2.36d-16*T**5 -1.707d-12*T**4 + 4.619d-09*T**3 -5.912d-06*T**2 + 0.003733d0*T -0.0494d0) ! 5th order polynomial fit on Okhonin
+!         LatticeHeatCapacity=1d3*SiDensity*(0.4135d0*T-0.4071d0*T**1.002d0) !Driel style (1)
+        LatticeHeatCapacity=1d3*SiDensity*(-0.003592d0*T+0.01458d0*T**0.8316d0) !Driel style (2, better ?)
+      end function LatticeHeatCapacity
+
+   !-------------------------------------------------------------------------------------
    !> Computes the conductivities for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine ComputeConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
@@ -521,20 +578,6 @@
       end if
       return
     end function EgapValue
-
-    !TODO: Create a batch version of this routine
-    real(8) function LatticeHeatCapacity(T, SiDensity)
-      implicit none
-      real(8) T, SiDensity
-!       LatticeHeatCapacity=1d3*SiDensity*0.2703d0/(exp(63.456d0/T)+0.84586d0) !bad fit ...
-!         LatticeHeatCapacity=1d3*SiDensity*0.412920554599445d0/(exp(88.1830102582422d0/T)-0.676494557497076d0) !!better fit on Flubacher BUT INDUCES A SUPER BUG (+170 K with 3rd order time integration).
-!         LatticeHeatCapacity=1d6*(1.978d0+3.54d-4*T-3.68d0*T**(-2)) !Driel 1987 - not very good, BUT WORKS.
-!       LatticeHeatCapacity=1d3*SiDensity*(0.899d0*dexp(5.455d-05*T)-0.959d0*dexp(-0.004218d0*T))! very good exp fit on Okothin, BUT INDUCES A nonlinearity at the beginning (+50 K with 3rd order integration)
-!         LatticeHeatCapacity=1D3*SiDensity*(1.239d0*sin(0.001413d0*T-0.1806d0) + 0.3168d0*sin(0.003343d0*T+0.7648d0) + 0.01947d0*sin(0.00904d0*T+0.4528d0) + 0.04943d0*sin(0.007262d0*T-0.6642d0)) !Fitted on Otokhin, but is it stable ?
-!         LatticeHeatCapacity=1D3*SiDensity*(2.36d-16*T**5 -1.707d-12*T**4 + 4.619d-09*T**3 -5.912d-06*T**2 + 0.003733d0*T -0.0494d0) ! 5th order polynomial fit on Okhonin
-!         LatticeHeatCapacity=1d3*SiDensity*(0.4135d0*T-0.4071d0*T**1.002d0) !Driel style (1)
-        LatticeHeatCapacity=1d3*SiDensity*(-0.003592d0*T+0.01458d0*T**0.8316d0) !Driel style (2, better ?)
-    end function LatticeHeatCapacity
 
     !TODO: Create a batch version of this routine
     integer(8) function FermiIndex(NeNc, FermiMaxLines)
