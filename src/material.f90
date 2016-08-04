@@ -137,9 +137,9 @@
       return
     end function DielectricFunction
 
-!------------------------------------------------------------------
+   !------------------------------------------------------------------
    !This routine computes the dielectric function for the entire grid with one call
-    subroutine DielectricFunction_batch(mesh, Ne, Dielectric, epsilonInf, nuColl, me, laser)
+    subroutine DielectricFunction_batch(mesh, Ne, Dielectric, OpticalIndex, OpticalDamping, epsilonInf, nuColl, me, laser)
       use Maths_m
       use Types_m
       implicit none
@@ -147,11 +147,13 @@
       type(MeshValues),  intent(in)    :: mesh
       real(8),           intent(in)    :: Ne(mesh%M,mesh%N)
       complex(8),        intent(inout) :: Dielectric(mesh%M, mesh%N)
+      complex(8),        intent(inout) :: OpticalIndex(mesh%M, mesh%N)
+      complex(8),        intent(inout) :: OpticalDamping(mesh%M, mesh%N)
       complex(8),        intent(in)    :: epsilonInf
       real(8),           intent(in)    :: nuColl, me
       type(LaserParams), intent(in)    :: laser
 
-      complex(8) :: coef
+      complex(8) :: coef, sqrtEps
       integer :: i, j
 
       coef=ec*ec/me/epsilon0*laser%inv_omega**2/(M_ONE+M_IM*nuColl*laser%inv_omega)
@@ -160,13 +162,16 @@
       do j=2, mesh%N-1 !(optimized)
         do i=2, mesh%M-1
           Dielectric(i,j) =epsilonInf-Ne(i,j)*coef
+          sqrtEps = sqrt(Dielectric(i,j))
+          OpticalIndex(i,j)   = real(sqrtEps)
+          OpticalDamping(i,j) = aimag(sqrtEps)
         end do
       end do
       !$OMP END DO
 
     end subroutine DielectricFunction_batch
 
-!------------------------------------------------------------------
+    !------------------------------------------------------------------
     complex(8) function DielectricFunctionDrude(density, Collision, mass, laser)
       use Maths_m
       use Types_m

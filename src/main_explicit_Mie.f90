@@ -261,6 +261,8 @@ implicit none
     
     complex(8), allocatable, dimension(:,:) :: &
                 Dielectric, &! solid dielectric function under laser illumination
+                OpticalIndex, &  ! solid optical index under laser illumination
+                OpticalDamping, &! solid optical damping under laser illumination
                 DielectricDrudeE, & ! Drude part of dielectric function under laser illumination
                 DielectricDrudeH, &
                 EintField, EintField2        !Ez internal field for Mie scattering theory
@@ -419,6 +421,8 @@ implicit none
  allocate(  FermiIndexE(1:Params%M,1:Params%N), FermiIndexH(1:Params%M,1:Params%N), &
                 MeshVertice(1:Params%M, 1:Params%N) )
  allocate(  Dielectric(1:Params%M,1:Params%N), &! solid dielectric function under laser illumination
+            OpticalIndex(1:Params%M,1:Params%N), &
+            OpticalDamping(1:Params%M,1:Params%N), &
                 DielectricDrudeE(1:Params%M,1:Params%N), & ! Drude part of dielectric function under laser illumination
                 DielectricDrudeH(1:Params%M,1:Params%N), &
                 EintField(1:Params%M,1:Params%N), EintField2(1:Params%M,1:Params%N))
@@ -1666,7 +1670,7 @@ if(Params%UseMieScattering.eq.1) then
    !TODO: Does this depends on the position. If yes, this has
    nuColl=CollisionFrequency()
    !
-   call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, epsilonInf, nuColl, me, laser)
+   call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, OpticalIndex, OpticalDamping, epsilonInf, nuColl, me, laser)
    !
    call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, nuColl, me, laser)
    !
