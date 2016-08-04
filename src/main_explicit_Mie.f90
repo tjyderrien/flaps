@@ -1643,7 +1643,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& sigmaY8, sigmaY9, &
    !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, &
    !$OMP& t, t0, x0, y0, I1, I2, I3, I4, I5, I6, I7, &
-   !$OMP& I8, I9, &
+   !$OMP& I8, I9, OpticalIndex, OpticalDamping, &
    !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
    !$OMP& Mp, Np)
@@ -1725,7 +1725,7 @@ if(Params%UseMieScattering.eq.1) then
   !         ! DEBUG ZONE
   ! !         if(laser%lambda.eq.343d-9) then
   !         ! uniform distribution like in Elena's paper
-          intensity(i,j)=(1d0-0e0*reflectivity(i,j))* OpticalIndex(i,j)*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
+          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*OpticalIndex(i,j)*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
   !         intensity(i,j)=I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-0.5d0*(((y(i,j)-500d-9)/sigmaY)**2+(x(i,j)/sigmaX)**2))
   !         ! with just nothing
   ! !           intensity(i,j)=(1d0-reflectivity(i,j))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
