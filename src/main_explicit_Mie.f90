@@ -1671,9 +1671,9 @@ if(Params%UseMieScattering.eq.1) then
    !
    call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, OpticalIndex, OpticalDamping, epsilonInf, nuColl, me, laser)
    !
-   call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, nuColl, me, laser)
+   call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, laser, DrudeHeating)
    !
-   call DielectricFunctionDrude_batch(mesh, mesh%Nh, DielectricDrudeH, nuColl, mh, laser)
+   call DielectricFunctionDrude_batch(mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeE, nuColl, mh, laser, DrudeHeating)
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
@@ -1707,15 +1707,6 @@ if(Params%UseMieScattering.eq.1) then
 !         write(*,*) "FermiTables: etaE,etaH=", FermiTableE(3,463), FermiTableH(3,450)
 
 !         write(*,*) "iter=", nbiter, "mobility=", mobilityE(i,j), mobilityH(i,j)
-        if(DrudeHeating==1) then
-          absorptionDrudeE(i,j)=2d0*laser%k*aimag(sqrt(DielectricDrudeE(i,j)))
-          absorptionDrudeH(i,j)=2d0*laser%k*aimag(sqrt(DielectricDrudeH(i,j)))
-        else !TODO: Move out of temporal loop
-          absorptionDrudeE(i,j)=0d0
-          absorptionDrudeH(i,j)=0d0
-!           absorptionDrudeE(i,j)=sqrt(2d0)*sqrt(mu0*laser%omega*ec*mobilityE(i,j)*Ne(i,j))
-!           absorptionDrudeH(i,j)=sqrt(2d0)*sqrt(mu0*laser%omega*ec*mobilityH(i,j)*Nh(i,j))
-        end if
         
 !         write(*,*) "iter=", nbiter, "absorption=", absorptionDrudeE(i,j), absorptionDrudeH(i,j)
         reflectivity(i,j)=  ( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 -2d0*(OpticalIndex(i,j)+1d0) ) &

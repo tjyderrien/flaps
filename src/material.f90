@@ -190,7 +190,7 @@
 
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
-    subroutine DielectricFunctionDrude_batch(mesh, N, Dielectric, Collision, mass, laser)
+    subroutine DielectricFunctionDrude_batch(mesh, N, Dielectric, absorptionDrude, DrudeHeating, Collision, mass, laser)
       use Maths_m
       use Types_m
       implicit none
@@ -198,6 +198,8 @@
       type(MeshValues),  intent(in)    :: mesh
       real(8),           intent(in)    :: N(mesh%M,mesh%N)
       complex(8),        intent(inout) :: Dielectric(mesh%M,mesh%N)
+      complex(8),        intent(inout) :: absorptionDrude(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: DrudeHeating
       real(8),           intent(in)    :: Collision, mass
       type(LaserParams), intent(in)    :: laser
 
@@ -213,6 +215,18 @@
         end do
       end do
       !$OMP END DO
+
+      if(DrudeHeating==1) then
+        !$OMP DO COLLAPSE(2)
+        do j=2, mesh%N-1 !(optimized)
+          do i=2, mesh%M-1
+            absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
+          end do
+        end do
+        !$OMP END DO
+      else
+          absorptionDrude(:,:)=0d0
+      end if
 
     end subroutine DielectricFunctionDrude_batch
 
