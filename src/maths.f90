@@ -35,6 +35,7 @@ module Maths_m
   !Some useful numbers
   real(8), public, parameter    :: Pi       = 4.0d0*atan(1.0d0)
   real(8), public, parameter    :: Sqrt2    = sqrt(2.0d0)
+  real(8), public, parameter    :: sqrt2ln2 = sqrt(2d0*log(2d0))
   complex(8), public, parameter :: M_IM     = (0.0d0,1.0d0)
   complex(8), public, parameter :: M_ONE    = (1.0d0,0.0d0)
   complex(8), public, parameter :: M_ZERO   = (0.0d0,0.0d0)

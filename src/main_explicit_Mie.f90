@@ -268,8 +268,7 @@ implicit none
                 EintField, EintField2        !Ez internal field for Mie scattering theory
 
                 
-    complex(8) epsilonInf, & !, SORsum !material constant
-               sqrtDielectric ! For performances
+    complex(8) epsilonInf !, SORsum !material constant
 
    
     real(8) AugerRateE, AugerRateH, & ! For performances
@@ -544,9 +543,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   end if
 
     !TODO: Move to LaserParams
-    sigmaTau=laser%tau/(2d0*sqrt(2d0*log(2e0)))
-    sigmaX=laser%spotX/(2d0*sqrt(2d0*log(2e0)))
-    sigmaY=laser%spotY/(2d0*sqrt(2d0*log(2e0)))
+    sigmaTau=laser%tau/(2d0*sqrt2ln2)
+    sigmaX=laser%spotX/(2d0*sqrt2ln2)
+    sigmaY=laser%spotY/(2d0*sqrt2ln2)
 
     !TODO: Move to LaserParams
     I0=laser%fluence/laser%tau * sqrt(4d0 * log(2d0) / pi)
@@ -576,24 +575,24 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
       end if
     end if
 
-    sigmaX1=spotX1/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY1=spotY1/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX2=spotX2/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY2=spotY2/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX3=spotX3/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY3=spotY3/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX4=spotX4/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY4=spotY4/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX5=spotX5/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY5=spotY5/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX6=spotX6/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY6=spotY6/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX7=spotX7/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY7=spotY7/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX8=spotX8/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY8=spotY8/(2e0*sqrt(2e0*log(2e0)))
-    sigmaX9=spotX9/(2e0*sqrt(2e0*log(2e0)))
-    sigmaY9=spotY9/(2e0*sqrt(2e0*log(2e0)))
+    sigmaX1=spotX1/(2e0*sqrt2ln2)
+    sigmaY1=spotY1/(2e0*sqrt2ln2)
+    sigmaX2=spotX2/(2e0*sqrt2ln2)
+    sigmaY2=spotY2/(2e0*sqrt2ln2)
+    sigmaX3=spotX3/(2e0*sqrt2ln2)
+    sigmaY3=spotY3/(2e0*sqrt2ln2)
+    sigmaX4=spotX4/(2e0*sqrt2ln2)
+    sigmaY4=spotY4/(2e0*sqrt2ln2)
+    sigmaX5=spotX5/(2e0*sqrt2ln2)
+    sigmaY5=spotY5/(2e0*sqrt2ln2)
+    sigmaX6=spotX6/(2e0*sqrt2ln2)
+    sigmaY6=spotY6/(2e0*sqrt2ln2)
+    sigmaX7=spotX7/(2e0*sqrt2ln2)
+    sigmaY7=spotY7/(2e0*sqrt2ln2)
+    sigmaX8=spotX8/(2e0*sqrt2ln2)
+    sigmaY8=spotY8/(2e0*sqrt2ln2)
+    sigmaX9=spotX9/(2e0*sqrt2ln2)
+    sigmaY9=spotY9/(2e0*sqrt2ln2)
     
     t0=tCenter; x0=laser%xCenter; y0=laser%yCenter;
     
@@ -1133,18 +1132,18 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         
         if(BandBendingInFDTD.eq.1) then
            newmesh%Ne(i,j)=Ne0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
-                    /((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
+                    /((DefectThickness)/(2d0*sqrt2ln2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
-                    /(2d0*sqrt(2d0*log(2d0))))**2)) &
+                    /(2d0*sqrt2ln2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
-                    /(2d0*sqrt(2d0*log(2d0))))**2)) &
+                    /(2d0*sqrt2ln2))**2)) &
                   )
           newmesh%Nh(i,j)=Nh0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
-                    /((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
+                    /((DefectThickness)/(2d0*sqrt2ln2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
-                    /(2d0*sqrt(2d0*log(2d0))))**2)) &
+                    /(2d0*sqrt2ln2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
-                    /(2d0*sqrt(2d0*log(2d0))))**2)) &
+                    /(2d0*sqrt2ln2))**2)) &
                   )
         else
           newmesh%Ne(i,j)=Ne0
@@ -1689,10 +1688,6 @@ if(Params%UseMieScattering.eq.1) then
 
         ! optical coefficients
         nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-     !   Dielectric(i,j)=DielectricFunction(epsilonInf, mesh%Ne(i,j), nuColl, me, laser)
-        sqrtDielectric = sqrt(Dielectric(i,j));
-      !  DielectricDrudeE(i,j)=DielectricFunctionDrude(mesh%Ne(i,j), nuColl,me, laser)
-      !  DielectricDrudeH(i,j)=DielectricFunctionDrude(mesh%Nh(i,j), nuColl,mh, laser)
 
         !         write(*,*) "Esprit es-tu la ?"
         
@@ -1713,8 +1708,8 @@ if(Params%UseMieScattering.eq.1) then
 
 !         write(*,*) "iter=", nbiter, "mobility=", mobilityE(i,j), mobilityH(i,j)
         if(DrudeHeating==1) then
-          absorptionDrudeE(i,j)=4d0*pi/laser%lambda*aimag(sqrt(DielectricDrudeE(i,j)))
-          absorptionDrudeH(i,j)=4d0*pi/laser%lambda*aimag(sqrt(DielectricDrudeH(i,j)))
+          absorptionDrudeE(i,j)=2d0*laser%k*aimag(sqrt(DielectricDrudeE(i,j)))
+          absorptionDrudeH(i,j)=2d0*laser%k*aimag(sqrt(DielectricDrudeH(i,j)))
         else !TODO: Move out of temporal loop
           absorptionDrudeE(i,j)=0d0
           absorptionDrudeH(i,j)=0d0
@@ -1723,14 +1718,14 @@ if(Params%UseMieScattering.eq.1) then
         end if
         
 !         write(*,*) "iter=", nbiter, "absorption=", absorptionDrudeE(i,j), absorptionDrudeH(i,j)
-        reflectivity(i,j)=  ( real(sqrtDielectric)**2 +aimag(sqrtDielectric)**2 -2d0*real(sqrtDielectric)+1d0 ) &
-                            /(real(sqrtDielectric)**2+aimag(sqrtDielectric)**2+2d0*real(sqrtDielectric+1d0))
+        reflectivity(i,j)=  ( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 -2d0*(OpticalIndex(i,j)+1d0) ) &
+                           /( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 +2d0*(OpticalIndex(i,j)+1d0) )
         !local intensity
         if(Params%UseMieScattering .eq. -1) then
   !         ! DEBUG ZONE
   ! !         if(laser%lambda.eq.343d-9) then
   !         ! uniform distribution like in Elena's paper
-          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*real(sqrtDielectric)*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
+          intensity(i,j)=(1d0-0e0*reflectivity(i,j))* OpticalIndex(i,j)*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
   !         intensity(i,j)=I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-0.5d0*(((y(i,j)-500d-9)/sigmaY)**2+(x(i,j)/sigmaX)**2))
   !         ! with just nothing
   ! !           intensity(i,j)=(1d0-reflectivity(i,j))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
@@ -1761,9 +1756,9 @@ if(Params%UseMieScattering.eq.1) then
             intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
                             *(exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
                             + I0*1d-4*( & 
-        exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*sqrt(2d0*log(2d0))))**2)) &
+        exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
+       +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
+       +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
                             ))
             end if
             ! corrections from FDTD calculations and recovering non-linear processes
@@ -1827,7 +1822,7 @@ if(Params%UseMieScattering.eq.1) then
           ! debug formula for constant cone radius
 !           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
 !           EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real
-          intensity(i,j)=I0 * real(sqrtDielectric) * EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser laser%fluence and reflectivity is inside the field
+          intensity(i,j)=I0 *OpticalIndex(i,j)* EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser laser%fluence and reflectivity is inside the field
         else 
           write(*,*) "Input ERROR. Check the MieScattering parameter."
           stop
@@ -2274,7 +2269,7 @@ if(Params%UseMieScattering.eq.1) then
                   +absorptionDrudeH(i,j))*intensity(i,j)*CellVol(i,j)*dt
         end if
         LaserIntensityEnergy = LaserIntensityEnergy &
-               +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*I0*real(sqrt(Dielectric(i,j))) &
+               +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*I0*OpticalIndex(i,j) &
                   *exp(-.5d0*((t-t0)/sigmaTau)**2)*CellVol(i,j)*dt
 
         work = EgapValue(newmesh%Ne(i,j),newmesh%Ts(i,j)) - Egap(i,j)
