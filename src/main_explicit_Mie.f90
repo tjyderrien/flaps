@@ -1698,9 +1698,6 @@ if(Params%UseMieScattering.eq.1) then
     do j=1,Params%N
         do i=1,Params%M
 
-       ! optical coefficients
-        nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-
         !         write(*,*) "Esprit es-tu la ?"
 
 
@@ -1762,6 +1759,9 @@ if(Params%UseMieScattering.eq.1) then
         !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
         LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
         LossesH(i,j)=LossesE(i,j)
+
+        ! optical coefficients
+        nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
 
         CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
         if(HolesOff.eq.0) then
