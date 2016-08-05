@@ -139,18 +139,17 @@
 
    !------------------------------------------------------------------
    !This routine computes the dielectric function for the entire grid with one call
-    subroutine DielectricFunction_batch(mesh, Ne, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
+    subroutine DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
                                         epsilonInf, nuColl, me, laser)
       use Maths_m
       use Types_m
       implicit none
 
       type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(in)    :: Ne(mesh%M,mesh%N)
       complex(8),        intent(inout) :: Dielectric(mesh%M, mesh%N)
-      complex(8),        intent(inout) :: OpticalIndex(mesh%M, mesh%N)
-      complex(8),        intent(inout) :: OpticalDamping(mesh%M, mesh%N)
-      complex(8),        intent(inout) :: Reflectivity(mesh%M, mesh%N)
+      real(8),        intent(inout)    :: OpticalIndex(mesh%M, mesh%N)
+      real(8),        intent(inout)    :: OpticalDamping(mesh%M, mesh%N)
+      real(8),        intent(inout)    :: Reflectivity(mesh%M, mesh%N)
       complex(8),        intent(in)    :: epsilonInf
       real(8),           intent(in)    :: nuColl, me
       type(LaserParams), intent(in)    :: laser
@@ -163,7 +162,7 @@
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          Dielectric(i,j) =epsilonInf-Ne(i,j)*coef
+          Dielectric(i,j) =epsilonInf-mesh%Ne(i,j)*coef
           sqrtEps = sqrt(Dielectric(i,j))
           OpticalIndex(i,j)   = real(sqrtEps)
           OpticalDamping(i,j) = aimag(sqrtEps)

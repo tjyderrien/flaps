@@ -261,12 +261,13 @@ implicit none
     
     complex(8), allocatable, dimension(:,:) :: &
                 Dielectric, &! solid dielectric function under laser illumination
-                OpticalIndex, &  ! solid optical index under laser illumination
-                OpticalDamping, &! solid optical damping under laser illumination
                 DielectricDrudeE, & ! Drude part of dielectric function under laser illumination
                 DielectricDrudeH, &
                 EintField, EintField2        !Ez internal field for Mie scattering theory
 
+    real(8), allocatable, dimension(:,:) :: &
+                OpticalIndex, &  ! solid optical index under laser illumination
+                OpticalDamping   ! solid optical damping under laser illumination
                 
     complex(8) epsilonInf !, SORsum !material constant
 
@@ -278,7 +279,7 @@ implicit none
             maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, maxDiffNe, maxDiffNh, &
             TotalLaserEnergy, TotalThermalEnergy, ElectronPotentialEnergy, ElectronKineticEnergy, &
             NeedleHeight, NeedleA, NeedleB, Needlet0Limit, NeedleXParam, NeedleYParam, NeedleAngle, &
-            localT, P2critic, ConstBLx, ConstBLy, TotalNumOfE, TotalNumOfH, &
+            localT, P2critic, TotalNumOfE, TotalNumOfH, &
             xmin2, xmax2, ymin2, ymax2, &
             MeshConvergence, MeshConvergenceOld
     real :: cpuefficiency, cpu_timestep_duration, ElapsedTime
@@ -1632,7 +1633,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
    !$OMP& NormalN, NormalS, NormalE, NormalW, &
    !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
-   !$OMP& ConstBLx, ConstBLy, DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
+   !$OMP& DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP& EintField, EintFieldI, EintFieldR, NeTotal, NhTotal, &
    !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
    !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
@@ -1671,7 +1672,7 @@ if(Params%UseMieScattering.eq.1) then
    !TODO: Does this depends on the position? If yes, this has
    nuColl=CollisionFrequency()
    !
-   call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
+   call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
                                  epsilonInf, nuColl, me, laser)
    !
    call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, DrudeHeating, nuColl, me, laser)
@@ -1680,22 +1681,29 @@ if(Params%UseMieScattering.eq.1) then
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
+   !This routine computes the intensity for the entire grid with one call
+   call ComputeIntensity_batch(Params, mesh, laser, intensity, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
+                               absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+                               t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0, DefectThickness, BandBendingInFDTD,  &
+                               sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
+                               sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
+                               x3, y3, x4, y4, x5, EintFieldR,  &
+                               y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
+   !
+   !
    !
 !!!! thermal calculations in the main domain
 ! calculation of sources
     !$OMP DO  COLLAPSE(2) 
     do j=1,Params%N
         do i=1,Params%M
-!      intensity(i,1)=(1d0-reflectivity(i,1))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2.-.5d0*((x(i,1)-x0)/sigmaX)**2.-.5d0*((y(i,1)-y0)/sigmaY)**2.)
 
-        ! optical coefficients
+       ! optical coefficients
         nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
 
         !         write(*,*) "Esprit es-tu la ?"
 
-!         write(*,*) i,j,TeNew(i,j)
-   !     DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
-   !     DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
+
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
@@ -1706,121 +1714,6 @@ if(Params%UseMieScattering.eq.1) then
 !         write(*,*) "iter=", nbiter, "eta=", etae, etah
 !         write(*,*) "FermiTables: etaE,etaH=", FermiTableE(3,463), FermiTableH(3,450)
 
-!         write(*,*) "iter=", nbiter, "mobility=", mobilityE(i,j), mobilityH(i,j)
-        
-!         write(*,*) "iter=", nbiter, "absorption=", absorptionDrudeE(i,j), absorptionDrudeH(i,j)
-        !local intensity
-        if(Params%UseMieScattering .eq. -1) then
-  !         ! DEBUG ZONE
-  ! !         if(laser%lambda.eq.343d-9) then
-  !         ! uniform distribution like in Elena's paper
-          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*OpticalIndex(i,j)*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
-  !         intensity(i,j)=I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-0.5d0*(((y(i,j)-500d-9)/sigmaY)**2+(x(i,j)/sigmaX)**2))
-  !         ! with just nothing
-  ! !           intensity(i,j)=(1d0-reflectivity(i,j))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
-  !         ! with beer-lambert
-  ! !         intensity(i,j)=(-(absorptionDrude(i,j) &
-  ! !                         +4d0*pi/laser%lambda*aimag(sqrt(epsilonInf)))*intensity(i,j-1) &
-  ! !                         -TwoPhotonIonizationRate0*intensity(i,j-1)**2 &
-  ! !                         )*x &
-  ! !                         +intensity(i,j-1)
-  ! !          end if
-        
-        else if(Params%UseMieScattering .eq. 0) then
-          ! WITH EXTERNALLY ADJUSTED INPUTS
-  !        !Lumerical mode already contains the reflectivity. Although, it doesn't consider change of optical index with ionization. 
-          if(laser%lambda.eq.1030d-9) then
-            ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
-                      / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
-                      * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
-            ConstBLy=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
-                      / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*y0) &
-                      * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
-  ! case 1030 nm distribution
-            !initial field distribution  
-            if(BandBendingInFDTD.eq.0) then
-              intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
-                      *exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
-            else 
-            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
-                            *(exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
-                            + I0*1d-4*( & 
-        exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
-                            ))
-            end if
-            ! corrections from FDTD calculations and recovering non-linear processes
-            intensity(i,j)=intensity(i,j)*((OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
-                          / (-TwoPhotonIonizationRate0+exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
-                              +absorptionDrudeH(i,j))*(x(i,j)-x0))  * ConstBLx * (OnePhotonIonizationRate0 + &
-                              absorptionDrudeE(i,j) + absorptionDrudeH(i,j)))) &
-                          *((OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
-                          / (-TwoPhotonIonizationRate0+exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
-                              +absorptionDrudeH(i,j))*abs(y(i,j)-y0))  * ConstBLy * (OnePhotonIonizationRate0 + &
-                              absorptionDrudeE(i,j) + absorptionDrudeH(i,j))))
-          end if
-  ! case 515 nm distribution
-          if(laser%lambda.eq.515d-9) then
-            ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
-                      / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
-                      * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
-            ConstBLy=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
-                      / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*y0) &
-                      * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
-            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*exp(-.5d0*((t-t0)/sigmaTau)**2) & !TODO: How could you code something like that??
-                          *( &
-                          I1*exp(-.5d0*((x(i,j)-x1)/sigmaX1)**2)*exp(-.5d0*((y(i,j)-y1)/sigmaY1)**2) + &
-                          I2*exp(-.5d0*((x(i,j)-x2)/sigmaX2)**2)*exp(-.5d0*((y(i,j)-y2)/sigmaY2)**2) + &
-                          I3*exp(-.5d0*((x(i,j)-x3)/sigmaX3)**2)*exp(-.5d0*((y(i,j)-y3)/sigmaY3)**2) + &
-                          I4*exp(-.5d0*((x(i,j)-x4)/sigmaX4)**2)*exp(-.5d0*((y(i,j)-y4)/sigmaY4)**2) + &
-                          I5*exp(-.5d0*((x(i,j)-x5)/sigmaX5)**2)*exp(-.5d0*((y(i,j)-y5)/sigmaY5)**2) + &
-                          I6*exp(-.5d0*((x(i,j)-x6)/sigmaX6)**2)*exp(-.5d0*((y(i,j)-y6)/sigmaY6)**2) + &
-                          I7*exp(-.5d0*((x(i,j)-x7)/sigmaX7)**2)*exp(-.5d0*((y(i,j)-y7)/sigmaY7)**2) + &
-                          I8*exp(-.5d0*((x(i,j)-x8)/sigmaX8)**2)*exp(-.5d0*((y(i,j)-y8)/sigmaY8)**2) + &
-                          I9/2d0 & 
-  !                         *(1d0+cos(2d0*pi*x(i,j)/periodX)*sin(2d0*pi*y(i,j)/periodY)) &
-                          *exp(-.5d0*((x(i,j)-x9)/sigmaX9)**2)*exp(-.5d0*((y(i,j)-y9)/sigmaY9)**2)) &
-                          *((OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
-                          / (-TwoPhotonIonizationRate0+exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
-                              +absorptionDrudeH(i,j))*(x(i,j)-x0))  * ConstBLx * (OnePhotonIonizationRate0 + &
-                              absorptionDrudeE(i,j) + absorptionDrudeH(i,j)))) &
-                          *((OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
-                          / (-TwoPhotonIonizationRate0+exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j) & 
-                              +absorptionDrudeH(i,j))*abs(y(i,j)-y0))  * ConstBLy * (OnePhotonIonizationRate0 + &
-                              absorptionDrudeE(i,j) + absorptionDrudeH(i,j))))
-          end if
-          if(laser%lambda.eq.343d-9) then
-            intensity(i,j)= (1d0-0e0*reflectivity(i,Params%N))* &
-                            I0*exp(-.5d0*((t-t0)/sigmaTau)**2) & 
-                            *( & !TODO: Use OnePhotonIonizationRate0 here
-                            exp(-(OnePhotonIonizationRate()+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
-                            *abs(y(i,j)-y(i,Params%N)) & !introduce discontinuity !
-                            ) & 
-                            * exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
-  !                           + exp(-(OnePhotonIonizationRate(laser%lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(y(i,j)-y(i,1))) &
-  !                           *exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
-                            )
-  !                           *exp(-(OnePhotonIonizationRate(laser%lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(x(i,j)-x(i,N)))
-          end if
-
-        ! USING MIE SCATTERING ANALYTICAL FORMULAS
-        else if(Params%UseMieScattering .eq. 1) then
-        ! calculate electric field inside the tip
-!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), Dielectric(i,j)) !*sqrt(2d0*laser%fluence/(c*epsilon0*tau))
-          ! debug formula for constant cone radius
-!           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
-!           EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real
-          intensity(i,j)=I0 *OpticalIndex(i,j)* EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser laser%fluence and reflectivity is inside the field
-        else 
-          write(*,*) "Input ERROR. Check the MieScattering parameter."
-          stop
-        end if
-        
-        if(intensity(i,j) < 1d-20) then 
-          intensity(i,j)=0d0
-        end if
-        
       end do
    end do
    !$OMP END DO
