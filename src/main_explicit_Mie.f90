@@ -62,7 +62,7 @@ implicit none
      real(8)               tmin                !max absolute time
     
                         
-    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=10000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
@@ -1671,7 +1671,8 @@ if(Params%UseMieScattering.eq.1) then
    !TODO: Does this depends on the position? If yes, this has
    nuColl=CollisionFrequency()
    !
-   call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, OpticalIndex, OpticalDamping, epsilonInf, nuColl, me, laser)
+   call DielectricFunction_batch(mesh, mesh%Ne, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
+                                 epsilonInf, nuColl, me, laser)
    !
    call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, DrudeHeating, nuColl, me, laser)
    !
@@ -1708,8 +1709,6 @@ if(Params%UseMieScattering.eq.1) then
 !         write(*,*) "iter=", nbiter, "mobility=", mobilityE(i,j), mobilityH(i,j)
         
 !         write(*,*) "iter=", nbiter, "absorption=", absorptionDrudeE(i,j), absorptionDrudeH(i,j)
-        reflectivity(i,j)=  ( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 -2d0*(OpticalIndex(i,j)+1d0) ) &
-                           /( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 +2d0*(OpticalIndex(i,j)+1d0) )
         !local intensity
         if(Params%UseMieScattering .eq. -1) then
   !         ! DEBUG ZONE
