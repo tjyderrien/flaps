@@ -139,7 +139,6 @@ implicit none
     real(8)         Te0, Th0, I0 !initial values of the problem
 
     real(8)     nuColl, &!        total collision frequency
-                nuColleph,& !        electron-phonon collision frequency
                 etae, etah, &        ! reduced chemical Fermi potential
                 work
 
@@ -307,7 +306,7 @@ implicit none
     !! FUNCTIONS CALLS
      real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, DensityOfState, EgapValue, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
-             CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate, ephCollisionFrequency
+             CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
 
             
@@ -1737,6 +1736,10 @@ if(Params%UseMieScattering.eq.1) then
                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                     ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity)
    !
+   !Computes the couplings for the entire mesh
+   call ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, HolesOff)
+   !
+   !
    ! calculation of sources
    !$OMP DO  COLLAPSE(2)
    do j=1,Params%N
@@ -1760,20 +1763,6 @@ if(Params%UseMieScattering.eq.1) then
         LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
         LossesH(i,j)=LossesE(i,j)
 
-        ! optical coefficients
-        nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-
-        CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
-        if(HolesOff.eq.0) then
-          CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
-        else
-          CouplingH(i,j)=0d0
-        end if
-
-        if(CouplingDebug.eq.1) then
-          CouplingE(i,j)=0d0
-          CouplingH(i,j)=0d0
-        end if
 
 !         diffNe(i,j)=0d0 !just for debug !
 !         diffNh(i,j)=0d0 !just for debug !!

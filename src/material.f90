@@ -339,6 +339,7 @@
       if(ConductivityFix.eq.-1) then
            diffusionE(:,:)=0d0
            diffusionH(:,:)=0d0
+           return
       end if
 
 
@@ -377,6 +378,7 @@
       if(DriftOn.eq.0) then
           JeX(:,:)=0d0; JeY(:,:)=0d0;
           JhX(:,:)=0d0; JhY(:,:)=0d0;
+          return
       endif
 
       !$OMP DO COLLAPSE(2)
@@ -528,6 +530,50 @@
 
     end subroutine ComputeConductivities_batch
 
+   !-------------------------------------------------------------------------------------
+   !> Computes the couplings for the entire mesh
+   !-------------------------------------------------------------------------------------
+    subroutine ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, HolesOff)
+      use Maths_m
+      use Types_m
+      implicit none
+
+      type(MeshValues),  intent(in)    :: mesh
+      real(8),           intent(inout) :: CouplingE(mesh%M,mesh%N)
+      real(8),           intent(inout) :: CouplingH(mesh%M,mesh%N)
+      real(8),           intent(in)    :: Ce(mesh%M,mesh%N)
+      real(8),           intent(in)    :: Ch(mesh%M,mesh%N)
+      integer(8),        intent(in)    :: CouplingDebug, HolesOff
+
+      integer :: i, j
+      real(8) :: nuColleph!        electron-phonon collision frequency
+      real(8) :: ephCollisionFrequency
+
+      if(CouplingDebug.eq.1) then
+          CouplingE(:,:)=0d0
+          CouplingH(:,:)=0d0
+          return
+      end if
+
+      !$OMP DO COLLAPSE(2)
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
+            ! optical coefficients
+        nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
+
+        CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
+        if(HolesOff.eq.0) then
+          CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
+        else
+          CouplingH(i,j)=0d0
+        end if
+
+
+        end do
+      end do
+      !$OMP END DO
+
+    end subroutine ComputeCouplings_batch
 
     real(8) function OnePhotonIonizationRate()
       implicit none
