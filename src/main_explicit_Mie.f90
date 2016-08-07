@@ -97,10 +97,6 @@ implicit none
                                                 ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson ! 
                                                 ! 0: only fourier conductivity
                                                 !-1: diffusion and conductivity OFF
-                            NeOff=0       ,&
-                            TeOff=0       ,&                   !0: Disable temperature calculations
-                            HolesOff=0       ,&
-                            TsOff=0       ,&
                             CouplingDebug=0        ,&        !0: e/h - lattice coupling enabled, 1: disabled
                             AugerOff=0       ,&
                             ImpactOff=0       ,&
@@ -1707,8 +1703,6 @@ if(Params%UseMieScattering.eq.1) then
         do i=1,Params%M
 
         !         write(*,*) "Esprit es-tu la ?"
-
-
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
@@ -1746,7 +1740,7 @@ if(Params%UseMieScattering.eq.1) then
                                     ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity)
    !
    !Computes the couplings for the entire mesh
-   call ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, HolesOff)
+   call ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, Params%HolesOff)
    !
    !
    ! calculation of sources
@@ -1825,7 +1819,7 @@ if(Params%UseMieScattering.eq.1) then
     !
     !
     !
-    if(NeOff.eq.0) then
+    if(Params%NeOff.eq.0) then
       call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
@@ -1836,7 +1830,7 @@ if(Params%UseMieScattering.eq.1) then
       newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
     end if
     !
-    if(HolesOff.eq.0 .AND. NeOff.eq.0) then
+    if(Params%HolesOff.eq.0 .AND. Params%NeOff.eq.0) then
       call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
@@ -1846,7 +1840,7 @@ if(Params%UseMieScattering.eq.1) then
     !
     !
     !
-    if(TeOff.ne.1) then
+    if(Params%TeOff.ne.1) then
       !
       if(ConvectionEnergy.eq.0) then
         !
@@ -1875,7 +1869,7 @@ if(Params%UseMieScattering.eq.1) then
         !
       endif
       !
-      if(HolesOff.eq.0) then
+      if(Params%HolesOff.eq.0) then
         !
         if(ConvectionEnergy.eq.0) then
           !
@@ -1899,7 +1893,7 @@ if(Params%UseMieScattering.eq.1) then
       !
     endif
     !
-    if(TsOff.ne.1) then
+    if(Params%TsOff.ne.1) then
       !
       call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, CouplingE, &
                     h1, h2, h3, invCs, TsPrev, TsOld, CellVol, &
@@ -2088,6 +2082,9 @@ if(Params%UseMieScattering.eq.1) then
     maxDiffNe  = maxval(diffNe)
     maxDiffNh  = maxval(diffNh)
 
+    maxFermiIndexE = maxval(FermiIndexE)
+    maxFermiIndexH = maxval(FermiIndexH)
+
     !TODO: Should be parallelized
     do i=1,Params%M
       do j=1,Params%N
@@ -2098,14 +2095,6 @@ if(Params%UseMieScattering.eq.1) then
         if(MaxHeating(i,j) < mesh%Ts(i,j) .AND. t > 100d0*laser%tau) then
            MaxHeating(i,j)=mesh%Ts(i,j)
            MaxHeatingTime(i,j)=t
-        end if
-
-        if(real(maxFermiIndexE) < real(FermiIndexE(i,j))) then
-          maxFermiIndexE=FermiIndexE(i,j)
-        end if
-        
-        if(real(maxFermiIndexH) < real(FermiIndexH(i,j))) then
-          maxFermiIndexH=FermiIndexH(i,j)
         end if
         
 !         if(ConductivityFix.eq.-1) then
@@ -2150,9 +2139,14 @@ if(Params%UseMieScattering.eq.1) then
         
         LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
 
+     end do
+   end do
 
-        call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN,  i, j, x(i,j), y(i,j), t)
 
+   call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
+
+    do i=1,Params%M
+      do j=1,Params%N
 
         if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < 1d0) then
           write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
@@ -2165,10 +2159,13 @@ if(Params%UseMieScattering.eq.1) then
           write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
         end if
         
-        call flush(Error%unit)
-        
+     end do
+   end do
 
+   call flush(Error%unit)
 
+   do i=1,Params%M
+     do j=1,Params%N
               ! lets change dt when fast reponse is finished in order to catch the long one. 
 
         diffNe(i,j)=(newmesh%Ne(i,j)-mesh%Ne(i,j))/dt

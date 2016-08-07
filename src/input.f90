@@ -9,6 +9,12 @@ subroutine InitInputParameter( Params )
     Params%M = -1
     Params%N = -1
 
+    !Debug options
+    Params%NeOff = 0
+    Params%TeOff = 0
+    Params%HolesOff = 0
+    Params%TsOff = 0
+
 end subroutine InitInputParameter
 
 !> Destroy Input Parameters
@@ -41,6 +47,26 @@ subroutine CheckValidityInputParameters( Params )
     if( Params%N <= 3) then
         print *, 'Bad value for N'
         call StopProgram()
+    end if
+
+    if( Params%NeOff < 0 .or. Params%NeOff > 1 ) then
+      print *, 'Bad value for NeOff'
+      call StopProgram()
+    end if
+
+    if( Params%TeOff < 0 .or. Params%TeOff > 1 ) then
+      print *, 'Bad value for TeOff'
+      call StopProgram()
+    end if
+
+    if( Params%HolesOff < 0 .or. Params%HolesOff > 1 ) then
+      print *, 'Bad value for HolesOff'
+      call StopProgram()
+    end if
+
+    if( Params%TsOff < 0 .or. Params%TsOff > 1 ) then
+      print *, 'Bad value for TeOff'
+      call StopProgram()
     end if
 
 end subroutine CheckValidityInputParameters
@@ -103,6 +129,30 @@ subroutine LoadInputParameters( filename, Params )
               !N
               if( id .equals. 'N' ) then
                 call ParseInt( line, Params%N )
+                goto 999
+              endif
+
+              !NeOff
+              if( id .equals. 'NeOff' ) then
+                call ParseInt( line, Params%NeOff )
+                goto 999
+              endif
+
+              !TeOff
+              if( id .equals. 'TeOff' ) then
+                call ParseInt( line, Params%TeOff )
+                goto 999
+              endif
+
+              !HolesOff
+              if( id .equals. 'HolesOff' ) then
+                call ParseInt( line, Params%HolesOff )
+                goto 999
+              endif
+
+              !TsOff
+              if( id .equals. 'TsOff' ) then
+                call ParseInt( line, Params%TsOff )
                 goto 999
               endif
 

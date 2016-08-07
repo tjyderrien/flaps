@@ -70,6 +70,8 @@ module Types_m
   !> This structure contains input parameters, to be read from the input file
   type InputParameters
     integer :: UseMieScattering  ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
+    integer :: NeOff, TeOff, HolesOff, TsOff
+
     integer :: M,N !> Mesh dimension
   end type
 

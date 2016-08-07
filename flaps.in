@@ -1,10 +1,14 @@
 !This is a dummy input file for Flaps2D
 
-UseMieScattering -1 !This is a comment for this variable
 
 M 11
 N 11
 
-  !I cam put comments here
 
- #Or there ^^
+UseMieScattering -1 !This is a comment for this variable
+
+!Debug options
+NeOff 0
+TeOff 0
+HolesOff 0
+TsOff 0

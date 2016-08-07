@@ -142,38 +142,47 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 
  end subroutine
 
- subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, i, j, x, y, t)
+ subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t)
    use Types_m
    implicit none
 
    type(MeshValues), intent(IN) :: mesh
-   integer(8), intent(in)          :: i, j
-   real(8), intent(in)          :: x, y, t, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN
+   real(8), intent(in)          :: t, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN
+   real(8), intent(in)          :: x(mesh%M, mesh%N), y(mesh%M, mesh%N)
 
+   integer(8)          :: i, j
    logical Diverged
 
    Diverged = .false.
 
-    if(isnan(mesh%Te(i,j))) then
-      write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-      Diverged=.true.
-    end if
-    if(isnan(mesh%Th(i,j))) then
-      write(95,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-      Diverged=.true.
-    end if
-    if(isnan(mesh%Ts(i,j))) then
-      write(95,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-      Diverged=.true.
-    end if
-    if(isnan(mesh%Ne(i,j))) then
-      write(95,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-      Diverged=.true.
-    end if
-    if(isnan(mesh%Nh(i,j))) then
-      write(95,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-      Diverged=.true.
-    end if
+   !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t)
+   !$OMP DO COLLAPSE(2)
+   do i=1,mesh%M
+     do j=1,mesh%N
+        if(isnan(mesh%Te(i,j))) then
+          write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Th(i,j))) then
+          write(95,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Ts(i,j))) then
+          write(95,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Ne(i,j))) then
+          write(95,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Nh(i,j))) then
+          write(95,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          Diverged=.true.
+        end if
+      end do
+    end do
+    !$OMP END DO
+    !$OMP END PARALLEL
 
     if(maxCFLxT.gt.1d0 .OR. maxCFLyT.gt.1d0) then
       write(95,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT

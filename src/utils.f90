@@ -80,7 +80,7 @@ subroutine GetValidName( filename, length )
         call StopProgram()
     endif
     print *,'Find valid file name ', trim(filename)
-end subroutine
+end subroutine GetValidName
 
 !> Méthode qui ouvre le fichier filename pour l'unité unit en vérifiant que l'ouverture est correcte
 !> Le fichier est ouvert en mode écriture
@@ -101,7 +101,7 @@ subroutine OpenFileForWritting( filename, unit )
    call StopProgram()
    endif
 
-end subroutine
+end subroutine OpenFileForWritting
 
 !> Méthode qui ouvre le fichier filename pour l'unité unit en vérifiant que l'ouverture est correcte
 !> Le fichier est ouvert en mode lecture
@@ -119,7 +119,7 @@ subroutine OpenFileForReading( filename, unit )
         print *, 'Error opening file'
         call StopProgram()
     endif
-end subroutine
+end subroutine OpenFileForReading
 
 !> Permet d'afficher la date et l'heure de début d'exécution du programme
 subroutine PrintTime( )
@@ -134,7 +134,7 @@ subroutine PrintTime( )
     'Program started the', values(3), '/', values(2), '/', values(1), &
     ' at ', values(5),':', values(6)
     print *, ' '
-end subroutine
+end subroutine PrintTime
 
 
 !> Méthode qui écrit le nom de l'ordinateur de manière formaté
@@ -150,9 +150,9 @@ subroutine PrintComputerName( unit, computername )
    write ( format, '(A11,I2,A1)' ) '(A10, 1X, A', LEN_TRIM(computername), ')'
 
    write( unit, format) '#Computer ', TRIM(computername)
-   write( unit, '(A1)') '#'
+  write( unit, '(A1)') '#'
 
-end subroutine
+end subroutine PrintComputerName
 
 !
 !>Permet de fermer proprement le programme
@@ -164,4 +164,4 @@ SUBROUTINE StopProgram ()
     print *, 'Decision is taken to leave ... '
 
     stop
-END SUBROUTINE
+END SUBROUTINE StopProgram
