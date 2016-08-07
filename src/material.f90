@@ -397,7 +397,7 @@
    !-------------------------------------------------------------------------------------
    !> Computes the electron, hole and lattice heat capacities for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, &
+    subroutine ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, invCe,invCh, invCs, &
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                            ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity  )
       use Maths_m
@@ -408,6 +408,9 @@
       real(8),           intent(inout) :: Ce(mesh%M,mesh%N)
       real(8),           intent(inout) :: Ch(mesh%M,mesh%N)
       real(8),           intent(inout) :: Cs(mesh%M,mesh%N)
+      real(8),           intent(inout) :: invCe(mesh%M,mesh%N)
+      real(8),           intent(inout) :: invCh(mesh%M,mesh%N)
+      real(8),           intent(inout) :: invCs(mesh%M,mesh%N)
       real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
       real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
@@ -431,6 +434,10 @@
                       -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                                  (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
           Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j), SiDensity)
+
+          invCe(i,j) = 1.0d0/Ce(i,j)
+          invCh(i,j) = 1.0d0/Ch(i,j)
+          invCs(i,j) = 1.0d0/Cs(i,j)
         end do
       end do
       !$OMP END DO

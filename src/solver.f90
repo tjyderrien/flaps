@@ -195,7 +195,7 @@ end subroutine computeNh
 
 ! This routine computes the electronic temperature for the entire mesh
 ! We assume that we are in a OMP parallel environement
-subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce,&
+subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, invCe,&
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
@@ -206,7 +206,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, kappae, CouplingE, SourceE, Ce, &
+  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, kappae, CouplingE, SourceE, invCe, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -222,8 +222,8 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
 !         do j=2, N-1
 
       !TODO: This can be further optimise
-      newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))/ Ce(i,j) !TODO: Do we need Ce or can we compute only its inverse?
-      newmesh%Te(i,j) = newmesh%Te(i,j) + 0.5d0 / Ce(i,j) * dt * InvCellVol(i,j)*( &
+      newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j) !TODO: Do we need Ce or can we compute only its inverse?
+      newmesh%Te(i,j) = newmesh%Te(i,j) + 0.5d0 *invCe(i,j) * dt * InvCellVol(i,j)*( &
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
               - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i-1,j)) &
               + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i,j+1)-mesh%Te(i,j)) &
@@ -245,7 +245,7 @@ end subroutine computeTe
 
 ! This routine computes the hole temperature for the entire mesh
 ! We assume that we are in a OMP parallel environement
-subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, Ch,&
+subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, invCh,&
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
@@ -256,7 +256,7 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, kappah, CouplingH, SourceH, Ch, &
+  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, kappah, CouplingH, SourceH, invCh, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -272,7 +272,7 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
 !         do j=2, N-1
 
   !TODO: This can be further optimised
-        newmesh%Th(i,j) = mesh%Th(i,j) + (-CouplingH(i,j)+SourceH(i,j))/Ch(i,j)*dt
+        newmesh%Th(i,j) = mesh%Th(i,j) + (-CouplingH(i,j)+SourceH(i,j))*invCh(i,j)*dt
         newmesh%Th(i,j) = newmesh%Th(i,j)+ 0.5d0*( &
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j))*(mesh%Th(i+1,j)-mesh%Th(i,j))  &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i,j+1)-0.25d0*Th(i+1,j-1)-0.25d0*Th(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
@@ -286,7 +286,7 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j))*( dual%Th(i-1,j-1) - dual%Th(i-1,j) ) &
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j))*( dual%Th(i-1,j) - dual%Th(i,j) ) &
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j))*( dual%Th(i,j-1) - dual%Th(i-1,j-1) ) &
-              )/Ch(i,j)*dt*InvCellVol(i,j)
+              )*invCh(i,j)*dt*InvCellVol(i,j)
 
     end do
   end do
@@ -298,7 +298,7 @@ end subroutine computeTh
 ! This routine computes the lattice temperature for the entire mesh
 ! We assume that we are in a OMP parallel environement
 subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, CouplingE, &
-                      h1, h2, h3, Cs, TsPrev, TsOld, CellVol, &
+                      h1, h2, h3, invCs, TsPrev, TsOld, CellVol, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
@@ -309,7 +309,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt, h1, h2, h3
-  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, CellVol, kappas, CouplingH, CouplingE, Cs, TsPrev, TsOld, &
+  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, CellVol, kappas, CouplingH, CouplingE, invCs, TsPrev, TsOld, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -413,7 +413,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 !                     + h1) / h2 / (-h3 + h2) * CsPrev(i,j) - h1 * h2 / h3 &
 !                     / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j))*0d0 & !20150426-Temporal variation of Cs is killed here.
 !                     * Ts(i,j)
-                    ) / Cs(i,j) &
+                    ) *invCs(i,j) &
                     + h2 * h3 / h1 / (-h3 + h1)  &
                     / (-h2 + h1) * mesh%Ts(i,j) - h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2) &
                     * TsOld(i,j) + h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 &
@@ -435,7 +435,7 @@ end subroutine computeTs
 ! This routine computes Ue for the entire mesh
 ! We assume that we are in a OMP parallel environement
 subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
-                      Ce, Ue, UeNew, VeX, VeY, CellVol, &
+                      invCe, Ue, UeNew, VeX, VeY, CellVol, &
                       ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
                       ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
                       CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
@@ -447,7 +447,7 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
   real(8), dimension(mesh%M, mesh%N), intent(inout) :: UeNew
   real(8),                            intent(in)    :: dt
   real(8), dimension(mesh%M, mesh%N), intent(in)    :: InvCellVol, CellVol, kappae, CouplingE, SourceUe, &
-                                                       Ce, Ue, VeX, VeY, &
+                                                       invCe, Ue, VeX, VeY, &
                                                        ShapeFactorNormalE, ShapeFactorNormalW, &
                                                        ShapeFactorNormalS, ShapeFactorNormalN, &
                                                        ShapeFactorTangentE, ShapeFactorTangentW, &
@@ -487,26 +487,26 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
                 )*dt*InvCellVol(i,j)
 
           UeNew(i,j) = UeNew(i,j) + 0.5d0*5d0/3d0*dt*InvCellVol(i,j)*( &
-                    NormalE%N(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)/Ce(i,j)+kappae(i+1,j)/Ce(i+1,j))*(Ue(i+1,j)-Ue(i,j))  &
-                    !
-                  - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j) &
-                          /Ce(i,j)+kappae(i+1,j)/Ce(i+1,j))*0.25d0*(Ue(i+1,j+1)+Ue(i,j+1)-Ue(i+1,j-1)-Ue(i,j-1)) &
-                    !
-                  + NormalW%N(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)/Ce(i-1,j)+kappae(i,j)/Ce(i,j))*(Ue(i,j)-Ue(i-1,j)) &
-                    !
-                  - ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j) &
-                          /Ce(i-1,j)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i,j+1)+Ue(i-1,j+1)-Ue(i-1,j-1)-Ue(i,j-1)) &
-                    !
-                  + NormalN%N(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)/Ce(i,j+1)+kappae(i,j)/Ce(i,j))*(Ue(i,j+1)-Ue(i,j)) &
-                    !
-                  - ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1) &
-                          /Ce(i,j+1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j+1)+Ue(i+1,j)-Ue(i-1,j)-Ue(i-1,j+1)) &
-                    !
-                  + NormalS%N(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)/Ce(i,j-1)+kappae(i,j)/Ce(i,j))*(Ue(i,j)-Ue(i,j-1)) &
-                    !
-                  - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1) &
-                          /Ce(i,j-1)+kappae(i,j)/Ce(i,j))*0.25d0*(Ue(i+1,j)+Ue(i+1,j-1)-Ue(i-1,j-1)-Ue(i-1,j)) &
-!                     Korfiatis 2007 equation
+                  NormalE%N(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)*invCe(i,j)+kappae(i+1,j)*invCe(i+1,j))*(Ue(i+1,j)-Ue(i,j))  &
+                  !
+                - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j) &
+                          *invCe(i,j)+kappae(i+1,j)*invCe(i+1,j))*0.25d0*(Ue(i+1,j+1)+Ue(i,j+1)-Ue(i+1,j-1)-Ue(i,j-1)) &
+                  !
+                + NormalW%N(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)*invCe(i-1,j)+kappae(i,j)*invCe(i,j))*(Ue(i,j)-Ue(i-1,j)) &
+                  !
+                - ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j) &
+                        *invCe(i-1,j)+kappae(i,j)*invCe(i,j))*0.25d0*(Ue(i,j+1)+Ue(i-1,j+1)-Ue(i-1,j-1)-Ue(i,j-1)) &
+                  !
+                + NormalN%N(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)*invCe(i,j+1)+kappae(i,j)*invCe(i,j))*(Ue(i,j+1)-Ue(i,j)) &
+                  !
+                - ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1) &
+                        *invCe(i,j+1)+kappae(i,j)*invCe(i,j))*0.25d0*(Ue(i+1,j+1)+Ue(i+1,j)-Ue(i-1,j)-Ue(i-1,j+1)) &
+                  !
+                + NormalS%N(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)*invCe(i,j-1)+kappae(i,j)*invCe(i,j))*(Ue(i,j)-Ue(i,j-1)) &
+                  !
+                - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1) &
+                        *invCe(i,j-1)+kappae(i,j)*invCe(i,j))*0.25d0*(Ue(i+1,j)+Ue(i+1,j-1)-Ue(i-1,j-1)-Ue(i-1,j)) &
+!                   Korfiatis 2007 equation
 !                     0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappae(i,j)*diffusionE(i,j)/Ne(i,j)+kappae(i+1,j)*diffusionE(i+1,j)/Ne(i+1,j))*(Ne(i+1,j)-Ne(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappae(i,j)*diffusionE(i,j)/Ne(i,j)+kappae(i+1,j)*diffusionE(i+1,j)/Ne(i+1,j))*(0.25d0*Ne(i+1,j+1)+0.25d0*Ne(i,j+1)-0.25d0*Ne(i+1,j-1)-0.25d0*Ne(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
 !                   + 0.5d0*(NormalWx(i,j)**2+NormalWy(i,j)**2)*CellAreaW(i,j)*(kappae(i-1,j)*diffusionE(i-1,j)/Ne(i-1,j)+kappae(i,j)*diffusionE(i,j)/Ne(i,j))*(Ne(i,j)-Ne(i-1,j))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistW(i,j) &
@@ -527,7 +527,7 @@ end subroutine computeUe
 ! This routine computes Ue for the entire mesh
 ! We assume that we are in a OMP parallel environement
 subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
-                      Ch, Uh, UhNew, VhX, VhY, CellVol, &
+                      invCh, Uh, UhNew, VhX, VhY, CellVol, &
                       ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
                       ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
                       CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
@@ -541,7 +541,7 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   real(8), dimension(mesh%M, mesh%N), intent(inout) :: UhNew
   real(8),                            intent(in)    :: dt
   real(8), dimension(mesh%M, mesh%N), intent(in)    :: InvCellVol, CellVol, kappah, CouplingH, SourceUh, &
-                                                       Ch, Uh, VhX, VhY,                                 &
+                                                       invCh, Uh, VhX, VhY,                                 &
                                                        ShapeFactorNormalE, ShapeFactorNormalW,           &
                                                        ShapeFactorNormalS, ShapeFactorNormalN,           &
                                                        ShapeFactorTangentE, ShapeFactorTangentW,         &
@@ -576,25 +576,25 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                 )*dt*InvCellVol(i,j)
 
      UhNew(i,j) = UhNew(i,j) +0.5d0*( &
-                    NormalE%N(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j)/Ch(i,j)+kappah(i+1,j)/Ch(i+1,j))*(Uh(i+1,j)-Uh(i,j))    &
-                    !
-                  - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)/Ch(i,j)     &
-                          +kappah(i+1,j)/Ch(i+1,j))*0.25d0*(Uh(i+1,j+1)+Uh(i,j+1)-Uh(i+1,j-1)-Uh(i,j-1))        &
-                    !
-                  + NormalW%N(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)/Ch(i-1,j)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i-1,j))    &
-                    !
-                  - ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)/Ch(i-1,j) &
-                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i,j+1)+Uh(i-1,j+1)-Uh(i-1,j-1)-Uh(i,j-1)) &
-                    !
-                  + NormalN%N(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1)+kappah(i,j)/Ch(i,j))*(Uh(i,j+1)-Uh(i,j))    &
-                    !
-                  - ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)/Ch(i,j+1) &
-                          +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j+1)+Uh(i+1,j)-Uh(i-1,j)-Uh(i-1,j+1))            &
-                    !
-                  + NormalS%N(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1)+kappah(i,j)/Ch(i,j))*(Uh(i,j)-Uh(i,j-1))    &
-                    !
-                  - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)/Ch(i,j-1) &
-                        +kappah(i,j)/Ch(i,j))*0.25d0*(Uh(i+1,j)+Uh(i+1,j-1)-Uh(i-1,j-1)-Uh(i-1,j)) &
+             NormalE%N(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j)*invCh(i,j)+kappah(i+1,j)*invCh(i+1,j))*(Uh(i+1,j)-Uh(i,j))  &
+                  !
+              - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)*invCh(i,j)     &
+                      +kappah(i+1,j)*invCh(i+1,j))*0.25d0*(Uh(i+1,j+1)+Uh(i,j+1)-Uh(i+1,j-1)-Uh(i,j-1))        &
+                !
+              + NormalW%N(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)*invCh(i-1,j)+kappah(i,j)*invCh(i,j))*(Uh(i,j)-Uh(i-1,j))  &
+                !
+              - ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)*invCh(i-1,j) &
+                      +kappah(i,j)*invCh(i,j))*0.25d0*(Uh(i,j+1)+Uh(i-1,j+1)-Uh(i-1,j-1)-Uh(i,j-1)) &
+                !
+              + NormalN%N(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)*invCh(i,j+1)+kappah(i,j)*invCh(i,j))*(Uh(i,j+1)-Uh(i,j))  &
+                !
+              - ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)*invCh(i,j+1) &
+                      +kappah(i,j)*invCh(i,j))*0.25d0*(Uh(i+1,j+1)+Uh(i+1,j)-Uh(i-1,j)-Uh(i-1,j+1))            &
+                !
+              + NormalS%N(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)*invCh(i,j-1)+kappah(i,j)*invCh(i,j))*(Uh(i,j)-Uh(i,j-1))  &
+                !
+              - ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)*invCh(i,j-1) &
+                      +kappah(i,j)*invCh(i,j))*0.25d0*(Uh(i+1,j)+Uh(i+1,j-1)-Uh(i-1,j-1)-Uh(i-1,j)) &
 ! ! Korfiatis 2007 equation
 !                     0.5d0*(NormalEx(i,j)**2+NormalEy(i,j)**2)*CellAreaE(i,j)*(kappah(i,j)*diffusionH(i,j)/Nh(i,j)+kappah(i+1,j)*diffusionH(i+1,j)/Nh(i+1,j))*(Nh(i+1,j)-Nh(i,j)) / (CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistE(i,j) &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)*diffusionH(i,j)/Nh(i,j)+kappah(i+1,j)*diffusionH(i+1,j)/Nh(i+1,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i,j+1)-0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &

@@ -162,6 +162,7 @@ implicit none
                 LossesE, LossesH, &
                 kappae, kappah, kappas, &
                 Ce, Ch, Cs, &
+                invCe, invCh, invCs, &
                 CeOld, ChOld, CsOld, &
                 CsPrev, CsPrev2, &
                 CouplingE, CouplingH, &
@@ -372,6 +373,7 @@ implicit none
                 LossesE(1:Params%M, 1:Params%N), LossesH(1:Params%M, 1:Params%N), &
                 kappae(1:Params%M, 1:Params%N), kappah(1:Params%M, 1:Params%N), kappas(1:Params%M,1:Params%N), &
                 Ce(1:Params%M, 1:Params%N), Ch(1:Params%M, 1:Params%N), Cs(1:Params%M, 1:Params%N), &
+                invCe(1:Params%M, 1:Params%N), invCh(1:Params%M, 1:Params%N), invCs(1:Params%M, 1:Params%N), &
                 CeOld(1:Params%M, 1:Params%N), ChOld(1:Params%M,1:Params%N), CsOld(1:Params%M, 1:Params%N), &
                 CsPrev(1:Params%M, 1:Params%N), CsPrev2(1:Params%M, 1:Params%N), &
                 CouplingE(1:Params%M, 1:Params%N), CouplingH(1:Params%M, 1:Params%N), &
@@ -1655,7 +1657,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& I8, I9, OpticalIndex, OpticalDamping, &
    !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
-   !$OMP& Mp, Np)
+   !$OMP& Mp, Np, invCe, invCh, invCs)
 
    nthreads = OMP_GET_NUM_THREADS()
 
@@ -1739,7 +1741,7 @@ if(Params%UseMieScattering.eq.1) then
    !
    !
    ! Computes the electron, hole and lattice heat capacities for the entire mesh
-   call ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, &
+   call ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, invCe, invCh, invCs, &
                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                     ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity)
    !
@@ -1848,16 +1850,16 @@ if(Params%UseMieScattering.eq.1) then
       !
       if(ConvectionEnergy.eq.0) then
         !
-        call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, Ce, &
-                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                       &
-                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N,                       &
-                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                       &
+        call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, invCe, &
+                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                          &
+                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N,                          &
+                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                          &
                     ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
         !
       else
         !
         call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
-                    Ce, Ue, UeNew, VeX, VeY, CellVol,                                                 &
+                    invCe, Ue, UeNew, VeX, VeY, CellVol,                                              &
                     ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
                     ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
                     CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
@@ -1865,7 +1867,7 @@ if(Params%UseMieScattering.eq.1) then
         !
         !TODO: Should probably not be here
         call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
-                    Ch, Uh, UhNew, VhX, VhY, CellVol,                                                 &
+                    invCh, Uh, UhNew, VhX, VhY, CellVol,                                              &
                     ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
                     ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
                     CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
@@ -1877,7 +1879,7 @@ if(Params%UseMieScattering.eq.1) then
         !
         if(ConvectionEnergy.eq.0) then
           !
-          call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, Ch,&
+          call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, invCh,&
                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
@@ -1900,7 +1902,7 @@ if(Params%UseMieScattering.eq.1) then
     if(TsOff.ne.1) then
       !
       call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, CouplingE, &
-                    h1, h2, h3, Cs, TsPrev, TsOld, CellVol, &
+                    h1, h2, h3, invCs, TsPrev, TsOld, CellVol, &
                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
@@ -1914,17 +1916,17 @@ if(Params%UseMieScattering.eq.1) then
 
       if(ConvectionEnergy.eq.1) then !define temperatures from energy
         newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
-            *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) / Ce(i,j)
+            *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) * invCe(i,j)
         newmesh%Th(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(newmesh%Nh(i,j) - mesh%Nh(i,j)) &
-            *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) / Ch(i,j)
+            *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) * invCh(i,j)
       end if
                       
 
       !TODO: Optimise
-      CFLxT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-      CFLyT(i,j)=kappae(i,j)/Ce(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
-      CFLxTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-      CFLyTs(i,j)=kappas(i,j)/Cs(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+      CFLxT(i,j)=kappae(i,j)*invCe(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+      CFLyT(i,j)=kappae(i,j)*invCe(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+      CFLxTs(i,j)=kappas(i,j)*invCs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+      CFLyTs(i,j)=kappas(i,j)*invCs(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
         
       !TODO: Optimise
       CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
