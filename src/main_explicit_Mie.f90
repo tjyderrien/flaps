@@ -777,17 +777,24 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         end if
         
         localdT=(localTmax-localTmin)/real(Params%M-1) !parameter t to distribute the nodes on the segment
-        !$OMP DO
-        do i=1,Params%M
-          localT=localTmin+real(i-1)*localdT
-          if(ExpNeedleType.eq.1) then
+
+        if(ExpNeedleType.eq.1) then
+          !$OMP DO
+          do i=1,Params%M
+            localT=localTmin+real(i-1)*localdT
             x(i,Params%N)=ConeExp2(localT)
-          else
+            y(i,Params%N)=localT
+          end do
+          !$OMP END DO
+        else
+          !$OMP DO
+          do i=1,Params%M
+            localT=localTmin+real(i-1)*localdT
             x(i,Params%N)=ConeExp1(localT)
-          end if
-          y(i,Params%N)=localT
-        end do
-        !$OMP END DO
+            y(i,Params%N)=localT
+          end do
+          !$OMP END DO
+        end if
 
 
         !!! BACKSIDE
