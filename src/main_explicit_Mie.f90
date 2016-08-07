@@ -1802,11 +1802,10 @@ if(Params%UseMieScattering.eq.1) then
         ! third order precision in already included in the scheme (Maple generated since complexity increases substancially)
         
         !TODO: to be implemented
-        VeX(i,j)=0d0
-        VeY(i,j)=0d0
-        VhX(i,j)=0d0
-        VhY(i,j)=0d0
-        
+        ! VeX(i,j)=0d0
+        ! VeY(i,j)=0d0
+        ! VhX(i,j)=0d0
+        ! VhY(i,j)=0d0
       end do
     end do
     !$OMP END DO
