@@ -2085,13 +2085,30 @@ if(Params%UseMieScattering.eq.1) then
     maxFermiIndexE = maxval(FermiIndexE)
     maxFermiIndexH = maxval(FermiIndexH)
 
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
+    !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume, TotalNumOfH, TotalElectrons, &
+    !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
+    !$OMP DO COLLAPSE(2) REDUCTION(+:NeTotal,NhTotal,TotalNumOfE, TotalNumOfH,  &
+    !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume)
+    do i=1,mesh%M
+      do j=1,mesh%N
+        NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
+        NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
+        TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
+        TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
+        TotalThermalEnergy=TotalThermalEnergy+ThermalEnergy(i,j)
+        TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
+        TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
+     end do
+   end do
+   !$OMP END DO
+   !$OMP END PARALLEL
+
     !TODO: Should be parallelized
     do i=1,Params%M
       do j=1,Params%N
 
-        NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
-        NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
-      
+
         if(MaxHeating(i,j) < mesh%Ts(i,j) .AND. t > 100d0*laser%tau) then
            MaxHeating(i,j)=mesh%Ts(i,j)
            MaxHeatingTime(i,j)=t
@@ -2100,12 +2117,6 @@ if(Params%UseMieScattering.eq.1) then
 !         if(ConductivityFix.eq.-1) then
 !            TeNew(i,j)=Tout; ThNew(i,j)=Tout; 
 !         end if
-        
-        TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
-        TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
-        TotalThermalEnergy=TotalThermalEnergy+ThermalEnergy(i,j)
-        TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
-        TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
 
 !         CAUTION: These definitions are erroneously including initial temperature into account. 
 !         ElectronEnergy=ElectronEnergy+Ce(i,j)*Te(i,j)*CellVol(i,j)
