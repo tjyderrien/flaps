@@ -1895,7 +1895,7 @@ if(Params%UseMieScattering.eq.1) then
     !
     if(Params%TsOff.ne.1) then
       !
-      call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, CouplingE, &
+      call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas, CouplingH, CouplingE, &
                     h1, h2, h3, invCs, TsPrev, TsOld, CellVol, &
                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
@@ -1958,18 +1958,17 @@ if(Params%UseMieScattering.eq.1) then
         newmesh%Nh(i,Params%N)=newmesh%Nh(i,Params%N-1)
       end if
 
-        UeNew(i,1)=UeNew(i,2)
-        UhNew(i,1)=UhNew(i,2)
-        newmesh%Te(i,1)=newmesh%Te(i,2)
-        newmesh%Th(i,1)=newmesh%Th(i,2)
-        newmesh%Ts(i,1)=newmesh%Ts(i,2)
+      UeNew(i,1)=UeNew(i,2)
+      UhNew(i,1)=UhNew(i,2)
+      newmesh%Te(i,1)=newmesh%Te(i,2)
+      newmesh%Th(i,1)=newmesh%Th(i,2)
+      newmesh%Ts(i,1)=newmesh%Ts(i,2)
 
-        UeNew(i,Params%N)=UeNew(i,Params%N-1)
-        UhNew(i,Params%N)=UhNew(i,Params%N-1)
-        newmesh%Te(i,Params%N)=newmesh%Te(i,Params%N-1)
-        newmesh%Th(i,Params%N)=newmesh%Th(i,Params%N-1)
-        newmesh%Ts(i,Params%N)=newmesh%Ts(i,Params%N-1)
-
+      UeNew(i,Params%N)=UeNew(i,Params%N-1)
+      UhNew(i,Params%N)=UhNew(i,Params%N-1)
+      newmesh%Te(i,Params%N)=newmesh%Te(i,Params%N-1)
+      newmesh%Th(i,Params%N)=newmesh%Th(i,Params%N-1)
+      newmesh%Ts(i,Params%N)=newmesh%Ts(i,Params%N-1)
         ! includes also the corners... WHy are not they written?
         
 !         potential(i,1)=0d0 !(0d0,0d0)

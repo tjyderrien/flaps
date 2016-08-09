@@ -77,8 +77,11 @@ contains
       real(8) :: ConstBLx, ConstBLy
       real(8) :: OnePhotonIonizationRate
 
-      !TODO: It is almost impossible to read, and per se to debug such a code.
+      real(8) :: exp_t_t0_sigmaTau
 
+      exp_t_t0_sigmaTau = exp(-.5d0*((t-t0)/sigmaTau)**2)
+
+      !TODO: It is almost impossible to read, and per se to debug such a code.
       !TODO: @TYJD: Stop doing such coding style vandalism ;)
 
       !$OMP DO COLLAPSE(2)
@@ -89,7 +92,7 @@ contains
   !         ! DEBUG ZONE
   ! !         if(laser%lambda.eq.343d-9) then
   !         ! uniform distribution like in Elena's paper
-          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*OpticalIndex(i,j)*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)
+          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*OpticalIndex(i,j)*I0*exp_t_t0_sigmaTau
   !         intensity(i,j)=I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-0.5d0*(((y(i,j)-500d-9)/sigmaY)**2+(x(i,j)/sigmaX)**2))
   !         ! with just nothing
   ! !           intensity(i,j)=(1d0-reflectivity(i,j))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
@@ -114,10 +117,10 @@ contains
   ! case 1030 nm distribution
             !initial field distribution
             if(BandBendingInFDTD.eq.0) then
-              intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
+              intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
                       *exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
             else
-            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
+            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
                             *(exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
                             + I0*1d-4*( &
         exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
@@ -143,7 +146,7 @@ contains
             ConstBLy=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
                       / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*y0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
-            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*exp(-.5d0*((t-t0)/sigmaTau)**2) & !TODO: How could you code something like that??
+            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*exp_t_t0_sigmaTau & !TODO: How could you code something like that??
                           *( &
                           I1*exp(-.5d0*((x(i,j)-x1)/sigmaX1)**2)*exp(-.5d0*((y(i,j)-y1)/sigmaY1)**2) + &
                           I2*exp(-.5d0*((x(i,j)-x2)/sigmaX2)**2)*exp(-.5d0*((y(i,j)-y2)/sigmaY2)**2) + &
@@ -166,8 +169,7 @@ contains
                               absorptionDrudeE(i,j) + absorptionDrudeH(i,j))))
           end if
           if(laser%lambda.eq.343d-9) then
-            intensity(i,j)= (1d0-0e0*reflectivity(i,Params%N))* &
-                            I0*exp(-.5d0*((t-t0)/sigmaTau)**2) &
+            intensity(i,j)= (1d0-0e0*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
                             *( & !TODO: Use OnePhotonIonizationRate0 here
                             exp(-(OnePhotonIonizationRate()+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)) &
                             *abs(y(i,j)-y(i,Params%N)) & !introduce discontinuity !
@@ -186,7 +188,7 @@ contains
           ! debug formula for constant cone radius
 !           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
 !           EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real
-          intensity(i,j)=I0 *OpticalIndex(i,j)* EintFieldR(i,j)**2 * exp(-.5d0*((t-t0)/sigmaTau)**2) !laser laser%fluence and reflectivity is inside the field
+          intensity(i,j)=I0*OpticalIndex(i,j)* EintFieldR(i,j)**2 * exp_t_t0_sigmaTau !laser laser%fluence and reflectivity is inside the field
         else
           write(*,*) "Input ERROR. Check the MieScattering parameter."
           stop
