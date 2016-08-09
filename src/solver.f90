@@ -222,7 +222,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
 !         do j=2, N-1
 
       !TODO: This can be further optimise
-      newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j) !TODO: Do we need Ce or can we compute only its inverse?
+      newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j)
       newmesh%Te(i,j) = newmesh%Te(i,j) + 0.5d0 *invCe(i,j) * dt * InvCellVol(i,j)*( &
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
               - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i-1,j)) &

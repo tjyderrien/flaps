@@ -166,7 +166,7 @@
           sqrtEps = sqrt(Dielectric(i,j))
           OpticalIndex(i,j)   = real(sqrtEps)
           OpticalDamping(i,j) = aimag(sqrtEps)
-          Reflectivity(i,j)=  ( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 -2d0*(OpticalIndex(i,j)+1d0) ) &
+          Reflectivity(i,j)=  ( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 -2d0*OpticalIndex(i,j)+1d0 ) &
                              /( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 +2d0*(OpticalIndex(i,j)+1d0) )
         end do
       end do
@@ -201,7 +201,7 @@
       type(MeshValues),  intent(in)    :: mesh
       real(8),           intent(in)    :: N(mesh%M,mesh%N)
       complex(8),        intent(inout) :: Dielectric(mesh%M,mesh%N)
-      complex(8),        intent(inout) :: absorptionDrude(mesh%M,mesh%N)
+      real(8),           intent(inout) :: absorptionDrude(mesh%M,mesh%N)
       integer(8),        intent(in)    :: DrudeHeating
       real(8),           intent(in)    :: Collision, mass
       type(LaserParams), intent(in)    :: laser
@@ -486,7 +486,7 @@
       real(8), parameter :: aa = -8.992d0
       real(8), parameter :: bb = 68.265d0
       real(8), parameter :: cc = -.4075612391d0
-      real(8), parameter :: dd = .315984470d0
+      real(8), parameter :: dd = 2.315984470d0
       real(8), parameter :: ee = -.4756634637d0
       real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
 
@@ -495,45 +495,59 @@
         kappah(:,:) = 0.d0
         kappas(:,:) = 0.d0
         return
-      end if
+      else if (ConductivityFix .eq. 0 ) then
+        !$OMP DO COLLAPSE(2)
+        do j=1, mesh%N
+          do i=1, mesh%M
 
-      !$OMP DO COLLAPSE(2)
-      do j=1, mesh%N
-        do i=1, mesh%M
+            !TODO: These FermiTable etc, can we precompute them?
+            ! thermal coefficients
+            kappae(i,j)=kb2*inv_ec*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)* &
+               ( 6d0*  FermiTableE(ColFermi2,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) &
+                -4d0*( FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)))**2 )
 
-          !TODO: These FermiTable etc, can we precompute them?
-          ! thermal coefficients
-          kappae(i,j)=kb2*inv_ec*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)* &
-             ( 6d0*  FermiTableE(ColFermi2,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) &
-              -4d0*( FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)))**2 )
+            kappah(i,j)=kb2*inv_ec*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)* &
+              (  6d0*  FermiTableH(ColFermi2,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) &
+                -4d0*( FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
+!           kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
 
-          kappah(i,j)=kb2*inv_ec*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)* &
-            (  6d0*  FermiTableH(ColFermi2,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) &
-              -4d0*( FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
-!         kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
-
-          !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
-          kappas(i,j)=max(0.d0, &
-                    (aa + bb/(1d0+exp(cc-1.0d0*mesh%Ts(i,j)+dd))*(1d0-1d0/(1d0+exp(ee-2.0d0*mesh%Ts(i,j)+ff)))))
-!        ! correction considering Fick diffusion in energy
-!         if(ConductivityFix.eq.1) then
+            !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
+            kappas(i,j)=max(0.d0, &
+                      (aa + bb/(1d0+exp(cc-1.0d0*mesh%Ts(i,j)+dd))*(1d0-1d0/(1d0+exp(ee-2.0d0*mesh%Ts(i,j)+ff)))))
+          end do
+        end do
+        !$OMP END DO
+!      else if(ConductivityFix.eq.1) then
+!        !$OMP DO COLLAPSE(2)
+!        do j=1, mesh%N
+!          do i=1, mesh%M
 !             kappae(i,j)=kappae(i,j) + kb2*Te(i,j)*Ne(i,j)*mobilityE(i,j) / ec &
 !                       * (etae - 2d0*FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) )**2
 !             kappah(i,j)=kappah(i,j) + kb2*Th(i,j)*Nh(i,j)*mobilityH(i,j) / ec &
 !                       * (etah - 2d0*FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) )**2
-!         else if(ConductivityFix.eq.2) then
-!             kappae(i,j)=kappae(i,j) + 2d0*kb2*Te(i,j)*FermiTableE(ColFermi1,FermiIndexE(i,j))*mobilityE(i,j)*FermiTableE(ColFermiHalf, FermiIndexE(i,j))*Ne(i,j) * &
+!
+!           end do
+!         end do
+!        !$OMP END DO
+!     else if(ConductivityFix.eq.2) then
+!        !$OMP DO COLLAPSE(2)
+!        do j=1, mesh%N
+!          do i=1, mesh%M
+!             kappae(i,j)=kappae(i,j) + 2d0*kb2*Te(i,j)*FermiTableE(ColFermi1,FermiIndexE(i,j))&
+!                         *mobilityE(i,j)*FermiTableE(ColFermiHalf, FermiIndexE(i,j))*Ne(i,j) * &
 !                         (2d0*FermiTableE(ColFermi1, FermiIndexE(i,j))*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) &
 !                         /FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) - 1.5d0) * &
 !                         (FermiTableE(ColFermi0, FermiIndexE(i,j))*ec*FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))**(-1e0)
 !
-!             kappah(i,j)=kappah(i,j) + 2d0*kb2*Te(i,j)*FermiTableH(ColFermi1,FermiIndexH(i,j))*mobilityH(i,j)*FermiTableH(ColFermiHalf, FermiIndexH(i,j))*Ne(i,j) * &
+!             kappah(i,j)=kappah(i,j) + 2d0*kb2*Te(i,j)*FermiTableH(ColFermi1,FermiIndexH(i,j))&
+!                         *mobilityH(i,j)*FermiTableH(ColFermiHalf, FermiIndexH(i,j))*Ne(i,j) * &
 !                         (2d0*FermiTableH(ColFermi1, FermiIndexH(i,j))*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
 !                         /FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) - 1.5d0) * &
 !                         (FermiTableH(ColFermi0, FermiIndexH(i,j))*ec*FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))**(-1.)
-        end do
-      end do
-      !$OMP END DO
+!        end do
+!      end do
+!      !$OMP END DO
+    end if
 
     end subroutine ComputeConductivities_batch
 
@@ -574,7 +588,6 @@
         else
           CouplingH(i,j)=0d0
         end if
-
 
         end do
       end do

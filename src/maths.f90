@@ -616,7 +616,7 @@ end module Maths_m
     ! execute Newton algorithm to find the radius of the equivalent cylinder
       implicit none
       real(8) temp1, temp2, t, step, value, zeroin, ConeExp1Radius
-      integer(8) i
+!      integer(8) i
 
 !       do i=1,NewtonIterations
 !         temp=ConeExp2Newton(temp,value,step)
@@ -654,7 +654,7 @@ end module Maths_m
     ! execute Newton algorithm to find the radius of the equivalent cylinder
       implicit none
       real(8) temp1, temp2, t, step, value, zeroin, ConeExp2Radius
-      integer(8) i
+!      integer(8) i
 
 !       do i=1,NewtonIterations
 !         temp=ConeExp2Newton(temp,value,step)

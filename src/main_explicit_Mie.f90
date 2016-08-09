@@ -62,7 +62,7 @@ implicit none
      real(8)               tmin                !max absolute time
     
                         
-    integer(8), parameter::  iterOut=10000       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
@@ -1673,7 +1673,7 @@ if(Params%UseMieScattering.eq.1) then
    
    call copy_mesh(mesh, newmesh)
    !
-   !TODO: Does this depends on the position? If yes, this has
+   !TODO: Does this depends on the position? If yes, this has to be changed bak to an array
    nuColl=CollisionFrequency()
    !
    call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
@@ -1686,7 +1686,7 @@ if(Params%UseMieScattering.eq.1) then
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
    !This routine computes the intensity for the entire grid with one call
-   call ComputeIntensity_batch(Params, mesh, laser, intensity, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
+   call ComputeIntensity_batch(Params, mesh, laser, intensity, OpticalIndex, Reflectivity, &
                                absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                                t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0, DefectThickness, BandBendingInFDTD,  &
                                sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
@@ -1759,7 +1759,7 @@ if(Params%UseMieScattering.eq.1) then
                     
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
                     +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
-                    +ImpactIonizationRate(mesh%Th(i,j),Egap(i,j), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+                    +ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
                     
 
         !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
@@ -1782,7 +1782,7 @@ if(Params%UseMieScattering.eq.1) then
 
         SourceUh(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
                      + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
-                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),Egap(i,j), ImpactOff)*mesh%Nh(i,j) &
+                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
                      
@@ -1926,7 +1926,7 @@ if(Params%UseMieScattering.eq.1) then
       CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
       CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
         
-      !TODO:Optimise
+      !TODO:This is only needed for a reduction, so lets do the reduction directly here
       TotalElectrons(i,j)=newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
                       -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
       TotalHoles(i,j)=newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &

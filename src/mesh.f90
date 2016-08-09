@@ -146,7 +146,7 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    use Types_m
    implicit none
 
-   type(MeshValues), intent(IN) :: mesh
+   type(MeshValues), intent(in) :: mesh
    real(8), intent(in)          :: t, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN
    real(8), intent(in)          :: x(mesh%M, mesh%N), y(mesh%M, mesh%N)
 
@@ -155,10 +155,10 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 
    Diverged = .false.
 
-   !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t)
-   !$OMP DO COLLAPSE(2)
-   do i=1,mesh%M
-     do j=1,mesh%N
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t)
+    !$OMP DO COLLAPSE(2)
+    do i=1,mesh%M
+      do j=1,mesh%N
         if(isnan(mesh%Te(i,j))) then
           write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.

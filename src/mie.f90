@@ -44,7 +44,7 @@ contains
    !------------------------------------------------------------------
    !This routine computes the intensity for the entire grid with one call
    !------------------------------------------------------------------
-    subroutine ComputeIntensity_batch(Params, mesh, laser, intensity, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
+    subroutine ComputeIntensity_batch(Params, mesh, laser, intensity, OpticalIndex, Reflectivity, &
                                       absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                                       t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0, DefectThickness, BandBendingInFDTD,  &
                                       sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
@@ -59,9 +59,7 @@ contains
       type(MeshValues),  intent(in)      :: mesh
       type(LaserParams), intent(in)      :: laser
       real(8),        intent(inout)      :: intensity(mesh%M, mesh%N)
-      complex(8),        intent(in)      :: Dielectric(mesh%M, mesh%N)
       real(8),           intent(in)      :: OpticalIndex(mesh%M, mesh%N)
-      real(8),           intent(in)      :: OpticalDamping(mesh%M, mesh%N)
       real(8),           intent(in)      :: Reflectivity(mesh%M, mesh%N)
       real(8),           intent(in)      :: absorptionDrudeE(mesh%M, mesh%N)
       real(8),           intent(in)      :: absorptionDrudeH(mesh%M, mesh%N)
