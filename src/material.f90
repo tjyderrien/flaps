@@ -237,14 +237,13 @@
 !------------------------------------------------------------------
 
     !TODO: Create a batch version of this routine
-    real(8) function ephCollisionFrequency(ne)
+    pure real(8) function ephCollisionFrequency(ne)
       implicit none
 
       real(8), intent(in) :: ne
 
-      real(8) nth
-      nth=6.02d26 !m-3 (Sjodin, PRL 1998)
-      ephCollisionFrequency=((240d-15)*(1d0+(ne/nth)**2))**(-1d0)
+      real(8), parameter :: nth=6.02d26 !m-3 (Sjodin, PRL 1998)
+      ephCollisionFrequency=1.0d0/((240d-15)*(1d0+(ne/nth)**2))
 !       CollisionFrequency=1d14 !
       ! CollisionFrequency=1d13 !
       !CollisionFrequency=5d13 !
@@ -253,7 +252,7 @@
 
 
     !TODO: Create a batch version of this routine
-    real(8) function CollisionFrequency()
+    pure real(8) function CollisionFrequency()
       implicit none
 
       CollisionFrequency=1d15
@@ -261,7 +260,7 @@
     end function CollisionFrequency
 
     !TODO: Create a batch version of this routine
-    real(8) function ImpactIonizationRate(Te, Eg, ImpactOff)
+    pure real(8) function ImpactIonizationRate(Te, Eg, ImpactOff)
       use Maths_m
       implicit none
 
@@ -629,7 +628,7 @@
     end function TwoPhotonIonizationRate
 
     !TODO: Create a batch version of this routine
-    real(8) function EgapValue(Ne, Ts)
+     pure real(8) function EgapValue(Ne, Ts)
       use Maths_m
 
       implicit none
@@ -643,10 +642,10 @@
 !       EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0))
 !         EgapValue=ec*(1.1692d0) !-4.9d-4*Ts**2/(Ts+655d0))
 
-      if(EgapValue < 0d0) then
-        EgapValue=0d0
-      end if
-      return
+    !  if(EgapValue < 0d0) then
+    !    EgapValue=0d0
+    !  end if
+    !  return
     end function EgapValue
 
     !TODO: Create a batch version of this routine

@@ -317,6 +317,12 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
                                                     ShapeFactorTangentS, ShapeFactorTangentN
 
   integer :: i, j
+  real(8) :: w1, w2, w3, w4
+
+  w1 = h2 * h3 / h1 / (-h3 + h1) / (-h2 + h1)
+  w2 = h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2)
+  w3 = h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2)
+  w4 = h2 * h1 * h3 / (h1 * h2 + h1 * h3 + h2 * h3)
 
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1 !(optimized)
@@ -414,11 +420,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 !                     / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j))*0d0 & !20150426-Temporal variation of Cs is killed here.
 !                     * Ts(i,j)
                     ) *invCs(i,j) &
-                    + h2 * h3 / h1 / (-h3 + h1)  &
-                    / (-h2 + h1) * mesh%Ts(i,j) - h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2) &
-                    * TsOld(i,j) + h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 &
-                    * h3 + h1 * h2) * TsPrev(i,j)) / (h1 * h2 + h1 * h3 + &
-                    h2 * h3) * h2 * h1 * h3
+                    + w1 * mesh%Ts(i,j) - w2 * TsOld(i,j) + w3 * TsPrev(i,j)) * w4
 !                    ) / Cs(i,j) - h2 * h3 / h1 / (-h3 + h1) / dt2 * Ts(i,j) &
 !                    - h1 * h3 / h2 / dt2 / dt3 * TsOld(i,j) &
 !                    + h1 * h2 / (h3 * ( h3 - h1 - h2 ) + h1 * h2) * TsPrev(i,j)) &
