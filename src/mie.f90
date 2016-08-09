@@ -229,7 +229,7 @@ contains
         ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
 !         write(*,*) i, ireal
         total=total+M_IM**ireal * exp(M_IM*ireal*phi) * BesselJ(ireal, &
-                sqrt(dielectric)*k*r) * MieCoeff1(ireal, radius, dielectric, k)
+                sqrt(dielectric)*k*r) * MieCoeff1(ireal, radius, dielectric, k) !TODO: sqrt of complex number must be avoided !
       end do
 
       MieScattering=total
@@ -255,7 +255,7 @@ contains
         ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
 !         write(*,*) i, ireal
         total=total + ( M_IM**ireal * exp(M_IM*ireal*phi) * BesselJ(ireal, &
-              sqrt(dielectric)*k*r) * ireal * MieCoeff3(ireal, radius, dielectric, k) ) !original !!
+              sqrt(dielectric)*k*r) * ireal * MieCoeff3(ireal, radius, dielectric, k) ) !original !! !TODO: sqrt of complex number must be avoided !
       end do
       if(r.eq.0d0) then
         MieScatteringTE1=M_ZERO
@@ -282,7 +282,7 @@ contains
         ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
 !         write(*,*) i, ireal
         total=total + ( M_IM**ireal * exp(M_IM*ireal*phi) * &
-              BesselJprime(ireal, sqrt(dielectric)*k*r) * MieCoeff3(ireal, radius, dielectric, k) )
+              BesselJprime(ireal, sqrt(dielectric)*k*r) * MieCoeff3(ireal, radius, dielectric, k) ) !TODO: sqrt of complex number must be avoided !
       end do
 
       MieScatteringTE2=-total*M_IM/sqrt(dielectric)
@@ -298,7 +298,7 @@ contains
 
 !         MieCoeff1=Unit !debug
       MieCoeff1=(BesselJ(order, M_ONE*k*radius) - MieCoeff2(order, radius, dielectric, k)  &
-          * Hankel1(order, M_ONE*k*radius)) / (BesselJ(order, k*radius*sqrt(dielectric)))
+          * Hankel1(order, M_ONE*k*radius)) / (BesselJ(order, k*radius*sqrt(dielectric))) !TODO: sqrt of complex number must be avoided !
       return
     end function MieCoeff1
 
@@ -308,11 +308,11 @@ contains
       real(8) :: k, radius
       real(8) :: order
 
-        MieCoeff2= ( (sqrt(dielectric) * BesselJprime(order, k*radius*sqrt(dielectric)) &
-                      * BesselJ(order, M_ONE*k*radius) ) - (BesselJ(order,sqrt(dielectric)*k*radius) &
+        MieCoeff2= ( (sqrt(dielectric) * BesselJprime(order, k*radius*sqrt(dielectric)) & !TODO: sqrt of complex number must be avoided !
+                      * BesselJ(order, M_ONE*k*radius) ) - (BesselJ(order,sqrt(dielectric)*k*radius) & !TODO: sqrt of complex number must be avoided !
                       *BesselJprime(order, M_ONE*k*radius)) ) &
-                    / (( sqrt(dielectric)*BesselJprime(order,k*radius*sqrt(dielectric)) &
-                        *Hankel1(order, M_ONE*k*radius) ) - ( BesselJ(order, sqrt(dielectric)*k*radius) &
+                    / (( sqrt(dielectric)*BesselJprime(order,k*radius*sqrt(dielectric)) & !TODO: sqrt of complex number must be avoided !
+                        *Hankel1(order, M_ONE*k*radius) ) - ( BesselJ(order, sqrt(dielectric)*k*radius) & !TODO: sqrt of complex number must be avoided !
                         *Hankel1prime(order, M_ONE*k*radius) )) !original
 
 !         value1=radius*sqrt(dielectric)
@@ -332,7 +332,7 @@ contains
 
 !         MieCoeff3=Unit !debug
       MieCoeff3=(BesselJ(order, M_ONE*k*radius) - MieCoeff4(order, radius, dielectric, k)  &
-          * Hankel1(order, M_ONE*k*radius)) / (BesselJ(order, k*radius*sqrt(dielectric)))
+          * Hankel1(order, M_ONE*k*radius)) / (BesselJ(order, k*radius*sqrt(dielectric))) !TODO: sqrt of complex number must be avoided !
       return
     end function MieCoeff3
 
@@ -343,11 +343,11 @@ contains
       real(8) :: order
 
 
-        MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt(dielectric))  &
-                     * BesselJ(order, M_ONE*k*radius) ) - sqrt(dielectric) * (BesselJ(order,sqrt(dielectric)*k*radius) &
+        MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt(dielectric))  &!TODO: sqrt of complex number must be avoided !
+                     * BesselJ(order, M_ONE*k*radius) ) - sqrt(dielectric) * (BesselJ(order,sqrt(dielectric)*k*radius) & !TODO: sqrt of complex number must be avoided !
                      * BesselJprime(order, M_ONE*k*radius)) ) &
-                    / (( BesselJprime(order,k*radius*sqrt(dielectric)) * Hankel1(order, M_ONE*k*radius) ) &
-                    - sqrt(dielectric) * ( BesselJ(order, sqrt(dielectric)*k*radius) &
+                    / (( BesselJprime(order,k*radius*sqrt(dielectric)) * Hankel1(order, M_ONE*k*radius) ) &!TODO: sqrt of complex number must be avoided !
+                    - sqrt(dielectric) * ( BesselJ(order, sqrt(dielectric)*k*radius) & !TODO: sqrt of complex number must be avoided !
                     * Hankel1prime(order, M_ONE*k*radius) )) !original
 !         MieCoeff4=Unit
       return

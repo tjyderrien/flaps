@@ -1342,7 +1342,7 @@ if(Params%UseMieScattering.eq.1) then
   write(*,*) 'Angle Mie =', phiMie0
   write(*,*) 'Polarization TM ? ', PolarizationSource
 
-  !$OMP PARALLEL DEFAULT(none) SHARED(x, y, Params, &
+  !$OMP PARALLEL DEFAULT(NONE) SHARED(x, y, Params, &
   !$OMP phiMie, Radius, phiMie0)
   !$OMP DO COLLAPSE(2)
   do j=1,Params%N
@@ -1365,7 +1365,7 @@ if(Params%UseMieScattering.eq.1) then
   !$OMP END PARALLEL
     
 
-  !$OMP PARALLEL DEFAULT(none) SHARED(x, y, laser, Params, epsilonInf, &
+  !$OMP PARALLEL DEFAULT(NONE) SHARED(x, y, laser, Params, epsilonInf, &
   !$OMP phiMie, Radius, EintField,EintField2, PolarizationSource)
   !$OMP DO COLLAPSE(2)
    do j=1,Params%N
@@ -1986,24 +1986,26 @@ if(Params%UseMieScattering.eq.1) then
     end do
     !$OMP END PARALLEL DO
     
-    
+    !$OMP PARALLEL DO  DEFAULT(NONE) SHARED(newmesh, Params, UeNew, UhNew, GradNeX, GradNeY)
     do j=2, Params%N-1 !West and East boundaries
-      ! finite differences bad fashion
-      if(DriftOn.eq.0) then
-        newmesh%Ne(1,j)=newmesh%Ne(2,j)
-        newmesh%Nh(1,j)=newmesh%Nh(2,j)
-      end if
-        
+
       UeNew(1,j)=UeNew(2,j)
       UhNew(1,j)=UhNew(2,j)
       newmesh%Te(1,j)=newmesh%Te(2,j)
       newmesh%Th(1,j)=newmesh%Th(2,j)
       newmesh%Ts(1,j)=newmesh%Ts(2,j)
+
+      newmesh%Te(Params%M,j)=newmesh%Te(Params%M-1,j) !Tout
+      newmesh%Th(Params%M,j)=newmesh%Th(Params%M-1,j) !Tout
+      newmesh%Ts(Params%M,j)=newmesh%Ts(Params%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
+
   !       potential(1,j)=0d0 !(0d0, 0d0)
   !       potential(M,j)=potential0 !(potential0, 0d0)
   
-      ! conditions on the cone base - most important
       if(DriftOn.eq.0) then
+        newmesh%Ne(1,j)=newmesh%Ne(2,j)
+        newmesh%Nh(1,j)=newmesh%Nh(2,j)
+        ! conditions on the cone base - most important
         newmesh%Ne(Params%M,j)=newmesh%Ne(Params%M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
         newmesh%Nh(Params%M,j)=newmesh%Nh(Params%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
       end if
@@ -2017,10 +2019,7 @@ if(Params%UseMieScattering.eq.1) then
 !         UeNew(M,j)=UeNew(M-1,j)
 !         UhNew(M,j)=UhNew(M-1,j)
         
-      newmesh%Te(Params%M,j)=newmesh%Te(Params%M-1,j) !Tout
-      newmesh%Th(Params%M,j)=newmesh%Th(Params%M-1,j) !Tout
-      newmesh%Ts(Params%M,j)=newmesh%Ts(Params%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
-        
+
 !         TeNew(M,j) = -0.5d0*(kappae(M-2,j)+kappae(M-1,j))*(Te(M-1,j)-Te(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappae(M-1,j)-0.5d0*kappae(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Te(M-1,j)
 !         ThNew(M,j) = -0.5d0*(kappah(M-2,j)+kappah(M-1,j))*(Th(M-1,j)-Th(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappah(M-1,j)-0.5d0*kappah(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Th(M-1,j)
 !         TsNew(M,j) = -0.5d0*(kappas(M-2,j)+kappas(M-1,j))*(Ts(M-1,j)-Ts(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappas(M-1,j)-0.5d0*kappas(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Ts(M-1,j)
@@ -2033,6 +2032,7 @@ if(Params%UseMieScattering.eq.1) then
       GradNeX(Params%M,j) = GradNeX(Params%M-1,j)
       GradNeY(Params%M,j) = GradNeY(Params%M-1,j)
     end do
+    !$OMP END PARALLEL DO
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! CHECKING the results
 
