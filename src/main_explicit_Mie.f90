@@ -62,7 +62,7 @@ implicit none
      real(8)               tmin                !max absolute time
     
                         
-    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=10000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
@@ -2090,8 +2090,8 @@ if(Params%UseMieScattering.eq.1) then
     !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
     !$OMP DO COLLAPSE(2) REDUCTION(+:NeTotal,NhTotal,TotalNumOfE, TotalNumOfH,  &
     !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume)
-    do i=1,mesh%M
-      do j=1,mesh%N
+    do j=1,mesh%N
+      do i=1,mesh%M
         NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
         NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
         TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
@@ -2105,8 +2105,8 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END PARALLEL
 
     !TODO: Should be parallelized
-    do i=1,Params%M
-      do j=1,Params%N
+    do j=1,Params%N
+      do i=1,Params%M
 
 
         if(MaxHeating(i,j) < mesh%Ts(i,j) .AND. t > 100d0*laser%tau) then
@@ -2156,8 +2156,9 @@ if(Params%UseMieScattering.eq.1) then
 
    call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
 
-    do i=1,Params%M
-      do j=1,Params%N
+
+   do j=1,Params%N
+     do i=1,Params%M
 
         if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < 1d0) then
           write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
@@ -2174,6 +2175,8 @@ if(Params%UseMieScattering.eq.1) then
    end do
 
    call flush(Error%unit)
+
+
 
    do i=1,Params%M
      do j=1,Params%N
