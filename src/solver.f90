@@ -309,7 +309,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt, h1, h2, h3
-  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, CellVol, kappas, CouplingH, CouplingE, invCs, TsPrev, TsOld, &
+  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, CellVol, kappas, CouplingH, CouplingE, invCs, TsPrev, TsOld, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &

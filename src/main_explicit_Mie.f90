@@ -62,7 +62,7 @@ implicit none
      real(8)               tmin                !max absolute time
     
                         
-    integer(8), parameter::  iterOut=10000       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
@@ -1976,83 +1976,69 @@ if(Params%UseMieScattering.eq.1) then
 !                potential(i,N)=0d0 !(0d0,0d0)
     end do
     
+    !$OMP PARALLEL DO  DEFAULT(NONE) SHARED(GradNeX, GradNeY, Params)
     do i=2,Params%M-1
-        
-         ! boundary condition v.n = 0 on boundaries. 
-        ! NORTH
-        
-         GradNeX(i,Params%N) = GradNeX(i,Params%N-1)
-         GradNeY(i,Params%N) = GradNeY(i,Params%N-1)
-
-! 
-        ! SOUTH
-         GradNeX(i,1) = GradNeX(i,2)
-         GradNeY(i,1) = GradNeY(i,2)
-
-     end do
+      ! boundary condition v.n = 0 on boundaries.
+      ! NORTH
+      GradNeX(i,Params%N) = GradNeX(i,Params%N-1)
+      GradNeY(i,Params%N) = GradNeY(i,Params%N-1)
+      !
+      ! SOUTH
+      GradNeX(i,1) = GradNeX(i,2)
+      GradNeY(i,1) = GradNeY(i,2)
+    end do
+    !$OMP END PARALLEL DO
     
     
-      do j=2, Params%N-1 !West and East boundaries
+    do j=2, Params%N-1 !West and East boundaries
       ! finite differences bad fashion
-        if(DriftOn.eq.0) then
-                newmesh%Ne(1,j)=newmesh%Ne(2,j)
-                newmesh%Nh(1,j)=newmesh%Nh(2,j)
-        end if
+      if(DriftOn.eq.0) then
+        newmesh%Ne(1,j)=newmesh%Ne(2,j)
+        newmesh%Nh(1,j)=newmesh%Nh(2,j)
+      end if
         
-        UeNew(1,j)=UeNew(2,j)
-        UhNew(1,j)=UhNew(2,j)
-        newmesh%Te(1,j)=newmesh%Te(2,j)
-        newmesh%Th(1,j)=newmesh%Th(2,j)
-        newmesh%Ts(1,j)=newmesh%Ts(2,j)
+      UeNew(1,j)=UeNew(2,j)
+      UhNew(1,j)=UhNew(2,j)
+      newmesh%Te(1,j)=newmesh%Te(2,j)
+      newmesh%Th(1,j)=newmesh%Th(2,j)
+      newmesh%Ts(1,j)=newmesh%Ts(2,j)
   !       potential(1,j)=0d0 !(0d0, 0d0)
   !       potential(M,j)=potential0 !(potential0, 0d0)
   
-        ! conditions on the cone base - most important        
-        if(DriftOn.eq.0) then
-                newmesh%Ne(Params%M,j)=newmesh%Ne(Params%M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
-                newmesh%Nh(Params%M,j)=newmesh%Nh(Params%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
-        end if
-        
+      ! conditions on the cone base - most important
+      if(DriftOn.eq.0) then
+        newmesh%Ne(Params%M,j)=newmesh%Ne(Params%M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+        newmesh%Nh(Params%M,j)=newmesh%Nh(Params%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+      end if
+
+      !TODO: Could we clean up these comments?
+
         !outlet condition on density and energy
 !         write(*,*) CellAreaE(M,j), DistE(M-2,j)
-        
-
 !         NeNew(M,j) = -0.5d0*(diffusionE(M-2,j)+diffusionE(M-1,j))*(Ne(M-1,j)-Ne(M-2,j))/DistE(M-2,j)/(-0.5d0*diffusionE(M-1,j)-0.5d0*diffusionE(M,j))/DistE(M-1,j)+Ne(M-1,j)
 !         NhNew(M,j) = -0.5d0*(diffusionH(M-2,j)+diffusionH(M-1,j))*(Nh(M-1,j)-Nh(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*diffusionH(M-1,j)-0.5d0*diffusionH(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Nh(M-1,j)
-        
 !         UeNew(M,j)=UeNew(M-1,j)
 !         UhNew(M,j)=UhNew(M-1,j)
         
-        newmesh%Te(Params%M,j)=newmesh%Te(Params%M-1,j) !Tout
-        newmesh%Th(Params%M,j)=newmesh%Th(Params%M-1,j) !Tout
-        newmesh%Ts(Params%M,j)=newmesh%Ts(Params%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
+      newmesh%Te(Params%M,j)=newmesh%Te(Params%M-1,j) !Tout
+      newmesh%Th(Params%M,j)=newmesh%Th(Params%M-1,j) !Tout
+      newmesh%Ts(Params%M,j)=newmesh%Ts(Params%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
         
 !         TeNew(M,j) = -0.5d0*(kappae(M-2,j)+kappae(M-1,j))*(Te(M-1,j)-Te(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappae(M-1,j)-0.5d0*kappae(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Te(M-1,j)
 !         ThNew(M,j) = -0.5d0*(kappah(M-2,j)+kappah(M-1,j))*(Th(M-1,j)-Th(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappah(M-1,j)-0.5d0*kappah(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Th(M-1,j)
 !         TsNew(M,j) = -0.5d0*(kappas(M-2,j)+kappas(M-1,j))*(Ts(M-1,j)-Ts(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappas(M-1,j)-0.5d0*kappas(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Ts(M-1,j)
-        
-      end do
-      
-
-!       if(DriftOn.eq.1) then
-          
-          do j=2,Params%N-1
-!         
-          ! WEST
-          
-          GradNeX(1,j) = GradNeX(2,j)
-          GradNeY(1,j) = GradNeY(2,j)
-
-         ! EAST
-          
-          GradNeX(Params%M,j) = GradNeX(Params%M-1,j)
-          GradNeY(Params%M,j) = GradNeY(Params%M-1,j)
-
-        end do
+      !
+      ! WEST
+      GradNeX(1,j) = GradNeX(2,j)
+      GradNeY(1,j) = GradNeY(2,j)
+      !
+      ! EAST
+      GradNeX(Params%M,j) = GradNeX(Params%M-1,j)
+      GradNeY(Params%M,j) = GradNeY(Params%M-1,j)
+    end do
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! CHECKING the results
 
-    TotalMeshVolume=0d0
 !     ElectronEnergy=0d0
 !     HoleEnergy=0d0
 !     LatticeEnergy=0d0
@@ -2085,6 +2071,8 @@ if(Params%UseMieScattering.eq.1) then
     maxFermiIndexE = maxval(FermiIndexE)
     maxFermiIndexH = maxval(FermiIndexH)
 
+
+    TotalMeshVolume=0d0
     !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
     !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume, TotalNumOfH, TotalElectrons, &
     !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
