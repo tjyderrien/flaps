@@ -1622,9 +1622,7 @@ if(Params%UseMieScattering.eq.1) then
     maxNe=0d0; minNe=1d50; maxNh=0d0; minNh=1d50; maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; 
     maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
     
-    !TODO: Use DEFAULT(NONE) here, this is safer
-
-   !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP& mesh, newmesh, dual, intensityDual, laser, Params, I0, &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
@@ -1653,9 +1651,9 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& I8, I9, OpticalIndex, OpticalDamping, &
    !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
-   !$OMP& Mp, Np, invCe, invCh, invCs)
+   !$OMP& Mp, Np, invCe, invCh, invCs, nuColl, TotalElectrons, TotalHoles) &
+   !$OMP& PRIVATE(Int2, work)
 
-   nthreads = OMP_GET_NUM_THREADS()
 
    NeTotal=0d0; NhTotal=0d0
    
