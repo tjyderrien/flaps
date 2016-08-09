@@ -399,7 +399,7 @@
    !-------------------------------------------------------------------------------------
     subroutine ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, invCe,invCh, invCs, &
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                           ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity  )
+                                           ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta  )
       use Maths_m
       use Types_m
       implicit none
@@ -416,7 +416,6 @@
       integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
-      real(8),           intent(in)    :: SiDensity
 
       real(8) :: etae, etah, LatticeHeatCapacity
       integer :: i, j
@@ -433,7 +432,7 @@
           Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                       -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                                  (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
-          Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j), SiDensity)
+          Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
 
           invCe(i,j) = 1.0d0/Ce(i,j)
           invCh(i,j) = 1.0d0/Ch(i,j)
@@ -445,9 +444,11 @@
     end subroutine ComputeHeatCapacities_batch
 
 
-      real(8) function LatticeHeatCapacity(T, SiDensity)
+      real(8) function LatticeHeatCapacity(T)
         implicit none
-        real(8) T, SiDensity
+        real(8), intent(in) :: T
+
+        real(8), parameter::  SiDensity=2.329d3            !Silicon rest density
 !       LatticeHeatCapacity=1d3*SiDensity*0.2703d0/(exp(63.456d0/T)+0.84586d0) !bad fit ...
 !         LatticeHeatCapacity=1d3*SiDensity*0.412920554599445d0/(exp(88.1830102582422d0/T)-0.676494557497076d0) !!better fit on Flubacher BUT INDUCES A SUPER BUG (+170 K with 3rd order time integration).
 !         LatticeHeatCapacity=1d6*(1.978d0+3.54d-4*T-3.68d0*T**(-2)) !Driel 1987 - not very good, BUT WORKS.

@@ -114,8 +114,7 @@ implicit none
                             NewtonIterations=1000, &
                             ExpNeedleType=0
         
-    real(8), parameter::  SiDensity=2.329d3        ,&           !Silicon rest density
-                          epsilonStatic0=11.66570433d0 !,0.01404457712d0)                ! dielectric constant for static field
+    real(8), parameter::  epsilonStatic0=11.66570433d0 !,0.01404457712d0)                ! dielectric constant for static field
 
     real(8):: me       ,&    ! electron effective mass for conductivity !0.24 (source ?)
               mh       ,&    ! hole effective mass for conductivity !0.81 (source ?)
@@ -574,6 +573,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
       end if
     end if
 
+    !TODO: I think that one invented arrays and loops for handling similar situations ;)
     sigmaX1=spotX1/(2e0*sqrt2ln2)
     sigmaY1=spotY1/(2e0*sqrt2ln2)
     sigmaX2=spotX2/(2e0*sqrt2ln2)
@@ -1192,14 +1192,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-         CsOld(i,j)=LatticeHeatCapacity(Tout, SiDensity)
-         CsPrev(i,j)=LatticeHeatCapacity(Tout, SiDensity)
-         CsPrev2(i,j)=LatticeHeatCapacity(Tout, SiDensity)
+         CsOld(i,j)=LatticeHeatCapacity(Tout)
+         CsPrev(i,j)=LatticeHeatCapacity(Tout)
+         CsPrev2(i,j)=LatticeHeatCapacity(Tout)
 
 
         Ce(i,j)=CeOld(i,j)
         Ch(i,j)=ChOld(i,j)
-        Cs(i,j)=LatticeHeatCapacity(Tout, SiDensity)
+        Cs(i,j)=LatticeHeatCapacity(Tout)
 
         
         UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
@@ -1735,7 +1735,7 @@ if(Params%UseMieScattering.eq.1) then
    ! Computes the electron, hole and lattice heat capacities for the entire mesh
    call ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, invCe, invCh, invCs, &
                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                    ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta, SiDensity)
+                                    ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta)
    !
    !Computes the couplings for the entire mesh
    call ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, Params%HolesOff)
@@ -1748,7 +1748,6 @@ if(Params%UseMieScattering.eq.1) then
 
         ! free-carrier balance sources
         Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
-
 
         Int2 = intensity(i,j)**2
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
