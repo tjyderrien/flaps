@@ -2088,6 +2088,20 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
 
+    work = I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*dt
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params,OnePhotonIonizationRate0, absorptionDrudeE, &
+    !$OMP absorptionDrudeH, OpticalIndex, CellVol, work, LaserIntensityEnergy )
+    !$OMP DO COLLAPSE(2) REDUCTION(+:LaserIntensityEnergy)
+    do j=1,Params%N
+      do i=1,Params%M
+           LaserIntensityEnergy = LaserIntensityEnergy &
+               +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*OpticalIndex(i,j) &
+                  *CellVol(i,j)*work
+      end do
+    end do
+   !$OMP END DO
+   !$OMP END PARALLEL
+
     !TODO: Should be parallelized
     do j=1,Params%N
       do i=1,Params%M
@@ -2112,9 +2126,6 @@ if(Params%UseMieScattering.eq.1) then
           IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) &
                   +absorptionDrudeH(i,j))*intensity(i,j)*CellVol(i,j)*dt
         end if
-        LaserIntensityEnergy = LaserIntensityEnergy &
-               +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*I0*OpticalIndex(i,j) &
-                  *exp(-.5d0*((t-t0)/sigmaTau)**2)*CellVol(i,j)*dt
 
         work = EgapValue(newmesh%Ne(i,j),newmesh%Ts(i,j)) - Egap(i,j)
         ! calculation of the energy contained in the solid
