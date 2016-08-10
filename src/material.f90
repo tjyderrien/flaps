@@ -166,8 +166,8 @@
           sqrtEps = sqrt(Dielectric(i,j))
           OpticalIndex(i,j)   = real(sqrtEps)
           OpticalDamping(i,j) = aimag(sqrtEps)
-          Reflectivity(i,j)=  ( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 -2d0*OpticalIndex(i,j)+1d0 ) &
-                             /( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 +2d0*(OpticalIndex(i,j)+1d0) )
+          Reflectivity(i,j)=  ( (OpticalIndex(i,j)-1.0d0)**2 + OpticalDamping(i,j)**2 ) &
+                             /( (OpticalIndex(i,j)+1.0d0)**2 + OpticalDamping(i,j)**2 )
         end do
       end do
       !$OMP END DO
@@ -209,7 +209,7 @@
       complex(8) :: coef
       integer :: i, j
 
-      coef= M_ONE*ec*ec/(mass*epsilon0)*laser%inv_omega**2/(M_ONE+M_IM*Collision*laser%inv_omega)
+      coef= ec*ec/(mass*epsilon0)*laser%inv_omega**2/(M_ONE+M_IM*Collision*laser%inv_omega)
 
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
@@ -223,7 +223,8 @@
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N !(optimized)
           do i=1, mesh%M
-            absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
+           ! absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
+            absorptionDrude(i,j)=2d0*laser%k*sqrt((abs(Dielectric(i,j)) - real(Dielectric(i,j)))/2 )
           end do
         end do
         !$OMP END DO
