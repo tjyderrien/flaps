@@ -1750,41 +1750,40 @@ if(Params%UseMieScattering.eq.1) then
         Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
 
         Int2 = intensity(i,j)**2
+        work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
+
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
                     +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
-                    +ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
-                    
-        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
-                    +ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
-                    
+                    +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
-        !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
-        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
-        LossesH(i,j)=LossesE(i,j)
-
-
-!         diffNe(i,j)=0d0 !just for debug !
-!         diffNh(i,j)=0d0 !just for debug !!
-!         
         SourceUe(i,j)= ((laser%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
                      + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*laser%inv_E*((me)/(me+mh))&
-                     - Egap(i,j)*ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)*mesh%Ne(i,j) &
+                     - Egap(i,j)*work*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
 
-                     
-!         SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
+        !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
         SourceE(i,j) = SourceUe(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
 
+        !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
+        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
+
+        work = ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)
+
+        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
+                    +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+                    
         SourceUh(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
                      + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
-                     - Egap(i,j)*ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)*mesh%Nh(i,j) &
+                     - Egap(i,j)*work*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
                      
-!         SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
+        !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
         SourceH(i,j) = SourceUh(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt
+
+        LossesH(i,j)=LossesE(i,j)
 
         ! first order precision
 !         SourceS(i,j) = 0d0 - Ts(i,j)*(Cs(i,j)-CsOld(i,j))/Cs(i,j)
