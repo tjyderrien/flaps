@@ -2204,7 +2204,6 @@ if(Params%UseMieScattering.eq.1) then
   3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
   3x, 1E12.5)        
 !          write(Depth%unit,886, advance='yes')
-          call flush(Depth%unit);
         end if
         
       end do !on Y
@@ -2214,6 +2213,9 @@ if(Params%UseMieScattering.eq.1) then
 886        FORMAT (3x)
        end if
     end do !on X
+
+    if(mod(nbiter,iterOut*iterOutMaps).eq.0) &
+      call flush(Depth%unit);
 
 
     ! saving the timesteps of several previous steps (used for the high order calculation of d/dt).
@@ -2246,9 +2248,9 @@ if(Params%UseMieScattering.eq.1) then
                 real(EyPoisson(i,j)), DielectricStatic(i,j), NeP(i,j), NhP(i,j)
   889 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, & !TODO: Please use short notation with prenthesis !!
   1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5) 
-          call flush(DepthVessel%unit);
         end do
       end do
+      call flush(DepthVessel%unit);
       
 !       write(91,'(100E14.5)') potential !Xvector !Amatrix
 !     write(91,*)
@@ -2341,10 +2343,13 @@ if(Params%UseMieScattering.eq.1) then
                                           dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9
                   
         end do
-      end do        
+      end do
+      call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
     end if
-    call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
+
+
   end do !end of time loop
+
   
   call releasemesh(mesh)
   call releasemesh(dual)
