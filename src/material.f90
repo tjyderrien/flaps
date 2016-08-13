@@ -224,7 +224,7 @@
         do j=1, mesh%N !(optimized)
           do i=1, mesh%M
            ! absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
-            absorptionDrude(i,j)=2d0*laser%k*sqrt((abs(Dielectric(i,j)) - real(Dielectric(i,j)))/2 )
+            absorptionDrude(i,j)=2d0*laser%k*sqrt((abs(Dielectric(i,j)) - real(Dielectric(i,j)))*0.5d0 )
           end do
         end do
         !$OMP END DO

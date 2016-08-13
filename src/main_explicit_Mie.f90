@@ -1631,7 +1631,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
    !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
    !$OMP& mobilityE, mobilityH, Egap, me, mh, meDOS, mhDOS, DOSe, DOSh, &
-   !$OMP& SourceE, SourceH, SourceUe, SourceUh, diffNe, diffNh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
+   !$OMP& SourceE, SourceH, SourceUe, SourceUh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
    !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
    !$OMP& JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, & !Amatrix
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
@@ -1945,14 +1945,14 @@ if(Params%UseMieScattering.eq.1) then
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of parallel section
     
     !BOUNDARY CONDITIONS
-    
+    !$OMP PARALLEL DO  DEFAULT(NONE) SHARED(newmesh, UeNew, UhNew)
     do i=1, Params%M !North and South boundaries
       ! finite differences finite difference fashion
       if(DriftOn.eq.0) then
         newmesh%Ne(i,1)=newmesh%Ne(i,2)
         newmesh%Nh(i,1)=newmesh%Nh(i,2)
-        newmesh%Ne(i,Params%N)=newmesh%Ne(i,Params%N-1)
-        newmesh%Nh(i,Params%N)=newmesh%Nh(i,Params%N-1)
+        newmesh%Ne(i,newmesh%N)=newmesh%Ne(i,newmesh%N-1)
+        newmesh%Nh(i,newmesh%N)=newmesh%Nh(i,newmesh%N-1)
       end if
 
       UeNew(i,1)=UeNew(i,2)
@@ -1961,17 +1961,19 @@ if(Params%UseMieScattering.eq.1) then
       newmesh%Th(i,1)=newmesh%Th(i,2)
       newmesh%Ts(i,1)=newmesh%Ts(i,2)
 
-      UeNew(i,Params%N)=UeNew(i,Params%N-1)
-      UhNew(i,Params%N)=UhNew(i,Params%N-1)
-      newmesh%Te(i,Params%N)=newmesh%Te(i,Params%N-1)
-      newmesh%Th(i,Params%N)=newmesh%Th(i,Params%N-1)
-      newmesh%Ts(i,Params%N)=newmesh%Ts(i,Params%N-1)
+      UeNew(i,newmesh%N)=UeNew(i,newmesh%N-1)
+      UhNew(i,newmesh%N)=UhNew(i,newmesh%N-1)
+      newmesh%Te(i,newmesh%N)=newmesh%Te(i,newmesh%N-1)
+      newmesh%Th(i,newmesh%N)=newmesh%Th(i,newmesh%N-1)
+      newmesh%Ts(i,newmesh%N)=newmesh%Ts(i,newmesh%N-1)
         ! includes also the corners... WHy are not they written?
         
 !         potential(i,1)=0d0 !(0d0,0d0)
 !                potential(i,N)=0d0 !(0d0,0d0)
     end do
+    !$OMP END PARALLEL DO
     
+    !TODO: Why i is restricted here, and to for  the West/East corners, for the same quantities
     !$OMP PARALLEL DO  DEFAULT(NONE) SHARED(GradNeX, GradNeY, Params)
     do i=2,Params%M-1
       ! boundary condition v.n = 0 on boundaries.
@@ -2151,7 +2153,7 @@ if(Params%UseMieScattering.eq.1) then
 
    call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
 
-
+  !TODO: Move this to check_divergences
    do j=1,Params%N
      do i=1,Params%M
 
@@ -2260,9 +2262,10 @@ if(Params%UseMieScattering.eq.1) then
     end if
        
     ! output to files
-    
-    cpu_timestep_duration = ElapsedTime() / real(nbiter)
-    cpuefficiency=real(nthreads)/cpu_timestep_duration
+    if(mod(nbiter,iterOut).eq.0) then
+      cpu_timestep_duration = ElapsedTime() / real(nbiter)
+      cpuefficiency=real(nthreads)/cpu_timestep_duration
+    endif
     
     !This should be moved to output.F90 file
     if(mod(nbiter,iterOut).eq.0) then 
