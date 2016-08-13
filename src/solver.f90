@@ -666,3 +666,37 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
 
 end subroutine computeUh_alt
 
+
+
+! This routine computes Ue for the entire mesh
+! We assume that we are in a OMP parallel environement
+subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
+                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
+  use Maths_m
+  use Types_m
+  implicit none
+
+
+  type(MeshValues),                   intent(in)    :: mesh
+  type(MeshValues),                   intent(inout) :: newmesh
+  real(8), dimension(mesh%M, mesh%N), intent(in)    :: UeNew, UhNew, Ue, Uh, invCe, invCh
+  real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
+  real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
+  integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+  integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+  integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
+
+  integer :: i, j
+  !$OMP DO COLLAPSE(2)
+  do j=2, mesh%N-1 !(optimized)
+    do i=2, mesh%M-1
+    newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
+            *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) * invCe(i,j)
+    newmesh%Th(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(newmesh%Nh(i,j) - mesh%Nh(i,j)) &
+            *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) * invCh(i,j)
+    end do
+  end do
+  !$OMP END DO
+
+end subroutine computeConvection

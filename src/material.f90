@@ -444,7 +444,7 @@
     end subroutine ComputeHeatCapacities_batch
 
 
-      real(8) function LatticeHeatCapacity(T)
+    pure  real(8) function LatticeHeatCapacity(T)
         implicit none
         real(8), intent(in) :: T
 

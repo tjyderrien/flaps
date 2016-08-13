@@ -1489,8 +1489,8 @@ if(Params%UseMieScattering.eq.1) then
   maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; maxCFLyTs=0d0; 
   maxFermiIndexE=0; maxFermiIndexH=0; 
  
-  !TODO: NTD: Why DistX are recomputed here? Same for CellAreaX
-  !TODO: TJYD: To treat boundary conditions and treat everything with a loop on the complete mesh. This should be kept. 
+  !NTD: Why DistX are recomputed here? Same for CellAreaX
+  !TJYD: To treat boundary conditions and treat everything with a loop on the complete mesh. This should be kept.
   do i=1,Params%M
     CellAreaN(i,Params%N)=0d0
 !     CellAreaN(i,N-1)=0d0
@@ -1616,6 +1616,8 @@ if(Params%UseMieScattering.eq.1) then
                    "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
       write(*,*) "CFL_Limit=", maxCFL
       write(*,*) "dt_init=", dt0, "dt=", dt
+
+
     end if
     
     maxIntensity=0d0; maxTe=0d0; minTe=1d10; maxTh=0d0; minTh=1d10; maxTs=0d0; minTs=1d10; 
@@ -1900,17 +1902,16 @@ if(Params%UseMieScattering.eq.1) then
       !
     end if
     !
+    if(ConvectionEnergy.eq.1) then
+      call computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
+                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
+    end if
+    !
+
     !$OMP DO COLLAPSE(2) !(optimized)
     do j=2, Params%N-1 !(optimized)
       do i=2, Params%M-1 !(optimized)
-
-      if(ConvectionEnergy.eq.1) then !define temperatures from energy
-        newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
-            *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) * invCe(i,j)
-        newmesh%Th(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(newmesh%Nh(i,j) - mesh%Nh(i,j)) &
-            *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) * invCh(i,j)
-      end if
-                      
 
       !TODO: Optimise
       CFLxT(i,j)=kappae(i,j)*invCe(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
