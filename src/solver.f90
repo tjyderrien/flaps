@@ -700,3 +700,115 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
   !$OMP END DO
 
 end subroutine computeConvection
+
+
+
+! This routine computes Ue for the entire mesh
+! We assume that we are in a OMP parallel environement
+subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn )
+  use Maths_m
+  use Types_m
+  implicit none
+
+
+  type(MeshValues),                   intent(inout)       :: newmesh
+  real(8), dimension(newmesh%M, newmesh%N), intent(inout) :: UeNew, UhNew, GradNeX, GradNeY
+  integer(8),                         intent(in)          :: DriftOn
+
+  integer :: i, j
+
+    !BOUNDARY CONDITIONS
+    !$OMP PARALLEL  DEFAULT(NONE) SHARED(newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn)
+    !$OMP DO
+    do i=1, newmesh%M !North and South boundaries
+      ! finite differences finite difference fashion
+      if(DriftOn.eq.0) then
+        newmesh%Ne(i,1)=newmesh%Ne(i,2)
+        newmesh%Nh(i,1)=newmesh%Nh(i,2)
+        newmesh%Ne(i,newmesh%N)=newmesh%Ne(i,newmesh%N-1)
+        newmesh%Nh(i,newmesh%N)=newmesh%Nh(i,newmesh%N-1)
+      end if
+
+      UeNew(i,1)=UeNew(i,2)
+      UhNew(i,1)=UhNew(i,2)
+      newmesh%Te(i,1)=newmesh%Te(i,2)
+      newmesh%Th(i,1)=newmesh%Th(i,2)
+      newmesh%Ts(i,1)=newmesh%Ts(i,2)
+
+      UeNew(i,newmesh%N)=UeNew(i,newmesh%N-1)
+      UhNew(i,newmesh%N)=UhNew(i,newmesh%N-1)
+      newmesh%Te(i,newmesh%N)=newmesh%Te(i,newmesh%N-1)
+      newmesh%Th(i,newmesh%N)=newmesh%Th(i,newmesh%N-1)
+      newmesh%Ts(i,newmesh%N)=newmesh%Ts(i,newmesh%N-1)
+        ! includes also the corners... WHy are not they written?
+
+    !         potential(i,1)=0d0 !(0d0,0d0)
+    !                potential(i,N)=0d0 !(0d0,0d0)
+    end do
+    !$OMP END DO NOWAIT
+
+    !TODO: Why i is restricted here, and to for  the West/East corners, for the same quantities
+    !$OMP DO
+    do i=2,newmesh%M-1
+      ! boundary condition v.n = 0 on boundaries.
+      ! NORTH
+      GradNeX(i,newmesh%N) = GradNeX(i,newmesh%N-1)
+      GradNeY(i,newmesh%N) = GradNeY(i,newmesh%N-1)
+      !
+      ! SOUTH
+      GradNeX(i,1) = GradNeX(i,2)
+      GradNeY(i,1) = GradNeY(i,2)
+    end do
+    !$OMP END DO NOWAIT
+
+    !$OMP DO
+    do j=2, newmesh%N-1 !West and East boundaries
+
+      UeNew(1,j)=UeNew(2,j)
+      UhNew(1,j)=UhNew(2,j)
+      newmesh%Te(1,j)=newmesh%Te(2,j)
+      newmesh%Th(1,j)=newmesh%Th(2,j)
+      newmesh%Ts(1,j)=newmesh%Ts(2,j)
+
+      newmesh%Te(newmesh%M,j)=newmesh%Te(newmesh%M-1,j) !Tout
+      newmesh%Th(newmesh%M,j)=newmesh%Th(newmesh%M-1,j) !Tout
+      newmesh%Ts(newmesh%M,j)=newmesh%Ts(newmesh%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
+
+    !       potential(1,j)=0d0 !(0d0, 0d0)
+    !       potential(M,j)=potential0 !(potential0, 0d0)
+
+      if(DriftOn.eq.0) then
+        newmesh%Ne(1,j)=newmesh%Ne(2,j)
+        newmesh%Nh(1,j)=newmesh%Nh(2,j)
+        ! conditions on the cone base - most important
+        newmesh%Ne(newmesh%M,j)=newmesh%Ne(newmesh%M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+        newmesh%Nh(newmesh%M,j)=newmesh%Nh(newmesh%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+      end if
+
+      !TODO: Could we clean up these comments?
+
+        !outlet condition on density and energy
+    !         write(*,*) CellAreaE(M,j), DistE(M-2,j)
+    !         NeNew(M,j) = -0.5d0*(diffusionE(M-2,j)+diffusionE(M-1,j))*(Ne(M-1,j)-Ne(M-2,j))/DistE(M-2,j)/(-0.5d0*diffusionE(M-1,j)-0.5d0*diffusionE(M,j))/DistE(M-1,j)+Ne(M-1,j)
+    !         NhNew(M,j) = -0.5d0*(diffusionH(M-2,j)+diffusionH(M-1,j))*(Nh(M-1,j)-Nh(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*diffusionH(M-1,j)-0.5d0*diffusionH(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Nh(M-1,j)
+    !         UeNew(M,j)=UeNew(M-1,j)
+    !         UhNew(M,j)=UhNew(M-1,j)
+
+
+    !         TeNew(M,j) = -0.5d0*(kappae(M-2,j)+kappae(M-1,j))*(Te(M-1,j)-Te(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappae(M-1,j)-0.5d0*kappae(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Te(M-1,j)
+    !         ThNew(M,j) = -0.5d0*(kappah(M-2,j)+kappah(M-1,j))*(Th(M-1,j)-Th(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappah(M-1,j)-0.5d0*kappah(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Th(M-1,j)
+    !         TsNew(M,j) = -0.5d0*(kappas(M-2,j)+kappas(M-1,j))*(Ts(M-1,j)-Ts(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappas(M-1,j)-0.5d0*kappas(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Ts(M-1,j)
+      !
+      ! WEST
+      GradNeX(1,j) = GradNeX(2,j)
+      GradNeY(1,j) = GradNeY(2,j)
+      !
+      ! EAST
+      GradNeX(newmesh%M,j) = GradNeX(newmesh%M-1,j)
+      GradNeY(newmesh%M,j) = GradNeY(newmesh%M-1,j)
+    end do
+    !$OMP END DO
+
+    !$OMP END PARALLEL
+
+end subroutine applyBoundaryConditions

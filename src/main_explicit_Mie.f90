@@ -165,7 +165,6 @@ implicit none
                 Egap, &                        ! local gap value
                 SourceE, SourceH, & ! heating sources
                 SourceUe, SourceUh, & ! free carrier thermal energy sources
-                diffNe, diffNh, &         ! just for derivation in time
                 x, y, &                 ! needle position indexes
                 xNew, yNew, &           ! used to converge the mesh parallely
                 xV, yV, &                 ! vessel position indexes
@@ -376,7 +375,6 @@ implicit none
                 Egap(1:Params%M, 1:Params%N), &                        ! local gap value
                 SourceE(1:Params%M, 1:Params%N), SourceH(1:Params%M, 1:Params%N), & ! heating sources
                 SourceUe(1:Params%M, 1:Params%N), SourceUh(1:Params%M, 1:Params%N), & ! free carrier thermal energy sources
-                diffNe(1:Params%M, 1:Params%N), diffNh(1:Params%M, 1:Params%N), &         ! just for derivation in time
                 x(1:Params%M, 1:Params%N), y(1:Params%M, 1:Params%N), &                 ! needle position indexes
                 xNew(1:Params%M, 1:Params%N), yNew(1:Params%M, 1:Params%N), &           ! used to converge the mesh parallely
                 xV(1:Mv, 1:Nv), yV(1:Mv, 1:Nv), &                 ! vessel position indexes
@@ -1944,96 +1942,8 @@ if(Params%UseMieScattering.eq.1) then
   !$OMP END PARALLEL
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of parallel section
     
-    !BOUNDARY CONDITIONS
-    !$OMP PARALLEL DO  DEFAULT(NONE) SHARED(newmesh, UeNew, UhNew)
-    do i=1, Params%M !North and South boundaries
-      ! finite differences finite difference fashion
-      if(DriftOn.eq.0) then
-        newmesh%Ne(i,1)=newmesh%Ne(i,2)
-        newmesh%Nh(i,1)=newmesh%Nh(i,2)
-        newmesh%Ne(i,newmesh%N)=newmesh%Ne(i,newmesh%N-1)
-        newmesh%Nh(i,newmesh%N)=newmesh%Nh(i,newmesh%N-1)
-      end if
+  call applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn )
 
-      UeNew(i,1)=UeNew(i,2)
-      UhNew(i,1)=UhNew(i,2)
-      newmesh%Te(i,1)=newmesh%Te(i,2)
-      newmesh%Th(i,1)=newmesh%Th(i,2)
-      newmesh%Ts(i,1)=newmesh%Ts(i,2)
-
-      UeNew(i,newmesh%N)=UeNew(i,newmesh%N-1)
-      UhNew(i,newmesh%N)=UhNew(i,newmesh%N-1)
-      newmesh%Te(i,newmesh%N)=newmesh%Te(i,newmesh%N-1)
-      newmesh%Th(i,newmesh%N)=newmesh%Th(i,newmesh%N-1)
-      newmesh%Ts(i,newmesh%N)=newmesh%Ts(i,newmesh%N-1)
-        ! includes also the corners... WHy are not they written?
-        
-!         potential(i,1)=0d0 !(0d0,0d0)
-!                potential(i,N)=0d0 !(0d0,0d0)
-    end do
-    !$OMP END PARALLEL DO
-    
-    !TODO: Why i is restricted here, and to for  the West/East corners, for the same quantities
-    !$OMP PARALLEL DO  DEFAULT(NONE) SHARED(GradNeX, GradNeY, Params)
-    do i=2,Params%M-1
-      ! boundary condition v.n = 0 on boundaries.
-      ! NORTH
-      GradNeX(i,Params%N) = GradNeX(i,Params%N-1)
-      GradNeY(i,Params%N) = GradNeY(i,Params%N-1)
-      !
-      ! SOUTH
-      GradNeX(i,1) = GradNeX(i,2)
-      GradNeY(i,1) = GradNeY(i,2)
-    end do
-    !$OMP END PARALLEL DO
-    
-    !$OMP PARALLEL DO  DEFAULT(NONE) SHARED(newmesh, Params, UeNew, UhNew, GradNeX, GradNeY)
-    do j=2, Params%N-1 !West and East boundaries
-
-      UeNew(1,j)=UeNew(2,j)
-      UhNew(1,j)=UhNew(2,j)
-      newmesh%Te(1,j)=newmesh%Te(2,j)
-      newmesh%Th(1,j)=newmesh%Th(2,j)
-      newmesh%Ts(1,j)=newmesh%Ts(2,j)
-
-      newmesh%Te(Params%M,j)=newmesh%Te(Params%M-1,j) !Tout
-      newmesh%Th(Params%M,j)=newmesh%Th(Params%M-1,j) !Tout
-      newmesh%Ts(Params%M,j)=newmesh%Ts(Params%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
-
-  !       potential(1,j)=0d0 !(0d0, 0d0)
-  !       potential(M,j)=potential0 !(potential0, 0d0)
-  
-      if(DriftOn.eq.0) then
-        newmesh%Ne(1,j)=newmesh%Ne(2,j)
-        newmesh%Nh(1,j)=newmesh%Nh(2,j)
-        ! conditions on the cone base - most important
-        newmesh%Ne(Params%M,j)=newmesh%Ne(Params%M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
-        newmesh%Nh(Params%M,j)=newmesh%Nh(Params%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
-      end if
-
-      !TODO: Could we clean up these comments?
-
-        !outlet condition on density and energy
-!         write(*,*) CellAreaE(M,j), DistE(M-2,j)
-!         NeNew(M,j) = -0.5d0*(diffusionE(M-2,j)+diffusionE(M-1,j))*(Ne(M-1,j)-Ne(M-2,j))/DistE(M-2,j)/(-0.5d0*diffusionE(M-1,j)-0.5d0*diffusionE(M,j))/DistE(M-1,j)+Ne(M-1,j)
-!         NhNew(M,j) = -0.5d0*(diffusionH(M-2,j)+diffusionH(M-1,j))*(Nh(M-1,j)-Nh(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*diffusionH(M-1,j)-0.5d0*diffusionH(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Nh(M-1,j)
-!         UeNew(M,j)=UeNew(M-1,j)
-!         UhNew(M,j)=UhNew(M-1,j)
-        
-
-!         TeNew(M,j) = -0.5d0*(kappae(M-2,j)+kappae(M-1,j))*(Te(M-1,j)-Te(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappae(M-1,j)-0.5d0*kappae(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Te(M-1,j)
-!         ThNew(M,j) = -0.5d0*(kappah(M-2,j)+kappah(M-1,j))*(Th(M-1,j)-Th(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappah(M-1,j)-0.5d0*kappah(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Th(M-1,j)
-!         TsNew(M,j) = -0.5d0*(kappas(M-2,j)+kappas(M-1,j))*(Ts(M-1,j)-Ts(M-2,j))*CellAreaE(M-1,j)/DistE(M-2,j)/(-0.5d0*kappas(M-1,j)-0.5d0*kappas(M,j))/CellAreaE(M,j)*DistE(M-1,j)+Ts(M-1,j)
-      !
-      ! WEST
-      GradNeX(1,j) = GradNeX(2,j)
-      GradNeY(1,j) = GradNeY(2,j)
-      !
-      ! EAST
-      GradNeX(Params%M,j) = GradNeX(Params%M-1,j)
-      GradNeY(Params%M,j) = GradNeY(Params%M-1,j)
-    end do
-    !$OMP END PARALLEL DO
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! CHECKING the results
 
@@ -2063,8 +1973,6 @@ if(Params%UseMieScattering.eq.1) then
     maxSourceH = maxval(SourceH)
     maxGainsH  = maxval(GainsH)
     maxGap     = maxval(Egap)
-    maxDiffNe  = maxval(diffNe)
-    maxDiffNh  = maxval(diffNh)
 
     maxFermiIndexE = maxval(FermiIndexE)
     maxFermiIndexH = maxval(FermiIndexH)
@@ -2180,20 +2088,16 @@ if(Params%UseMieScattering.eq.1) then
      do j=1,Params%N
               ! lets change dt when fast reponse is finished in order to catch the long one. 
 
-        diffNe(i,j)=(newmesh%Ne(i,j)-mesh%Ne(i,j))/dt
-        diffNh(i,j)=(newmesh%Nh(i,j)-mesh%Nh(i,j))/dt
-        
-                
         if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
           write(Depth%unit,887, advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
                         mesh%Th(i,j), mesh%Ts(i,j), mesh%Ne(i,j), mesh%Nh(i,j), reflectivity(i,j), & !10
-                        absorptionDrudeE(i,j), absorptionDrudeH(i,j), diffNe(i,j), diffNh(i,j), TotalElectrons(i,j), & !15
-                        TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !20
-                        SourceE(i,j), SourceH(i,j), GainsE(i,j), GainsH(i,j), LossesE(i,j), & !25
-                        LossesH(i,j), real(DielectricDrudeE(i,j)), aimag(DielectricDrudeE(i,j)), Egap(i,j), real(Dielectric(i,j)), & !30
-                        aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !35
-                        Ey(i,j), diffusionE(i,j), diffusionH(i,j), GradNeX(i,j), GradNeY(i,j), &!40
-                        real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !45
+                        absorptionDrudeE(i,j), absorptionDrudeH(i,j), TotalElectrons(i,j), & !13
+                        TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !18
+                        SourceE(i,j), SourceH(i,j), GainsE(i,j), GainsH(i,j), LossesE(i,j), & !23
+                        LossesH(i,j), real(DielectricDrudeE(i,j)), aimag(DielectricDrudeE(i,j)), Egap(i,j), real(Dielectric(i,j)), & !28
+                        aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !33
+                        Ey(i,j), diffusionE(i,j), diffusionH(i,j), GradNeX(i,j), GradNeY(i,j), &!38
+                        real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !43
                         Radius(i,j)
 
       !TODO: Please use short notation with prenthesis !!
@@ -2298,9 +2202,9 @@ if(Params%UseMieScattering.eq.1) then
               mesh%Ts(1,Params%N/2), mesh%Ne(1,Params%N/2), &                        !5
               mesh%Nh(1,Params%N/2), intensity(1,Params%N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
               SourceE(1,Params%N/2), GainsE(1,Params%N/2), SourceH(1,Params%N/2), GainsH(1,Params%N/2), Egap(1,Params%N/2), &                !14
-              diffNe(1,Params%N/2), diffNh(1,Params%N/2), real(FermiIndexE(1,Params%N/2)),&
-               real(FermiIndexH(1,Params%N/2)), Ce(2,Params%N/2), &                !19
-              CeOld(2,Params%N/2), Ch(2,Params%N/2), ChOld(2,Params%N/2), Cs(2,Params%N/2), CsOld(2,Params%N/2)                               !24
+              real(FermiIndexE(1,Params%N/2)),&
+               real(FermiIndexH(1,Params%N/2)), Ce(2,Params%N/2), &                !17
+              CeOld(2,Params%N/2), Ch(2,Params%N/2), ChOld(2,Params%N/2), Cs(2,Params%N/2), CsOld(2,Params%N/2)                               !22
               
 884 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -2313,7 +2217,6 @@ if(Params%UseMieScattering.eq.1) then
               mesh%Nh(Params%M/2,Params%N), intensity(Params%M/2,Params%N), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,Params%N), GainsE(Params%M/2,Params%N), SourceH(Params%M/2,Params%N),&
                GainsH(Params%M/2,Params%N), Egap(Params%M/2,Params%N), &
-              diffNe(Params%M/2,Params%N), diffNh(Params%M/2,Params%N), &
               real(FermiIndexE(Params%M/2,Params%N)), real(FermiIndexH(Params%M/2,Params%N))
               
 883 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
@@ -2325,7 +2228,7 @@ if(Params%UseMieScattering.eq.1) then
         write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2,1), mesh%Th(Params%M/2,1), mesh%Ne(Params%M/2,1), &
               mesh%Nh(Params%M/2,1), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2,1), &
-              diffNe(Params%M/2,1), diffNh(Params%M/2,1), real(FermiIndexE(Params%M/2,1)), real(FermiIndexH(Params%M/2,1))
+              real(FermiIndexE(Params%M/2,1)), real(FermiIndexH(Params%M/2,1))
               
 882 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
