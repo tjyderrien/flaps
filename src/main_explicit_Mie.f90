@@ -2169,7 +2169,8 @@ if(Params%UseMieScattering.eq.1) then
      end do
    end do
 
-   call flush(Error%unit)
+   !TODO: Why do you use flush???
+   if(mod(nbiter,iterOut*iterOutMaps).eq.0) call flush(Error%unit)
 
 
 
