@@ -87,7 +87,7 @@ SUBROUTINE ParseDouble( line, value )
     value = 0
 
     i = index(line, ' ')
-    read( line(i:), '(f18.7)' ) value
+    read( line(i:), '(e12.5)' ) value
 END SUBROUTINE ParseDouble
 
 

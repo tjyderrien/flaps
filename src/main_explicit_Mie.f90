@@ -51,14 +51,13 @@ implicit none
                         potentialNull=0d0 !, &
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
-    real(8), parameter:: dt0=1d-18,& !time step (s)
-                        tmax=0d-15,& !stop time
-                        coeffDilaDt=2d0        ,& !diltation coeff before dt change
+    real(8), parameter:: coeffDilaDt=2d0        ,& !diltation coeff before dt change
                         xmin=-10d-6       ,& !mesh min
                         xmax=10d-6       ,& !mesh max
                         ymin=-10d-6       ,&                
                         ymax=10d-6       ,&
                         tCenter=0d0             !time of gaussian intensity maximum
+
      real(8)               tmin                !max absolute time
     
                         
@@ -520,10 +519,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   tmin=tCenter-5d0*laser%tau
 
 
-  dt=dt0
-  dt2=dt0
-  dt3=dt0
-  dt4=dt0
+  dt=Params%TimeStep
+  dt2=Params%TimeStep
+  dt3=Params%TimeStep
+  dt4=Params%TimeStep
 
   ColFermiNeNc=2; ColFermiEta=3; ColFermi0=4; ColFermi1=5; ColFermi2=6; ColFermiHalf=7; 
   ColFermiThreeHalf=8; ColFermiMenusHalf=9;
@@ -1099,9 +1098,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Mesh shift=", MeshShift
   write(Parameters%unit,*)
   write(Parameters%unit,*) "============ TIME CONTROL =========="
-  write(Parameters%unit,*) "Initial timestep=", dt0
+  write(Parameters%unit,*) "Initial timestep=", Params%TimeStep
   write(Parameters%unit,*) "Maximal timestep=", tmin
-  write(Parameters%unit,*) "Maximum time t=", tmax
+  write(Parameters%unit,*) "Maximum time t=", Params%TimeMax
   write(Parameters%unit,*) "Enable adaptative timestep=", AdaptativeTimeStep
   write(Parameters%unit,*) "Time output each ", iterOut, "iterations."
   write(Parameters%unit,*) "Map output each", iterOutMaps*iterOut, "iterations."
@@ -1110,7 +1109,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
   call TimerStart( )
 
-  nmax=int((tmax-tmin)/dt, 8)
+  nmax=int((Params%TimeMax-tmin)/dt, 8)
   
   Ex(:,:)=0d0 !-1d10
   Ey(:,:)=0d0 !-1d9 !0d0
@@ -1613,7 +1612,7 @@ if(Params%UseMieScattering.eq.1) then
                    "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, &
                    "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
       write(*,*) "CFL_Limit=", maxCFL
-      write(*,*) "dt_init=", dt0, "dt=", dt
+      write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
 
 
     end if
@@ -2125,6 +2124,7 @@ if(Params%UseMieScattering.eq.1) then
     if(mod(nbiter,iterOut*iterOutMaps).eq.0) &
       call flush(Depth%unit);
 
+    !TODO: There should be a module managing the adaptative time step
 
     ! saving the timesteps of several previous steps (used for the high order calculation of d/dt).
     dt4=dt3;
@@ -2132,15 +2132,15 @@ if(Params%UseMieScattering.eq.1) then
     dt2=dt; 
     ! chaning the timestep based on known behavior of the system
     if(AdaptativeTimeStep.eq.1) then
-      if((t>1d1*laser%tau*coeffDilaDt) .AND. (dt.eq.dt0) .AND. &
+      if((t>1d1*laser%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
         (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
-        dt=10d0*dt0
-      else if ((t > 0.5d2*laser%tau*coeffDilaDt) .AND. (dt.eq.10d0*dt0) .AND. (maxCFLxN+maxCFLyN &
+        dt=10d0*Params%TimeStep
+      else if ((t > 0.5d2*laser%tau*coeffDilaDt) .AND. (dt.eq.10d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN &
         + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
-        dt=40d0*dt0
-      else if ((t > 1d3*laser%tau*coeffDilaDt) .AND. (dt.eq.40d0*dt0) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
+        dt=40d0*Params%TimeStep
+      else if ((t > 1d3*laser%tau*coeffDilaDt) .AND. (dt.eq.40d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
         + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
-          dt=1d3*dt0
+          dt=1d3*Params%TimeStep
 !           else if (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs > maxCFL) then
 !             dt=dt/1d1
       end if

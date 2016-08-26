@@ -1,3 +1,31 @@
+!! Copyright (C) 2016 N. Tancogne-Dejean
+!!
+!! This program is free software: you can redistribute it and/or modify
+!! it under the terms of the GNU General Public License as published by
+!! the Free Software Foundation, either version 3 of the License, or
+!! (at your option) any later version.
+!!
+!! This program is distributed in the hope that it will be useful,
+!! but WITHOUT ANY WARRANTY; without even the implied warranty of
+!! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!! GNU General Public License for more details.
+!!
+!! You should have received a copy of the GNU General Public License
+!! along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+!------------------------------------------------------------------------------
+!> @file input.f90
+!
+! DESCRIPTION:
+!> @brief Provide the code with a parser for the input file.
+!
+!> @author
+!> N. Tanconge-Dejean
+!
+!> @date
+!> 26 Aug 2016 - Initial Version
+!------------------------------------------------------------------------------
+
 !> Initialize  Parameters
 !> @param Params Structure containing input parameters
 subroutine InitInputParameter( Params )
@@ -5,15 +33,19 @@ subroutine InitInputParameter( Params )
     implicit none
     type(InputParameters) :: Params
 
+    !Paramters of the simulation
     Params%UseMieScattering = -2
     Params%M = -1
     Params%N = -1
+    Params%TimeStep = 0.d0
+    Params%TimeMax  = 0.d0
 
     !Debug options
     Params%NeOff = 0
     Params%TeOff = 0
     Params%HolesOff = 0
     Params%TsOff = 0
+
 
 end subroutine InitInputParameter
 
@@ -66,6 +98,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%TsOff < 0 .or. Params%TsOff > 1 ) then
       print *, 'Bad value for TeOff'
+      call StopProgram()
+    end if
+
+    if( Params%TimeStep <= 0.0d0 .or. Params%TimeMax < 0.0d0 ) then
+      print *, 'Bad value for TimeStep or TimeMax'
       call StopProgram()
     end if
 
@@ -153,6 +190,18 @@ subroutine LoadInputParameters( filename, Params )
               !TsOff
               if( id .equals. 'TsOff' ) then
                 call ParseInt( line, Params%TsOff )
+                goto 999
+              endif
+
+              !TimeStep
+              if( id .equals. 'TimeStep' ) then
+                call ParseDouble( line, Params%TimeStep )
+                goto 999
+              endif
+
+              !TimeDouble
+              if( id .equals. 'TimeMax' ) then
+                call ParseDouble( line, Params%TimeMax )
                 goto 999
               endif
 

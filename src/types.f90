@@ -73,6 +73,8 @@ module Types_m
     integer :: NeOff, TeOff, HolesOff, TsOff
 
     integer :: M,N !> Mesh dimension
+
+    real(8) :: TimeStep, TimeMax
   end type
 
 end module Types_m
