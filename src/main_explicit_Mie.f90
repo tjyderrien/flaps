@@ -2011,15 +2011,32 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
 
-    !TODO: Should be parallelized
-    do j=1,Params%N
-      do i=1,Params%M
-
-
-        if(MaxHeating(i,j) < mesh%Ts(i,j) .AND. t > 100d0*laser%tau) then
+   if(t > 100d0*laser%tau) then
+    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(mesh,MaxHeating, MaxHeatingTime, t, Params ) &
+    !$OMP COLLAPSE(2)
+     do j=1,Params%N
+       do i=1,Params%M
+         if(MaxHeating(i,j) < mesh%Ts(i,j)) then
            MaxHeating(i,j)=mesh%Ts(i,j)
            MaxHeatingTime(i,j)=t
-        end if
+         end if
+       end do
+     end do
+     !$OMP END PARALLEL DO
+   endif
+
+   ! calculation of the absorbed laser energy involved in the simulated slice !
+   IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(1,Params%N/2) &
+                  +absorptionDrudeH(1,Params%N/2))*intensity(1,Params%N/2)*CellVol(1,Params%N/2)*dt
+
+
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, Egap, &
+    !$OMP Ce, CeOld, Ch, ChOld, Cs, CsOld, OpticalIndex, CellVol, &
+    !$OMP ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy) &
+    !$OMP PRIVATE(work)
+    !$OMP DO COLLAPSE(2) REDUCTION(+:ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy)
+    do j=1,Params%N
+      do i=1,Params%M
         
 !         if(ConductivityFix.eq.-1) then
 !            TeNew(i,j)=Tout; ThNew(i,j)=Tout; 
@@ -2029,12 +2046,6 @@ if(Params%UseMieScattering.eq.1) then
 !         ElectronEnergy=ElectronEnergy+Ce(i,j)*Te(i,j)*CellVol(i,j)
 !         HoleEnergy=HoleEnergy+Ch(i,j)*Th(i,j)*CellVol(i,j)
 !         LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
-
-        ! calculation of the absorbed laser energy involved in the simulated slice !
-        if((i.eq.1) .AND. (j.eq.(Params%N/2))) then
-          IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(i,j) &
-                  +absorptionDrudeH(i,j))*intensity(i,j)*CellVol(i,j)*dt
-        end if
 
         work = EgapValue(newmesh%Ne(i,j),newmesh%Ts(i,j)) - Egap(i,j)
         ! calculation of the energy contained in the solid
@@ -2056,7 +2067,8 @@ if(Params%UseMieScattering.eq.1) then
 
      end do
    end do
-
+   !$OMP END DO
+   !$OMP END PARALLEL
 
    call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
 
