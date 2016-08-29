@@ -2090,58 +2090,14 @@ if(Params%UseMieScattering.eq.1) then
      end do
    end do
 
-   !TODO: Why do you use flush???
-   if(mod(nbiter,iterOut*iterOutMaps).eq.0) call flush(Error%unit)
-
-
-
-   do i=1,Params%M
-     do j=1,Params%N
-              ! lets change dt when fast reponse is finished in order to catch the long one. 
-
-        if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
-          write(Depth%unit,887, advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
-                        mesh%Th(i,j), mesh%Ts(i,j), mesh%Ne(i,j), mesh%Nh(i,j), reflectivity(i,j), & !10
-                        absorptionDrudeE(i,j), absorptionDrudeH(i,j), TotalElectrons(i,j), & !13
-                        TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !18
-                        SourceE(i,j), SourceH(i,j), GainsE(i,j), GainsH(i,j), LossesE(i,j), & !23
-                        LossesH(i,j), real(DielectricDrudeE(i,j)), aimag(DielectricDrudeE(i,j)), Egap(i,j), real(Dielectric(i,j)), & !28
-                        aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !33
-                        Ey(i,j), diffusionE(i,j), diffusionH(i,j), GradNeX(i,j), GradNeY(i,j), &!38
-                        real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !43
-                        Radius(i,j)
-
-      !TODO: Please use short notation with prenthesis !!
-  887 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5)        
-!          write(Depth%unit,886, advance='yes')
-        end if
-        
-      end do !on Y
-      
-       if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
-        write(Depth%unit,886, advance="yes")
-886        FORMAT (3x)
-       end if
-    end do !on X
-
-    if(mod(nbiter,iterOut*iterOutMaps).eq.0) &
-      call flush(Depth%unit);
 
     !TODO: There should be a module managing the adaptative time step
+    ! lets change dt when fast reponse is finished in order to catch the long one.
 
     ! saving the timesteps of several previous steps (used for the high order calculation of d/dt).
     dt4=dt3;
     dt3=dt2;
-    dt2=dt; 
+    dt2=dt;
     ! chaning the timestep based on known behavior of the system
     if(AdaptativeTimeStep.eq.1) then
       if((t>1d1*laser%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
@@ -2157,11 +2113,39 @@ if(Params%UseMieScattering.eq.1) then
 !             dt=dt/1d1
       end if
     end if
-        
-    
-    ! writing result for the electrostatic calculations
-    if(mod(nbiter,iterOut*iterOutMaps).eq.0) then 
+
+   !
+   if(mod(nbiter,iterOut*iterOutMaps).eq.0) then
+     !
+     !TODO: Why do you use flush???
+     call flush(Error%unit)
+     !
+     do i=1,Params%M
+       !
+       do j=1,Params%N
+         !
+         write(Depth%unit,'(46(1E12.5,3x))', advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
+                        mesh%Th(i,j), mesh%Ts(i,j), mesh%Ne(i,j), mesh%Nh(i,j), reflectivity(i,j), & !10
+                        absorptionDrudeE(i,j), absorptionDrudeH(i,j), TotalElectrons(i,j), & !13
+                        TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !18
+                        SourceE(i,j), SourceH(i,j), GainsE(i,j), GainsH(i,j), LossesE(i,j), & !23
+                        LossesH(i,j), real(DielectricDrudeE(i,j)), aimag(DielectricDrudeE(i,j)), Egap(i,j), real(Dielectric(i,j)), & !28
+                        aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !33
+                        Ey(i,j), diffusionE(i,j), diffusionH(i,j), GradNeX(i,j), GradNeY(i,j), &!38
+                        real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !43
+                        Radius(i,j)
+         !
+       end do !on Y
+       !
+       write(Depth%unit,'(3x)', advance="yes")
+       !
+     end do !on X
+     !
+     call flush(Depth%unit);
+     !
+     ! writing result for the electrostatic calculations
       do i=1,Mp
+        !
         do j=1,Np
           ! ecriture des donnees dans un fichier different
           write(DepthVessel%unit,889, advance="yes") t, xP(i,j), yP(i,j), real(potential(i,j)), real(ExPoisson(i,j)), & !
@@ -2169,23 +2153,37 @@ if(Params%UseMieScattering.eq.1) then
   889 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, & !TODO: Please use short notation with prenthesis !!
   1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5) 
         end do
+        !
       end do
+      !
       call flush(DepthVessel%unit);
-      
-!       write(91,'(100E14.5)') potential !Xvector !Amatrix
-!     write(91,*)
-      
+      !
+      ! write the functions on Dual Mesh
+      !
+      do i=1,Params%M-1
+        !
+        do j=1,Params%N-1
+          !
+          write(DualDepth%unit, '(9(1E12.5, 3x))', advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
+                                          dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9
+          !
+        end do
+        !
+      end do
+      !
+      call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
+      !
     end if
-       
+    !
+    !
     ! output to files
     if(mod(nbiter,iterOut).eq.0) then
+      !
       cpu_timestep_duration = ElapsedTime() / real(nbiter)
       cpuefficiency=real(nthreads)/cpu_timestep_duration
-    endif
-    
-    !This should be moved to output.F90 file
-    if(mod(nbiter,iterOut).eq.0) then 
-      
+      !
+      !This should be moved to output.F90 file
+      !
       write(EnergyConservation%unit,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, & !5
           TotalMeshVolume, LaserIntensityEnergy, ElectronKineticEnergy, ElectronPotentialEnergy !9
       
@@ -2249,24 +2247,6 @@ if(Params%UseMieScattering.eq.1) then
 
     end if
     
-
-    
-890 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
-    
-    ! write the functions on Dual Mesh
-    if(mod(nbiter,iterOut*iterOutMaps).eq.0) then
-      do i=1,Params%M-1
-        do j=1,Params%N-1
-          
-          write(DualDepth%unit, 890, advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
-                                          dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9
-                  
-        end do
-      end do
-      call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
-    end if
-
 
   end do !end of time loop
 
