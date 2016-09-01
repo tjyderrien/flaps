@@ -1,12 +1,16 @@
 !This is a dummy input file for Flaps2D
 
 
-M 11
-N 11
+M 51
+N 51
 TimeStep 1.0e-18
 TimeMax 0.0e-15
 
+PolarizationSource 0
+phiMie0 270
 UseMieScattering -1 !This is a comment for this variable
+
+
 
 !Debug options
 NeOff 0

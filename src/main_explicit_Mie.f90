@@ -217,9 +217,7 @@ implicit none
                 FermiIndexE, FermiIndexH, &
                 MeshVertice ! data from the GMSH file
     
-    real(8) phiMie0
     real(8) Int2
-    integer(8) PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
     
     real(8), allocatable, target :: FermiTableE(:,:),&
                                      FermiTableH(:,:),& !reduced Fermi level for electrons and holes
@@ -422,8 +420,8 @@ implicit none
                 EintField(1:Params%M,1:Params%N), EintField2(1:Params%M,1:Params%N))
 
 !******** READ PARAMETER INPUT FILE ***********
-CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
-write(*,*) "Importing data on Polarization."
+!CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
+!write(*,*) "Importing data on Polarization."
 !******** READ GMSH MESH FILE ************
 namefile_msh='libs/gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
@@ -546,7 +544,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     I0=laser%fluence/laser%tau * sqrt(4d0 * log(2d0) / pi)
     
     if(laser%lambda.eq.515d-9) then
-      if(PolarizationSource.eq.0) then
+      if(Params%PolarizationSource.eq.0) then
         x1=1.5d-7; y1=0.d0; I1=0d0*I0; spotX1=100d-9; spotY1=50d-9; !
         x2=3.3d-7; y2=0.d0; I2=0d0*9d0*I0; spotX2=50d-9; spotY2=50d-9; !3.53W
         x3=6.5d-7; y3=-3d-8; I3=0d0*17d0*I0; spotX3=70d-9; spotY3=150d-9; !28W
@@ -1090,7 +1088,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Laser spot position: (X,Y)=", x0*1d6, y0*1d6, "um"
   write(Parameters%unit,*) "Laser spot size: (Sx, Sy)=", laser%spotX*1d6, laser%spotY*1d6, "um"
   write(Parameters%unit,*) "Mie scattering:", Params%UseMieScattering
-  write(Parameters%unit,*) "Laser polarization", PolarizationSource
+  write(Parameters%unit,*) "Laser polarization", Params%PolarizationSource
   write(Parameters%unit,*)
   write(Parameters%unit,*) "============ MESH PARAMETERS =========="
   write(Parameters%unit,*) "Mesh size", Params%M, "x", Params%N
@@ -1336,18 +1334,18 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))
 if(Params%UseMieScattering.eq.1) then
   write(*,*) 'Computing the Mie scattering field distribution...'
-  write(*,*) 'Angle Mie =', phiMie0
-  write(*,*) 'Polarization TM ? ', PolarizationSource
+  write(*,*) 'Angle Mie =', Params%phiMie0
+  write(*,*) 'Polarization TM ? ', Params%PolarizationSource
 
   !$OMP PARALLEL DEFAULT(NONE) SHARED(x, y, Params, &
-  !$OMP phiMie, Radius, phiMie0)
+  !$OMP phiMie, Radius)
   !$OMP DO COLLAPSE(2)
   do j=1,Params%N
     do i=1,Params%M
         if(y(i,j)<0d0) then
-          phiMie(i,j)=phiMie0+pi
+          phiMie(i,j)=Params%phiMie0+pi
         else
-          phiMie(i,j)=phiMie0
+          phiMie(i,j)=Params%phiMie0
         end if
 !           find the radius for the cylindrical Mie scattering model
 !           Radius(i,j)=y(i,j)
@@ -1363,11 +1361,11 @@ if(Params%UseMieScattering.eq.1) then
     
 
   !$OMP PARALLEL DEFAULT(NONE) SHARED(x, y, laser, Params, epsilonInf, &
-  !$OMP phiMie, Radius, EintField,EintField2, PolarizationSource)
+  !$OMP phiMie, Radius, EintField,EintField2)
   !$OMP DO COLLAPSE(2)
    do j=1,Params%N
     do i=1,Params%M
-          if(PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
+          if(Params%PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
             EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%k) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
@@ -1910,11 +1908,13 @@ if(Params%UseMieScattering.eq.1) then
     do j=2, Params%N-1 !(optimized)
       do i=2, Params%M-1 !(optimized)
 
-      !TODO: Optimise
-      CFLxT(i,j)=kappae(i,j)*invCe(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-      CFLyT(i,j)=kappae(i,j)*invCe(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
-      CFLxTs(i,j)=kappas(i,j)*invCs(i,j) * dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-      CFLyTs(i,j)=kappas(i,j)*invCs(i,j) * dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+      work = dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+      CFLxT(i,j)  = kappae(i,j)*invCe(i,j) * work
+      CFLxTs(i,j) = kappas(i,j)*invCs(i,j) * work
+
+      work = dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+      CFLyT(i,j)  = kappae(i,j)*invCe(i,j) * work
+      CFLyTs(i,j) = kappas(i,j)*invCs(i,j) * work
         
       !TODO: Optimise
       CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)

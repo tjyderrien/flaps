@@ -71,10 +71,11 @@ module Types_m
   type InputParameters
     integer :: UseMieScattering  ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
     integer :: NeOff, TeOff, HolesOff, TsOff
-
     integer :: M,N !> Mesh dimension
-
     real(8) :: TimeStep, TimeMax
+    real(8) :: phiMie0
+    integer :: PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
+
   end type
 
 end module Types_m

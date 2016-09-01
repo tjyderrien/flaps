@@ -46,6 +46,9 @@ subroutine InitInputParameter( Params )
     Params%HolesOff = 0
     Params%TsOff = 0
 
+    !Mie scattering
+    Params%phiMie0 = 0
+    Params%PolarizationSource = 0
 
 end subroutine InitInputParameter
 
@@ -103,6 +106,16 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%TimeStep <= 0.0d0 .or. Params%TimeMax < 0.0d0 ) then
       print *, 'Bad value for TimeStep or TimeMax'
+      call StopProgram()
+    end if
+
+    if( Params%phiMie0 < 0.0d0 .or. Params%phiMie0 > 360.0d0 ) then
+      print *, 'Bad value for phiMie0'
+      call StopProgram()
+    end if
+
+    if( Params%PolarizationSource < 0.or. Params%PolarizationSource > 1 ) then
+      print *, 'Bad value for PolarizationSource'
       call StopProgram()
     end if
 
@@ -204,6 +217,19 @@ subroutine LoadInputParameters( filename, Params )
                 call ParseDouble( line, Params%TimeMax )
                 goto 999
               endif
+
+              !TsOff
+              if( id .equals. 'PolarizationSource' ) then
+                call ParseInt( line, Params%PolarizationSource )
+                goto 999
+              endif
+
+              !phiMie0
+              if( id .equals. 'phiMie0' ) then
+                call ParseDouble( line, Params%phiMie0 )
+                goto 999
+              endif
+
 
 ! Some examples
 
