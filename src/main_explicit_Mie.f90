@@ -1655,16 +1655,21 @@ if(Params%UseMieScattering.eq.1) then
    NeTotal=0d0; NhTotal=0d0
    
    ! replacing old datas
-   Ue(:,:)=UeNew(:,:)
-   Uh(:,:)=UhNew(:,:)
-   TsPrev(:,:)=TsOld(:,:)
-   TsOld(:,:)=mesh%Ts(:,:)
-   CeOld(:,:)=Ce(:,:)
-   ChOld(:,:)=Ch(:,:)
+   !$OMP DO COLLAPSE(2)
+   do j=1, newmesh%N
+     do i=1, newmesh%M
+       Ue(i,j)     = UeNew(i,j)
+       Uh(i,j)     = UhNew(i,j)
+       TsPrev(i,j) = TsOld(i,j)
+       TsOld(i,j)  = mesh%Ts(i,j)
+       CeOld(i,j)  = Ce(i,j)
+       ChOld(i,j)  = Ch(i,j)
    
-   CsPrev2(:,:)=CsPrev(:,:)
-   CsPrev(:,:)=CsOld(:,:)
-   CsOld(:,:)=Cs(:,:)
+       CsPrev2(i,j)= CsPrev(i,j)
+       CsPrev(i,j) = CsOld(i,j)
+       CsOld(i,j)  = Cs(i,j)
+     end do
+   end do
    
    call copy_mesh(mesh, newmesh)
    !
