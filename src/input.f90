@@ -45,7 +45,11 @@ subroutine InitInputParameter( Params )
     Params%TeOff = 0
     Params%HolesOff = 0
     Params%TsOff = 0
-    Params%DrudeHeating=1         ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
+    Params%DrudeHeating=1       ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
+    Params%ConductivityFix = -1 ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
+                                ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
+                                ! 0: only fourier conductivity
+                                !-1: diffusion and conductivity OFF
 
     !Mie scattering
     Params%phiMie0 = 0
@@ -122,8 +126,13 @@ subroutine CheckValidityInputParameters( Params )
       call StopProgram()
     end if
 
-    if( Params%DrudeHeating < 0.or. Params%DrudeHeating > 1 ) then
+    if( Params%DrudeHeating < 0 .or. Params%DrudeHeating > 1 ) then
       print *, 'Bad value for DrudeHeating'
+      call StopProgram()
+    end if
+
+    if( Params%ConductivityFix < -1 .or. Params%ConductivityFix > 2 ) then
+      print *, 'Bad value for ConductivityFix'
       call StopProgram()
     end if
 
@@ -241,6 +250,12 @@ subroutine LoadInputParameters( filename, Params )
               !DrudeHeating
               if( id .equals. 'DrudeHeating' ) then
                 call ParseInt( line, Params%DrudeHeating )
+                goto 999
+              endif
+
+              !ConductivityFix
+              if( id .equals. 'ConductivityFix' ) then
+                call ParseInt( line, Params%ConductivityFix )
                 goto 999
               endif
 ! Some examples

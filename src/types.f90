@@ -76,7 +76,10 @@ module Types_m
     real(8) :: phiMie0
     integer :: PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
     integer :: DrudeHeating         ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
-
+    integer :: ConductivityFix      ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
+                                    ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
+                                    ! 0: only fourier conductivity
+                                    !-1: diffusion and conductivity OFF
   end type
 
 end module Types_m

@@ -90,11 +90,7 @@ implicit none
                           CrossCoeff=-1d0, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
-    integer(8), parameter::  ConductivityFix=-1, &        ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
-                                                ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson ! 
-                                                ! 0: only fourier conductivity
-                                                !-1: diffusion and conductivity OFF
-                            CouplingDebug=0        ,&        !0: e/h - lattice coupling enabled, 1: disabled
+    integer(8), parameter:: CouplingDebug=0        ,&        !0: e/h - lattice coupling enabled, 1: disabled
                             AugerOff=0       ,&
                             ImpactOff=0       ,&
                             ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
@@ -1721,9 +1717,9 @@ if(Params%UseMieScattering.eq.1) then
    !
    !
    !Computes the diffusion terms for the entire mesh
-   call ComputeDiffusions_batch(mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
+   call ComputeDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
                                 FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
+                                ColFermiHalf, ColFermiMenusHalf)
    !
    !
    !Computes the drif vectors for the entire mesh
@@ -1801,9 +1797,9 @@ if(Params%UseMieScattering.eq.1) then
     !$OMP END DO
 
     !Compute the new conductivites, based on the knowledge of densities and mobilities
-    call ComputeConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+    call ComputeConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                      FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                     ColFermi0, ColFermi1, ColFermi2, ConductivityFix)
+                                     ColFermi0, ColFermi1, ColFermi2)
     !
     ! interpolation bilineaire ponderee par les aires
     call bilinear_interpol_dual(mesh, dual, InvCellVol)

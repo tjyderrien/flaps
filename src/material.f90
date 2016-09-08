@@ -280,28 +280,29 @@
    !-------------------------------------------------------------------------------------
    !> Computes the diffusion terms for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeDiffusions_batch(mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
+    subroutine ComputeDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                       ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
+                                       ColFermiHalf, ColFermiMenusHalf)
       use Maths_m
       use Types_m
       implicit none
 
-      type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(inout) :: diffusionE(mesh%M,mesh%N)
-      real(8),           intent(inout) :: diffusionH(mesh%M,mesh%N)
-      real(8),           intent(in)    :: mobilityE(mesh%M,mesh%N)
-      real(8),           intent(in)    :: mobilityH(mesh%M,mesh%N)
-      real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
-      real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: ConductivityFix, ColFermiMenusHalf, ColFermiHalf
+      type(InputParameters), intent(in)    :: Params
+      type(MeshValues),      intent(in)    :: mesh
+      real(8),               intent(inout) :: diffusionE(mesh%M,mesh%N)
+      real(8),               intent(inout) :: diffusionH(mesh%M,mesh%N)
+      real(8),               intent(in)    :: mobilityE(mesh%M,mesh%N)
+      real(8),               intent(in)    :: mobilityH(mesh%M,mesh%N)
+      real(8),               intent(in)    :: FermiTableE(mesh%M,mesh%N)
+      real(8),               intent(in)    :: FermiTableH(mesh%M,mesh%N)
+      integer(8),            intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+      integer(8),            intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+      integer(8),            intent(in)    :: ColFermiMenusHalf, ColFermiHalf
 
       integer :: i, j
 
       !TODO: This name is not really explicit
-      if(ConductivityFix.eq.-1) then
+      if(Params%ConductivityFix.eq.-1) then
            diffusionE(:,:)=0d0
            diffusionH(:,:)=0d0
            return
