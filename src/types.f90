@@ -75,6 +75,7 @@ module Types_m
     real(8) :: TimeStep, TimeMax
     real(8) :: phiMie0
     integer :: PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
+    integer :: DrudeHeating         ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
 
   end type
 

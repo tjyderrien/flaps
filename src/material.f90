@@ -158,18 +158,18 @@
 
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
-    subroutine DielectricFunctionDrude_batch(mesh, N, Dielectric, absorptionDrude, DrudeHeating, Collision, mass, laser)
+    subroutine DielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, laser)
       use Maths_m
       use Types_m
       implicit none
 
-      type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(in)    :: N(mesh%M,mesh%N)
-      complex(8),        intent(inout) :: Dielectric(mesh%M,mesh%N)
-      real(8),           intent(inout) :: absorptionDrude(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: DrudeHeating
-      real(8),           intent(in)    :: Collision, mass
-      type(LaserParams), intent(in)    :: laser
+      type(InputParameters), intent(in)    :: Params
+      type(MeshValues),      intent(in)    :: mesh
+      real(8),               intent(in)    :: N(mesh%M,mesh%N)
+      complex(8),            intent(inout) :: Dielectric(mesh%M,mesh%N)
+      real(8),               intent(inout) :: absorptionDrude(mesh%M,mesh%N)
+      real(8),               intent(in)    :: Collision, mass
+      type(LaserParams),     intent(in)    :: laser
 
       complex(8) :: coef
       integer :: i, j
@@ -184,7 +184,7 @@
       end do
       !$OMP END DO
 
-      if(DrudeHeating==1) then
+      if(Params%DrudeHeating==1) then
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
@@ -193,7 +193,7 @@
           end do
         end do
         !$OMP END DO
-      else
+      else !This is a debug option, no need to parallelise it!
           absorptionDrude(:,:)=0d0
       end if
 

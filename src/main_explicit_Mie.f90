@@ -90,8 +90,7 @@ implicit none
                           CrossCoeff=-1d0, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
-    integer(8), parameter::  DrudeHeating=1, &        ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
-                            ConductivityFix=-1, &        ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
+    integer(8), parameter::  ConductivityFix=-1, &        ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
                                                 ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson ! 
                                                 ! 0: only fourier conductivity
                                                 !-1: diffusion and conductivity OFF
@@ -1676,9 +1675,9 @@ if(Params%UseMieScattering.eq.1) then
    call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
                                  epsilonInf, nuColl, me, laser)
    !
-   call DielectricFunctionDrude_batch(mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, DrudeHeating, nuColl, me, laser)
+   call DielectricFunctionDrude_batch(Params, mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, laser)
    !
-   call DielectricFunctionDrude_batch(mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, DrudeHeating, nuColl, mh, laser)
+   call DielectricFunctionDrude_batch(Params, mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, nuColl, mh, laser)
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !

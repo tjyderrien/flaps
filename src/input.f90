@@ -45,10 +45,13 @@ subroutine InitInputParameter( Params )
     Params%TeOff = 0
     Params%HolesOff = 0
     Params%TsOff = 0
+    Params%DrudeHeating=1         ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
 
     !Mie scattering
     Params%phiMie0 = 0
     Params%PolarizationSource = 0
+
+
 
 end subroutine InitInputParameter
 
@@ -116,6 +119,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%PolarizationSource < 0.or. Params%PolarizationSource > 1 ) then
       print *, 'Bad value for PolarizationSource'
+      call StopProgram()
+    end if
+
+    if( Params%DrudeHeating < 0.or. Params%DrudeHeating > 1 ) then
+      print *, 'Bad value for DrudeHeating'
       call StopProgram()
     end if
 
@@ -230,7 +238,11 @@ subroutine LoadInputParameters( filename, Params )
                 goto 999
               endif
 
-
+              !DrudeHeating
+              if( id .equals. 'DrudeHeating' ) then
+                call ParseInt( line, Params%DrudeHeating )
+                goto 999
+              endif
 ! Some examples
 
 !              !Type de la base d'orbitales
