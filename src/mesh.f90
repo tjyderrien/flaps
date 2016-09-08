@@ -66,15 +66,23 @@ subroutine copy_mesh(newmesh, oldmesh)
   type(MeshValues), intent(IN)  :: oldmesh
   type(MeshValues), intent(INOUT) :: newmesh
 
+  integer :: i,j
+
  !TODO: Print something to error.dat
   if(newmesh%M /= oldmesh%M .or. newmesh%N /= oldmesh%N ) &
     stop 'Invalid meshes used in copy_mesh'
 
-  newmesh%Te(1:newmesh%M,1:newmesh%N) = oldmesh%Te(1:newmesh%M,1:newmesh%N)
-  newmesh%Th(1:newmesh%M,1:newmesh%N) = oldmesh%Th(1:newmesh%M,1:newmesh%N)
-  newmesh%Ts(1:newmesh%M,1:newmesh%N) = oldmesh%Ts(1:newmesh%M,1:newmesh%N)
-  newmesh%Ne(1:newmesh%M,1:newmesh%N) = oldmesh%Ne(1:newmesh%M,1:newmesh%N)
-  newmesh%Nh(1:newmesh%M,1:newmesh%N) = oldmesh%Nh(1:newmesh%M,1:newmesh%N)
+  !$OMP DO COLLAPSE(2)
+  do j=1, newmesh%N
+    do i=1, newmesh%M
+      newmesh%Te(i,j) = oldmesh%Te(i,j)
+      newmesh%Th(i,j) = oldmesh%Th(i,j)
+      newmesh%Ts(i,j) = oldmesh%Ts(i,j)
+      newmesh%Ne(i,j) = oldmesh%Ne(i,j)
+      newmesh%Nh(i,j) = oldmesh%Nh(i,j)
+    end do
+  end do
+  !$OMP END DO
 
 end subroutine copy_mesh
 
