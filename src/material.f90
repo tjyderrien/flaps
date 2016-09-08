@@ -119,24 +119,6 @@
   end subroutine DensitiesOfState_batch
 
 
-!------------------------------------------------------------------
-    !TODO: Do we need DielectricFunctionDrude? Is it just possible to compute it with epsilonInf=1 ?
-    complex(8) function DielectricFunction(epsilonInf, ne, nuColl, me, laser)
-      use Maths_m
-      use Types_m
-
-      implicit none
-      complex(8), intent(in) ::  epsilonInf
-      real(8), intent(in) ::  ne, nuColl, me
-      type(LaserParams), intent(in) :: laser
-
-      real(8) omegape2
-
-      omegape2=ec*ec*ne/me/epsilon0
-      DielectricFunction=epsilonInf-omegape2*laser%inv_omega*laser%inv_omega/(M_ONE+M_IM*nuColl*laser%inv_omega)
-      return
-    end function DielectricFunction
-
    !------------------------------------------------------------------
    !This routine computes the dielectric function for the entire grid with one call
     subroutine DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
@@ -173,23 +155,6 @@
       !$OMP END DO
 
     end subroutine DielectricFunction_batch
-
-    !------------------------------------------------------------------
-    complex(8) function DielectricFunctionDrude(density, Collision, mass, laser)
-      use Maths_m
-      use Types_m
-
-      implicit none
-
-      real(8), intent(in)           :: density, Collision, mass
-      type(LaserParams), intent(in) :: laser
-
-      real(8) omegape2
-
-      omegape2=ec*ec*density/(mass*epsilon0)
-      DielectricFunctionDrude=M_ONE-M_ONE*omegape2*laser%inv_omega*laser%inv_omega/(M_ONE+M_IM*Collision*laser%inv_omega)
-      return
-    end function DielectricFunctionDrude
 
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
