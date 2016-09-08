@@ -86,7 +86,7 @@
     use Maths_m
     implicit none
     real(8), intent(in) :: mDOS, T
-      DensityOfState = 2d0*(mDOS*kb*T/(2d0*pi*hbar**2))**(1.5d0)
+      DensityOfState = 2d0*(mDOS*kb*T/(2d0*M_PI*hbar**2))**(1.5d0)
       return
     end function DensityOfState
 
@@ -104,8 +104,8 @@
     real(8) :: coefE, coefH
     integer :: i, j
 
-    coefE = meDOS*kb/(2d0*pi*hbar**2)
-    coefH = mhDOS*kb/(2d0*pi*hbar**2)
+    coefE = meDOS*kb/(2d0*M_PI*hbar**2)
+    coefH = mhDOS*kb/(2d0*M_PI*hbar**2)
 
     !$OMP DO COLLAPSE(2)
     do j=1, mesh%N !(optimized)
@@ -221,10 +221,10 @@
 
       if(DrudeHeating==1) then
         !$OMP DO COLLAPSE(2)
-        do j=1, mesh%N !(optimized)
+        do j=1, mesh%N
           do i=1, mesh%M
            ! absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
-            absorptionDrude(i,j)=2d0*laser%k*sqrt((abs(Dielectric(i,j)) - real(Dielectric(i,j)))*0.5d0 )
+            absorptionDrude(i,j)=2d0*laser%k*sqrt( 0.5d0*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
           end do
         end do
         !$OMP END DO

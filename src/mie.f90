@@ -123,9 +123,9 @@ contains
             intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
                             *(exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
                             + I0*1d-4*( &
-        exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*sqrt2ln2))**2)) &
+        exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
+       +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
+       +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
                             ))
             end if
             ! corrections from FDTD calculations and recovering non-linear processes
@@ -450,7 +450,7 @@ contains
 !       write(*,*) "Hankel", order, Hankel1
 
       if(order .lt. 0d0) then
-        Hankel1=exp(M_IM*abs(order)*pi) * Hankel1
+        Hankel1=exp(M_IM*abs(order)*M_PI) * Hankel1
       end if
     return
     end function Hankel1

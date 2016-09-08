@@ -33,7 +33,6 @@ USE OMP_LIB
 ! include 'Bivariate.f'
 ! USE Bivariate
 USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
-!   use control_file !Script provided by Jason Blevins, Ohio State University
 
 use Maths_m
 use Mie_m
@@ -419,9 +418,7 @@ implicit none
                 DielectricDrudeH(1:Params%M,1:Params%N), &
                 EintField(1:Params%M,1:Params%N), EintField2(1:Params%M,1:Params%N))
 
-!******** READ PARAMETER INPUT FILE ***********
-!CALL control_file(phiMie0, PolarizationSource) !read Miescattering parameters into external file
-!write(*,*) "Importing data on Polarization."
+
 !******** READ GMSH MESH FILE ************
 namefile_msh='libs/gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
@@ -536,12 +533,12 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   end if
 
     !TODO: Move to LaserParams
-    sigmaTau=laser%tau/(2d0*sqrt2ln2)
-    sigmaX=laser%spotX/(2d0*sqrt2ln2)
-    sigmaY=laser%spotY/(2d0*sqrt2ln2)
+    sigmaTau=laser%tau/(2d0*M_SQRT2LN2)
+    sigmaX=laser%spotX/(2d0*M_SQRT2LN2)
+    sigmaY=laser%spotY/(2d0*M_SQRT2LN2)
 
     !TODO: Move to LaserParams
-    I0=laser%fluence/laser%tau * sqrt(4d0 * log(2d0) / pi)
+    I0=laser%fluence/laser%tau * sqrt(4d0 * log(2d0) / M_PI)
     
     if(laser%lambda.eq.515d-9) then
       if(Params%PolarizationSource.eq.0) then
@@ -569,24 +566,24 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     end if
 
     !TODO: I think that one invented arrays and loops for handling similar situations ;)
-    sigmaX1=spotX1/(2e0*sqrt2ln2)
-    sigmaY1=spotY1/(2e0*sqrt2ln2)
-    sigmaX2=spotX2/(2e0*sqrt2ln2)
-    sigmaY2=spotY2/(2e0*sqrt2ln2)
-    sigmaX3=spotX3/(2e0*sqrt2ln2)
-    sigmaY3=spotY3/(2e0*sqrt2ln2)
-    sigmaX4=spotX4/(2e0*sqrt2ln2)
-    sigmaY4=spotY4/(2e0*sqrt2ln2)
-    sigmaX5=spotX5/(2e0*sqrt2ln2)
-    sigmaY5=spotY5/(2e0*sqrt2ln2)
-    sigmaX6=spotX6/(2e0*sqrt2ln2)
-    sigmaY6=spotY6/(2e0*sqrt2ln2)
-    sigmaX7=spotX7/(2e0*sqrt2ln2)
-    sigmaY7=spotY7/(2e0*sqrt2ln2)
-    sigmaX8=spotX8/(2e0*sqrt2ln2)
-    sigmaY8=spotY8/(2e0*sqrt2ln2)
-    sigmaX9=spotX9/(2e0*sqrt2ln2)
-    sigmaY9=spotY9/(2e0*sqrt2ln2)
+    sigmaX1=spotX1/(2e0*M_SQRT2LN2)
+    sigmaY1=spotY1/(2e0*M_SQRT2LN2)
+    sigmaX2=spotX2/(2e0*M_SQRT2LN2)
+    sigmaY2=spotY2/(2e0*M_SQRT2LN2)
+    sigmaX3=spotX3/(2e0*M_SQRT2LN2)
+    sigmaY3=spotY3/(2e0*M_SQRT2LN2)
+    sigmaX4=spotX4/(2e0*M_SQRT2LN2)
+    sigmaY4=spotY4/(2e0*M_SQRT2LN2)
+    sigmaX5=spotX5/(2e0*M_SQRT2LN2)
+    sigmaY5=spotY5/(2e0*M_SQRT2LN2)
+    sigmaX6=spotX6/(2e0*M_SQRT2LN2)
+    sigmaY6=spotY6/(2e0*M_SQRT2LN2)
+    sigmaX7=spotX7/(2e0*M_SQRT2LN2)
+    sigmaY7=spotY7/(2e0*M_SQRT2LN2)
+    sigmaX8=spotX8/(2e0*M_SQRT2LN2)
+    sigmaY8=spotY8/(2e0*M_SQRT2LN2)
+    sigmaX9=spotX9/(2e0*M_SQRT2LN2)
+    sigmaY9=spotY9/(2e0*M_SQRT2LN2)
     
     t0=tCenter; x0=laser%xCenter; y0=laser%yCenter;
     
@@ -641,7 +638,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     !boudary definition
     NeedleIndexX=Params%M
     NeedleIndexY=Params%N
-    NeedleAngle=NeedleAngleDeg*pi/180d0
+    NeedleAngle=NeedleAngleDeg*M_DEG2RAD
     NeedleA=NeedleRadius/(tan(NeedleAngle/2d0)**2)
     NeedleB=NeedleRadius/tan(NeedleAngle/2d0)
     Needlet0Limit=acos(NeedleRadius/(NeedleLength*tan(real(NeedleAngle)/2d0)**2+NeedleRadius))
@@ -1132,18 +1129,18 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         
         if(BandBendingInFDTD.eq.1) then
            newmesh%Ne(i,j)=Ne0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
-                    /((DefectThickness)/(2d0*sqrt2ln2))**2)) &
+                    /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
-                    /(2d0*sqrt2ln2))**2)) &
+                    /(2d0*M_SQRT2LN2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
-                    /(2d0*sqrt2ln2))**2)) &
+                    /(2d0*M_SQRT2LN2))**2)) &
                   )
           newmesh%Nh(i,j)=Nh0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
-                    /((DefectThickness)/(2d0*sqrt2ln2))**2)) &
+                    /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
-                    /(2d0*sqrt2ln2))**2)) &
+                    /(2d0*M_SQRT2LN2))**2)) &
                   +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
-                    /(2d0*sqrt2ln2))**2)) &
+                    /(2d0*M_SQRT2LN2))**2)) &
                   )
         else
           newmesh%Ne(i,j)=Ne0
@@ -1343,7 +1340,7 @@ if(Params%UseMieScattering.eq.1) then
   do j=1,Params%N
     do i=1,Params%M
         if(y(i,j)<0d0) then
-          phiMie(i,j)=Params%phiMie0+pi
+          phiMie(i,j)=Params%phiMie0+M_PI
         else
           phiMie(i,j)=Params%phiMie0
         end if

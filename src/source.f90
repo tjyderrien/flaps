@@ -42,8 +42,8 @@ subroutine init_laser( laser )
   laser%xCenter   = 1000d-9         ! X position of the max of the intensity (1030nm: 1um 0um, 515nm: idem, 343nm: 100nm x 200nm)
   laser%yCenter   = 0d0*200d-9      ! Y position of the max of the intensity
 
-  laser%omega     = 2d0*pi*c/laser%lambda !laser pulsation (s**-1)
-  laser%k         = 2d0*pi/laser%lambda
+  laser%omega     = 2d0*M_PI*c/laser%lambda !laser pulsation (s**-1)
+  laser%k         = 2d0*M_PI/laser%lambda
   laser%inv_omega = 1.0d0/laser%omega
   laser%E         = hbar*laser%omega
   laser%inv_E     = 1.0d0/laser%E
