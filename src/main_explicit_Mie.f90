@@ -2077,7 +2077,10 @@ if(Params%UseMieScattering.eq.1) then
 
    call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
 
-  !TODO: Move this to check_divergences
+   !TODO: Move this to check_divergences
+   !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, FermiIndexE, FermiIndexH, &
+   !$OMP FermiRatioE, FermiRatioH, mesh, DOSe, DOSh, t)
+   !$OMP DO COLLAPSE(2)
    do j=1,Params%N
      do i=1,Params%M
 
@@ -2094,7 +2097,8 @@ if(Params%UseMieScattering.eq.1) then
         
      end do
    end do
-
+   !$OMP END DO
+   !$OMP END PARALLEL
 
     !TODO: There should be a module managing the adaptative time step
     ! lets change dt when fast reponse is finished in order to catch the long one.
@@ -2126,7 +2130,6 @@ if(Params%UseMieScattering.eq.1) then
      call flush(Error%unit)
      !
      do i=1,Params%M
-       !
        do j=1,Params%N
          !
          write(Depth%unit,'(46(1E12.5,3x))', advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
@@ -2141,16 +2144,13 @@ if(Params%UseMieScattering.eq.1) then
                         Radius(i,j)
          !
        end do !on Y
-       !
        write(Depth%unit,'(3x)', advance="yes")
-       !
      end do !on X
      !
      call flush(Depth%unit);
      !
      ! writing result for the electrostatic calculations
       do i=1,Mp
-        !
         do j=1,Np
           ! ecriture des donnees dans un fichier different
           write(DepthVessel%unit,889, advance="yes") t, xP(i,j), yP(i,j), real(potential(i,j)), real(ExPoisson(i,j)), & !
@@ -2158,7 +2158,6 @@ if(Params%UseMieScattering.eq.1) then
   889 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, & !TODO: Please use short notation with prenthesis !!
   1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5) 
         end do
-        !
       end do
       !
       call flush(DepthVessel%unit);
@@ -2166,14 +2165,12 @@ if(Params%UseMieScattering.eq.1) then
       ! write the functions on Dual Mesh
       !
       do i=1,Params%M-1
-        !
         do j=1,Params%N-1
           !
           write(DualDepth%unit, '(9(1E12.5, 3x))', advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
                                           dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9
           !
         end do
-        !
       end do
       !
       call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
@@ -2251,8 +2248,9 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
 
     end if
-    
-
+    !
+    !
+    !
   end do !end of time loop
 
   
