@@ -80,6 +80,8 @@ module Types_m
                                     ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
                                     ! 0: only fourier conductivity
                                     !-1: diffusion and conductivity OFF
+    integer :: CouplingDebug        !0: e/h - lattice coupling enabled, 1: disabled
+
   end type
 
 end module Types_m

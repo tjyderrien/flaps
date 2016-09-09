@@ -50,6 +50,8 @@ subroutine InitInputParameter( Params )
                                 ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
                                 ! 0: only fourier conductivity
                                 !-1: diffusion and conductivity OFF
+    Params%CouplingDebug=0      !0: e/h - lattice coupling enabled, 1: disabled
+
 
     !Mie scattering
     Params%phiMie0 = 0
@@ -133,6 +135,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%ConductivityFix < -1 .or. Params%ConductivityFix > 2 ) then
       print *, 'Bad value for ConductivityFix'
+      call StopProgram()
+    end if
+
+     if( Params%CouplingDebug < 0 .or. Params%CouplingDebug > 1 ) then
+      print *, 'Bad value for CouplingDebug'
       call StopProgram()
     end if
 
@@ -258,6 +265,13 @@ subroutine LoadInputParameters( filename, Params )
                 call ParseInt( line, Params%ConductivityFix )
                 goto 999
               endif
+
+              !CouplingDebug
+              if( id .equals. 'CouplingDebug' ) then
+                call ParseInt( line, Params%CouplingDebug )
+                goto 999
+              endif
+
 ! Some examples
 
 !              !Type de la base d'orbitales

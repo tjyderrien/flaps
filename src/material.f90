@@ -521,45 +521,56 @@
    !-------------------------------------------------------------------------------------
    !> Computes the couplings for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, HolesOff)
+    subroutine ComputeCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
       use Maths_m
       use Types_m
       implicit none
 
-      type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(inout) :: CouplingE(mesh%M,mesh%N)
-      real(8),           intent(inout) :: CouplingH(mesh%M,mesh%N)
-      real(8),           intent(in)    :: Ce(mesh%M,mesh%N)
-      real(8),           intent(in)    :: Ch(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: CouplingDebug, HolesOff
-
+      type(InputParameters), intent(in)    :: Params
+      type(MeshValues),      intent(in)    :: mesh
+      real(8),               intent(inout) :: CouplingE(mesh%M,mesh%N)
+      real(8),               intent(inout) :: CouplingH(mesh%M,mesh%N)
+      real(8),               intent(in)    :: Ce(mesh%M,mesh%N)
+      real(8),               intent(in)    :: Ch(mesh%M,mesh%N)
+      !
       integer :: i, j
       real(8) :: nuColleph!        electron-phonon collision frequency
       real(8) :: ephCollisionFrequency
-
-      if(CouplingDebug.eq.1) then
+      !
+      if(Params%CouplingDebug.eq.1) then
           CouplingE(:,:)=0d0
           CouplingH(:,:)=0d0
           return
       end if
-
-      !$OMP DO COLLAPSE(2)
-      do j=1, mesh%N !(optimized)
-        do i=1, mesh%M
+      !
+      if(Params%HolesOff.eq.0) then
+        !
+        !$OMP DO COLLAPSE(2)
+        do j=1, mesh%N !(optimized)
+          do i=1, mesh%M
             ! optical coefficients
-        nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-
-        CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
-        if(HolesOff.eq.0) then
-          CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
-        else
-          CouplingH(i,j)=0d0
-        end if
-
+            nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
+            CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
+            CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
+          end do
         end do
-      end do
-      !$OMP END DO
-
+        !$OMP END DO
+        !
+      else
+       !
+       !$OMP DO COLLAPSE(2)
+       do j=1, mesh%N !(optimized)
+         do i=1, mesh%M
+           ! optical coefficients
+           nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
+           CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
+           CouplingH(i,j)=0d0
+         end do
+       end do
+       !$OMP END DO
+       !
+      end if
+    !
     end subroutine ComputeCouplings_batch
 
     real(8) function OnePhotonIonizationRate()

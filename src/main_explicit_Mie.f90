@@ -90,8 +90,7 @@ implicit none
                           CrossCoeff=-1d0, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
-    integer(8), parameter:: CouplingDebug=0        ,&        !0: e/h - lattice coupling enabled, 1: disabled
-                            AugerOff=0       ,&
+    integer(8), parameter:: AugerOff=0       ,&
                             ImpactOff=0       ,&
                             ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
                             DisableCrossDiffusion=0, &
@@ -1732,7 +1731,7 @@ if(Params%UseMieScattering.eq.1) then
                                     ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta)
    !
    !Computes the couplings for the entire mesh
-   call ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, Params%HolesOff)
+   call ComputeCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
    !
    !
    ! calculation of sources
