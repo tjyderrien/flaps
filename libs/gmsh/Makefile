@@ -19,7 +19,7 @@
 LIB		= 
 INC		=
 
-F90FLAGS	= -O2 -C -g -pg #-w -backtrace
+F90FLAGS	= -O2 -g -pg #-w -backtrace
 F90			= gfortran #ifort 
 
 LD		= $(F90)
@@ -39,7 +39,7 @@ SRC = $(SRC_MOD)
 
 # Compilation
 #------------
-all: clean $(OBJ) $(EXEC)
+all: clean $(OBJ)  $(EXEC)
 
 $(EXEC) : $(OBJS)
 	@echo "Loading $@ ..."

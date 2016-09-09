@@ -1,5 +1,5 @@
 CC=gfortran #ifort
-LDFLAGS=-O3 #-g -pg
+LDFLAGS=-O2 -g -pg
 
 SRC=Bivariate.f zeroin.f
 OBJ=Bivariate.o zeroin.o

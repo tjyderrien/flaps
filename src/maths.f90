@@ -260,10 +260,10 @@ end module Maths_m
       end if
     end function Tangent
 
-   real(8) function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
+   pure real(8) function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
      implicit none
     ! works with convex elements!
-      real(8) x1, y1, x2, y2, x3,y3,x4,y4
+      real(8), intent(in) ::  x1, y1, x2, y2, x3,y3,x4,y4
 !       AreaElement=0.5d0*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
       AreaElement=0.5d0*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
     end function AreaElement
