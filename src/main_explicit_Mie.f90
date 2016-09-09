@@ -90,8 +90,7 @@ implicit none
                           CrossCoeff=-1d0, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
-    integer(8), parameter:: AugerOff=0       ,&
-                            ImpactOff=0       ,&
+    integer(8), parameter:: ImpactOff=0       ,&
                             ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
                             DisableCrossDiffusion=0, &
                             PoissonOn=0       ,& !0: Poisson solver is OFF. 1: Calculation of potential ON. 
@@ -518,7 +517,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 ! test field
 !TODO: move to material.f90
-  if(AugerOff.eq.0) then
+  if(Params%AugerOff.eq.0) then
     AugerRateE=2.3d-43
     AugerRateH=7.8d-44
   else

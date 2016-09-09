@@ -45,6 +45,8 @@ subroutine InitInputParameter( Params )
     Params%TeOff = 0
     Params%HolesOff = 0
     Params%TsOff = 0
+    Params%AugerOff=0
+
     Params%DrudeHeating=1       ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
     Params%ConductivityFix = -1 ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
                                 ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
@@ -138,8 +140,13 @@ subroutine CheckValidityInputParameters( Params )
       call StopProgram()
     end if
 
-     if( Params%CouplingDebug < 0 .or. Params%CouplingDebug > 1 ) then
+    if( Params%CouplingDebug < 0 .or. Params%CouplingDebug > 1 ) then
       print *, 'Bad value for CouplingDebug'
+      call StopProgram()
+    end if
+
+    if( Params%AugerOff < 0 .or. Params%AugerOff > 1 ) then
+      print *, 'Bad value for AugerOff'
       call StopProgram()
     end if
 
@@ -269,6 +276,12 @@ subroutine LoadInputParameters( filename, Params )
               !CouplingDebug
               if( id .equals. 'CouplingDebug' ) then
                 call ParseInt( line, Params%CouplingDebug )
+                goto 999
+              endif
+
+              !AugerOff
+              if( id .equals. 'AugerOff' ) then
+                call ParseInt( line, Params%AugerOff )
                 goto 999
               endif
 
