@@ -342,9 +342,15 @@
       integer :: i, j
 
       if(DriftOn.eq.0) then
-          JeX(:,:)=0d0; JeY(:,:)=0d0;
-          JhX(:,:)=0d0; JhY(:,:)=0d0;
-          return
+        !$OMP DO COLLAPSE(2)
+        do j=1, mesh%N !(optimized)
+          do i=1, mesh%M
+            JeX(i,j)=0d0; JeY(i,j)=0d0;
+            JhX(i,j)=0d0; JhY(i,j)=0d0;
+          end do
+        end do
+        !$OMP END DO
+        return
       endif
 
       !$OMP DO COLLAPSE(2)
@@ -458,9 +464,15 @@
       real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
 
       if(ConductivityFix.eq.-1) then
-        kappae(:,:) = 0.d0
-        kappah(:,:) = 0.d0
-        kappas(:,:) = 0.d0
+        !$OMP DO COLLAPSE(2)
+        do j=1, mesh%N
+          do i=1, mesh%M
+            kappae(i,j) = 0.d0
+            kappah(i,j) = 0.d0
+            kappas(i,j) = 0.d0
+          end do
+        end do
+        !$OMP END DO
         return
       else if (ConductivityFix .eq. 0 ) then
         !$OMP DO COLLAPSE(2)
@@ -573,7 +585,7 @@
     !
     end subroutine ComputeCouplings_batch
 
-    real(8) function OnePhotonIonizationRate()
+    pure real(8) function OnePhotonIonizationRate()
       implicit none
 
 !       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
@@ -581,7 +593,7 @@
       return
     end function OnePhotonIonizationRate
 
-     real(8) function TwoPhotonIonizationRate(lambda)
+    pure real(8) function TwoPhotonIonizationRate(lambda)
       implicit none
 
       real(8), intent(in) :: lambda

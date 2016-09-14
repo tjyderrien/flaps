@@ -1916,10 +1916,10 @@ if(Params%UseMieScattering.eq.1) then
       CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
         
       !TODO:This is only needed for a reduction, so lets do the reduction directly here
-      TotalElectrons(i,j)=newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                      -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-      TotalHoles(i,j)=newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                      -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+      TotalElectrons(i,j)= newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+      TotalHoles(i,j)    =newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
         
         
       ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
