@@ -411,6 +411,20 @@ implicit none
                 DielectricDrudeH(1:Params%M,1:Params%N), &
                 EintField(1:Params%M,1:Params%N), EintField2(1:Params%M,1:Params%N))
 
+ !Initialisation of data
+ CouplingE(:,:)=0d0
+ CouplingH(:,:)=0d0
+ kappae(:,:) = 0.d0
+ kappah(:,:) = 0.d0
+ kappas(:,:) = 0.d0
+ JeX(:,:)=0d0
+ JeY(:,:)=0d0
+ JhX(:,:)=0d0
+ JhY(:,:)=0d0
+ diffusionE(:,:)=0d0
+ diffusionH(:,:)=0d0
+ absorptionDrudeE(:,:) = 0d0
+ absorptionDrudeH(:,:) = 0d0
 
 !******** READ GMSH MESH FILE ************
 namefile_msh='libs/gmsh/mesh.msh'
@@ -1669,9 +1683,9 @@ if(Params%UseMieScattering.eq.1) then
    call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
                                  epsilonInf, nuColl, me, laser)
    !
-   call DielectricFunctionDrude_batch(Params, mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, laser)
+   call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, laser)
    !
-   call DielectricFunctionDrude_batch(Params, mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, nuColl, mh, laser)
+   call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, nuColl, mh, laser)
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
@@ -1715,13 +1729,13 @@ if(Params%UseMieScattering.eq.1) then
    !
    !
    !Computes the diffusion terms for the entire mesh
-   call ComputeDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
+   call UpdateDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
                                 FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                 ColFermiHalf, ColFermiMenusHalf)
    !
    !
    !Computes the drif vectors for the entire mesh
-   call ComputeDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
+   call UpdateDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
    !
    !
    ! Computes the electron, hole and lattice heat capacities for the entire mesh
@@ -1729,8 +1743,8 @@ if(Params%UseMieScattering.eq.1) then
                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                     ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta)
    !
-   !Computes the couplings for the entire mesh
-   call ComputeCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
+   !Updates the couplings for the entire mesh
+   call UpdateCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
    !
    !
    ! calculation of sources
@@ -1795,7 +1809,7 @@ if(Params%UseMieScattering.eq.1) then
     !$OMP END DO
 
     !Compute the new conductivites, based on the knowledge of densities and mobilities
-    call ComputeConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+    call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                      FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                      ColFermi0, ColFermi1, ColFermi2)
     !

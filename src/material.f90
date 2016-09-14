@@ -158,7 +158,7 @@
 
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
-    subroutine DielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, laser)
+    subroutine ComputeDielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, laser)
       use Maths_m
       use Types_m
       implicit none
@@ -193,11 +193,9 @@
           end do
         end do
         !$OMP END DO
-      else !This is a debug option, no need to parallelise it!
-          absorptionDrude(:,:)=0d0
       end if
 
-    end subroutine DielectricFunctionDrude_batch
+    end subroutine ComputeDielectricFunctionDrude_batch
 
 
 !------------------------------------------------------------------
@@ -208,8 +206,9 @@
 
       real(8), intent(in) :: ne
 
-      real(8), parameter :: nth=6.02d26 !m-3 (Sjodin, PRL 1998)
-      ephCollisionFrequency=1.0d0/((240d-15)*(1d0+(ne/nth)**2))
+      real(8), parameter :: inv_nth=1.0d0/6.02d26 !inversion of m-3 (Sjodin, PRL 1998)
+
+      ephCollisionFrequency=1.0d0/((240d-15)*(1d0+(ne*inv_nth)**2))
 !       CollisionFrequency=1d14 !
       ! CollisionFrequency=1d13 !
       !CollisionFrequency=5d13 !
@@ -233,11 +232,13 @@
       real(8), intent(in)    :: Te, Eg
       integer(8), intent(in) :: ImpactOff
 
-      ImpactIonizationRate = 3.6d10*exp(-1.5d0*Eg/kb/Te)
       if(ImpactOff.eq.1) then !TODO: This is dirty, should be putted outside
         ImpactIonizationRate=0d0
+        return
       end if
-      return
+
+      ImpactIonizationRate = 3.6d10*exp(-1.5d0*Eg/kb/Te)
+
     end function ImpactIonizationRate
 
 
@@ -280,7 +281,7 @@
    !-------------------------------------------------------------------------------------
    !> Computes the diffusion terms for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
+    subroutine UpdateDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                        ColFermiHalf, ColFermiMenusHalf)
       use Maths_m
@@ -303,8 +304,6 @@
 
       !TODO: This name is not really explicit
       if(Params%ConductivityFix.eq.-1) then
-           diffusionE(:,:)=0d0
-           diffusionH(:,:)=0d0
            return
       end if
 
@@ -320,12 +319,12 @@
       end do
       !$OMP END DO
 
-    end subroutine ComputeDiffusions_batch
+    end subroutine UpdateDiffusions_batch
 
    !-------------------------------------------------------------------------------------
    !> Computes the drif vectors for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
+    subroutine UpdateDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
       use Maths_m
       use Types_m
       implicit none
@@ -341,15 +340,7 @@
 
       integer :: i, j
 
-      if(DriftOn.eq.0) then
-        !$OMP DO COLLAPSE(2)
-        do j=1, mesh%N !(optimized)
-          do i=1, mesh%M
-            JeX(i,j)=0d0; JeY(i,j)=0d0;
-            JhX(i,j)=0d0; JhY(i,j)=0d0;
-          end do
-        end do
-        !$OMP END DO
+      if(DriftOn.eq.0) then !No need to update these values
         return
       endif
 
@@ -364,7 +355,7 @@
       end do
       !$OMP END DO
 
-    end subroutine ComputeDriftVectors_batch
+    end subroutine UpdateDriftVectors_batch
 
    !-------------------------------------------------------------------------------------
    !> Computes the electron, hole and lattice heat capacities for the entire mesh
@@ -432,9 +423,9 @@
       end function LatticeHeatCapacity
 
    !-------------------------------------------------------------------------------------
-   !> Computes the conductivities for the entire mesh
+   !> Updates the conductivities for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+    subroutine UpdateConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                            ColFermi0, ColFermi1, ColFermi2, ConductivityFix)
       use Maths_m
@@ -463,16 +454,7 @@
       real(8), parameter :: ee = -.4756634637d0
       real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
 
-      if(ConductivityFix.eq.-1) then
-        !$OMP DO COLLAPSE(2)
-        do j=1, mesh%N
-          do i=1, mesh%M
-            kappae(i,j) = 0.d0
-            kappah(i,j) = 0.d0
-            kappas(i,j) = 0.d0
-          end do
-        end do
-        !$OMP END DO
+      if(ConductivityFix.eq.-1) then !No need to update the conductivity
         return
       else if (ConductivityFix .eq. 0 ) then
         !$OMP DO COLLAPSE(2)
@@ -528,12 +510,12 @@
 !      !$OMP END DO
     end if
 
-    end subroutine ComputeConductivities_batch
+    end subroutine UpdateConductivities_batch
 
    !-------------------------------------------------------------------------------------
    !> Computes the couplings for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
+    subroutine UpdateCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
       use Maths_m
       use Types_m
       implicit none
@@ -549,9 +531,7 @@
       real(8) :: nuColleph!        electron-phonon collision frequency
       real(8) :: ephCollisionFrequency
       !
-      if(Params%CouplingDebug.eq.1) then
-          CouplingE(:,:)=0d0
-          CouplingH(:,:)=0d0
+      if(Params%CouplingDebug.eq.1) then !No need to update the couplings, as they are zero
           return
       end if
       !
@@ -568,7 +548,7 @@
         end do
         !$OMP END DO
         !
-      else
+      else !In this case no need to update CouplingH
        !
        !$OMP DO COLLAPSE(2)
        do j=1, mesh%N !(optimized)
@@ -576,14 +556,13 @@
            ! optical coefficients
            nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
            CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
-           CouplingH(i,j)=0d0
          end do
        end do
        !$OMP END DO
        !
       end if
     !
-    end subroutine ComputeCouplings_batch
+    end subroutine UpdateCouplings_batch
 
     pure real(8) function OnePhotonIonizationRate()
       implicit none
