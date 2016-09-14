@@ -1603,25 +1603,6 @@ if(Params%UseMieScattering.eq.1) then
   do nbiter=1, nmax
     
     t=t+dt; 
-    if(mod(nbiter,iterOut).eq.0) then 
-      write(*,*) "Time=", t, "Intensity=", maxIntensity
-      write(*,*) minTe, "< Te < ", maxTe
-      write(*,*) minTh, "< Th < ", maxTh
-      write(*,*) minTs, "< Ts <", maxTs
-      write(*,*) minNe, "< Ne <", maxNe
-      write(*,*) minNh, "< Nh <", maxNh
-      write(*,*) "CFL_Te=", maxCFLxT+maxCFLyT, "maxCFL_Ne=", maxCFLxN+maxCFLyN, &
-                   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, &
-                   "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
-      write(*,*) "CFL_Limit=", maxCFL
-      write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
-
-
-    end if
-    
-    maxIntensity=0d0; maxTe=0d0; minTe=1d10; maxTh=0d0; minTh=1d10; maxTs=0d0; minTs=1d10; 
-    maxNe=0d0; minNe=1d50; maxNh=0d0; minNh=1d50; maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; 
-    maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
     
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP& mesh, newmesh, dual, intensityDual, laser, Params, I0, &
@@ -1958,94 +1939,109 @@ if(Params%UseMieScattering.eq.1) then
 !     ElectronEnergy=0d0
 !     HoleEnergy=0d0
 !     LatticeEnergy=0d0
-    
+
     maxCFLxN   = maxval(CFLxN)
     maxCFLyN   = maxval(CFLyN)
     maxCFLxT   = maxval(CFLxT)
     maxCFLyT   = maxval(CFLyT)
     maxCFLxTs  = maxval(CFLxTs)
     maxCFLyTs  = maxval(CFLyTs)
-    maxTe      = maxval(newmesh%Te)
-    minTe      = minval(newmesh%Te)
-    maxTh      = maxval(newmesh%Th)
-    minTh      = minval(newmesh%Th)
-    maxTs      = maxval(newmesh%Ts)
-    minTs      = minval(newmesh%Ts)
-    maxNe      = maxval(newmesh%Ne)
-    minNe      = minval(newmesh%Ne)
-    maxNh      = maxval(newmesh%Nh)
-    minNh      = minval(newmesh%Nh)
-    maxIntensity = maxval(intensity)
-    maxSourceE = maxval(SourceE)
-    maxGainsE  = maxval(GainsE)
-    maxSourceH = maxval(SourceH)
-    maxGainsH  = maxval(GainsH)
-    maxGap     = maxval(Egap)
 
-    maxFermiIndexE = maxval(FermiIndexE)
-    maxFermiIndexH = maxval(FermiIndexH)
+    !Check and control quantity are computed only when needed
+    if(mod(nbiter,iterOut).eq.0) then
 
+      maxIntensity = maxval(intensity)
+      maxTe      = maxval(newmesh%Te)
+      minTe      = minval(newmesh%Te)
+      maxTh      = maxval(newmesh%Th)
+      minTh      = minval(newmesh%Th)
+      maxTs      = maxval(newmesh%Ts)
+      minTs      = minval(newmesh%Ts)
+      maxNe      = maxval(newmesh%Ne)
+      minNe      = minval(newmesh%Ne)
+      maxNh      = maxval(newmesh%Nh)
+      minNh      = minval(newmesh%Nh)
+      maxSourceE = maxval(SourceE)
+      maxGainsE  = maxval(GainsE)
+      maxSourceH = maxval(SourceH)
+      maxGainsH  = maxval(GainsH)
+      maxGap     = maxval(Egap)
 
-    TotalMeshVolume=0d0
-    !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
-    !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume, TotalNumOfH, TotalElectrons, &
-    !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
-    !$OMP DO COLLAPSE(2) REDUCTION(+:NeTotal,NhTotal,TotalNumOfE, TotalNumOfH,  &
-    !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume)
-    do j=1,mesh%N
-      do i=1,mesh%M
-        NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
-        NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
-        TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
-        TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
-        TotalThermalEnergy=TotalThermalEnergy+ThermalEnergy(i,j)
-        TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
-        TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
+      maxFermiIndexE = maxval(FermiIndexE)
+      maxFermiIndexH = maxval(FermiIndexH)
+
+      write(*,*) "Time=", t, "Intensity=", maxIntensity
+      write(*,*) minTe, "< Te < ", maxTe
+      write(*,*) minTh, "< Th < ", maxTh
+      write(*,*) minTs, "< Ts <", maxTs
+      write(*,*) minNe, "< Ne <", maxNe
+      write(*,*) minNh, "< Nh <", maxNh
+      write(*,*) "CFL_Te=", maxCFLxT+maxCFLyT, "maxCFL_Ne=", maxCFLxN+maxCFLyN, &
+                   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, &
+                   "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
+      write(*,*) "CFL_Limit=", maxCFL
+      write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
+
+      TotalMeshVolume=0d0
+      !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
+      !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume, TotalNumOfH, TotalElectrons, &
+      !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
+      !$OMP DO COLLAPSE(2) REDUCTION(+:NeTotal,NhTotal,TotalNumOfE, TotalNumOfH,  &
+      !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume)
+      do j=1,mesh%N
+        do i=1,mesh%M
+          NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
+          NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
+          TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
+          TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
+          TotalThermalEnergy=TotalThermalEnergy+ThermalEnergy(i,j)
+          TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
+          TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
+       end do
      end do
-   end do
-   !$OMP END DO
-   !$OMP END PARALLEL
+     !$OMP END DO
+     !$OMP END PARALLEL
 
-    work = I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*dt
-    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params,OnePhotonIonizationRate0, absorptionDrudeE, &
-    !$OMP absorptionDrudeH, OpticalIndex, CellVol, work, LaserIntensityEnergy )
-    !$OMP DO COLLAPSE(2) REDUCTION(+:LaserIntensityEnergy)
-    do j=1,Params%N
-      do i=1,Params%M
+      work = I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*dt
+      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params,OnePhotonIonizationRate0, absorptionDrudeE, &
+      !$OMP absorptionDrudeH, OpticalIndex, CellVol, work, LaserIntensityEnergy )
+      !$OMP DO COLLAPSE(2) REDUCTION(+:LaserIntensityEnergy)
+      do j=1,Params%N
+        do i=1,Params%M
            LaserIntensityEnergy = LaserIntensityEnergy &
                +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*OpticalIndex(i,j) &
                   *CellVol(i,j)*work
+        end do
       end do
-    end do
-   !$OMP END DO
-   !$OMP END PARALLEL
+     !$OMP END DO
+     !$OMP END PARALLEL
 
-   if(t > 100d0*laser%tau) then
-    !$OMP PARALLEL DO DEFAULT(NONE) SHARED(mesh,MaxHeating, MaxHeatingTime, t, Params ) &
-    !$OMP COLLAPSE(2)
-     do j=1,Params%N
-       do i=1,Params%M
-         if(MaxHeating(i,j) < mesh%Ts(i,j)) then
-           MaxHeating(i,j)=mesh%Ts(i,j)
-           MaxHeatingTime(i,j)=t
-         end if
+     if(t > 100d0*laser%tau) then
+       !$OMP PARALLEL DO DEFAULT(NONE) SHARED(mesh,MaxHeating, MaxHeatingTime, t, Params ) &
+       !$OMP COLLAPSE(2)
+       do j=1,Params%N
+         do i=1,Params%M
+           if(MaxHeating(i,j) < mesh%Ts(i,j)) then
+             MaxHeating(i,j)=mesh%Ts(i,j)
+             MaxHeatingTime(i,j)=t
+           end if
+         end do
        end do
-     end do
-     !$OMP END PARALLEL DO
-   endif
+       !$OMP END PARALLEL DO
+     endif
 
-   ! calculation of the absorbed laser energy involved in the simulated slice !
-   IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(1,Params%N/2) &
+     ! calculation of the absorbed laser energy involved in the simulated slice !
+     IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(1,Params%N/2) &
                   +absorptionDrudeH(1,Params%N/2))*intensity(1,Params%N/2)*CellVol(1,Params%N/2)*dt
 
 
-    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, Egap, &
-    !$OMP Ce, CeOld, Ch, ChOld, Cs, CsOld, OpticalIndex, CellVol, &
-    !$OMP ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy) &
-    !$OMP PRIVATE(work)
-    !$OMP DO COLLAPSE(2) REDUCTION(+:ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy)
-    do j=1,Params%N
-      do i=1,Params%M
+      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, Egap, &
+      !$OMP Ce, CeOld, Ch, ChOld, Cs, CsOld, OpticalIndex, CellVol, &
+      !$OMP ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy) &
+      !$OMP PRIVATE(work)
+      !$OMP DO COLLAPSE(2) REDUCTION(+:ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy)
+      do j=1,Params%N
+        do i=1,Params%M
         
 !         if(ConductivityFix.eq.-1) then
 !            TeNew(i,j)=Tout; ThNew(i,j)=Tout; 
@@ -2056,53 +2052,52 @@ if(Params%UseMieScattering.eq.1) then
 !         HoleEnergy=HoleEnergy+Ch(i,j)*Th(i,j)*CellVol(i,j)
 !         LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
 
-        work = EgapValue(newmesh%Ne(i,j),newmesh%Ts(i,j)) - Egap(i,j)
-        ! calculation of the energy contained in the solid
-        ElectronEnergy=ElectronEnergy &
-          + (Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
-          + (mesh%Ne(i,j)*work  &
+          work = EgapValue(newmesh%Ne(i,j),newmesh%Ts(i,j)) - Egap(i,j)
+          ! calculation of the energy contained in the solid
+          ElectronEnergy=ElectronEnergy &
+            + (Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
+            + (mesh%Ne(i,j)*work  &
               + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
               
-        ElectronKineticEnergy=ElectronKineticEnergy &
+          ElectronKineticEnergy=ElectronKineticEnergy &
                    +(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
-        ElectronPotentialEnergy=ElectronPotentialEnergy &
+          ElectronPotentialEnergy=ElectronPotentialEnergy &
                    +(mesh%Ne(i,j)*work  &
                    + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
 !         ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
-        
-        HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
-        
-        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
 
+          HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
+        
+          LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
+
+       end do
      end do
-   end do
-   !$OMP END DO
-   !$OMP END PARALLEL
+     !$OMP END DO
+     !$OMP END PARALLEL
 
-   call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
+     call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
 
-   !TODO: Move this to check_divergences
-   !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, FermiIndexE, FermiIndexH, &
-   !$OMP FermiRatioE, FermiRatioH, mesh, DOSe, DOSh, t)
-   !$OMP DO COLLAPSE(2)
-   do j=1,Params%N
-     do i=1,Params%M
+     !TODO: Move this to check_divergences
+     !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, FermiIndexE, FermiIndexH, &
+     !$OMP FermiRatioE, FermiRatioH, mesh, DOSe, DOSh, t)
+     !$OMP DO COLLAPSE(2)
+     do j=1,Params%N
+       do i=1,Params%M
 
-        if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < 1d0) then
-          write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
-        end if
-        if(real(FermiIndexH(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexH(i,j)) < 1d0) then
-          write(*,*) "t,i,j,FermiIndexH(i,j)=", t,i,j,FermiIndexH(i,j)
-        end if
-        
-        if(real(FermiRatioE(i,j)) < 0d0 .OR. real(FermiRatioH(i,j)) < 0d0) then
-          write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
-        end if
-        
+         if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < 1d0) then
+           write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
+         end if
+         if(real(FermiIndexH(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexH(i,j)) < 1d0) then
+           write(*,*) "t,i,j,FermiIndexH(i,j)=", t,i,j,FermiIndexH(i,j)
+         end if
+         if(real(FermiRatioE(i,j)) < 0d0 .OR. real(FermiRatioH(i,j)) < 0d0) then
+           write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
+         end if
+       end do
      end do
-   end do
-   !$OMP END DO
-   !$OMP END PARALLEL
+     !$OMP END DO
+     !$OMP END PARALLEL
+   end if
 
     !TODO: There should be a module managing the adaptative time step
     ! lets change dt when fast reponse is finished in order to catch the long one.
