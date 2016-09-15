@@ -165,7 +165,6 @@ implicit none
                 xDualNW, yDualNW, &
                 xDual, yDual, &
                 CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
-                ThermalEnergy, LaserEnergy, &
                 TotalElectrons, TotalHoles, &
                 DOSe, DOSh, &
                 FermiRatioE, FermiRatioH, &
@@ -373,7 +372,6 @@ implicit none
                 CFLxT(1:Params%M, 1:Params%N), CFLyT(1:Params%M, 1:Params%N), &
                 CFLxN(1:Params%M, 1:Params%N), CFLyN(1:Params%M, 1:Params%N), &
                 CFLxTs(1:Params%M,1:Params%N), CFLyTs(1:Params%M,1:Params%N), &
-                ThermalEnergy(1:Params%M, 1:Params%N), LaserEnergy(1:Params%M, 1:Params%N), &
                 TotalElectrons(1:Params%M, 1:Params%N), TotalHoles(1:Params%M, 1:Params%N), &
                 DOSe(1:Params%M, 1:Params%N), DOSh(1:Params%M, 1:Params%N), &
                 FermiRatioE(1:Params%M,1:Params%N), FermiRatioH(1:Params%M,1:Params%N), &
@@ -1610,7 +1608,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
    !$OMP& mobilityE, mobilityH, Egap, me, mh, meDOS, mhDOS, DOSe, DOSh, &
    !$OMP& SourceE, SourceH, SourceUe, SourceUh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
-   !$OMP& ThermalEnergy, LaserEnergy, epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
+   !$OMP& epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
    !$OMP& JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, & !Amatrix
    !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
    !$OMP& NormalN, NormalS, NormalE, NormalW, &
@@ -1631,7 +1629,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& I8, I9, OpticalIndex, OpticalDamping, &
    !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
-   !$OMP& Mp, Np, invCe, invCh, invCs, nuColl, TotalElectrons, TotalHoles) &
+   !$OMP& Mp, Np, invCe, invCh, invCs, nuColl) &
    !$OMP& PRIVATE(work)
 
 
@@ -1851,21 +1849,6 @@ if(Params%UseMieScattering.eq.1) then
        CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
        CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
        !
-       !TODO:This is only needed for a reduction, so lets do the reduction directly here
-       TotalElectrons(i,j)= newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-       TotalHoles(i,j)    =newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-       !
-       !
-       ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
-       !
-       !
-       work = intensity(i,j)/(1d0-reflectivity(i,j))
-       LaserEnergy(i,j) = OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
-                       + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
-                  + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
-       !
      end do
    end do
    !$OMP END DO
@@ -1918,20 +1901,46 @@ if(Params%UseMieScattering.eq.1) then
      write(*,*) "CFL_Limit=", maxCFL
      write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
 
+     !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, x, y, TotalElectrons, TotalHoles, &
+     !$OMP Ce, Ch, Cs, reflectivity, intensity, absorptionDrudeE, TotalThermalEnergy, &
+     !$OMP absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, TotalLaserEnergy ) &
+     !$OMP PRIVATE(work)
+     !$OMP DO COLLAPSE(2) REDUCTION(+:TotalLaserEnergy, TotalThermalEnergy)
+     do j=2, Params%N-1 !(optimized)
+       do i=2, Params%M-1 !(optimized)
+         !
+         !TODO:This is only needed for a reduction, so lets do the reduction directly here
+         TotalElectrons(i,j)= newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                            -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+         TotalHoles(i,j)    =newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                            -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+         !
+         !
+         TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
+         !
+         !
+         work = intensity(i,j)/(1d0-reflectivity(i,j))
+         TotalLaserEnergy = TotalLaserEnergy + &
+                         OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
+                       + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
+                  + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
+       end do
+     end do
+     !$OMP END DO
+     !$OMP END PARALLEL
+
      TotalMeshVolume=0d0
      !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
-     !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume, TotalNumOfH, TotalElectrons, &
-     !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
+     !$OMP TotalMeshVolume, TotalNumOfH, TotalElectrons, &
+     !$OMP TotalHoles)
      !$OMP DO COLLAPSE(2) REDUCTION(+:NeTotal,NhTotal,TotalNumOfE, TotalNumOfH,  &
-     !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume)
+     !$OMP TotalMeshVolume)
      do j=1,mesh%N
        do i=1,mesh%M
          NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
          NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
          TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
          TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
-         TotalThermalEnergy=TotalThermalEnergy+ThermalEnergy(i,j)
-         TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
          TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
       end do
     end do
