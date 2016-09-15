@@ -1901,6 +1901,9 @@ if(Params%UseMieScattering.eq.1) then
      write(*,*) "CFL_Limit=", maxCFL
      write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
 
+     TotalThermalEnergy = 0.0d0
+     TotalLaserEnergy = 0.0d0
+
      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, x, y, TotalElectrons, TotalHoles, &
      !$OMP Ce, Ch, Cs, reflectivity, intensity, absorptionDrudeE, TotalThermalEnergy, &
      !$OMP absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, TotalLaserEnergy ) &
