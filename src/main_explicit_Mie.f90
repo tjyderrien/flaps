@@ -209,8 +209,6 @@ implicit none
                 FermiIndexE, FermiIndexH, &
                 MeshVertice ! data from the GMSH file
     
-    real(8) Int2
-    
     real(8), allocatable, target :: FermiTableE(:,:),&
                                      FermiTableH(:,:),& !reduced Fermi level for electrons and holes
                                      Bvector(:),         &
@@ -1634,7 +1632,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
    !$OMP& Mp, Np, invCe, invCh, invCs, nuColl, TotalElectrons, TotalHoles) &
-   !$OMP& PRIVATE(Int2, work)
+   !$OMP& PRIVATE(work)
 
 
    NeTotal=0d0; NhTotal=0d0
@@ -1728,311 +1726,249 @@ if(Params%UseMieScattering.eq.1) then
    call UpdateCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
    !
    !
-   ! calculation of sources
-   !$OMP DO  COLLAPSE(2)
-   do j=1,Params%N
-     do i=1,Params%M
+   !Computes the Sources Gains and Losses terms for electron and holes
+   call ComputeGainsAndLosses(Params, mesh, laser, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+                              absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
+                              GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
+   !
+   !Compute the new conductivites, based on the knowledge of densities and mobilities
+   call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                     ColFermi0, ColFermi1, ColFermi2)
+   !
+   ! interpolation bilineaire ponderee par les aires
+   call bilinear_interpol_dual(mesh, dual, InvCellVol)
+   !
+   !
+   ! solving the 2D problem
+   !
+   !
+   !
+   if(Params%NeOff.eq.0) then
+     call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
+                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                     ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+   else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
+     newmesh%Ne(:,:)=mesh%Ne(:,:)
+     newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
+   end if
+   !
+   if(Params%HolesOff.eq.0 .AND. Params%NeOff.eq.0) then
+     call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
+                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                     ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+   endif
+   !
+   !
+   !
+   if(Params%TeOff.ne.1) then
+     !
+     if(ConvectionEnergy.eq.0) then
+       !
+       call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, invCe, &
+                   ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                          &
+                   ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N,                          &
+                   ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                          &
+                   ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+       !
+     else
+       !
+       call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
+                   invCe, Ue, UeNew, VeX, VeY, CellVol,                                              &
+                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                   CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
+                   NormalN, NormalS, NormalE, NormalW  )
+       !
+       !TODO: Should probably not be here
+       call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
+                   invCh, Uh, UhNew, VhX, VhY, CellVol,                                              &
+                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                   CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
+                   NormalN, NormalS, NormalE, NormalW  )
+       !
+     endif
+     !
+     if(Params%HolesOff.eq.0) then
+       !
+       if(ConvectionEnergy.eq.0) then
+         !
+         call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, invCh,&
+                   ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                   ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                   ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                   ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+         !
+       else
+         !
+         !TODO: Check that we need that and not computeUh
+         call computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
+                   Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
+                   CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
+                   CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
+         !
+       endif
+       !
+     endif
+     !
+   endif
+   !
+   if(Params%TsOff.ne.1) then
+     !
+     call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas, CouplingH, CouplingE, &
+                   h1, h2, h3, invCs, TsPrev, TsOld, CellVol, &
+                   ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                   ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                   ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                   ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+     !
+   end if
+   !
+   if(ConvectionEnergy.eq.1) then
+     call computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
+                             FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                             ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
+   end if
+   !
+   !$OMP DO COLLAPSE(2) !(optimized)
+   do j=2, Params%N-1 !(optimized)
+     do i=2, Params%M-1 !(optimized)
+       !
+       work = dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+       CFLxT(i,j)  = kappae(i,j)*invCe(i,j) * work
+       CFLxTs(i,j) = kappas(i,j)*invCs(i,j) * work
+       !
+       work = dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+       CFLyT(i,j)  = kappae(i,j)*invCe(i,j) * work
+       CFLyTs(i,j) = kappas(i,j)*invCs(i,j) * work
+       !
+       !TODO: Optimise
+       CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
+       CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
+       !
+       !TODO:This is only needed for a reduction, so lets do the reduction directly here
+       TotalElectrons(i,j)= newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+       TotalHoles(i,j)    =newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
+       !
+       !
+       ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
+       !
+       !
+       work = intensity(i,j)/(1d0-reflectivity(i,j))
+       LaserEnergy(i,j) = OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
+                       + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
+                  + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
+       !
+     end do
+   end do
+   !$OMP END DO
+   !$OMP END PARALLEL
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of parallel section
+   !
+   call applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn )
+   !
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   ! CHECKING the results
+   !
+   maxCFLxN   = maxval(CFLxN)
+   maxCFLyN   = maxval(CFLyN)
+   maxCFLxT   = maxval(CFLxT)
+   maxCFLyT   = maxval(CFLyT)
+   maxCFLxTs  = maxval(CFLxTs)
+   maxCFLyTs  = maxval(CFLyTs)
+   !
+   !Check and control quantity are computed only when needed
+   if(mod(nbiter,iterOut).eq.0) then
+     !
+     maxIntensity = maxval(intensity)
+     maxTe      = maxval(newmesh%Te)
+     minTe      = minval(newmesh%Te)
+     maxTh      = maxval(newmesh%Th)
+     minTh      = minval(newmesh%Th)
+     maxTs      = maxval(newmesh%Ts)
+     minTs      = minval(newmesh%Ts)
+     maxNe      = maxval(newmesh%Ne)
+     minNe      = minval(newmesh%Ne)
+     maxNh      = maxval(newmesh%Nh)
+     minNh      = minval(newmesh%Nh)
+     maxSourceE = maxval(SourceE)
+     maxGainsE  = maxval(GainsE)
+     maxSourceH = maxval(SourceH)
+     maxGainsH  = maxval(GainsH)
+     maxGap     = maxval(Egap)
+     maxFermiIndexE = maxval(FermiIndexE)
+     maxFermiIndexH = maxval(FermiIndexH)
+     !
+     write(*,*) "Time=", t, "Intensity=", maxIntensity
+     write(*,*) minTe, "< Te < ", maxTe
+     write(*,*) minTh, "< Th < ", maxTh
+     write(*,*) minTs, "< Ts <", maxTs
+     write(*,*) minNe, "< Ne <", maxNe
+     write(*,*) minNh, "< Nh <", maxNh
+     write(*,*) "CFL_Te=", maxCFLxT+maxCFLyT, "maxCFL_Ne=", maxCFLxN+maxCFLyN, &
+                  "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, &
+                  "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
+     write(*,*) "CFL_Limit=", maxCFL
+     write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
 
-        ! free-carrier balance sources
-        Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
-
-        Int2 = intensity(i,j)**2
-        work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
-
-        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
-                    +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
-
-        SourceUe(i,j)= ((laser%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*laser%inv_E*((me)/(me+mh))&
-                     - Egap(i,j)*work*mesh%Ne(i,j) &
-                     + absorptionDrudeE(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
-
-        !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
-        SourceE(i,j) = SourceUe(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
-
-        !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
-        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
-
-        work = ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)
-
-        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
-                    +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
-                    
-        SourceUh(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
-                     - Egap(i,j)*work*mesh%Nh(i,j) &
-                     + absorptionDrudeH(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
-                     
-        !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-        SourceH(i,j) = SourceUh(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt
-
-        LossesH(i,j)=LossesE(i,j)
-
-        ! first order precision
-!         SourceS(i,j) = 0d0 - Ts(i,j)*(Cs(i,j)-CsOld(i,j))/Cs(i,j)
-
-        ! second order precisino
-!         SourceS(i,j) = 0d0 - (3d0*Cs(i,j)-4d0*CsOld(i,j)+CsPrev(i,j))/(2d0*dt) * Ts(i,j)
-
-        ! third order precision in already included in the scheme (Maple generated since complexity increases substancially)
-        
-        !TODO: to be implemented
-        ! VeX(i,j)=0d0
-        ! VeY(i,j)=0d0
-        ! VhX(i,j)=0d0
-        ! VhY(i,j)=0d0
+     TotalMeshVolume=0d0
+     !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
+     !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume, TotalNumOfH, TotalElectrons, &
+     !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
+     !$OMP DO COLLAPSE(2) REDUCTION(+:NeTotal,NhTotal,TotalNumOfE, TotalNumOfH,  &
+     !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume)
+     do j=1,mesh%N
+       do i=1,mesh%M
+         NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
+         NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
+         TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
+         TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
+         TotalThermalEnergy=TotalThermalEnergy+ThermalEnergy(i,j)
+         TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
+         TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
       end do
     end do
     !$OMP END DO
-
-    !Compute the new conductivites, based on the knowledge of densities and mobilities
-    call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                     ColFermi0, ColFermi1, ColFermi2)
-    !
-    ! interpolation bilineaire ponderee par les aires
-    call bilinear_interpol_dual(mesh, dual, InvCellVol)
-    !
-    !
-    ! solving the 2D problem
-    !
-    !
-    !
-    if(Params%NeOff.eq.0) then
-      call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-    else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
-      newmesh%Ne(:,:)=mesh%Ne(:,:)
-      newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
-    end if
-    !
-    if(Params%HolesOff.eq.0 .AND. Params%NeOff.eq.0) then
-      call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
-                      ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-    endif
-    !
-    !
-    !
-    if(Params%TeOff.ne.1) then
-      !
-      if(ConvectionEnergy.eq.0) then
-        !
-        call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, invCe, &
-                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                          &
-                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N,                          &
-                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                          &
-                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-        !
-      else
-        !
-        call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
-                    invCe, Ue, UeNew, VeX, VeY, CellVol,                                              &
-                    ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                    ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                    CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
-                    NormalN, NormalS, NormalE, NormalW  )
-        !
-        !TODO: Should probably not be here
-        call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
-                    invCh, Uh, UhNew, VhX, VhY, CellVol,                                              &
-                    ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                    ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                    CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
-                    NormalN, NormalS, NormalE, NormalW  )
-        !
-      endif
-      !
-      if(Params%HolesOff.eq.0) then
-        !
-        if(ConvectionEnergy.eq.0) then
-          !
-          call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, invCh,&
-                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-          !
-        else
-          !
-          !TODO: Check that we need that and not computeUh
-          call computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
-                    Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
-                    CellAreaE, NormalE%x, NormalE%y, CellAreaW, NormalW%x, NormalW%y, &
-                    CellAreaN, NormalN%x, NormalN%y, CellAreaS, NormalS%x, NormalS%y  )
-          !
-        endif
-        !
-      endif
-      !
-    endif
-    !
-    if(Params%TsOff.ne.1) then
-      !
-      call computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas, CouplingH, CouplingE, &
-                    h1, h2, h3, invCs, TsPrev, TsOld, CellVol, &
-                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                    ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-      !
-    end if
-    !
-    if(ConvectionEnergy.eq.1) then
-      call computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
-                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
-    end if
-    !
-
-    !$OMP DO COLLAPSE(2) !(optimized)
-    do j=2, Params%N-1 !(optimized)
-      do i=2, Params%M-1 !(optimized)
-
-      work = dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
-      CFLxT(i,j)  = kappae(i,j)*invCe(i,j) * work
-      CFLxTs(i,j) = kappas(i,j)*invCs(i,j) * work
-
-      work = dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
-      CFLyT(i,j)  = kappae(i,j)*invCe(i,j) * work
-      CFLyTs(i,j) = kappas(i,j)*invCs(i,j) * work
-        
-      !TODO: Optimise
-      CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
-      CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
-        
-      !TODO:This is only needed for a reduction, so lets do the reduction directly here
-      TotalElectrons(i,j)= newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-      TotalHoles(i,j)    =newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
-                          -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-        
-        
-      ThermalEnergy(i,j)=Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
-
-
-      work = intensity(i,j)/(1d0-reflectivity(i,j))
-      LaserEnergy(i,j) = OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
-                       + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
-                  + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
-        
-    end do
-  end do
-  !$OMP END DO
-  !$OMP END PARALLEL
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of parallel section
+    !$OMP END PARALLEL
     
-  call applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn )
+    work = I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*dt
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params,OnePhotonIonizationRate0, absorptionDrudeE, &
+    !$OMP absorptionDrudeH, OpticalIndex, CellVol, work, LaserIntensityEnergy )
+    !$OMP DO COLLAPSE(2) REDUCTION(+:LaserIntensityEnergy)
+    do j=1,Params%N
+      do i=1,Params%M
+        LaserIntensityEnergy = LaserIntensityEnergy &
+               +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*OpticalIndex(i,j) &
+               *CellVol(i,j)*work
+      end do
+    end do
+    !$OMP END DO
+    !$OMP END PARALLEL
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! CHECKING the results
-
-!     ElectronEnergy=0d0
-!     HoleEnergy=0d0
-!     LatticeEnergy=0d0
-
-    maxCFLxN   = maxval(CFLxN)
-    maxCFLyN   = maxval(CFLyN)
-    maxCFLxT   = maxval(CFLxT)
-    maxCFLyT   = maxval(CFLyT)
-    maxCFLxTs  = maxval(CFLxTs)
-    maxCFLyTs  = maxval(CFLyTs)
-
-    !Check and control quantity are computed only when needed
-    if(mod(nbiter,iterOut).eq.0) then
-
-      maxIntensity = maxval(intensity)
-      maxTe      = maxval(newmesh%Te)
-      minTe      = minval(newmesh%Te)
-      maxTh      = maxval(newmesh%Th)
-      minTh      = minval(newmesh%Th)
-      maxTs      = maxval(newmesh%Ts)
-      minTs      = minval(newmesh%Ts)
-      maxNe      = maxval(newmesh%Ne)
-      minNe      = minval(newmesh%Ne)
-      maxNh      = maxval(newmesh%Nh)
-      minNh      = minval(newmesh%Nh)
-      maxSourceE = maxval(SourceE)
-      maxGainsE  = maxval(GainsE)
-      maxSourceH = maxval(SourceH)
-      maxGainsH  = maxval(GainsH)
-      maxGap     = maxval(Egap)
-
-      maxFermiIndexE = maxval(FermiIndexE)
-      maxFermiIndexH = maxval(FermiIndexH)
-
-      write(*,*) "Time=", t, "Intensity=", maxIntensity
-      write(*,*) minTe, "< Te < ", maxTe
-      write(*,*) minTh, "< Th < ", maxTh
-      write(*,*) minTs, "< Ts <", maxTs
-      write(*,*) minNe, "< Ne <", maxNe
-      write(*,*) minNh, "< Nh <", maxNh
-      write(*,*) "CFL_Te=", maxCFLxT+maxCFLyT, "maxCFL_Ne=", maxCFLxN+maxCFLyN, &
-                   "maxCFL_Ts=",maxCFLxTs+maxCFLyTs, "CPU=", cpuefficiency, &
-                   "NumThreads=", nthreads, "Elapsed time=", cpu_timestep_duration
-      write(*,*) "CFL_Limit=", maxCFL
-      write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
-
-      TotalMeshVolume=0d0
-      !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
-      !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume, TotalNumOfH, TotalElectrons, &
-      !$OMP TotalHoles, ThermalEnergy, LaserEnergy)
-      !$OMP DO COLLAPSE(2) REDUCTION(+:NeTotal,NhTotal,TotalNumOfE, TotalNumOfH,  &
-      !$OMP TotalThermalEnergy, TotalLaserEnergy, TotalMeshVolume)
-      do j=1,mesh%N
-        do i=1,mesh%M
-          NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
-          NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
-          TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
-          TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
-          TotalThermalEnergy=TotalThermalEnergy+ThermalEnergy(i,j)
-          TotalLaserEnergy=TotalLaserEnergy+LaserEnergy(i,j)
-          TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
-       end do
-     end do
-     !$OMP END DO
-     !$OMP END PARALLEL
-
-      work = I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*dt
-      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params,OnePhotonIonizationRate0, absorptionDrudeE, &
-      !$OMP absorptionDrudeH, OpticalIndex, CellVol, work, LaserIntensityEnergy )
-      !$OMP DO COLLAPSE(2) REDUCTION(+:LaserIntensityEnergy)
+    if(t > 100d0*laser%tau) then
+      !$OMP PARALLEL DO DEFAULT(NONE) SHARED(mesh,MaxHeating, MaxHeatingTime, t, Params ) &
+      !$OMP COLLAPSE(2)
       do j=1,Params%N
         do i=1,Params%M
-           LaserIntensityEnergy = LaserIntensityEnergy &
-               +(OnePhotonIonizationRate0 +absorptionDrudeE(i,j) +absorptionDrudeH(i,j))*OpticalIndex(i,j) &
-                  *CellVol(i,j)*work
+          if(MaxHeating(i,j) < mesh%Ts(i,j)) then
+            MaxHeating(i,j)=mesh%Ts(i,j)
+            MaxHeatingTime(i,j)=t
+          end if
         end do
       end do
-     !$OMP END DO
-     !$OMP END PARALLEL
+      !$OMP END PARALLEL DO
+    endif
 
-     if(t > 100d0*laser%tau) then
-       !$OMP PARALLEL DO DEFAULT(NONE) SHARED(mesh,MaxHeating, MaxHeatingTime, t, Params ) &
-       !$OMP COLLAPSE(2)
-       do j=1,Params%N
-         do i=1,Params%M
-           if(MaxHeating(i,j) < mesh%Ts(i,j)) then
-             MaxHeating(i,j)=mesh%Ts(i,j)
-             MaxHeatingTime(i,j)=t
-           end if
-         end do
-       end do
-       !$OMP END PARALLEL DO
-     endif
-
-     ! calculation of the absorbed laser energy involved in the simulated slice !
-     IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(1,Params%N/2) &
-                  +absorptionDrudeH(1,Params%N/2))*intensity(1,Params%N/2)*CellVol(1,Params%N/2)*dt
+    ! calculation of the absorbed laser energy involved in the simulated slice !
+    IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(1,Params%N/2) &
+                 +absorptionDrudeH(1,Params%N/2))*intensity(1,Params%N/2)*CellVol(1,Params%N/2)*dt
 
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, Egap, &

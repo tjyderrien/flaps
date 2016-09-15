@@ -230,14 +230,16 @@
       implicit none
 
       real(8), intent(in)    :: Te, Eg
-      integer(8), intent(in) :: ImpactOff
+      integer, intent(in)    :: ImpactOff
 
-      if(ImpactOff.eq.1) then !TODO: This is dirty, should be putted outside
+      real(8), parameter     :: inv_kb = -1.5d0/kb
+
+      if(ImpactOff.eq.1) then
         ImpactIonizationRate=0d0
         return
       end if
 
-      ImpactIonizationRate = 3.6d10*exp(-1.5d0*Eg/kb/Te)
+      ImpactIonizationRate = 3.6d10*exp(inv_kb*Eg/Te)
 
     end function ImpactIonizationRate
 
@@ -380,21 +382,22 @@
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
 
-      real(8) :: etae, etah, LatticeHeatCapacity
+      real(8) :: tmp, LatticeHeatCapacity
       integer :: i, j
 
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
-          etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
+          tmp = FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))
 
-          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
-                      -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
-                                 (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
-          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
-                      -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
-                                 (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
+          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(ColFermiEta,FermiIndexE(i,j)) &
+                             *(1d0-(tmp/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
+                                     (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
+
+          tmp = FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))
+          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(ColFermiEta,FermiIndexH(i,j)) &
+                               *(1d0-(tmp/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
+                                    (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
           Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
 
           invCe(i,j) = 1.0d0/Ce(i,j)
@@ -563,6 +566,91 @@
       end if
     !
     end subroutine UpdateCouplings_batch
+
+   !> Computes the Sources Gains and Losses terms for electron and holes
+   subroutine ComputeGainsAndLosses(Params, mesh, laser, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+                              absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
+                              GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
+     use Maths_m
+     use Types_m
+     implicit none
+
+     type(InputParameters), intent(in)                 :: Params
+     type(MeshValues),      intent(in)                 :: mesh
+     type(LaserParams),     intent(in)                 :: laser
+     real(8), dimension(mesh%M,mesh%N), intent(inout)  :: Egap, GainsE, GainsH, SourceUe, SourceUh, &
+                                                          SourceE, SourceH, LossesE, LossesH
+     real(8), dimension(mesh%M,mesh%N), intent(in)     :: intensity, absorptionDrudeE, absorptionDrudeH, &
+                                                          Ce, Ch, CeOld, ChOld
+     real(8),                           intent(in)     :: dt, me, mh, OnePhotonIonizationRate0, &
+                                                          TwoPhotonIonizationRate0, AugerRateE, AugerRateH
+     integer,                           intent(in)     :: ImpactOff
+
+     real(8) :: Int2, ImpactIonizationRate, EgapValue, work
+     integer :: i,j
+
+     ! calculation of sources
+     !$OMP DO  COLLAPSE(2)
+     do j=1,Params%N
+       do i=1,Params%M
+
+        ! free-carrier balance sources
+        Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
+
+        Int2 = intensity(i,j)**2
+        work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
+
+        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
+                    +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
+
+        SourceUe(i,j)= ((laser%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*laser%inv_E*((me)/(me+mh))&
+                     - Egap(i,j)*work*mesh%Ne(i,j) &
+                     + absorptionDrudeE(i,j)*intensity(i,j) &
+                     + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
+
+        !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
+        SourceE(i,j) = SourceUe(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
+
+        !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
+        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
+
+        work = ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)
+
+        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
+                    +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+
+        SourceUh(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
+                     - Egap(i,j)*work*mesh%Nh(i,j) &
+                     + absorptionDrudeH(i,j)*intensity(i,j) &
+                     + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
+
+        !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
+        SourceH(i,j) = SourceUh(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt
+
+        LossesH(i,j)=LossesE(i,j)
+
+        ! first order precision
+!         SourceS(i,j) = 0d0 - Ts(i,j)*(Cs(i,j)-CsOld(i,j))/Cs(i,j)
+
+        ! second order precisino
+!         SourceS(i,j) = 0d0 - (3d0*Cs(i,j)-4d0*CsOld(i,j)+CsPrev(i,j))/(2d0*dt) * Ts(i,j)
+
+        ! third order precision in already included in the scheme (Maple generated since complexity increases substancially)
+
+        !TODO: to be implemented
+        ! VeX(i,j)=0d0
+        ! VeY(i,j)=0d0
+        ! VhX(i,j)=0d0
+        ! VhY(i,j)=0d0
+      end do
+    end do
+    !$OMP END DO
+
+   end subroutine ComputeGainsAndLosses
 
     pure real(8) function OnePhotonIonizationRate()
       implicit none
