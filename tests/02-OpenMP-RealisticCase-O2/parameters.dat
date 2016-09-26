@@ -1,0 +1,27 @@
+ ========== CONE PARAMETERS =========
+ Cone length=   3.0000000000000000      um
+ Cone height=   1.0039645347853314      um
+ Cone angle=   1.0000000000000000      deg
+ Cone curvature radius=   4.0000000000000000      nm
+
+ =========== LASER PARAMETERS ========
+ Laser fluence=   1.0000000000000000E-003 J.cm-2
+ Laser pulse duration=   40.000000000000000      fs
+ Laser wavelength=   515.00000000000000      nm
+ Laser spot position: (X,Y)=   1.0000000000000000        0.0000000000000000      um
+ Laser spot size: (Sx, Sy)=   50.000000000000000        50.000000000000000      um
+ Mie scattering:           1
+ Laser polarization           0
+
+ ============ MESH PARAMETERS ==========
+ Mesh size        2001 x         151
+ Dilatation time ratio=   2.0000000000000000     
+ Mesh shift=                    1
+
+ ============ TIME CONTROL ==========
+ Initial timestep=   1.0000000000000001E-018
+ Maximal timestep=  -2.0000000000000001E-013
+ Maximum time t=   0.0000000000000000     
+ Enable adaptative timestep=                    1
+ Time output each                  1000 iterations.
+ Map output each              1000000 iterations.
