@@ -26,9 +26,9 @@ do
 	ending=$( ls -lhtr --full-time | tail -n1 | awk '{ print $6, $7 }' | tr '-' '/' )
 #	echo "$beginning, $ending"
 	HumanDuration=$( calculationDuration $beginning $ending )
-	echo "Human duration: $HumanDuration"
+	echo "Human duration: $HumanDuration s."
 	ProgramDuration=$( PhysicalTime )
-	echo "Physical duration: $ProgramDuration"
+	echo "Physical duration: $ProgramDuration s."
 	
 	Efficiency=$( python_calc " $ProgramDuration * 1E12 / $HumanDuration * ( 60 * 60 * 24 ) " ) #physical s per human second
 	echo "Efficiency: $Efficiency ps / day."
