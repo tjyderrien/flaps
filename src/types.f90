@@ -82,6 +82,7 @@ module Types_m
                                     !-1: diffusion and conductivity OFF
     integer :: CouplingDebug        !0: e/h - lattice coupling enabled, 1: disabled
     integer :: AugerOff
+    integer :: OutputIter
 
 
   end type

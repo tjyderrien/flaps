@@ -60,7 +60,7 @@ implicit none
      real(8)               tmin                !max absolute time
     
                         
-    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
+    integer(8), parameter::  OutputIter=10000       ,& ! number of iterations between each stdout
                         iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
@@ -1100,8 +1100,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Maximal timestep=", tmin
   write(Parameters%unit,*) "Maximum time t=", Params%TimeMax
   write(Parameters%unit,*) "Enable adaptative timestep=", AdaptativeTimeStep
-  write(Parameters%unit,*) "Time output each ", iterOut, "iterations."
-  write(Parameters%unit,*) "Map output each", iterOutMaps*iterOut, "iterations."
+  write(Parameters%unit,*) "Time output each ", OutputIter, "iterations."
+  write(Parameters%unit,*) "Map output each", iterOutMaps*OutputIter, "iterations."
   
   call flush(Parameters%unit)
   
@@ -1868,7 +1868,7 @@ if(Params%UseMieScattering.eq.1) then
    maxCFLyTs  = maxval(CFLyTs)
    !
    !Check and control quantity are computed only when needed
-   if(mod(nbiter,iterOut).eq.0) then
+   if(mod(nbiter,OutputIter).eq.0) then
      !
      maxIntensity = maxval(intensity)
      maxTe      = maxval(newmesh%Te)
@@ -2071,7 +2071,7 @@ if(Params%UseMieScattering.eq.1) then
     end if
 
    !
-   if(mod(nbiter,iterOut*iterOutMaps).eq.0) then
+   if(mod(nbiter,OutputIter*iterOutMaps).eq.0) then
      !
      !TODO: Why do you use flush???
      call flush(Error%unit)
@@ -2126,7 +2126,7 @@ if(Params%UseMieScattering.eq.1) then
     !
     !
     ! output to files
-    if(mod(nbiter,iterOut).eq.0) then
+    if(mod(nbiter,OutputIter).eq.0) then
       !
       cpu_timestep_duration = ElapsedTime() / real(nbiter)
       cpuefficiency=real(nthreads)/cpu_timestep_duration

@@ -39,6 +39,7 @@ subroutine InitInputParameter( Params )
     Params%N = -1
     Params%TimeStep = 0.d0
     Params%TimeMax  = 0.d0
+    Params%OutputIter = 10000
 
     !Debug options
     Params%NeOff = 0
@@ -147,6 +148,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%AugerOff < 0 .or. Params%AugerOff > 1 ) then
       print *, 'Bad value for AugerOff'
+      call StopProgram()
+    end if
+
+    if( Params%OutputIter <= 0 ) then
+      print *, 'Bad value for OutputIter'
       call StopProgram()
     end if
 
@@ -282,6 +288,12 @@ subroutine LoadInputParameters( filename, Params )
               !AugerOff
               if( id .equals. 'AugerOff' ) then
                 call ParseInt( line, Params%AugerOff )
+                goto 999
+              endif
+
+              !OutputIter
+              if( id .equals. 'OutputIter' ) then
+                call ParseInt( line, Params%OutputIter )
                 goto 999
               endif
 
