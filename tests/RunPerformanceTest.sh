@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# set -e
+
 export OMP_STACKSIZE=104857
 # export OMP_NUM_THREADS=4
 # export MKL_NUM_THREADS=8
@@ -16,6 +18,8 @@ do
 	OutputFile="M2001-N151-${i}cores.log"
 #	OutputFile2="${OutputFile}.2.log"
 	echo ${OutputFile}
-	time ./Flaps_explicit.out >& `echo ${OutputFile}`
+	mkdir -p output/
+	time ./Flaps_explicit.out >& ${OutputFile}
+	mv output/ output_${i}/
 	echo $i > /dev/null #This is just to flush variables.
 done
