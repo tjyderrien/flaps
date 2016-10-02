@@ -63,8 +63,9 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
               * ( &
                  ! direct diffusion operator over irregular mesh
                  ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1,j)-mesh%Ne(i,j) )* NormalE2(i,j) &
-                 ! Cross-diffusion from [Mathur and Murthy (1997)]
-                 !TODO: put proper ref here
+                 ! Cross-diffusion from
+                 ! [S. Mathur, J. Murthy, A pressure-based method for unstructured
+                 ! meshes, Numerical Heat Transfert, Part B 31 (1997) 195–215]
                  + ShapeFactorTangentE(i,j) &
                  *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i,j) - dual%Ne(i,j-1))  &
                                                                                                     ) &
@@ -145,7 +146,7 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
 !       do i=2, M-1
 !         do j=2, N-1
 
-      !TODO: This can be frther optimise
+      !TODO: This can be further optimise
       newmesh%Nh(i,j) = mesh%Nh(i,j) + dt*( GainsH(i,j)-LossesH(i,j) )
       newmesh%Nh(i,j) = newmesh%Nh(i,j) + 0.5d0*dt*InvCellVol(i,j)*( &
               ! drift
@@ -785,7 +786,7 @@ subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, Dri
         newmesh%Nh(newmesh%M,j)=newmesh%Nh(newmesh%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
       end if
 
-      !TODO: Could we clean up these comments?
+      !TODO: Could we clean up these comments? TJYD (Oct 2, 2016): Were they already commented? 
 
         !outlet condition on density and energy
     !         write(*,*) CellAreaE(M,j), DistE(M-2,j)

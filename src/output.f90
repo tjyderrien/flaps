@@ -32,9 +32,9 @@ module Output_m
   implicit none
 
   !TODO: Add a description for each of these files
-  type(OutputData) :: LaplaceConvergence
-  type(OutputData) :: LaplaceMatrix
-  type(OutputData) :: TimeBottom
+  type(OutputData) :: LaplaceConvergence ! Useful for debugging
+  type(OutputData) :: LaplaceMatrix      ! Useful for debugging
+  type(OutputData) :: TimeBottom         
   type(OutputData) :: TimeUp
   type(OutputData) :: TimeApex
   type(OutputData) :: Error
@@ -44,7 +44,7 @@ module Output_m
   type(OutputData) :: MeshInfo
   type(OutputData) :: MeshVessel
   type(OutputData) :: DepthVessel
-  type(OutputData) :: DualDepth
+  type(OutputData) :: DualDepth          ! Useful for debugging
   type(OutputData) :: Field
   type(OutputData) :: EnergyConservation
   type(OutputData) :: Temperature

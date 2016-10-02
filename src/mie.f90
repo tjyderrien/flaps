@@ -35,7 +35,7 @@ module Mie_m
 
   !Some parameters for Bessel functions
   integer, private, parameter :: maxBesselOrder=20  !> Max of terms in series of Bessel for Mie scattering
-  integer, private, parameter :: besselArray=1      !TODO: Explain what it is, if really useful
+  integer, private, parameter :: besselArray=1      !TODO: Explain what it is, if really useful. TJYD (Oct 2, 2016): I don't remember!! 
 
 
 contains
