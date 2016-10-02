@@ -100,7 +100,7 @@ implicit none
                             InterpolateOff=0,         &        !just to test speedup...
                             BandBendingInFDTD=0        ,&        !use the interpolation of FDTD 1030 nm with band-bending contribution
 !                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
-                            !TODO: MieScattering=1 crashed!
+                            !MieScattering=1, &
                             NewtonIterations=1000, &
                             ExpNeedleType=0
         
@@ -1747,9 +1747,8 @@ if(Params%UseMieScattering.eq.1) then
                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-   else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop
+   else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop !TJYD: True... 
      newmesh%Ne(:,:)=mesh%Ne(:,:)
-     newmesh%Nh(:,:)=mesh%Nh(:,:) !TODO: Why this is updated  here? This should go with HolesOff
    end if
    !
    if(Params%HolesOff.eq.0 .AND. Params%NeOff.eq.0) then
@@ -1758,6 +1757,8 @@ if(Params%UseMieScattering.eq.1) then
                      ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+   else !So for this one? 
+     newmesh%Nh(:,:)=mesh%Nh(:,:)
    endif
    !
    !
