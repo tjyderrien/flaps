@@ -59,6 +59,8 @@
 
 !------------------------------------------------------------------
     complex(8) function DielectricConstant(lambda)
+!> Dielectric consant for silicon mateiral at some particular wavelengths. 
+!> TODO: interface with SPP-extended-theory. 
       implicit none
 
       real(8), intent(in) :: lambda
@@ -83,6 +85,7 @@
 
 !------------------------------------------------------------------
     real(8) function DensityOfState(mDOS, T)
+    !> Density of states for a 3D gas of electrons (sure?)
     use Maths_m
     implicit none
     real(8), intent(in) :: mDOS, T
@@ -200,13 +203,17 @@
 
 !------------------------------------------------------------------
 
-    !TODO: Create a batch version of this routine
+    !TODO: Create a batch version of this routine !TJYD: What is batch version?
+    !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai. 
+    !> "Ultrafast carrier dynamics in silicon: A two-color 
+    !> transient reflection grating study on a (111) surface." 
+    !> Physical review letters 81.25 (1998): 5664.) 
     pure real(8) function ephCollisionFrequency(ne)
       implicit none
 
       real(8), intent(in) :: ne
 
-      real(8), parameter :: inv_nth=1.0d0/6.02d26 !inversion of m-3 (Sjodin, PRL 1998)
+      real(8), parameter :: inv_nth=1.0d0/6.02d26 !inversion of m-3
 
       ephCollisionFrequency=1.0d0/((240d-15)*(1d0+(ne*inv_nth)**2))
 !       CollisionFrequency=1d14 !
@@ -305,7 +312,7 @@
       integer :: i, j
 
       !TODO: This name is not really explicit
-      if(Params%ConductivityFix.eq.-1) then
+      if(Params%TransportModel.eq.-1) then
            return
       end if
 
@@ -430,7 +437,7 @@
    !-------------------------------------------------------------------------------------
     subroutine UpdateConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                           ColFermi0, ColFermi1, ColFermi2, ConductivityFix)
+                                           ColFermi0, ColFermi1, ColFermi2, TransportModel)
       use Maths_m
       use Types_m
       implicit none
@@ -445,7 +452,7 @@
       real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, ConductivityFix
+      integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, TransportModel
 
       integer :: i, j
 
@@ -457,9 +464,9 @@
       real(8), parameter :: ee = -.4756634637d0
       real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
 
-      if(ConductivityFix.eq.-1) then !No need to update the conductivity
+      if(TransportModel.eq.-1) then !No need to update the conductivity
         return
-      else if (ConductivityFix .eq. 0 ) then
+      else if (TransportModel .eq. 0 ) then
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
@@ -481,7 +488,7 @@
           end do
         end do
         !$OMP END DO
-!      else if(ConductivityFix.eq.1) then
+!      else if(TransportModel.eq.1) then
 !        !$OMP DO COLLAPSE(2)
 !        do j=1, mesh%N
 !          do i=1, mesh%M
@@ -493,7 +500,7 @@
 !           end do
 !         end do
 !        !$OMP END DO
-!     else if(ConductivityFix.eq.2) then
+!     else if(TransportModel.eq.2) then
 !        !$OMP DO COLLAPSE(2)
 !        do j=1, mesh%N
 !          do i=1, mesh%M

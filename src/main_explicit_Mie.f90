@@ -193,7 +193,7 @@ implicit none
 
     type(VectorField) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
                 
-                 !TODO: Use dimension
+                 !TODO: Use dimension. TDJY: What do you have in mind? Example? 
     real(8), allocatable :: CurviWx(:,:), CurviWy(:,:), &                 ! Unit vector between cell centers
                             CurviEx(:,:), CurviEy(:,:), &
                             CurviNx(:,:), CurviNy(:,:), &
@@ -1991,7 +1991,7 @@ if(Params%UseMieScattering.eq.1) then
       do j=1,Params%N
         do i=1,Params%M
         
-!         if(ConductivityFix.eq.-1) then
+!         if(TransportModel.eq.-1) then
 !            TeNew(i,j)=Tout; ThNew(i,j)=Tout; 
 !         end if
 

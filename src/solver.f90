@@ -466,7 +466,7 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
 !         do j=2, N-1
 
 ! form with bug corrected in derivatives and (OmegaX, OmegaY) drift transport included in finite volumes
-!     if(ConductivityFix < 2) then
+!     if(TransportModel < 2) then
          UeNew(i,j) = Ue(i,j) + ((SourceUe(i,j)-CouplingE(i,j))*CellVol(i,j) &
                 ! convective term for transport of the energy by the field
                 -0.5d0*(((VeX(i+1,j)+VeX(i,j))*NormalE%x(i,j)                   &
