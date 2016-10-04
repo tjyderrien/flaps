@@ -142,7 +142,7 @@ contains
 !                          / (-TwoPhotonIonizationRate0+exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j) &
 !                              +absorptionDrudeH(i,j))*abs(y(i,j)-y0))  * ConstBLy * (OnePhotonIonizationRate0 + &
 !                              absorptionDrudeE(i,j) + absorptionDrudeH(i,j))))
-!          end if
+          end if !case 1030 nm
 !  ! case 515 nm distribution
 !          if(laser%lambda.eq.515d-9) then
 !            ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
