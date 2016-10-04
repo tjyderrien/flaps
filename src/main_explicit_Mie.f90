@@ -93,7 +93,7 @@ implicit none
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
     integer(8), parameter::  DrudeHeating=1, &        ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
-                            ConductivityFix=-1, &        ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
+                            ConductivityFix=0, &        ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
                                                 ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson ! 
                                                 ! 0: only fourier conductivity
                                                 !-1: diffusion and conductivity OFF
@@ -2008,7 +2008,8 @@ if(Params%UseMieScattering.eq.1) then
         newmesh%Nh(Params%M,j)=newmesh%Nh(Params%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
       end if
 
-      !TODO: Could we clean up these comments?
+      !TODO: NTD: Could we clean up these comments? 
+      !      TJYD: Not really, outlet boundary conditions will be interesting someday. 
 
         !outlet condition on density and energy
 !         write(*,*) CellAreaE(M,j), DistE(M-2,j)
@@ -2192,17 +2193,9 @@ if(Params%UseMieScattering.eq.1) then
                         real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !45
                         Radius(i,j)
 
-      !TODO: Please use short notation with prenthesis !!
-  887 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5)        
+
+  887 FORMAT (46(1E12.5, 3x))
+
 !          write(Depth%unit,886, advance='yes')
         end if
         
@@ -2246,8 +2239,7 @@ if(Params%UseMieScattering.eq.1) then
           ! ecriture des donnees dans un fichier different
           write(DepthVessel%unit,889, advance="yes") t, xP(i,j), yP(i,j), real(potential(i,j)), real(ExPoisson(i,j)), & !
                 real(EyPoisson(i,j)), DielectricStatic(i,j), NeP(i,j), NhP(i,j)
-  889 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, & !TODO: Please use short notation with prenthesis !!
-  1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5) 
+  889 FORMAT (9(1E12.5, 3x))
         end do
       end do
       call flush(DepthVessel%unit);
@@ -2268,8 +2260,7 @@ if(Params%UseMieScattering.eq.1) then
       write(EnergyConservation%unit,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, & !5
           TotalMeshVolume, LaserIntensityEnergy, ElectronKineticEnergy, ElectronPotentialEnergy !9
       
-892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+892 FORMAT (9(1E12.5, 3x))
 
       write(TimeMax%unit,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
                     maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, &        !9
@@ -2280,14 +2271,7 @@ if(Params%UseMieScattering.eq.1) then
                     TotalMeshVolume, ElectronEnergy, HoleEnergy, LatticeEnergy, LaserIntensityEnergy, &         !34
                     ElectronKineticEnergy, ElectronPotentialEnergy    !36
                     
-888 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1F12.8, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
-3x, 1E19.11, 3x, 1E19.11)
+888 FORMAT (3(1E12.5, 3x), 1F12.8, 3x, 25(1E12.5, 3x), 7(1E19.11, 3x))
                 
         write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,Params%N/2), mesh%Th(1,Params%N/2), &
               mesh%Ts(1,Params%N/2), mesh%Ne(1,Params%N/2), &                        !5
@@ -2297,11 +2281,7 @@ if(Params%UseMieScattering.eq.1) then
                real(FermiIndexH(1,Params%N/2)), Ce(2,Params%N/2), &                !19
               CeOld(2,Params%N/2), Ch(2,Params%N/2), ChOld(2,Params%N/2), Cs(2,Params%N/2), CsOld(2,Params%N/2)                               !24
               
-884 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+884 FORMAT (24(1E12.5, 3x))
 
         write(TimeUp%unit,883, advance="YES") t, mesh%Te(Params%M/2,Params%N), mesh%Th(Params%M/2,Params%N),&
                           mesh%Ts(Params%M/2,Params%N), mesh%Ne(Params%M/2,Params%N), &
@@ -2311,28 +2291,21 @@ if(Params%UseMieScattering.eq.1) then
               diffNe(Params%M/2,Params%N), diffNh(Params%M/2,Params%N), &
               real(FermiIndexE(Params%M/2,Params%N)), real(FermiIndexH(Params%M/2,Params%N))
               
-883 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
-
+883 FORMAT (18(1E12.5, 3x)) 
 
         write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2,1), mesh%Th(Params%M/2,1), mesh%Ne(Params%M/2,1), &
               mesh%Nh(Params%M/2,1), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2,1), &
               diffNe(Params%M/2,1), diffNh(Params%M/2,1), real(FermiIndexE(Params%M/2,1)), real(FermiIndexH(Params%M/2,1))
               
-882 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+882 FORMAT (18(1E12.5, 3x))
 
     end if
     
 
     
-890 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
-3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+890 FORMAT (9(1E12.5, 3x)) 
+
     
     ! write the functions on Dual Mesh
     if(mod(nbiter,iterOut*iterOutMaps).eq.0) then
@@ -2361,6 +2334,7 @@ if(Params%UseMieScattering.eq.1) then
   deallocate(NormalW%x, NormalW%y, NormalW%N)
 
   !TODO: Sorry but where are the file stream closed???
+  !      TJYD: Compiler takes care! :-D
 
   call ReleaseInputParameters( Params )
 
