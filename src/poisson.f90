@@ -48,10 +48,12 @@ subroutine poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
   !TODO: OpemMP parallelisation here?
 
   !TODO: Variables should be Np and Mp, xP and yP here no?
+  !      TJYD@NTD: Yes! 
   ! interpolation and preparation of resolution
   do j=2,N-1
     do i=2,M-1
         !Dual mesh calculation
+        !TODO: This should be in mesh.f90, no? Why working on the dual mesh for Poisson? This is only for Crossed derivativatives (cf transport).
         xDualSW(i,j) = 0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)) !x(i-1/2,j-1/2)
         yDualSW(i,j) = 0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j))
         xDualSE(i,j) = 0.25d0*(x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)) !x(i+1/2,j-1/2)
@@ -162,6 +164,7 @@ subroutine poisson_init_normal_cellarea( Mp, Np, xP, yP, NormalNxP, NormalNyP, N
 !      do i=2,M-1
 !
 !         !TODO: I think that this should not be here
+!         ! TJYD: I don't think it is actually used. Can be removed!  
 !         GradNeX(i,N) = GradNeX(i,N-1)
 !         GradNeY(i,N) = GradNeY(i,N-1)
 !      end do

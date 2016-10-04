@@ -252,8 +252,8 @@ contains
       integer(8) :: i
 
 
-      !!Careful !! TODO: This function is very sensitive to noise.
-      !!        !! Mesh must be refined until convergence of the photon total energy. 
+      !!Careful !! TODO: This function is very sensitive to noise. TJYD: Why? Is it due to M_IM**ireal ? 
+      !!        !! Yes, that is why mesh size must be increased until convergence of the total energy. 
 
       total=M_ZERO
 

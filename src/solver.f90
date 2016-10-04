@@ -63,8 +63,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
               * ( &
                  ! direct diffusion operator over irregular mesh
                  ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1,j)-mesh%Ne(i,j) )* NormalE2(i,j) &
-                 ! Cross-diffusion from [Mathur and Murthy (1997)]
-                 !TODO: put proper ref here
+                 ! Cross-diffusion term. See [Mathur, S. & Murthy, J. A pressure-based method for unstructured meshes Numerical Heat Transfert, Part B, 1997, 31, 195]
                  + ShapeFactorTangentE(i,j) &
                  *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i,j) - dual%Ne(i,j-1))  &
                                                                                                     ) &
@@ -145,7 +144,7 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
 !       do i=2, M-1
 !         do j=2, N-1
 
-      !TODO: This can be frther optimise
+      !TODO: This can be further optimised
       newmesh%Nh(i,j) = mesh%Nh(i,j) + dt*( GainsH(i,j)-LossesH(i,j) )
       newmesh%Nh(i,j) = newmesh%Nh(i,j) + 0.5d0*dt*InvCellVol(i,j)*( &
               ! drift
@@ -221,7 +220,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
 !       do i=2, M-1
 !         do j=2, N-1
 
-      !TODO: This can be further optimise
+      !TODO: This can be further optimised
       newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j)
       newmesh%Te(i,j) = newmesh%Te(i,j) + 0.5d0 *invCe(i,j) * dt * InvCellVol(i,j)*( &
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
@@ -426,7 +425,8 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 !                    + h1 * h2 / (h3 * ( h3 - h1 - h2 ) + h1 * h2) * TsPrev(i,j)) &
 !                    / (h1 * h2 + h1 * h3 + h2 * h3) * h2 * h1
 
-                  !TODO: The mixing should not be done here!
+                  !TODO: NTD: The mixing should not be done here! 
+                  !      TJYD: Which mixing? Do you mean temporal integration?  
 
     end do
   end do
