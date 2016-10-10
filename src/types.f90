@@ -71,8 +71,20 @@ module Types_m
   type InputParameters
     integer :: UseMieScattering  ! 1: Enable Mie scattering analytic formula, 0: badly fitted FDTD input, -1: constant intensity
     integer :: NeOff, TeOff, HolesOff, TsOff
-
     integer :: M,N !> Mesh dimension
+    real(8) :: TimeStep, TimeMax
+    real(8) :: phiMie0
+    integer :: PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
+    integer :: DrudeHeating         ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
+    integer :: TransportModel      ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
+                                    ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
+                                    ! 0: only fourier conductivity
+                                    !-1: diffusion and conductivity OFF
+    integer :: CouplingDebug        !0: e/h - lattice coupling enabled, 1: disabled
+    integer :: AugerOff
+    integer :: OutputIter
+
+
   end type
 
 end module Types_m

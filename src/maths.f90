@@ -33,21 +33,23 @@ module Maths_m
 
 
   !Some useful numbers
-  real(8), public, parameter    :: Pi       = 4.0d0*atan(1.0d0)
-  real(8), public, parameter    :: Sqrt2    = sqrt(2.0d0)
-  real(8), public, parameter    :: sqrt2ln2 = sqrt(2d0*log(2d0))
-  complex(8), public, parameter :: M_IM     = (0.0d0,1.0d0)
-  complex(8), public, parameter :: M_ONE    = (1.0d0,0.0d0)
-  complex(8), public, parameter :: M_ZERO   = (0.0d0,0.0d0)
+  real(8), public, parameter    :: M_PI       = 4.0d0*atan(1.0d0)
+  real(8), public, parameter    :: M_SQRT2    = sqrt(2.0d0)
+  real(8), public, parameter    :: M_SQRT2LN2 = sqrt(2d0*log(2d0))
+  complex(8), public, parameter :: M_IM       = (0.0d0,1.0d0)
+  complex(8), public, parameter :: M_ONE      = (1.0d0,0.0d0)
+  complex(8), public, parameter :: M_ZERO     = (0.0d0,0.0d0)
 
-  real(8), public, parameter    :: EPS_VAL  = epsilon(1.0d0)
-  real(8), public, parameter    :: HUGE_VAL = huge(1.0d0)
+  real(8), public, parameter    :: M_EPS_VAL  = epsilon(1.0d0)
+  real(8), public, parameter    :: M_HUGE_VAL = huge(1.0d0)
+
+  real(8), public, parameter    :: M_DEG2RAD  = M_PI/180.0d0
 
   !Some physical constants
   !TODO: More digits here, otherwise real(8) does not make sense
   real(8), public, parameter    :: hbar     = 1.05457d-34             !> Planck constant
   real(8), public, parameter    :: epsilon0 = 8.85418781762d-12       !> vacuum dielectric permittivity
-  real(8), public, parameter    :: mu0      = 4d0*Pi*1d-7   !> vacuum magnetic permeability
+  real(8), public, parameter    :: mu0      = 4d0*M_PI*1d-7   !> vacuum magnetic permeability
   real(8), public, parameter    :: ec       = 1.60217646d-19          !> elementary charge
   real(8), public, parameter    :: me0      = 9.10938188d-31          !> electron mass
   real(8), public, parameter    :: c        = 2.99792458d8            !> speed of light
@@ -258,10 +260,10 @@ end module Maths_m
       end if
     end function Tangent
 
-   real(8) function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
+   pure real(8) function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
      implicit none
     ! works with convex elements!
-      real(8) x1, y1, x2, y2, x3,y3,x4,y4
+      real(8), intent(in) ::  x1, y1, x2, y2, x3,y3,x4,y4
 !       AreaElement=0.5d0*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
       AreaElement=0.5d0*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
     end function AreaElement

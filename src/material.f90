@@ -59,6 +59,8 @@
 
 !------------------------------------------------------------------
     complex(8) function DielectricConstant(lambda)
+!> Dielectric consant for silicon mateiral at some particular wavelengths. 
+!> TODO: interface with SPP-extended-theory. 
       implicit none
 
       real(8), intent(in) :: lambda
@@ -83,10 +85,11 @@
 
 !------------------------------------------------------------------
     real(8) function DensityOfState(mDOS, T)
+    !> Density of states for a 3D gas of electrons (sure?)
     use Maths_m
     implicit none
     real(8), intent(in) :: mDOS, T
-      DensityOfState = 2d0*(mDOS*kb*T/(2d0*pi*hbar**2))**(1.5d0)
+      DensityOfState = 2d0*(mDOS*kb*T/(2d0*M_PI*hbar**2))**(1.5d0)
       return
     end function DensityOfState
 
@@ -104,8 +107,8 @@
     real(8) :: coefE, coefH
     integer :: i, j
 
-    coefE = meDOS*kb/(2d0*pi*hbar**2)
-    coefH = mhDOS*kb/(2d0*pi*hbar**2)
+    coefE = meDOS*kb/(2d0*M_PI*hbar**2)
+    coefH = mhDOS*kb/(2d0*M_PI*hbar**2)
 
     !$OMP DO COLLAPSE(2)
     do j=1, mesh%N !(optimized)
@@ -118,24 +121,6 @@
 
   end subroutine DensitiesOfState_batch
 
-
-!------------------------------------------------------------------
-    !TODO: Do we need DielectricFunctionDrude? Is it just possible to compute it with epsilonInf=1 ?
-    complex(8) function DielectricFunction(epsilonInf, ne, nuColl, me, laser)
-      use Maths_m
-      use Types_m
-
-      implicit none
-      complex(8), intent(in) ::  epsilonInf
-      real(8), intent(in) ::  ne, nuColl, me
-      type(LaserParams), intent(in) :: laser
-
-      real(8) omegape2
-
-      omegape2=ec*ec*ne/me/epsilon0
-      DielectricFunction=epsilonInf-omegape2*laser%inv_omega*laser%inv_omega/(M_ONE+M_IM*nuColl*laser%inv_omega)
-      return
-    end function DielectricFunction
 
    !------------------------------------------------------------------
    !This routine computes the dielectric function for the entire grid with one call
@@ -166,50 +151,33 @@
           sqrtEps = sqrt(Dielectric(i,j))
           OpticalIndex(i,j)   = real(sqrtEps)
           OpticalDamping(i,j) = aimag(sqrtEps)
-          Reflectivity(i,j)=  ( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 -2d0*OpticalIndex(i,j)+1d0 ) &
-                             /( OpticalIndex(i,j)**2 + OpticalDamping(i,j)**2 +2d0*(OpticalIndex(i,j)+1d0) )
+          Reflectivity(i,j)=  ( (OpticalIndex(i,j)-1.0d0)**2 + OpticalDamping(i,j)**2 ) &
+                             /( (OpticalIndex(i,j)+1.0d0)**2 + OpticalDamping(i,j)**2 )
         end do
       end do
       !$OMP END DO
 
     end subroutine DielectricFunction_batch
 
-    !------------------------------------------------------------------
-    complex(8) function DielectricFunctionDrude(density, Collision, mass, laser)
-      use Maths_m
-      use Types_m
-
-      implicit none
-
-      real(8), intent(in)           :: density, Collision, mass
-      type(LaserParams), intent(in) :: laser
-
-      real(8) omegape2
-
-      omegape2=ec*ec*density/(mass*epsilon0)
-      DielectricFunctionDrude=M_ONE-M_ONE*omegape2*laser%inv_omega*laser%inv_omega/(M_ONE+M_IM*Collision*laser%inv_omega)
-      return
-    end function DielectricFunctionDrude
-
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
-    subroutine DielectricFunctionDrude_batch(mesh, N, Dielectric, absorptionDrude, DrudeHeating, Collision, mass, laser)
+    subroutine ComputeDielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, laser)
       use Maths_m
       use Types_m
       implicit none
 
-      type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(in)    :: N(mesh%M,mesh%N)
-      complex(8),        intent(inout) :: Dielectric(mesh%M,mesh%N)
-      real(8),           intent(inout) :: absorptionDrude(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: DrudeHeating
-      real(8),           intent(in)    :: Collision, mass
-      type(LaserParams), intent(in)    :: laser
+      type(InputParameters), intent(in)    :: Params
+      type(MeshValues),      intent(in)    :: mesh
+      real(8),               intent(in)    :: N(mesh%M,mesh%N)
+      complex(8),            intent(inout) :: Dielectric(mesh%M,mesh%N)
+      real(8),               intent(inout) :: absorptionDrude(mesh%M,mesh%N)
+      real(8),               intent(in)    :: Collision, mass
+      type(LaserParams),     intent(in)    :: laser
 
       complex(8) :: coef
       integer :: i, j
 
-      coef= M_ONE*ec*ec/(mass*epsilon0)*laser%inv_omega**2/(M_ONE+M_IM*Collision*laser%inv_omega)
+      coef= ec*ec/(mass*epsilon0)*laser%inv_omega**2/(M_ONE+M_IM*Collision*laser%inv_omega)
 
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
@@ -219,31 +187,35 @@
       end do
       !$OMP END DO
 
-      if(DrudeHeating==1) then
+      if(Params%DrudeHeating==1) then
         !$OMP DO COLLAPSE(2)
-        do j=1, mesh%N !(optimized)
+        do j=1, mesh%N
           do i=1, mesh%M
-            absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
+           ! absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
+            absorptionDrude(i,j)=2d0*laser%k*sqrt( 0.5d0*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
           end do
         end do
         !$OMP END DO
-      else
-          absorptionDrude(:,:)=0d0
       end if
 
-    end subroutine DielectricFunctionDrude_batch
+    end subroutine ComputeDielectricFunctionDrude_batch
 
 
 !------------------------------------------------------------------
 
-    !TODO: Create a batch version of this routine
+    !TODO: Create a batch version of this routine !TJYD: What is batch version?
+    !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai. 
+    !> "Ultrafast carrier dynamics in silicon: A two-color 
+    !> transient reflection grating study on a (111) surface." 
+    !> Physical review letters 81.25 (1998): 5664.) 
     pure real(8) function ephCollisionFrequency(ne)
       implicit none
 
       real(8), intent(in) :: ne
 
-      real(8), parameter :: nth=6.02d26 !m-3 (Sjodin, PRL 1998)
-      ephCollisionFrequency=1.0d0/((240d-15)*(1d0+(ne/nth)**2))
+      real(8), parameter :: inv_nth=1.0d0/6.02d26 !inversion of m-3
+
+      ephCollisionFrequency=1.0d0/((240d-15)*(1d0+(ne*inv_nth)**2))
 !       CollisionFrequency=1d14 !
       ! CollisionFrequency=1d13 !
       !CollisionFrequency=5d13 !
@@ -265,13 +237,17 @@
       implicit none
 
       real(8), intent(in)    :: Te, Eg
-      integer(8), intent(in) :: ImpactOff
+      integer, intent(in)    :: ImpactOff
 
-      ImpactIonizationRate = 3.6d10*exp(-1.5d0*Eg/kb/Te)
-      if(ImpactOff.eq.1) then !TODO: This is dirty, should be putted outside
+      real(8), parameter     :: inv_kb = -1.5d0/kb
+
+      if(ImpactOff.eq.1) then
         ImpactIonizationRate=0d0
+        return
       end if
-      return
+
+      ImpactIonizationRate = 3.6d10*exp(inv_kb*Eg/Te)
+
     end function ImpactIonizationRate
 
 
@@ -314,30 +290,29 @@
    !-------------------------------------------------------------------------------------
    !> Computes the diffusion terms for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeDiffusions_batch(mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
+    subroutine UpdateDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                       ColFermiHalf, ColFermiMenusHalf, ConductivityFix)
+                                       ColFermiHalf, ColFermiMenusHalf)
       use Maths_m
       use Types_m
       implicit none
 
-      type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(inout) :: diffusionE(mesh%M,mesh%N)
-      real(8),           intent(inout) :: diffusionH(mesh%M,mesh%N)
-      real(8),           intent(in)    :: mobilityE(mesh%M,mesh%N)
-      real(8),           intent(in)    :: mobilityH(mesh%M,mesh%N)
-      real(8),           intent(in)    :: FermiTableE(mesh%M,mesh%N)
-      real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: ConductivityFix, ColFermiMenusHalf, ColFermiHalf
+      type(InputParameters), intent(in)    :: Params
+      type(MeshValues),      intent(in)    :: mesh
+      real(8),               intent(inout) :: diffusionE(mesh%M,mesh%N)
+      real(8),               intent(inout) :: diffusionH(mesh%M,mesh%N)
+      real(8),               intent(in)    :: mobilityE(mesh%M,mesh%N)
+      real(8),               intent(in)    :: mobilityH(mesh%M,mesh%N)
+      real(8),               intent(in)    :: FermiTableE(mesh%M,mesh%N)
+      real(8),               intent(in)    :: FermiTableH(mesh%M,mesh%N)
+      integer(8),            intent(in)    :: FermiIndexE(mesh%M,mesh%N)
+      integer(8),            intent(in)    :: FermiIndexH(mesh%M,mesh%N)
+      integer(8),            intent(in)    :: ColFermiMenusHalf, ColFermiHalf
 
       integer :: i, j
 
       !TODO: This name is not really explicit
-      if(ConductivityFix.eq.-1) then
-           diffusionE(:,:)=0d0
-           diffusionH(:,:)=0d0
+      if(Params%TransportModel.eq.-1) then
            return
       end if
 
@@ -353,12 +328,12 @@
       end do
       !$OMP END DO
 
-    end subroutine ComputeDiffusions_batch
+    end subroutine UpdateDiffusions_batch
 
    !-------------------------------------------------------------------------------------
    !> Computes the drif vectors for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
+    subroutine UpdateDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
       use Maths_m
       use Types_m
       implicit none
@@ -374,10 +349,8 @@
 
       integer :: i, j
 
-      if(DriftOn.eq.0) then
-          JeX(:,:)=0d0; JeY(:,:)=0d0;
-          JhX(:,:)=0d0; JhY(:,:)=0d0;
-          return
+      if(DriftOn.eq.0) then !No need to update these values
+        return
       endif
 
       !$OMP DO COLLAPSE(2)
@@ -391,7 +364,7 @@
       end do
       !$OMP END DO
 
-    end subroutine ComputeDriftVectors_batch
+    end subroutine UpdateDriftVectors_batch
 
    !-------------------------------------------------------------------------------------
    !> Computes the electron, hole and lattice heat capacities for the entire mesh
@@ -416,21 +389,22 @@
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
 
-      real(8) :: etae, etah, LatticeHeatCapacity
+      real(8) :: tmp, LatticeHeatCapacity
       integer :: i, j
 
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
-          etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
+          tmp = FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))
 
-          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
-                      -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
-                                 (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
-          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
-                      -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
-                                 (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
+          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(ColFermiEta,FermiIndexE(i,j)) &
+                             *(1d0-(tmp/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
+                                     (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
+
+          tmp = FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))
+          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(ColFermiEta,FermiIndexH(i,j)) &
+                               *(1d0-(tmp/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
+                                    (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
           Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
 
           invCe(i,j) = 1.0d0/Ce(i,j)
@@ -443,7 +417,7 @@
     end subroutine ComputeHeatCapacities_batch
 
 
-      real(8) function LatticeHeatCapacity(T)
+    pure  real(8) function LatticeHeatCapacity(T)
         implicit none
         real(8), intent(in) :: T
 
@@ -459,11 +433,11 @@
       end function LatticeHeatCapacity
 
    !-------------------------------------------------------------------------------------
-   !> Computes the conductivities for the entire mesh
+   !> Updates the conductivities for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+    subroutine UpdateConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                           ColFermi0, ColFermi1, ColFermi2, ConductivityFix)
+                                           ColFermi0, ColFermi1, ColFermi2, TransportModel)
       use Maths_m
       use Types_m
       implicit none
@@ -478,7 +452,7 @@
       real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, ConductivityFix
+      integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, TransportModel
 
       integer :: i, j
 
@@ -490,12 +464,9 @@
       real(8), parameter :: ee = -.4756634637d0
       real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
 
-      if(ConductivityFix.eq.-1) then
-        kappae(:,:) = 0.d0
-        kappah(:,:) = 0.d0
-        kappas(:,:) = 0.d0
+      if(TransportModel.eq.-1) then !No need to update the conductivity
         return
-      else if (ConductivityFix .eq. 0 ) then
+      else if (TransportModel .eq. 0 ) then
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
@@ -517,7 +488,7 @@
           end do
         end do
         !$OMP END DO
-!      else if(ConductivityFix.eq.1) then
+!      else if(TransportModel.eq.1) then
 !        !$OMP DO COLLAPSE(2)
 !        do j=1, mesh%N
 !          do i=1, mesh%M
@@ -529,7 +500,7 @@
 !           end do
 !         end do
 !        !$OMP END DO
-!     else if(ConductivityFix.eq.2) then
+!     else if(TransportModel.eq.2) then
 !        !$OMP DO COLLAPSE(2)
 !        do j=1, mesh%N
 !          do i=1, mesh%M
@@ -549,53 +520,146 @@
 !      !$OMP END DO
     end if
 
-    end subroutine ComputeConductivities_batch
+    end subroutine UpdateConductivities_batch
 
    !-------------------------------------------------------------------------------------
    !> Computes the couplings for the entire mesh
    !-------------------------------------------------------------------------------------
-    subroutine ComputeCouplings_batch(mesh, CouplingE, CouplingH, Ce, Ch, CouplingDebug, HolesOff)
+    subroutine UpdateCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
       use Maths_m
       use Types_m
       implicit none
 
-      type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(inout) :: CouplingE(mesh%M,mesh%N)
-      real(8),           intent(inout) :: CouplingH(mesh%M,mesh%N)
-      real(8),           intent(in)    :: Ce(mesh%M,mesh%N)
-      real(8),           intent(in)    :: Ch(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: CouplingDebug, HolesOff
-
+      type(InputParameters), intent(in)    :: Params
+      type(MeshValues),      intent(in)    :: mesh
+      real(8),               intent(inout) :: CouplingE(mesh%M,mesh%N)
+      real(8),               intent(inout) :: CouplingH(mesh%M,mesh%N)
+      real(8),               intent(in)    :: Ce(mesh%M,mesh%N)
+      real(8),               intent(in)    :: Ch(mesh%M,mesh%N)
+      !
       integer :: i, j
       real(8) :: nuColleph!        electron-phonon collision frequency
       real(8) :: ephCollisionFrequency
-
-      if(CouplingDebug.eq.1) then
-          CouplingE(:,:)=0d0
-          CouplingH(:,:)=0d0
+      !
+      if(Params%CouplingDebug.eq.1) then !No need to update the couplings, as they are zero
           return
       end if
-
-      !$OMP DO COLLAPSE(2)
-      do j=1, mesh%N !(optimized)
-        do i=1, mesh%M
+      !
+      if(Params%HolesOff.eq.0) then
+        !
+        !$OMP DO COLLAPSE(2)
+        do j=1, mesh%N !(optimized)
+          do i=1, mesh%M
             ! optical coefficients
-        nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-
-        CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
-        if(HolesOff.eq.0) then
-          CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
-        else
-          CouplingH(i,j)=0d0
-        end if
-
+            nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
+            CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
+            CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
+          end do
         end do
+        !$OMP END DO
+        !
+      else !In this case no need to update CouplingH
+       !
+       !$OMP DO COLLAPSE(2)
+       do j=1, mesh%N !(optimized)
+         do i=1, mesh%M
+           ! optical coefficients
+           nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
+           CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
+         end do
+       end do
+       !$OMP END DO
+       !
+      end if
+    !
+    end subroutine UpdateCouplings_batch
+
+   !> Computes the Sources Gains and Losses terms for electron and holes
+   subroutine ComputeGainsAndLosses(Params, mesh, laser, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+                              absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
+                              GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
+     use Maths_m
+     use Types_m
+     implicit none
+
+     type(InputParameters), intent(in)                 :: Params
+     type(MeshValues),      intent(in)                 :: mesh
+     type(LaserParams),     intent(in)                 :: laser
+     real(8), dimension(mesh%M,mesh%N), intent(inout)  :: Egap, GainsE, GainsH, SourceUe, SourceUh, &
+                                                          SourceE, SourceH, LossesE, LossesH
+     real(8), dimension(mesh%M,mesh%N), intent(in)     :: intensity, absorptionDrudeE, absorptionDrudeH, &
+                                                          Ce, Ch, CeOld, ChOld
+     real(8),                           intent(in)     :: dt, me, mh, OnePhotonIonizationRate0, &
+                                                          TwoPhotonIonizationRate0, AugerRateE, AugerRateH
+     integer,                           intent(in)     :: ImpactOff
+
+     real(8) :: Int2, ImpactIonizationRate, EgapValue, work
+     integer :: i,j
+
+     ! calculation of sources
+     !$OMP DO  COLLAPSE(2)
+     do j=1,Params%N
+       do i=1,Params%M
+
+        ! free-carrier balance sources
+        Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
+
+        Int2 = intensity(i,j)**2
+        work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
+
+        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
+                    +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
+
+        SourceUe(i,j)= ((laser%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*laser%inv_E*((me)/(me+mh))&
+                     - Egap(i,j)*work*mesh%Ne(i,j) &
+                     + absorptionDrudeE(i,j)*intensity(i,j) &
+                     + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
+
+        !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
+        SourceE(i,j) = SourceUe(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
+
+        !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
+        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
+
+        work = ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)
+
+        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
+                    +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+
+        SourceUh(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
+                     - Egap(i,j)*work*mesh%Nh(i,j) &
+                     + absorptionDrudeH(i,j)*intensity(i,j) &
+                     + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
+
+        !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
+        SourceH(i,j) = SourceUh(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt
+
+        LossesH(i,j)=LossesE(i,j)
+
+        ! first order precision
+!         SourceS(i,j) = 0d0 - Ts(i,j)*(Cs(i,j)-CsOld(i,j))/Cs(i,j)
+
+        ! second order precisino
+!         SourceS(i,j) = 0d0 - (3d0*Cs(i,j)-4d0*CsOld(i,j)+CsPrev(i,j))/(2d0*dt) * Ts(i,j)
+
+        ! third order precision in already included in the scheme (Maple generated since complexity increases substancially)
+
+        !TODO: to be implemented
+        ! VeX(i,j)=0d0
+        ! VeY(i,j)=0d0
+        ! VhX(i,j)=0d0
+        ! VhY(i,j)=0d0
       end do
-      !$OMP END DO
+    end do
+    !$OMP END DO
 
-    end subroutine ComputeCouplings_batch
+   end subroutine ComputeGainsAndLosses
 
-    real(8) function OnePhotonIonizationRate()
+    pure real(8) function OnePhotonIonizationRate()
       implicit none
 
 !       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
@@ -603,7 +667,7 @@
       return
     end function OnePhotonIonizationRate
 
-     real(8) function TwoPhotonIonizationRate(lambda)
+    pure real(8) function TwoPhotonIonizationRate(lambda)
       implicit none
 
       real(8), intent(in) :: lambda

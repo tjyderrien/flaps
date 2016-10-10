@@ -1,3 +1,31 @@
+!! Copyright (C) 2016 N. Tancogne-Dejean
+!!
+!! This program is free software: you can redistribute it and/or modify
+!! it under the terms of the GNU General Public License as published by
+!! the Free Software Foundation, either version 3 of the License, or
+!! (at your option) any later version.
+!!
+!! This program is distributed in the hope that it will be useful,
+!! but WITHOUT ANY WARRANTY; without even the implied warranty of
+!! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!! GNU General Public License for more details.
+!!
+!! You should have received a copy of the GNU General Public License
+!! along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+!------------------------------------------------------------------------------
+!> @file input.f90
+!
+! DESCRIPTION:
+!> @brief Provide the code with a parser for the input file.
+!
+!> @author
+!> N. Tanconge-Dejean
+!
+!> @date
+!> 26 Aug 2016 - Initial Version
+!------------------------------------------------------------------------------
+
 !> Initialize  Parameters
 !> @param Params Structure containing input parameters
 subroutine InitInputParameter( Params )
@@ -5,15 +33,34 @@ subroutine InitInputParameter( Params )
     implicit none
     type(InputParameters) :: Params
 
+    !Paramters of the simulation
     Params%UseMieScattering = -2
     Params%M = -1
     Params%N = -1
+    Params%TimeStep = 0.d0
+    Params%TimeMax  = 0.d0
+    Params%OutputIter = 10000
 
     !Debug options
     Params%NeOff = 0
     Params%TeOff = 0
     Params%HolesOff = 0
     Params%TsOff = 0
+    Params%AugerOff=0
+
+    Params%DrudeHeating=1       ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
+    Params%TransportModel = -1 ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
+                                ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
+                                ! 0: only fourier conductivity
+                                !-1: diffusion and conductivity OFF
+    Params%CouplingDebug=0      !0: e/h - lattice coupling enabled, 1: disabled
+
+
+    !Mie scattering
+    Params%phiMie0 = 0
+    Params%PolarizationSource = 0
+
+
 
 end subroutine InitInputParameter
 
@@ -66,6 +113,46 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%TsOff < 0 .or. Params%TsOff > 1 ) then
       print *, 'Bad value for TeOff'
+      call StopProgram()
+    end if
+
+    if( Params%TimeStep <= 0.0d0 .or. Params%TimeMax < 0.0d0 ) then
+      print *, 'Bad value for TimeStep or TimeMax'
+      call StopProgram()
+    end if
+
+    if( Params%phiMie0 < 0.0d0 .or. Params%phiMie0 > 360.0d0 ) then
+      print *, 'Bad value for phiMie0'
+      call StopProgram()
+    end if
+
+    if( Params%PolarizationSource < 0.or. Params%PolarizationSource > 1 ) then
+      print *, 'Bad value for PolarizationSource'
+      call StopProgram()
+    end if
+
+    if( Params%DrudeHeating < 0 .or. Params%DrudeHeating > 1 ) then
+      print *, 'Bad value for DrudeHeating'
+      call StopProgram()
+    end if
+
+    if( Params%TransportModel < -1 .or. Params%TransportModel > 2 ) then
+      print *, 'Bad value for TransportModel'
+      call StopProgram()
+    end if
+
+    if( Params%CouplingDebug < 0 .or. Params%CouplingDebug > 1 ) then
+      print *, 'Bad value for CouplingDebug'
+      call StopProgram()
+    end if
+
+    if( Params%AugerOff < 0 .or. Params%AugerOff > 1 ) then
+      print *, 'Bad value for AugerOff'
+      call StopProgram()
+    end if
+
+    if( Params%OutputIter <= 0 ) then
+      print *, 'Bad value for OutputIter'
       call StopProgram()
     end if
 
@@ -153,6 +240,60 @@ subroutine LoadInputParameters( filename, Params )
               !TsOff
               if( id .equals. 'TsOff' ) then
                 call ParseInt( line, Params%TsOff )
+                goto 999
+              endif
+
+              !TimeStep
+              if( id .equals. 'TimeStep' ) then
+                call ParseDouble( line, Params%TimeStep )
+                goto 999
+              endif
+
+              !TimeDouble
+              if( id .equals. 'TimeMax' ) then
+                call ParseDouble( line, Params%TimeMax )
+                goto 999
+              endif
+
+              !TsOff
+              if( id .equals. 'PolarizationSource' ) then
+                call ParseInt( line, Params%PolarizationSource )
+                goto 999
+              endif
+
+              !phiMie0
+              if( id .equals. 'phiMie0' ) then
+                call ParseDouble( line, Params%phiMie0 )
+                goto 999
+              endif
+
+              !DrudeHeating
+              if( id .equals. 'DrudeHeating' ) then
+                call ParseInt( line, Params%DrudeHeating )
+                goto 999
+              endif
+
+              !TransportModel
+              if( id .equals. 'TransportModel' ) then
+                call ParseInt( line, Params%TransportModel )
+                goto 999
+              endif
+
+              !CouplingDebug
+              if( id .equals. 'CouplingDebug' ) then
+                call ParseInt( line, Params%CouplingDebug )
+                goto 999
+              endif
+
+              !AugerOff
+              if( id .equals. 'AugerOff' ) then
+                call ParseInt( line, Params%AugerOff )
+                goto 999
+              endif
+
+              !OutputIter
+              if( id .equals. 'OutputIter' ) then
+                call ParseInt( line, Params%OutputIter )
                 goto 999
               endif
 

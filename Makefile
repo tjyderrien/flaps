@@ -1,6 +1,6 @@
 #DebugLine=-g -check all -warn all -backtrace 
-#DebugLine=-g -fbounds-check -w -fbacktrace -Wno-unused-variable -Wall
-Optimization=$(DebugLine) -O3 -I/usr/include -llapack -lm  -fopenmp #-mcmodel=large
+DebugLine= -pg -g 
+Optimization=$(DebugLine) -O2 -I/usr/include -llapack -lm  -fopenmp #-mcmodel=large
 
 #-finteger-4-integer-8
 
@@ -12,7 +12,7 @@ EXEC=Flaps_explicit.out
 #LDFLAGS=-L/opt/intel/mkl/lib/intel64 -R/opt/intel/mkl/lib/intel64 -shared-intel -lmkl_lapack95_lp64 -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -openmp -lpthread -lm
 LDFLAGS=-L/usr/lib/lapack -llapack
 
-OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $(wildcard libs/amos/*.o) libs/gmsh/libmsh2vf.o libs/control_file.o
+OBJ_LIBS=libs/Bivariate.o libs/zeroin.o $(wildcard libs/amos/*.o) libs/gmsh/libmsh2vf.o 
 
 OBJS = $(wildcard src/*.o)
 
