@@ -2129,7 +2129,6 @@ if(Params%UseMieScattering.eq.1) then
        CFLxN(i,j)=diffusionE(i,j)*dt/(x(i,j)-x(i-1,j))**2 !+dt/(x(i,j)-x(i-1,j))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
        CFLyN(i,j)=diffusionE(i,j)*dt/(y(i,j)-y(i,j-1))**2 !+dt/(y(i,j)-y(i,j-1))*mobilityE(i,j)*sqrt(Ex(i,j)**2+Ey(i,j)**2)
        !
->>>>>>> 6de9f8baa2bef5a981717c37f69c18313c4dd4d9
      end do
    end do
    !$OMP END DO
