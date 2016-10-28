@@ -17,7 +17,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libs  \
+SUBDIRS = external_libs  \
           src \
           doc
 

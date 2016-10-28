@@ -86,8 +86,8 @@ AC_PATH_PROG([PERL],perl,no)
 
 AC_CONFIG_FILES([Makefile
                  doc/Makefile
-                 libs/Makefile
-                 libs/amos/Makefile
-                 libs/gmsh/Makefile
+                 external_libs/Makefile
+                 external_libs/amos/Makefile
+                 external_libs/gmsh/Makefile
                  src/Makefile])
 AC_OUTPUT

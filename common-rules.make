@@ -20,18 +20,18 @@
 # ---------------------------------------------------------------
 
 FCFLAGS_MODS =  \
-      @F90_MODULE_FLAG@$(top_builddir)/libs      \
-      @F90_MODULE_FLAG@$(top_builddir)/libs/amos \
-      @F90_MODULE_FLAG@$(top_builddir)/libs/gmsh
+      @F90_MODULE_FLAG@$(top_builddir)/external_libs      \
+      @F90_MODULE_FLAG@$(top_builddir)/external_libs/amos \
+      @F90_MODULE_FLAG@$(top_builddir)/external_libs/gmsh
 
 # ---------------------------------------------------------------
 # Define libraries here.
 # ---------------------------------------------------------------
 
 flaps_LIBS = \
-       $(top_builddir)/libs/libflaps.a \
-       $(top_builddir)/libs/amos/libamos.a \
-       $(top_builddir)/libs/gmsh/libgmsh.a
+       $(top_builddir)/external_libs/libflaps.a \
+       $(top_builddir)/external_libs/amos/libamos.a \
+       $(top_builddir)/external_libs/gmsh/libgmsh.a
 
 core_LIBS = \
       @LIBS_LAPACK@
