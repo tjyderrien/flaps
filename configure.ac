@@ -19,6 +19,7 @@
 AC_PREREQ([2.69])
 AC_INIT([Flaps], [1.0], [derrien@fzu.cz])
 AC_CONFIG_SRCDIR([src/maths.f90])
+AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_HEADERS([config.h])
