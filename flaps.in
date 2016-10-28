@@ -12,7 +12,7 @@ UseMieScattering -1 !This is a comment for this variable
 
 
 DrudeHeating 1
-ConductivityFix -1 
+TransportModel -1 
 
 !Debug options
 NeOff 0
