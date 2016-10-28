@@ -25,6 +25,7 @@
 !> @date
 !> 01 Jun 2016 - Initial Version
 !> 07 Jun 2016 - Creating the Mie_m modules and moving routines - NTD
+!> 28 Oct 2016 - Changing the style of the file to be more object-oriented - NTD
 !------------------------------------------------------------------------------
 
 
@@ -43,7 +44,7 @@ module Mie_m
   !Parameters for Bessel functions
   integer, parameter ::        &
             maxBesselOrder=20, &  !> Max of terms in series of Bessel for Mie scattering
-            besselArray=1      !TODO: Explain what it is, if really useful. TJYD (Oct 2, 2016): I don't remember!!
+            besselArray=1          !TODO: Explain what it is, if really useful. TJYD (Oct 2, 2016): I don't remember!!
 
 
 contains

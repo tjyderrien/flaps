@@ -52,7 +52,6 @@
       !    fi_max=fi_num*fistep
       write(*,*) FermiTableE(3,463), FermiTableH(3,450)
 ! stop
-      return
     end subroutine TabCreateFL
 
 
@@ -67,30 +66,33 @@
 
       if(lambda.eq.1030d-9) then
         DielectricConstant=(12.8d0,0.001414418d0)
+        return
       end if
 
       if(lambda.eq.800d-9) then
         DielectricConstant=(13.46d0,0.048d0)
+        return
       end if
 
       if(lambda.eq.515d-9) then
         DielectricConstant=(17.8254d0,0.50669d0) !refractiveindex.info
+        return
       end if
 
       if(lambda.eq.343d-9) then
         DielectricConstant=(18.81766303d0,31.5464d0)
+        return
       end if
-      return
     end function DielectricConstant
 
-!------------------------------------------------------------------
-    real(8) function DensityOfState(mDOS, T)
+    !------------------------------------------------------------------
     !> Density of states for a 3D gas of electrons (sure?)
-    use Maths_m
-    implicit none
-    real(8), intent(in) :: mDOS, T
+    pure real(8) function DensityOfState(mDOS, T)
+      use Maths_m
+      implicit none
+      real(8), intent(in) :: mDOS, T
+
       DensityOfState = 2d0*(mDOS*kb*T/(2d0*M_PI*hbar**2))**(1.5d0)
-      return
     end function DensityOfState
 
 !------------------------------------------------------------------
@@ -101,8 +103,8 @@
     implicit none
 
     type(MeshValues),  intent(in)    :: mesh
-    real(8),           intent(inout)    :: DOSe(mesh%M,mesh%N), DOSh(mesh%M,mesh%N)
-    real(8), intent(in) :: meDOS, mhDOS
+    real(8),           intent(inout) :: DOSe(mesh%M,mesh%N), DOSh(mesh%M,mesh%N)
+    real(8),           intent(in)    :: meDOS, mhDOS
 
     real(8) :: coefE, coefH
     integer :: i, j
@@ -219,7 +221,6 @@
 !       CollisionFrequency=1d14 !
       ! CollisionFrequency=1d13 !
       !CollisionFrequency=5d13 !
-      return
     end function ephCollisionFrequency
 
 
@@ -228,7 +229,6 @@
       implicit none
 
       CollisionFrequency=1d15
-      return
     end function CollisionFrequency
 
     !TODO: Create a batch version of this routine
@@ -417,7 +417,7 @@
     end subroutine ComputeHeatCapacities_batch
 
 
-    pure  real(8) function LatticeHeatCapacity(T)
+    pure real(8) function LatticeHeatCapacity(T)
         implicit none
         real(8), intent(in) :: T
 
@@ -430,7 +430,7 @@
 !         LatticeHeatCapacity=1D3*SiDensity*(2.36d-16*T**5 -1.707d-12*T**4 + 4.619d-09*T**3 -5.912d-06*T**2 + 0.003733d0*T -0.0494d0) ! 5th order polynomial fit on Okhonin
 !         LatticeHeatCapacity=1d3*SiDensity*(0.4135d0*T-0.4071d0*T**1.002d0) !Driel style (1)
         LatticeHeatCapacity=1d3*SiDensity*(-0.003592d0*T+0.01458d0*T**0.8316d0) !Driel style (2, better ?)
-      end function LatticeHeatCapacity
+    end function LatticeHeatCapacity
 
    !-------------------------------------------------------------------------------------
    !> Updates the conductivities for the entire mesh
@@ -656,7 +656,6 @@
       end do
     end do
     !$OMP END DO
-
    end subroutine ComputeGainsAndLosses
 
     pure real(8) function OnePhotonIonizationRate()
@@ -664,31 +663,33 @@
 
 !       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
       OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
-      return
     end function OnePhotonIonizationRate
 
     pure real(8) function TwoPhotonIonizationRate(lambda)
       implicit none
-
       real(8), intent(in) :: lambda
+
       if(lambda.eq.1030d-9) then
         TwoPhotonIonizationRate=1.933288399d-11
+        return
       end if
 
       if(lambda.eq.800d-9) then
         TwoPhotonIonizationRate=1.857135194d-11
 !         TwoPhotonIonizationRate=0d0
+        return
       end if
 
       if(lambda.eq.515d-9) then
         TwoPhotonIonizationRate=1.512238197d-11
 !                TwoPhotonIonizationRate=0d0
+        return
       end if
 
       if(lambda.eq.343d-9) then
         TwoPhotonIonizationRate=0d0
+        return
       end if
-      return
     end function TwoPhotonIonizationRate
 
     !TODO: Create a batch version of this routine
@@ -709,7 +710,6 @@
     !  if(EgapValue < 0d0) then
     !    EgapValue=0d0
     !  end if
-    !  return
     end function EgapValue
 
     !TODO: Create a batch version of this routine
@@ -726,5 +726,4 @@
       if(FermiIndex < 1 .OR. FermiIndex > FermiMaxLines) then
         write(*,*) "FermiIndex problem: NeNc=", NeNc, "FermiIndex=", FermiIndex
       end if
-      return
     end function FermiIndex
