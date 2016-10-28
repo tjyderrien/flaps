@@ -422,7 +422,8 @@ implicit none
  absorptionDrudeH(:,:) = 0d0
 
 !******** READ GMSH MESH FILE ************
-namefile_msh='libs/gmsh/mesh.msh'
+!TODO: This is very durty
+namefile_msh='external_libs/gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
 ! CALL extract_parameters(namefile_msh, namefile_vf)
 ! We read the .msh file
