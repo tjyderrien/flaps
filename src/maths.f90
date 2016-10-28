@@ -33,17 +33,18 @@ module Maths_m
 
 
   !Some useful numbers
-  real(8), public, parameter    :: M_PI       = 4.0d0*atan(1.0d0)
-  real(8), public, parameter    :: M_SQRT2    = sqrt(2.0d0)
-  real(8), public, parameter    :: M_SQRT2LN2 = sqrt(2d0*log(2d0))
-  complex(8), public, parameter :: M_IM       = (0.0d0,1.0d0)
-  complex(8), public, parameter :: M_ONE      = (1.0d0,0.0d0)
-  complex(8), public, parameter :: M_ZERO     = (0.0d0,0.0d0)
+  real(8), public, parameter    :: M_PI        = 4.0d0*atan(1.0d0)
+  real(8), public, parameter    :: M_SQRT2     = sqrt(2.0d0)
+  real(8), public, parameter    :: M_SQRT2LN2  = sqrt(2d0*log(2d0))
+  complex(8), public, parameter :: M_IM        = (0.0d0,1.0d0)
+  real(8), public, parameter    :: M_ONE       = 1.0d0
+  complex(8), public, parameter :: M_ONE_CMPLX = (1.0d0,0.0d0)
+  real(8), public, parameter    :: M_ZERO      = 0.0d0
 
-  real(8), public, parameter    :: M_EPS_VAL  = epsilon(1.0d0)
-  real(8), public, parameter    :: M_HUGE_VAL = huge(1.0d0)
+  real(8), public, parameter    :: M_EPS_VAL   = epsilon(1.0d0)
+  real(8), public, parameter    :: M_HUGE_VAL  = huge(1.0d0)
 
-  real(8), public, parameter    :: M_DEG2RAD  = M_PI/180.0d0
+  real(8), public, parameter    :: M_DEG2RAD   = M_PI/180.0d0
 
   !Some physical constants
   !TODO: More digits here, otherwise real(8) does not make sense

@@ -616,12 +616,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   ! building rectangular mesh 
   dx=(xmax-xmin)/(Params%M+1)
   dy=(ymax-ymin)/(Params%N+1)
-  do i=1,Params%M
-    do j=1,Params%N
-      x(i,j)=0d0
-      y(i,j)=0d0
-    end do
-  end do
+  x(1:Params%M,1:Params%N) = 0d0
+  y(1:Params%M,1:Params%N) = 0d0
   
   write(*,*)
 
