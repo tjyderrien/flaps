@@ -26,6 +26,56 @@
 !> 07 Jun 2016 - Initial Version
 !------------------------------------------------------------------------------
 
+subroutine allocate_NormCurviTangent(M, N, NormalN, NormalS, NormalE, &
+                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
+                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
+                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+  use Types_m
+  implicit none
+
+  integer, intent(in)    :: M, N
+  type(VectorField), intent(inout) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
+
+  real(8), dimension(:,:), allocatable,intent(inout) ::  TangentWx, TangentWy, &                ! Tangent to quadrangle elements
+                             TangentEx, TangentEy, &
+                             TangentNx, TangentNy, &
+                             TangentSx, TangentSy, &
+                             CurviWx, CurviWy, &                 ! Unit vector between cell centers
+                             CurviEx, CurviEy, &
+                             CurviNx, CurviNy, &
+                             CurviSx, CurviSy
+
+  allocate(NormalN%x(1:M,1:N))
+  allocate(NormalN%y(1:M,1:N))
+  allocate(NormalN%N(1:M,1:N))
+  allocate(NormalS%x(1:M,1:N))
+  allocate(NormalS%y(1:M,1:N))
+  allocate(NormalS%N(1:M,1:N))
+  allocate(NormalE%x(1:M,1:N))
+  allocate(NormalE%y(1:M,1:N))
+  allocate(NormalE%N(1:M,1:N))
+  allocate(NormalW%x(1:M,1:N))
+  allocate(NormalW%y(1:M,1:N))
+  allocate(NormalW%N(1:M,1:N))
+
+  allocate(CurviWx(1:M,1:N))
+  allocate(CurviWy(1:M,1:N))
+  allocate(CurviEx(1:M,1:N))
+  allocate(CurviEy(1:M,1:N))
+  allocate(CurviNx(1:M,1:N))
+  allocate(CurviNy(1:M,1:N))
+  allocate(CurviSx(1:M,1:N))
+  allocate(CurviSy(1:M,1:N))
+
+  allocate(TangentWx(1:M,1:N))
+  allocate(TangentWy(1:M,1:N))
+  allocate(TangentEx(1:M,1:N))
+  allocate(TangentEy(1:M,1:N))
+  allocate(TangentNx(1:M,1:N))
+  allocate(TangentNy(1:M,1:N))
+  allocate(TangentSx(1:M,1:N))
+end subroutine allocate_NormCurviTangent
+
 subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, &
                                          DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CellAreaW )
   use Maths_m

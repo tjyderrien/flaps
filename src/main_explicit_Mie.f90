@@ -1245,35 +1245,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    ! and normal vectors (Nx, Ny) the four poles of quadrangle elements
    write(*,*) "[Mesh] Calculation of normals and distances."
 
-   allocate(NormalN%x(1:Params%M,1:Params%N));
-   allocate(NormalN%y(1:Params%M,1:Params%N));
-   allocate(NormalN%N(1:Params%M,1:Params%N))
-   allocate(NormalS%x(1:Params%M,1:Params%N));
-   allocate(NormalS%y(1:Params%M,1:Params%N));
-   allocate(NormalS%N(1:Params%M,1:Params%N))
-   allocate(NormalE%x(1:Params%M,1:Params%N));
-   allocate(NormalE%y(1:Params%M,1:Params%N));
-   allocate(NormalE%N(1:Params%M,1:Params%N))
-   allocate(NormalW%x(1:Params%M,1:Params%N));
-   allocate(NormalW%y(1:Params%M,1:Params%N));
-   allocate(NormalW%N(1:Params%M,1:Params%N))
-
-    allocate(CurviWx(1:Params%M,1:Params%N));
-    allocate(CurviWy(1:Params%M,1:Params%N))
-    allocate(CurviEx(1:Params%M,1:Params%N));
-    allocate(CurviEy(1:Params%M,1:Params%N))
-    allocate(CurviNx(1:Params%M,1:Params%N));
-    allocate(CurviNy(1:Params%M,1:Params%N))
-    allocate(CurviSx(1:Params%M,1:Params%N));
-    allocate(CurviSy(1:Params%M,1:Params%N))
-    allocate(TangentWx(1:Params%M,1:Params%N));
-    allocate(TangentWy(1:Params%M,1:Params%N))
-    allocate(TangentEx(1:Params%M,1:Params%N));
-    allocate(TangentEy(1:Params%M,1:Params%N))
-    allocate(TangentNx(1:Params%M,1:Params%N));
-    allocate(TangentNy(1:Params%M,1:Params%N))
-    allocate(TangentSx(1:Params%M,1:Params%N));
-    allocate(TangentSy(1:Params%M,1:Params%N))
+   call allocate_NormCurviTangent(Params%M, Params%N, NormalN, NormalS, NormalE, &
+                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
+                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
+                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
 
    call compute_distances(Params%M, Params%N, x, y, DistN, DistS, DistE, DistW, DistDualN, &
                           DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
