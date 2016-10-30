@@ -299,8 +299,8 @@ implicit none
 
   !TODO: move to material.f90
   !TODO: Should be a parameter, to guaranty no modification
-  me=0.5d0*me0       ! electron effective mass for conductivity !0.24 (source ?)
-  mh=0.5d0*me0       ! hole effective mass for conductivity !0.81 (source ?)
+  me=M_HALF*me0       ! electron effective mass for conductivity !0.24 (source ?)
+  mh=M_HALF*me0       ! hole effective mass for conductivity !0.81 (source ?)
   meDOS=0.36d0*me0   ! electron effective mass for DOS
   mhDOS=0.81d0*me0   ! hole effective mass for DOS
 
@@ -1128,18 +1128,18 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         TsPrev(i,j)=Tout
         
         if(BandBendingInFDTD.eq.1) then
-           newmesh%Ne(i,j)=Ne0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
+           newmesh%Ne(i,j)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
-                  +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
+                  +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
                     /(2d0*M_SQRT2LN2))**2)) &
-                  +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
+                  +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) &
                     /(2d0*M_SQRT2LN2))**2)) &
                   )
-          newmesh%Nh(i,j)=Nh0+Nborder*(exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
+          newmesh%Nh(i,j)=Nh0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
-                  +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) & 
+                  +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
                     /(2d0*M_SQRT2LN2))**2)) &
-                  +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) & 
+                  +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) &
                     /(2d0*M_SQRT2LN2))**2)) &
                   )
         else
@@ -1378,8 +1378,8 @@ if(Params%UseMieScattering.eq.1) then
 
           else !TE polarization
 !             write(*,*) "TE polarization selected."
-            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k)
-            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k)
+            EintField2(i,j)= MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k)
+            EintField(i,j) = MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k)
           end if
       end do
     end do
@@ -1393,7 +1393,7 @@ if(Params%UseMieScattering.eq.1) then
     
     do j=1,Params%N
       do i=1,Params%M
-        write(Field%unit, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**0.5d0, Radius(i,j)
+        write(Field%unit, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**M_HALF, Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
     end do
@@ -1835,11 +1835,11 @@ if(Params%UseMieScattering.eq.1) then
    do j=2, Params%N-1 !(optimized)
      do i=2, Params%M-1 !(optimized)
        !
-       work = dt/(0.5d0*(DistW(i,j)+DistE(i,j)))**2
+       work = dt/(M_HALF*(DistW(i,j)+DistE(i,j)))**2
        CFLxT(i,j)  = kappae(i,j)*invCe(i,j) * work
        CFLxTs(i,j) = kappas(i,j)*invCs(i,j) * work
        !
-       work = dt/(0.5d0*(DistN(i,j)+DistS(i,j)))**2
+       work = dt/(M_HALF*(DistN(i,j)+DistS(i,j)))**2
        CFLyT(i,j)  = kappae(i,j)*invCe(i,j) * work
        CFLyTs(i,j) = kappas(i,j)*invCs(i,j) * work
        !

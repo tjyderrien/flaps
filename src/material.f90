@@ -197,7 +197,7 @@
         do j=1, mesh%N
           do i=1, mesh%M
            ! absorptionDrude(i,j)=2d0*source%k*aimag(sqrt(Dielectric(i,j)))
-            absorptionDrude(i,j)=2d0*source%k*sqrt( 0.5d0*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
+            absorptionDrude(i,j)=2d0*source%k*sqrt( M_HALF*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
           end do
         end do
         !$OMP END DO
@@ -616,14 +616,14 @@
         work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
 
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*source%inv_E &
+                    +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
         SourceUe(i,j)= ((source%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
+                     + M_HALF*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
                      - Egap(i,j)*work*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
+                     + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2)
 
         !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
         SourceE(i,j) = SourceUe(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
@@ -634,14 +634,14 @@
         work = ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)
 
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*source%inv_E &
+                    +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
 
         SourceUh(i,j)=((source%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
+                     + M_HALF*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
                      - Egap(i,j)*work*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
+                     + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2)
 
         !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
         SourceH(i,j) = SourceUh(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt

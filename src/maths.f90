@@ -31,6 +31,12 @@
 module Maths_m
   implicit none
 
+  private
+
+  public ::                &
+    AreaElement,           &
+    AreaTri,               &
+    Distance
 
   !Some useful numbers
   real(8), public, parameter    :: M_PI        = 4.0d0*atan(1.0d0)
@@ -40,6 +46,7 @@ module Maths_m
   real(8), public, parameter    :: M_ONE       = 1.0d0
   complex(8), public, parameter :: M_ONE_CMPLX = (1.0d0,0.0d0)
   real(8), public, parameter    :: M_ZERO      = 0.0d0
+  real(8), public, parameter    :: M_HALF      = 0.5d0
 
   real(8), public, parameter    :: M_EPS_VAL   = epsilon(1.0d0)
   real(8), public, parameter    :: M_HUGE_VAL  = huge(1.0d0)
@@ -59,6 +66,31 @@ module Maths_m
   real(8), public, parameter    :: kb2      = kb*kb
   real(8), public, parameter    :: inv_hbar = 1.0d0/hbar
   real(8), public, parameter    :: inv_ec   = 1.0d0/ec
+
+contains
+
+  pure real(8) function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
+    implicit none
+
+    ! works with convex elements!
+    real(8), intent(in) ::  x1, y1, x2, y2, x3,y3,x4,y4
+!   AreaElement=M_HALF*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
+    AreaElement=M_HALF*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
+  end function AreaElement
+
+  real(8) function AreaTri(xA, yA, xB, yB, xP, yP)
+    implicit none
+
+    real(8) xA, yA, xB, yB, xP, yP
+    AreaTri=M_HALF*abs((xA-xP)*(yB-yP)-(xB-xP)*(yA-yP))
+  end function AreaTri
+
+  real(8) function Distance(x1, y1, x2, y2)
+    implicit none
+
+    real(8) x1, y1, x2, y2
+    Distance=sqrt((x2-x1)**2+(y2-y1)**2)
+  end function Distance
 
 end module Maths_m
 
@@ -260,26 +292,6 @@ end module Maths_m
         Tangent=TangentY
       end if
     end function Tangent
-
-   pure real(8) function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
-     implicit none
-    ! works with convex elements!
-      real(8), intent(in) ::  x1, y1, x2, y2, x3,y3,x4,y4
-!       AreaElement=0.5d0*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
-      AreaElement=0.5d0*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
-    end function AreaElement
-
-   real(8) function AreaTri(xA, yA, xB, yB, xP, yP)
-      implicit none
-      real(8) xA, yA, xB, yB, xP, yP
-      AreaTri=0.5d0*abs((xA-xP)*(yB-yP)-(xB-xP)*(yA-yP))
-    end function AreaTri
-
-   real(8) function Distance(x1, y1, x2, y2)
-      implicit none
-      real(8) x1, y1, x2, y2
-      Distance=sqrt((x2-x1)**2+(y2-y1)**2)
-    end function Distance
 
 
 

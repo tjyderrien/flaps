@@ -119,25 +119,25 @@ contains
   !        !Lumerical mode already contains the reflectivity. Although, it doesn't consider change of optical index with ionization.
           if(source%lambda.eq.1030d-9) then
             ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
-                      / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
+                      / (exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
             ConstBLy=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
-                      / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*y0) &
+                      / (exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*y0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
           !
   ! case 1030 nm distribution
             !initial field distribution
             if(BandBendingInFDTD.eq.0) then
-              intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
-                      *exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
+              intensity(i,j)=(M_ONE-M_ZERO*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
+                      *exp(-M_HALF*((x(i,j)-x0)/sigmaX)**2)*exp(-M_HALF*((y(i,j)-y0)/sigmaY)**2)
           ! !
             else
-            intensity(i,j)=(1d0-0d0*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
-                            *(exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2) &
+            intensity(i,j)=(M_ONE-M_ZERO*reflectivity(i,Params%N))*I0*exp_t_t0_sigmaTau &
+                            *(exp(-M_HALF*((x(i,j)-x0)/sigmaX)**2)*exp(-M_HALF*((y(i,j)-y0)/sigmaY)**2) &
                             + I0*1d-4*( &
-        exp(-0.5d0*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
-       +exp(-0.5d0*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
+        exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
+       +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
+       +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
                             ))
             end if !band bending case
            !
@@ -208,8 +208,8 @@ contains
           stop
         end if
 
-        if(intensity(i,j) < 1d-20) then
-          intensity(i,j)=0d0
+        if(intensity(i,j) < M_EPS_VAL) then
+          intensity(i,j)=M_ZERO
         end if
         end do
       end do
@@ -260,7 +260,7 @@ contains
       complex(8) :: sqrt_diel
 
       total=M_ZERO
-      if(r.eq.0d0) return
+      if(r.eq.M_ZERO) return
 
       sqrt_diel = sqrt(dielectric)
 
@@ -381,7 +381,8 @@ contains
 
       external ZBESJ
 
-      cyr(:)=0.d0; cyi(:)=0.d0
+      cyr(:)=M_ZERO
+      cyi(:)=M_ZERO
       ierr=0; nz=0
 
       zR=real(z)
@@ -395,8 +396,8 @@ contains
       end if
       BesselJ=M_ONE*cyr(besselArray)+M_IM*cyi(besselArray)
 
-      if(order .lt. 0d0) then
-        BesselJ=(-1d0)**(abs(order)) * BesselJ
+      if(order .lt. M_ZERO) then
+        BesselJ=(-M_ONE)**(abs(order)) * BesselJ
       end if
     end function BesselJ
    !------------------------------------------------------------------
@@ -410,7 +411,7 @@ contains
     !
     external zbesj
 
-    BesselJprime=0.5d0*(BesselJ(order-1d0,z)-BesselJ(order+1d0,z)) !Abramovitz, Eq. (9.1.27)
+    BesselJprime=M_HALF*(BesselJ(order-M_ONE,z)-BesselJ(order+M_ONE,z)) !Abramovitz, Eq. (9.1.27)
 
 !! other form of the relation
 !       if(z .eq. Zero) then
@@ -439,8 +440,8 @@ contains
         return
       end if
 
-      cyr(:)=0.d0;
-      cyi(:)=0.d0
+      cyr(:)=M_ZERO
+      cyi(:)=M_ZERO
       ierr=0; nz=0
 
       CALL ZBESH(zR, zI, abs(order), 1, 1, besselArray, cyr, cyi, nz, ierr)
@@ -450,7 +451,7 @@ contains
       end if
       Hankel1=cyr(besselArray)+M_IM*cyi(besselArray)
 
-      if(order .lt. 0d0) then
+      if(order .lt. M_ZERO) then
         Hankel1=exp(M_IM*abs(order)*M_PI) * Hankel1
       end if
     end function Hankel1
@@ -464,7 +465,7 @@ contains
       real(8),    intent(in) :: order
       external zbesh
 
-      Hankel1prime=0.5d0*(Hankel1(order-1d0,zR,zI)-Hankel1(order+1d0,zR,zI))
+      Hankel1prime=M_HALF*(Hankel1(order-M_ONE,zR,zI)-Hankel1(order+M_ONE,zR,zI))
     end function Hankel1prime
    !------------------------------------------------------------------
 

@@ -71,13 +71,13 @@
 ! !     function AreaElement(x1,y1,x2,y2,x3,y3,x4,y4)
 ! !     ! works with convex elements!
 ! !       real(8) x1, y1, x2, y2, x3,y3,x4,y4, AreaElement
-! ! !       AreaElement=0.5d0*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
-! !       AreaElement=0.5d0*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
+! ! !       AreaElement=M_HALF*abs((x3-x1)*(y4-y2)-(y3-y1)*(x4-x2))
+! !       AreaElement=M_HALF*abs((x3-x1)*(y2-y4)-(y3-y1)*(x2-x4))
 ! !     end function AreaElement
 ! ! 
 ! !     function AreaTri(xA, yA, xB, yB, xP, yP)
 ! !       real(8) xA, yA, xB, yB, xP, yP, AreaTri
-! !       AreaTri=0.5d0*abs((xA-xP)*(yB-yP)-(xB-xP)*(yA-yP))
+! !       AreaTri=M_HALF*abs((xA-xP)*(yB-yP)-(xB-xP)*(yA-yP))
 ! !     end function AreaTri
 ! ! 
 ! !     function Distance(x1, y1, x2, y2)
@@ -281,8 +281,8 @@
 ! 	else
 ! 	  ConeExp1Radius=abs(temp1)
 ! 	end if
-! ! 	ConeExp1Radius=0.5d0*(abs(temp1)+abs(temp2)) !not the average, since the case r>R is divergent
-! !       ConeExp2Radius=0.5d0*(temp1+temp2)
+! ! 	ConeExp1Radius=M_HALF*(abs(temp1)+abs(temp2)) !not the average, since the case r>R is divergent
+! !       ConeExp2Radius=M_HALF*(temp1+temp2)
 !     end function ConeExp1Radius
 ! 
 ! 
@@ -306,6 +306,6 @@
 ! 	end if
 ! ! 	write(*,*) 'Solve:', temp
 ! !       end do
-! ! 	ConeExp2Radius=0.5d0*(abs(temp1)+abs(temp2))
-! !       ConeExp2Radius=0.5d0*(temp1+temp2)
+! ! 	ConeExp2Radius=M_HALF*(abs(temp1)+abs(temp2))
+! !       ConeExp2Radius=M_HALF*(temp1+temp2)
 !     end function ConeExp2Radius
