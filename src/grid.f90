@@ -58,22 +58,6 @@ subroutine allocate_NormCurviTangent(M, N, NormalN, NormalS, NormalE, &
   allocate(NormalW%y(1:M,1:N))
   allocate(NormalW%N(1:M,1:N))
 
-  allocate(CurviWx(1:M,1:N))
-  allocate(CurviWy(1:M,1:N))
-  allocate(CurviEx(1:M,1:N))
-  allocate(CurviEy(1:M,1:N))
-  allocate(CurviNx(1:M,1:N))
-  allocate(CurviNy(1:M,1:N))
-  allocate(CurviSx(1:M,1:N))
-  allocate(CurviSy(1:M,1:N))
-
-  allocate(TangentWx(1:M,1:N))
-  allocate(TangentWy(1:M,1:N))
-  allocate(TangentEx(1:M,1:N))
-  allocate(TangentEy(1:M,1:N))
-  allocate(TangentNx(1:M,1:N))
-  allocate(TangentNy(1:M,1:N))
-  allocate(TangentSx(1:M,1:N))
 end subroutine allocate_NormCurviTangent
 
 subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, DistDualS, &
@@ -820,36 +804,14 @@ subroutine compute_cellvol(M, N, x, y, CellVol, InvCellVol )
 !         CellVol(1,N)=M_TWO*CellVol(1,N)
 end subroutine compute_cellvol
 
-subroutine deallocate_NormCurviTangent(NormalN, NormalS, NormalE, &
-                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
-                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
-                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+subroutine deallocate_Norm(NormalN, NormalS, NormalE, NormalW)
   use Types_m
   implicit none
 
   type(VectorField), intent(inout) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
 
-  real(8), dimension(:,:), allocatable,intent(inout) ::  TangentWx, TangentWy, &                ! Tangent to quadrangle elements
-                             TangentEx, TangentEy, &
-                             TangentNx, TangentNy, &
-                             TangentSx, TangentSy, &
-                             CurviWx, CurviWy, &                 ! Unit vector between cell centers
-                             CurviEx, CurviEy, &
-                             CurviNx, CurviNy, &
-                             CurviSx, CurviSy
-
   deallocate(NormalN%x, NormalN%y, NormalN%N)
   deallocate(NormalS%x, NormalS%y, NormalS%N)
   deallocate(NormalE%x, NormalE%y, NormalE%N)
   deallocate(NormalW%x, NormalW%y, NormalW%N)
-
-  deallocate(CurviWx,CurviWy)
-  deallocate(CurviNx,CurviNy)
-  deallocate(CurviSx,CurviSy)
-  deallocate(CurviEx,CurviEy)
-
-  deallocate(TangentWx,TangentWy)
-  deallocate(TangentNx,TangentNy)
-  deallocate(TangentSx,TangentSy)
-  deallocate(TangentEx,TangentEy)
-end subroutine deallocate_NormCurviTangent
+end subroutine deallocate_Norm

@@ -51,7 +51,7 @@ mie.o: mie.f90 maths.o
 output.o: output.f90 types.o
 source.o: source.f90 maths.o types.o
 solver.o: solver.f90 types.o
-grid.o: grid.f90 maths.o
+grid.o: grid.f90 maths.o types.o
 input.o: input.f90 types.o string.o utils.o
 string.o: string.f90
 timer.o: timer.f90

@@ -1245,6 +1245,25 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    ! and normal vectors (Nx, Ny) the four poles of quadrangle elements
    write(*,*) "[Mesh] Calculation of normals and distances."
 
+
+  allocate(CurviWx(1:Params%M,1:Params%N))
+  allocate(CurviWy(1:Params%M,1:Params%N))
+  allocate(CurviEx(1:Params%M,1:Params%N))
+  allocate(CurviEy(1:Params%M,1:Params%N))
+  allocate(CurviNx(1:Params%M,1:Params%N))
+  allocate(CurviNy(1:Params%M,1:Params%N))
+  allocate(CurviSx(1:Params%M,1:Params%N))
+  allocate(CurviSy(1:Params%M,1:Params%N))
+
+  allocate(TangentWx(1:Params%M,1:Params%N))
+  allocate(TangentWy(1:Params%M,1:Params%N))
+  allocate(TangentEx(1:Params%M,1:Params%N))
+  allocate(TangentEy(1:Params%M,1:Params%N))
+  allocate(TangentNx(1:Params%M,1:Params%N))
+  allocate(TangentNy(1:Params%M,1:Params%N))
+  allocate(TangentSx(1:Params%M,1:Params%N))
+  allocate(TangentSy(1:Params%M,1:Params%N))
+
    call allocate_NormCurviTangent(Params%M, Params%N, NormalN, NormalS, NormalE, &
                                  NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
                                  TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
@@ -2179,10 +2198,7 @@ if(Params%UseMieScattering.eq.1) then
   call releasemesh(dual)
   call releasemesh(newmesh)
 
-  call deallocate_NormCurviTangent(NormalN, NormalS, NormalE, &
-                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
-                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
-                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+  call deallocate_Norm(NormalN, NormalS, NormalE, NormalW )
 
   !TODO: Sorry but where are the file stream closed???
 
