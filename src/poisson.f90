@@ -30,7 +30,9 @@
 subroutine poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
                                          xDualNE, yDualNE, xDualNW, yDualNW, &
                                          xDual, yDual)
+  use Maths_m
   implicit none
+
   integer,                 intent(in)    :: M, N
   real(8), dimension(M,N), intent(in)    :: x, y
   real(8), dimension(M,N), intent(inout) :: xDualSW, yDualSW, xDualSE, yDualSE, &
@@ -39,11 +41,11 @@ subroutine poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
 
   integer :: i, j
 
-  xDualSW(:,:) = 0.d0; yDualSW(:,:) = 0.d0
-  xDualSE(:,:) = 0.d0; yDualSE(:,:) = 0.d0
-  xDualNE(:,:) = 0.d0; yDualNE(:,:) = 0.d0
-  xDualNW(:,:) = 0.d0; yDualNW(:,:) = 0.d0
-  xDual(:,:) = 0.d0; yDual(:,:) = 0.d0
+  xDualSW(:,:) = M_ZERO; yDualSW(:,:) = M_ZERO
+  xDualSE(:,:) = M_ZERO; yDualSE(:,:) = M_ZERO
+  xDualNE(:,:) = M_ZERO; yDualNE(:,:) = M_ZERO
+  xDualNW(:,:) = M_ZERO; yDualNW(:,:) = M_ZERO
+  xDual(:,:) = M_ZERO; yDual(:,:) = M_ZERO
 
   !TODO: OpemMP parallelisation here?
 
@@ -77,6 +79,7 @@ end subroutine poisson_init_dual
 
 subroutine poisson_init_normal_cellarea( Mp, Np, xP, yP, NormalNxP, NormalNyP, NormalSxP, NormalSyP, NormalExP, NormalEyP, &
                                             NormalWxP, NormalWyP, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP )
+  use Maths_m
   implicit none
 
   integer,                 intent(in)      :: Mp, Np
@@ -90,74 +93,79 @@ subroutine poisson_init_normal_cellarea( Mp, Np, xP, yP, NormalNxP, NormalNyP, N
    do j=2,Np-1
     do i=2,Mp-1
         NormalNxP(i,j)=4d0*(0.25d0*yP(i-1,j)+0.25d0*yP(i-1,j+1)-0.25d0*yP(i+1,j+1)-0.25d0*yP(i+1,j))/(xP(i-1,j)**2 &
-                      +2d0*xP(i-1,j)*xP(i-1,j+1)-2d0*xP(i-1,j)*xP(i+1,j+1)-2d0*xP(i-1,j)*xP(i+1,j)+xP(i-1,j+1)**2 &
-                      -2d0*xP(i-1,j+1)*xP(i+1,j+1)-2d0*xP(i-1,j+1)*xP(i+1,j)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j) &
-                      +xP(i+1,j)**2+yP(i-1,j)**2+2d0*yP(i-1,j)*yP(i-1,j+1)-2d0*yP(i-1,j)*yP(i+1,j+1)-2d0*yP(i-1,j)*yP(i+1,j) &
-                      +yP(i-1,j+1)**2-2d0*yP(i-1,j+1)*yP(i+1,j+1)-2d0*yP(i-1,j+1)*yP(i+1,j)+yP(i+1,j+1)**2 &
-                      +2d0*yP(i+1,j+1)*yP(i+1,j)+yP(i+1,j)**2)**(0.5d0)
+                      +M_TWO*xP(i-1,j)*xP(i-1,j+1)-M_TWO*xP(i-1,j)*xP(i+1,j+1)-M_TWO*xP(i-1,j)*xP(i+1,j)+xP(i-1,j+1)**2 &
+                      -M_TWO*xP(i-1,j+1)*xP(i+1,j+1)-M_TWO*xP(i-1,j+1)*xP(i+1,j)+xP(i+1,j+1)**2+M_TWO*xP(i+1,j+1)*xP(i+1,j) &
+                      +xP(i+1,j)**2+yP(i-1,j)**2+M_TWO*yP(i-1,j)*yP(i-1,j+1)-M_TWO*yP(i-1,j)*yP(i+1,j+1)-M_TWO*yP(i-1,j)*yP(i+1,j) &
+                      +yP(i-1,j+1)**2-M_TWO*yP(i-1,j+1)*yP(i+1,j+1)-M_TWO*yP(i-1,j+1)*yP(i+1,j)+yP(i+1,j+1)**2 &
+                      +M_TWO*yP(i+1,j+1)*yP(i+1,j)+yP(i+1,j)**2)**(M_HALF)
         NormalNyP(i,j)=-4d0*(0.25d0*xP(i-1,j)+0.25d0*xP(i-1,j+1)-0.25d0*xP(i+1,j+1)-0.25d0*xP(i+1,j))/(xP(i-1,j)**2 &
-                +2d0*xP(i-1,j)*xP(i-1,j+1)-2d0*xP(i-1,j)*xP(i+1,j+1)-2d0*xP(i-1,j)*xP(i+1,j)+xP(i-1,j+1)**2 &
-                -2d0*xP(i-1,j+1)*xP(i+1,j+1)-2d0*xP(i-1,j+1)*xP(i+1,j)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j) &
-                +xP(i+1,j)**2+yP(i-1,j)**2+2d0*yP(i-1,j)*yP(i-1,j+1)-2d0*yP(i-1,j)*yP(i+1,j+1)-2d0*yP(i-1,j)*yP(i+1,j) &
-                +yP(i-1,j+1)**2-2d0*yP(i-1,j+1)*yP(i+1,j+1)-2d0*yP(i-1,j+1)*yP(i+1,j)+yP(i+1,j+1)**2 &
-                +2d0*yP(i+1,j+1)*yP(i+1,j)+yP(i+1,j)**2)**(0.5d0)
+                +M_TWO*xP(i-1,j)*xP(i-1,j+1)-M_TWO*xP(i-1,j)*xP(i+1,j+1)-M_TWO*xP(i-1,j)*xP(i+1,j)+xP(i-1,j+1)**2 &
+                -M_TWO*xP(i-1,j+1)*xP(i+1,j+1)-M_TWO*xP(i-1,j+1)*xP(i+1,j)+xP(i+1,j+1)**2+M_TWO*xP(i+1,j+1)*xP(i+1,j) &
+                +xP(i+1,j)**2+yP(i-1,j)**2+M_TWO*yP(i-1,j)*yP(i-1,j+1)-M_TWO*yP(i-1,j)*yP(i+1,j+1)-M_TWO*yP(i-1,j)*yP(i+1,j) &
+                +yP(i-1,j+1)**2-M_TWO*yP(i-1,j+1)*yP(i+1,j+1)-M_TWO*yP(i-1,j+1)*yP(i+1,j)+yP(i+1,j+1)**2 &
+                +M_TWO*yP(i+1,j+1)*yP(i+1,j)+yP(i+1,j)**2)**(M_HALF)
         NormalSxP(i,j)=-4d0*(0.25d0*yP(i-1,j-1)+0.25d0*yP(i-1,j)-0.25d0*yP(i+1,j)-0.25d0*yP(i+1,j-1))/(xP(i-1,j-1)**2 &
-                +2d0*xP(i-1,j-1)*xP(i-1,j)-2d0*xP(i-1,j-1)*xP(i+1,j)-2d0*xP(i-1,j-1)*xP(i+1,j-1)+xP(i-1,j)**2 &
-                -2d0*xP(i-1,j)*xP(i+1,j)-2d0*xP(i-1,j)*xP(i+1,j-1)+xP(i+1,j)**2+2d0*xP(i+1,j)*xP(i+1,j-1) &
-                +xP(i+1,j-1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i-1,j)-2d0*yP(i-1,j-1)*yP(i+1,j) &
-                -2d0*yP(i-1,j-1)*yP(i+1,j-1)+yP(i-1,j)**2-2d0*yP(i-1,j)*yP(i+1,j)-2d0*yP(i-1,j)*yP(i+1,j-1) &
-                +yP(i+1,j)**2+2d0*yP(i+1,j)*yP(i+1,j-1)+yP(i+1,j-1)**2)**(0.5d0)
+                +M_TWO*xP(i-1,j-1)*xP(i-1,j)-M_TWO*xP(i-1,j-1)*xP(i+1,j)-M_TWO*xP(i-1,j-1)*xP(i+1,j-1)+xP(i-1,j)**2 &
+                -M_TWO*xP(i-1,j)*xP(i+1,j)-M_TWO*xP(i-1,j)*xP(i+1,j-1)+xP(i+1,j)**2+M_TWO*xP(i+1,j)*xP(i+1,j-1) &
+                +xP(i+1,j-1)**2+yP(i-1,j-1)**2+M_TWO*yP(i-1,j-1)*yP(i-1,j)-M_TWO*yP(i-1,j-1)*yP(i+1,j) &
+                -M_TWO*yP(i-1,j-1)*yP(i+1,j-1)+yP(i-1,j)**2-M_TWO*yP(i-1,j)*yP(i+1,j)-M_TWO*yP(i-1,j)*yP(i+1,j-1) &
+                +yP(i+1,j)**2+M_TWO*yP(i+1,j)*yP(i+1,j-1)+yP(i+1,j-1)**2)**(M_HALF)
         NormalSyP(i,j)=4d0*(0.25d0*xP(i-1,j-1)+0.25d0*xP(i-1,j)-0.25d0*xP(i+1,j)-0.25d0*xP(i+1,j-1))/(xP(i-1,j-1)**2 &
-                      +2d0*xP(i-1,j-1)*xP(i-1,j)-2d0*xP(i-1,j-1)*xP(i+1,j)-2d0*xP(i-1,j-1)*xP(i+1,j-1)+xP(i-1,j)**2 &
-                      -2d0*xP(i-1,j)*xP(i+1,j)-2d0*xP(i-1,j)*xP(i+1,j-1)+xP(i+1,j)**2+2d0*xP(i+1,j)*xP(i+1,j-1) &
-                      +xP(i+1,j-1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i-1,j)-2d0*yP(i-1,j-1)*yP(i+1,j) &
-                      -2d0*yP(i-1,j-1)*yP(i+1,j-1)+yP(i-1,j)**2-2d0*yP(i-1,j)*yP(i+1,j)-2d0*yP(i-1,j)*yP(i+1,j-1) &
-                      +yP(i+1,j)**2+2d0*yP(i+1,j)*yP(i+1,j-1)+yP(i+1,j-1)**2)**(0.5d0)
+                      +M_TWO*xP(i-1,j-1)*xP(i-1,j)-M_TWO*xP(i-1,j-1)*xP(i+1,j)-M_TWO*xP(i-1,j-1)*xP(i+1,j-1)+xP(i-1,j)**2 &
+                      -M_TWO*xP(i-1,j)*xP(i+1,j)-M_TWO*xP(i-1,j)*xP(i+1,j-1)+xP(i+1,j)**2+M_TWO*xP(i+1,j)*xP(i+1,j-1) &
+                      +xP(i+1,j-1)**2+yP(i-1,j-1)**2+M_TWO*yP(i-1,j-1)*yP(i-1,j)-M_TWO*yP(i-1,j-1)*yP(i+1,j) &
+                      -M_TWO*yP(i-1,j-1)*yP(i+1,j-1)+yP(i-1,j)**2-M_TWO*yP(i-1,j)*yP(i+1,j)-M_TWO*yP(i-1,j)*yP(i+1,j-1) &
+                      +yP(i+1,j)**2+M_TWO*yP(i+1,j)*yP(i+1,j-1)+yP(i+1,j-1)**2)**(M_HALF)
         NormalExP(i,j)=-4d0*(0.25d0*yP(i+1,j-1)+0.25d0*yP(i,j-1)-0.25d0*yP(i+1,j+1)-0.25d0*yP(i,j+1))/(xP(i+1,j-1)**2 &
-                +2d0*xP(i+1,j-1)*xP(i,j-1)-2d0*xP(i+1,j-1)*xP(i+1,j+1)-2d0*xP(i+1,j-1)*xP(i,j+1)+xP(i,j-1)**2 &
-                -2d0*xP(i,j-1)*xP(i+1,j+1)-2d0*xP(i,j-1)*xP(i,j+1)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1) &
-                +xP(i,j+1)**2+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1)-2d0*yP(i+1,j-1)*yP(i+1,j+1) &
-                -2d0*yP(i+1,j-1)*yP(i,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i+1,j+1)-2d0*yP(i,j-1)*yP(i,j+1) &
-                +yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)+yP(i,j+1)**2)**(0.5d0)
+                +M_TWO*xP(i+1,j-1)*xP(i,j-1)-M_TWO*xP(i+1,j-1)*xP(i+1,j+1)-M_TWO*xP(i+1,j-1)*xP(i,j+1)+xP(i,j-1)**2 &
+                -M_TWO*xP(i,j-1)*xP(i+1,j+1)-M_TWO*xP(i,j-1)*xP(i,j+1)+xP(i+1,j+1)**2+M_TWO*xP(i+1,j+1)*xP(i,j+1) &
+                +xP(i,j+1)**2+yP(i+1,j-1)**2+M_TWO*yP(i+1,j-1)*yP(i,j-1)-M_TWO*yP(i+1,j-1)*yP(i+1,j+1) &
+                -M_TWO*yP(i+1,j-1)*yP(i,j+1)+yP(i,j-1)**2-M_TWO*yP(i,j-1)*yP(i+1,j+1)-M_TWO*yP(i,j-1)*yP(i,j+1) &
+                +yP(i+1,j+1)**2+M_TWO*yP(i+1,j+1)*yP(i,j+1)+yP(i,j+1)**2)**(M_HALF)
         NormalEyP(i,j)=4d0*(0.25d0*xP(i+1,j-1)+0.25d0*xP(i,j-1)-0.25d0*xP(i+1,j+1)-0.25d0*xP(i,j+1))/(xP(i+1,j-1)**2 &
-                      +2d0*xP(i+1,j-1)*xP(i,j-1)-2d0*xP(i+1,j-1)*xP(i+1,j+1)-2d0*xP(i+1,j-1)*xP(i,j+1)+xP(i,j-1)**2 &
-                      -2d0*xP(i,j-1)*xP(i+1,j+1)-2d0*xP(i,j-1)*xP(i,j+1)+xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1) &
-                      +xP(i,j+1)**2+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1)-2d0*yP(i+1,j-1)*yP(i+1,j+1) &
-                      -2d0*yP(i+1,j-1)*yP(i,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i+1,j+1)-2d0*yP(i,j-1)*yP(i,j+1) &
-                      +yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)+yP(i,j+1)**2)**(0.5d0)
+                      +M_TWO*xP(i+1,j-1)*xP(i,j-1)-M_TWO*xP(i+1,j-1)*xP(i+1,j+1)-M_TWO*xP(i+1,j-1)*xP(i,j+1)+xP(i,j-1)**2 &
+                      -M_TWO*xP(i,j-1)*xP(i+1,j+1)-M_TWO*xP(i,j-1)*xP(i,j+1)+xP(i+1,j+1)**2+M_TWO*xP(i+1,j+1)*xP(i,j+1) &
+                      +xP(i,j+1)**2+yP(i+1,j-1)**2+M_TWO*yP(i+1,j-1)*yP(i,j-1)-M_TWO*yP(i+1,j-1)*yP(i+1,j+1) &
+                      -M_TWO*yP(i+1,j-1)*yP(i,j+1)+yP(i,j-1)**2-M_TWO*yP(i,j-1)*yP(i+1,j+1)-M_TWO*yP(i,j-1)*yP(i,j+1) &
+                      +yP(i+1,j+1)**2+M_TWO*yP(i+1,j+1)*yP(i,j+1)+yP(i,j+1)**2)**(M_HALF)
         NormalWxP(i,j)=4d0*(0.25d0*yP(i-1,j-1)+0.25d0*yP(i,j-1)-0.25d0*yP(i,j+1)-0.25d0*yP(i-1,j+1))/(xP(i-1,j-1)**2 &
-                      +2d0*xP(i-1,j-1)*xP(i,j-1)-2d0*xP(i-1,j-1)*xP(i,j+1)-2d0*xP(i-1,j-1)*xP(i-1,j+1)+xP(i,j-1)**2 &
-                      -2d0*xP(i,j-1)*xP(i,j+1)-2d0*xP(i,j-1)*xP(i-1,j+1)+xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1) &
-                      +xP(i-1,j+1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i,j-1)-2d0*yP(i-1,j-1)*yP(i,j+1) &
-                      -2d0*yP(i-1,j-1)*yP(i-1,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i,j+1)-2d0*yP(i,j-1)*yP(i-1,j+1) &
-                      +yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(0.5d0)
+                      +M_TWO*xP(i-1,j-1)*xP(i,j-1)-M_TWO*xP(i-1,j-1)*xP(i,j+1)-M_TWO*xP(i-1,j-1)*xP(i-1,j+1)+xP(i,j-1)**2 &
+                      -M_TWO*xP(i,j-1)*xP(i,j+1)-M_TWO*xP(i,j-1)*xP(i-1,j+1)+xP(i,j+1)**2+M_TWO*xP(i,j+1)*xP(i-1,j+1) &
+                      +xP(i-1,j+1)**2+yP(i-1,j-1)**2+M_TWO*yP(i-1,j-1)*yP(i,j-1)-M_TWO*yP(i-1,j-1)*yP(i,j+1) &
+                      -M_TWO*yP(i-1,j-1)*yP(i-1,j+1)+yP(i,j-1)**2-M_TWO*yP(i,j-1)*yP(i,j+1)-M_TWO*yP(i,j-1)*yP(i-1,j+1) &
+                      +yP(i,j+1)**2+M_TWO*yP(i,j+1)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(M_HALF)
         NormalWyP(i,j)=-4d0*(0.25d0*xP(i-1,j-1)+0.25d0*xP(i,j-1)-0.25d0*xP(i,j+1)-0.25d0*xP(i-1,j+1))/(xP(i-1,j-1)**2 &
-                +2d0*xP(i-1,j-1)*xP(i,j-1)-2d0*xP(i-1,j-1)*xP(i,j+1)-2d0*xP(i-1,j-1)*xP(i-1,j+1)+xP(i,j-1)**2 &
-                -2d0*xP(i,j-1)*xP(i,j+1)-2d0*xP(i,j-1)*xP(i-1,j+1)+xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1) &
-                +xP(i-1,j+1)**2+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i,j-1)-2d0*yP(i-1,j-1)*yP(i,j+1) &
-                -2d0*yP(i-1,j-1)*yP(i-1,j+1)+yP(i,j-1)**2-2d0*yP(i,j-1)*yP(i,j+1)-2d0*yP(i,j-1)*yP(i-1,j+1) &
-                +yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(0.5d0)
+                +M_TWO*xP(i-1,j-1)*xP(i,j-1)-M_TWO*xP(i-1,j-1)*xP(i,j+1)-M_TWO*xP(i-1,j-1)*xP(i-1,j+1)+xP(i,j-1)**2 &
+                -M_TWO*xP(i,j-1)*xP(i,j+1)-M_TWO*xP(i,j-1)*xP(i-1,j+1)+xP(i,j+1)**2+M_TWO*xP(i,j+1)*xP(i-1,j+1) &
+                +xP(i-1,j+1)**2+yP(i-1,j-1)**2+M_TWO*yP(i-1,j-1)*yP(i,j-1)-M_TWO*yP(i-1,j-1)*yP(i,j+1) &
+                -M_TWO*yP(i-1,j-1)*yP(i-1,j+1)+yP(i,j-1)**2-M_TWO*yP(i,j-1)*yP(i,j+1)-M_TWO*yP(i,j-1)*yP(i-1,j+1) &
+                +yP(i,j+1)**2+M_TWO*yP(i,j+1)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(M_HALF)
 
-        CellAreaNP(i,j)=0.25d0*(xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i+1,j)-2d0*xP(i+1,j+1)*xP(i-1,j) &
-                -2d0*xP(i+1,j+1)*xP(i-1,j+1)+xP(i+1,j)**2-2d0*xP(i+1,j)*xP(i-1,j)-2d0*xP(i+1,j)*xP(i-1,j+1) &
-                +xP(i-1,j)**2+2d0*xP(i-1,j)*xP(i-1,j+1)+xP(i-1,j+1)**2+yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i+1,j) &
-                -2d0*yP(i+1,j+1)*yP(i-1,j)-2d0*yP(i+1,j+1)*yP(i-1,j+1)+yP(i+1,j)**2-2d0*yP(i+1,j)*yP(i-1,j) &
-                -2d0*yP(i+1,j)*yP(i-1,j+1)+yP(i-1,j)**2+2d0*yP(i-1,j)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(0.5d0)
-        CellAreaSP(i,j)=0.25d0*(xP(i+1,j)**2+2d0*xP(i+1,j)*xP(i+1,j-1)-2d0*xP(i+1,j)*xP(i-1,j-1)-2d0*xP(i+1,j)*xP(i-1,j) &
-                +xP(i+1,j-1)**2-2d0*xP(i+1,j-1)*xP(i-1,j-1)-2d0*xP(i+1,j-1)*xP(i-1,j)+xP(i-1,j-1)**2 &
-                +2d0*xP(i-1,j-1)*xP(i-1,j)+xP(i-1,j)**2+yP(i+1,j)**2+2d0*yP(i+1,j)*yP(i+1,j-1) &
-                -2d0*yP(i+1,j)*yP(i-1,j-1)-2d0*yP(i+1,j)*yP(i-1,j)+yP(i+1,j-1)**2-2d0*yP(i+1,j-1)*yP(i-1,j-1) &
-                -2d0*yP(i+1,j-1)*yP(i-1,j)+yP(i-1,j-1)**2+2d0*yP(i-1,j-1)*yP(i-1,j)+yP(i-1,j)**2)**(0.5d0)
-        CellAreaEP(i,j)=0.25d0*(xP(i+1,j+1)**2+2d0*xP(i+1,j+1)*xP(i,j+1)-2d0*xP(i+1,j+1)*xP(i+1,j-1)-2d0*xP(i+1,j+1)*xP(i,j-1) &
-                +xP(i,j+1)**2-2d0*xP(i,j+1)*xP(i+1,j-1)-2d0*xP(i,j+1)*xP(i,j-1)+xP(i+1,j-1)**2+2d0*xP(i+1,j-1)*xP(i,j-1) &
-                +xP(i,j-1)**2+yP(i+1,j+1)**2+2d0*yP(i+1,j+1)*yP(i,j+1)-2d0*yP(i+1,j+1)*yP(i+1,j-1)-2d0*yP(i+1,j+1)*yP(i,j-1) &
-                +yP(i,j+1)**2-2d0*yP(i,j+1)*yP(i+1,j-1)-2d0*yP(i,j+1)*yP(i,j-1)+yP(i+1,j-1)**2+2d0*yP(i+1,j-1)*yP(i,j-1) &
-                +yP(i,j-1)**2)**(0.5d0)
-        CellAreaWP(i,j)=0.25d0*(xP(i,j+1)**2+2d0*xP(i,j+1)*xP(i-1,j+1)-2d0*xP(i,j+1)*xP(i-1,j-1)-2d0*xP(i,j+1)*xP(i,j-1) &
-                +xP(i-1,j+1)**2-2d0*xP(i-1,j+1)*xP(i-1,j-1)-2d0*xP(i-1,j+1)*xP(i,j-1)+xP(i-1,j-1)**2+2d0*xP(i-1,j-1)*xP(i,j-1) &
-                +xP(i,j-1)**2+yP(i,j+1)**2+2d0*yP(i,j+1)*yP(i-1,j+1)-2d0*yP(i,j+1)*yP(i-1,j-1)-2d0*yP(i,j+1)*yP(i,j-1) &
-                +yP(i-1,j+1)**2-2d0*yP(i-1,j+1)*yP(i-1,j-1)-2d0*yP(i-1,j+1)*yP(i,j-1)+yP(i-1,j-1)**2 &
-                +2d0*yP(i-1,j-1)*yP(i,j-1)+yP(i,j-1)**2)**(0.5d0)
+        CellAreaNP(i,j)=0.25d0*(xP(i+1,j+1)**2+M_TWO*xP(i+1,j+1)*xP(i+1,j)-M_TWO*xP(i+1,j+1)*xP(i-1,j) &
+                -M_TWO*xP(i+1,j+1)*xP(i-1,j+1)+xP(i+1,j)**2-M_TWO*xP(i+1,j)*xP(i-1,j)-M_TWO*xP(i+1,j)*xP(i-1,j+1) &
+                +xP(i-1,j)**2+M_TWO*xP(i-1,j)*xP(i-1,j+1)+xP(i-1,j+1)**2+yP(i+1,j+1)**2+M_TWO*yP(i+1,j+1)*yP(i+1,j) &
+                -M_TWO*yP(i+1,j+1)*yP(i-1,j)-M_TWO*yP(i+1,j+1)*yP(i-1,j+1)+yP(i+1,j)**2-M_TWO*yP(i+1,j)*yP(i-1,j) &
+                -M_TWO*yP(i+1,j)*yP(i-1,j+1)+yP(i-1,j)**2+M_TWO*yP(i-1,j)*yP(i-1,j+1)+yP(i-1,j+1)**2)**(M_HALF)
+        CellAreaSP(i,j)=0.25d0*(xP(i+1,j)**2+M_TWO*xP(i+1,j)*xP(i+1,j-1)-M_TWO*xP(i+1,j)*xP(i-1,j-1)-M_TWO*xP(i+1,j)*xP(i-1,j) &
+                +xP(i+1,j-1)**2-M_TWO*xP(i+1,j-1)*xP(i-1,j-1)-M_TWO*xP(i+1,j-1)*xP(i-1,j)+xP(i-1,j-1)**2 &
+                +M_TWO*xP(i-1,j-1)*xP(i-1,j)+xP(i-1,j)**2+yP(i+1,j)**2+M_TWO*yP(i+1,j)*yP(i+1,j-1) &
+                -M_TWO*yP(i+1,j)*yP(i-1,j-1)-M_TWO*yP(i+1,j)*yP(i-1,j)+yP(i+1,j-1)**2-M_TWO*yP(i+1,j-1)*yP(i-1,j-1) &
+                -M_TWO*yP(i+1,j-1)*yP(i-1,j)+yP(i-1,j-1)**2+M_TWO*yP(i-1,j-1)*yP(i-1,j)+yP(i-1,j)**2)**(M_HALF)
+        CellAreaEP(i,j)=0.25d0*(xP(i+1,j+1)**2+M_TWO*xP(i+1,j+1)*xP(i,j+1) &
+                       -M_TWO*xP(i+1,j+1)*xP(i+1,j-1)-M_TWO*xP(i+1,j+1)*xP(i,j-1) &
+                        +xP(i,j+1)**2-M_TWO*xP(i,j+1)*xP(i+1,j-1) &
+                       -M_TWO*xP(i,j+1)*xP(i,j-1)+xP(i+1,j-1)**2+M_TWO*xP(i+1,j-1)*xP(i,j-1) &
+                +xP(i,j-1)**2+yP(i+1,j+1)**2+M_TWO*yP(i+1,j+1)*yP(i,j+1)-M_TWO*yP(i+1,j+1)*yP(i+1,j-1)-M_TWO*yP(i+1,j+1)*yP(i,j-1) &
+                +yP(i,j+1)**2-M_TWO*yP(i,j+1)*yP(i+1,j-1)-M_TWO*yP(i,j+1)*yP(i,j-1)+yP(i+1,j-1)**2+M_TWO*yP(i+1,j-1)*yP(i,j-1) &
+                +yP(i,j-1)**2)**(M_HALF)
+        CellAreaWP(i,j)=0.25d0*(xP(i,j+1)**2+M_TWO*xP(i,j+1)*xP(i-1,j+1) &
+                       -M_TWO*xP(i,j+1)*xP(i-1,j-1)-M_TWO*xP(i,j+1)*xP(i,j-1) &
+                        +xP(i-1,j+1)**2-M_TWO*xP(i-1,j+1)*xP(i-1,j-1) &
+                        -M_TWO*xP(i-1,j+1)*xP(i,j-1)+xP(i-1,j-1)**2+M_TWO*xP(i-1,j-1)*xP(i,j-1) &
+                        +xP(i,j-1)**2+yP(i,j+1)**2+M_TWO*yP(i,j+1)*yP(i-1,j+1) &
+                        -M_TWO*yP(i,j+1)*yP(i-1,j-1)-M_TWO*yP(i,j+1)*yP(i,j-1) &
+                        +yP(i-1,j+1)**2-M_TWO*yP(i-1,j+1)*yP(i-1,j-1)-M_TWO*yP(i-1,j+1)*yP(i,j-1)+yP(i-1,j-1)**2 &
+                        +M_TWO*yP(i-1,j-1)*yP(i,j-1)+yP(i,j-1)**2)**(M_HALF)
     end do
   end do
 
