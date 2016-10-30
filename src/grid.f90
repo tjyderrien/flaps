@@ -285,20 +285,19 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
 
 end subroutine compute_distances
 
-subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, NormalSy, NormalEx, NormalEy, &
-                                 NormalWx, NormalWy, TangentNx, TangentNy, TangentSx, TangentSy, &
+subroutine compute_norm_tan_curv(M, N, x, y, NormalN, NormalS, NormalE, NormalW, &
+                                 TangentNx, TangentNy, TangentSx, TangentSy, &
                                  TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
                                  CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
   use Maths_m
+  use Types_m
   implicit none
 
   integer, intent(in)    :: M, N
   real(8), intent(in)    :: x(1:M, 1:N), y(1:M, 1:N)                 ! needle position indexes
-  real(8), intent(inout) ::  NormalWx(1:M,1:N), NormalWy(1:M,1:N),  &
-                             NormalEx(1:M,1:N), NormalEy(1:M,1:N),  &                ! normal to quadrangle elements
-                             NormalNx(1:M,1:N), NormalNy(1:M,1:N),  &
-                             NormalSx(1:M,1:N), NormalSy(1:M,1:N),  &
-                             TangentWx(1:M,1:N), TangentWy(1:M,1:N), &                ! Tangent to quadrangle elements
+  type(VectorField), intent(inout) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
+
+  real(8), intent(inout) ::  TangentWx(1:M,1:N), TangentWy(1:M,1:N), &                ! Tangent to quadrangle elements
                              TangentEx(1:M,1:N), TangentEy(1:M,1:N), &
                              TangentNx(1:M,1:N), TangentNy(1:M,1:N), &
                              TangentSx(1:M,1:N), TangentSy(1:M,1:N), &
@@ -315,21 +314,21 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
 
         !TODO: Optimise by defining a stencil object
 
-        NormalNx(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
+        NormalN%x(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
                      0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)),1) !4d0*(0.25d0*y(i-1,j)+0.25d0*y(i-1,j+1)-0.25d0*y(i+1,j+1)-0.25d0*y(i+1,j))/(x(i-1,j)**2+M_TWO*x(i-1,j)*x(i-1,j+1)-M_TWO*x(i-1,j)*x(i+1,j+1)-M_TWO*x(i-1,j)*x(i+1,j)+x(i-1,j+1)**2-M_TWO*x(i-1,j+1)*x(i+1,j+1)-M_TWO*x(i-1,j+1)*x(i+1,j)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i+1,j)+x(i+1,j)**2+y(i-1,j)**2+M_TWO*y(i-1,j)*y(i-1,j+1)-M_TWO*y(i-1,j)*y(i+1,j+1)-M_TWO*y(i-1,j)*y(i+1,j)+y(i-1,j+1)**2-M_TWO*y(i-1,j+1)*y(i+1,j+1)-M_TWO*y(i-1,j+1)*y(i+1,j)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i+1,j)+y(i+1,j)**2)**(M_HALF)
-        NormalNy(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
+        NormalN%y(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
                      0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)),2) !NormalNy(i,j)=-4d0*(0.25d0*x(i-1,j)+0.25d0*x(i-1,j+1)-0.25d0*x(i+1,j+1)-0.25d0*x(i+1,j))/(x(i-1,j)**2+M_TWO*x(i-1,j)*x(i-1,j+1)-M_TWO*x(i-1,j)*x(i+1,j+1)-M_TWO*x(i-1,j)*x(i+1,j)+x(i-1,j+1)**2-M_TWO*x(i-1,j+1)*x(i+1,j+1)-M_TWO*x(i-1,j+1)*x(i+1,j)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i+1,j)+x(i+1,j)**2+y(i-1,j)**2+M_TWO*y(i-1,j)*y(i-1,j+1)-M_TWO*y(i-1,j)*y(i+1,j+1)-M_TWO*y(i-1,j)*y(i+1,j)+y(i-1,j+1)**2-M_TWO*y(i-1,j+1)*y(i+1,j+1)-M_TWO*y(i-1,j+1)*y(i+1,j)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i+1,j)+y(i+1,j)**2)**(M_HALF)
-        NormalSx(i,j)=Normal(0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), &
+        NormalS%x(i,j)=Normal(0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), &
                      0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)),1) ! -4d0*(0.25d0*y(i-1,j-1)+0.25d0*y(i-1,j)-0.25d0*y(i+1,j)-0.25d0*y(i+1,j-1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i-1,j)-M_TWO*x(i-1,j-1)*x(i+1,j)-M_TWO*x(i-1,j-1)*x(i+1,j-1)+x(i-1,j)**2-M_TWO*x(i-1,j)*x(i+1,j)-M_TWO*x(i-1,j)*x(i+1,j-1)+x(i+1,j)**2+M_TWO*x(i+1,j)*x(i+1,j-1)+x(i+1,j-1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i-1,j)-M_TWO*y(i-1,j-1)*y(i+1,j)-M_TWO*y(i-1,j-1)*y(i+1,j-1)+y(i-1,j)**2-M_TWO*y(i-1,j)*y(i+1,j)-M_TWO*y(i-1,j)*y(i+1,j-1)+y(i+1,j)**2+M_TWO*y(i+1,j)*y(i+1,j-1)+y(i+1,j-1)**2)**(M_HALF)
-        NormalSy(i,j)=Normal(0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), &
+        NormalS%y(i,j)=Normal(0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), &
                      0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)),2) ! 4d0*(0.25d0*x(i-1,j-1)+0.25d0*x(i-1,j)-0.25d0*x(i+1,j)-0.25d0*x(i+1,j-1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i-1,j)-M_TWO*x(i-1,j-1)*x(i+1,j)-M_TWO*x(i-1,j-1)*x(i+1,j-1)+x(i-1,j)**2-M_TWO*x(i-1,j)*x(i+1,j)-M_TWO*x(i-1,j)*x(i+1,j-1)+x(i+1,j)**2+M_TWO*x(i+1,j)*x(i+1,j-1)+x(i+1,j-1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i-1,j)-M_TWO*y(i-1,j-1)*y(i+1,j)-M_TWO*y(i-1,j-1)*y(i+1,j-1)+y(i-1,j)**2-M_TWO*y(i-1,j)*y(i+1,j)-M_TWO*y(i-1,j)*y(i+1,j-1)+y(i+1,j)**2+M_TWO*y(i+1,j)*y(i+1,j-1)+y(i+1,j-1)**2)**(M_HALF)
-        NormalEx(i,j)=Normal(0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)), &
+        NormalE%x(i,j)=Normal(0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)), &
                      0.25d0*(x(i+1,j+1)+x(i+1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i+1,j+1)+y(i+1,j)+y(i,j+1)+y(i,j)), 1) ! -4d0*(0.25d0*y(i+1,j-1)+0.25d0*y(i,j-1)-0.25d0*y(i+1,j+1)-0.25d0*y(i,j+1))/(x(i+1,j-1)**2+M_TWO*x(i+1,j-1)*x(i,j-1)-M_TWO*x(i+1,j-1)*x(i+1,j+1)-M_TWO*x(i+1,j-1)*x(i,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i+1,j+1)-M_TWO*x(i,j-1)*x(i,j+1)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i,j+1)+x(i,j+1)**2+y(i+1,j-1)**2+M_TWO*y(i+1,j-1)*y(i,j-1)-M_TWO*y(i+1,j-1)*y(i+1,j+1)-M_TWO*y(i+1,j-1)*y(i,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i+1,j+1)-M_TWO*y(i,j-1)*y(i,j+1)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i,j+1)+y(i,j+1)**2)**(M_HALF)
-        NormalEy(i,j)=Normal(0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)), &
+        NormalE%y(i,j)=Normal(0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)), &
                      0.25d0*(x(i+1,j+1)+x(i+1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i+1,j+1)+y(i+1,j)+y(i,j+1)+y(i,j)), 2) ! 4d0*(0.25d0*x(i+1,j-1)+0.25d0*x(i,j-1)-0.25d0*x(i+1,j+1)-0.25d0*x(i,j+1))/(x(i+1,j-1)**2+M_TWO*x(i+1,j-1)*x(i,j-1)-M_TWO*x(i+1,j-1)*x(i+1,j+1)-M_TWO*x(i+1,j-1)*x(i,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i+1,j+1)-M_TWO*x(i,j-1)*x(i,j+1)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i,j+1)+x(i,j+1)**2+y(i+1,j-1)**2+M_TWO*y(i+1,j-1)*y(i,j-1)-M_TWO*y(i+1,j-1)*y(i+1,j+1)-M_TWO*y(i+1,j-1)*y(i,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i+1,j+1)-M_TWO*y(i,j-1)*y(i,j+1)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i,j+1)+y(i,j+1)**2)**(M_HALF)
-        NormalWx(i,j)=Normal(0.25d0*(x(i-1,j+1)+x(i-1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i-1,j)+y(i,j+1)+y(i,j)), &
+        NormalW%x(i,j)=Normal(0.25d0*(x(i-1,j+1)+x(i-1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i-1,j)+y(i,j+1)+y(i,j)), &
                      0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), 1) ! 4d0*(0.25d0*y(i-1,j-1)+0.25d0*y(i,j-1)-0.25d0*y(i,j+1)-0.25d0*y(i-1,j+1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i,j-1)-M_TWO*x(i-1,j-1)*x(i,j+1)-M_TWO*x(i-1,j-1)*x(i-1,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i,j+1)-M_TWO*x(i,j-1)*x(i-1,j+1)+x(i,j+1)**2+M_TWO*x(i,j+1)*x(i-1,j+1)+x(i-1,j+1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i,j-1)-M_TWO*y(i-1,j-1)*y(i,j+1)-M_TWO*y(i-1,j-1)*y(i-1,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i,j+1)-M_TWO*y(i,j-1)*y(i-1,j+1)+y(i,j+1)**2+M_TWO*y(i,j+1)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
-        NormalWy(i,j)=Normal(0.25d0*(x(i-1,j+1)+x(i-1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i-1,j)+y(i,j+1)+y(i,j)), &
+        NormalW%y(i,j)=Normal(0.25d0*(x(i-1,j+1)+x(i-1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i-1,j)+y(i,j+1)+y(i,j)), &
                      0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), 2)! -4d0*(0.25d0*x(i-1,j-1)+0.25d0*x(i,j-1)-0.25d0*x(i,j+1)-0.25d0*x(i-1,j+1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i,j-1)-M_TWO*x(i-1,j-1)*x(i,j+1)-M_TWO*x(i-1,j-1)*x(i-1,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i,j+1)-M_TWO*x(i,j-1)*x(i-1,j+1)+x(i,j+1)**2+M_TWO*x(i,j+1)*x(i-1,j+1)+x(i-1,j+1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i,j-1)-M_TWO*y(i-1,j-1)*y(i,j+1)-M_TWO*y(i-1,j-1)*y(i-1,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i,j+1)-M_TWO*y(i,j-1)*y(i-1,j+1)+y(i,j+1)**2+M_TWO*y(i,j+1)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
 
 
@@ -365,27 +364,27 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
    do i=2,M-1
 
         ! NORTH
-         NormalEx(i,N)=-Normal(M_HALF*(x(i,N)+x(i+1,N)), M_HALF*(y(i,N)+y(i+1,N)), &
+         NormalE%x(i,N)=-Normal(M_HALF*(x(i,N)+x(i+1,N)), M_HALF*(y(i,N)+y(i+1,N)), &
                                0.25d0*(x(i+1,N)+x(i,N)+x(i+1,N-1)+x(i,N-1)), &
                                0.25d0*(y(i+1,N)+y(i,N)+y(i+1,N-1)+y(i,N-1)), 1)
-         NormalEy(i,N)=-Normal(M_HALF*(x(i,N)+x(i+1,N)), M_HALF*(y(i,N)+y(i+1,N)), &
+         NormalE%y(i,N)=-Normal(M_HALF*(x(i,N)+x(i+1,N)), M_HALF*(y(i,N)+y(i+1,N)), &
                                0.25d0*(x(i+1,N)+x(i,N)+x(i+1,N-1)+x(i,N-1)), &
                                0.25d0*(y(i+1,N)+y(i,N)+y(i+1,N-1)+y(i,N-1)), 2)
-         NormalWx(i,N)=Normal(M_HALF*(x(i-1,N)+x(i,N)), M_HALF*(y(i-1,N)+y(i,N)), &
+         NormalW%x(i,N)=Normal(M_HALF*(x(i-1,N)+x(i,N)), M_HALF*(y(i-1,N)+y(i,N)), &
                               0.25d0*(x(i-1,N-1)+x(i-1,N)+x(i,N-1)+x(i,N)), &
                               0.25d0*(y(i-1,N-1)+y(i-1,N)+y(i,N-1)+y(i,N)),1)
-         NormalWy(i,N)=Normal(M_HALF*(x(i-1,N)+x(i,N)), M_HALF*(y(i-1,N)+y(i,N)), &
+         NormalW%y(i,N)=Normal(M_HALF*(x(i-1,N)+x(i,N)), M_HALF*(y(i-1,N)+y(i,N)), &
                               0.25d0*(x(i-1,N-1)+x(i-1,N)+x(i,N-1)+x(i,N)), &
                               0.25d0*(y(i-1,N-1)+y(i-1,N)+y(i,N-1)+y(i,N)),2)
-         NormalNx(i,N)=Normal(M_HALF*(x(i,N)+x(i+1,N)),M_HALF*(y(i,N)+y(i+1,N)), &
+         NormalN%x(i,N)=Normal(M_HALF*(x(i,N)+x(i+1,N)),M_HALF*(y(i,N)+y(i+1,N)), &
                               M_HALF*(x(i,N)+x(i-1,N)), M_HALF*(y(i,N)+y(i-1,N)),1)
-         NormalNy(i,N)=Normal(M_HALF*(x(i,N)+x(i+1,N)),M_HALF*(y(i,N)+y(i+1,N)), &
+         NormalN%y(i,N)=Normal(M_HALF*(x(i,N)+x(i+1,N)),M_HALF*(y(i,N)+y(i+1,N)), &
                               M_HALF*(x(i,N)+x(i-1,N)), M_HALF*(y(i,N)+y(i-1,N)),2)
-         NormalSx(i,N)=-Normal(0.25d0*(x(i+1,N-1)+x(i+1,N)+x(i,N)+x(i,N-1)), &
+         NormalS%x(i,N)=-Normal(0.25d0*(x(i+1,N-1)+x(i+1,N)+x(i,N)+x(i,N-1)), &
                                0.25d0*(y(i+1,N-1)+y(i+1,N)+y(i,N)+y(i,N-1)), &
                                0.25d0*(x(i-1,N-1)+x(i-1,N)+x(i,N-1)+x(i,N)), &
                                0.25d0*(y(i-1,N-1)+y(i-1,N)+y(i,N-1)+y(i,N)),1)
-         NormalSy(i,N)=-Normal(0.25d0*(x(i+1,N-1)+x(i+1,N)+x(i,N)+x(i,N-1)), &
+         NormalS%y(i,N)=-Normal(0.25d0*(x(i+1,N-1)+x(i+1,N)+x(i,N)+x(i,N-1)), &
                                0.25d0*(y(i+1,N-1)+y(i+1,N)+y(i,N)+y(i,N-1)), &
                                0.25d0*(x(i-1,N-1)+x(i-1,N)+x(i,N-1)+x(i,N)), &
                                0.25d0*(y(i-1,N-1)+y(i-1,N)+y(i,N-1)+y(i,N)),2)
@@ -418,20 +417,22 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
 
 
         ! SOUTH
-         NormalEx(i,1)=-Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
+         NormalE%x(i,1)=-Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
                 M_HALF*(x(i,1)+x(i+1,1)),M_HALF*(y(i,1)+y(i+1,1)),1)
-         NormalEy(i,1)=-Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
+         NormalE%y(i,1)=-Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
                 M_HALF*(x(i,1)+x(i+1,1)),M_HALF*(y(i,1)+y(i+1,1)),2)
-         NormalWx(i,1)=Normal(0.25d0*(x(i-1,1)+x(i-1,2)+x(i,1)+x(i,2)),0.25d0*(y(i-1,1)+y(i-1,2)+y(i,1)+y(i,2)), &
+         NormalW%x(i,1)=Normal(0.25d0*(x(i-1,1)+x(i-1,2)+x(i,1)+x(i,2)),0.25d0*(y(i-1,1)+y(i-1,2)+y(i,1)+y(i,2)), &
                 M_HALF*(x(i-1,1)+x(i,1)),M_HALF*(y(i-1,1)+y(i,1)),1)
-         NormalWy(i,1)=Normal(0.25d0*(x(i-1,1)+x(i-1,2)+x(i,1)+x(i,2)),0.25d0*(y(i-1,1)+y(i-1,2)+y(i,1)+y(i,2)), &
+         NormalW%y(i,1)=Normal(0.25d0*(x(i-1,1)+x(i-1,2)+x(i,1)+x(i,2)),0.25d0*(y(i-1,1)+y(i-1,2)+y(i,1)+y(i,2)), &
                 M_HALF*(x(i-1,1)+x(i,1)),M_HALF*(y(i-1,1)+y(i,1)),2)
-         NormalNx(i,1)=Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
+         NormalN%x(i,1)=Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
                 0.25d0*(x(i-1,1)+x(i-1,2)+x(i,1)+x(i,2)),0.25d0*(y(i-1,1)+y(i-1,2)+y(i,1)+y(i,2)),1)
-         NormalNy(i,1)=Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
+         NormalN%y(i,1)=Normal(0.25d0*(x(i,1)+x(i,2)+x(i+1,1)+x(i+1,2)),0.25d0*(y(i,1)+y(i,2)+y(i+1,1)+y(i+1,2)), &
                 0.25d0*(x(i-1,1)+x(i-1,2)+x(i,1)+x(i,2)),0.25d0*(y(i-1,1)+y(i-1,2)+y(i,1)+y(i,2)),2)
-         NormalSx(i,1)=Normal(M_HALF*(x(i-1,1)+x(i,1)),M_HALF*(y(i-1,1)+y(i,1)),M_HALF*(x(i+1,1)+x(i,1)),M_HALF*(y(i+1,1)+y(i,1)),1)
-         NormalSy(i,1)=Normal(M_HALF*(x(i-1,1)+x(i,1)),M_HALF*(y(i-1,1)+y(i,1)),M_HALF*(x(i+1,1)+x(i,1)),M_HALF*(y(i+1,1)+y(i,1)),2)
+         NormalS%x(i,1)=Normal(M_HALF*(x(i-1,1)+x(i,1)),M_HALF*(y(i-1,1)+y(i,1)), &
+                               M_HALF*(x(i+1,1)+x(i,1)),M_HALF*(y(i+1,1)+y(i,1)),1)
+         NormalS%y(i,1)=Normal(M_HALF*(x(i-1,1)+x(i,1)),M_HALF*(y(i-1,1)+y(i,1)), &
+                               M_HALF*(x(i+1,1)+x(i,1)),M_HALF*(y(i+1,1)+y(i,1)),2)
 
          TangentNx(i,1)=Tangent(0.25d0*(x(i-1,2)+x(i-1,1)+x(i,2)+x(i,1)),0.25d0*(y(i-1,2)+y(i-1,1)+y(i,2)+y(i,1)), &
                   0.25d0*(x(i+1,2)+x(i+1,1)+x(i,2)+x(i,1)),0.25d0*(y(i+1,2)+y(i+1,1)+y(i,2)+y(i,1)),1)
@@ -465,21 +466,21 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
         do j=2,N-1
 !
           ! WEST
-          NormalEx(1,j)=-Normal(0.25d0*(x(2,j+1)+x(2,j)+x(1,j+1)+x(1,j)),0.25d0*(y(2,j+1)+y(2,j)+y(1,j+1)+y(1,j)), &
+          NormalE%x(1,j)=-Normal(0.25d0*(x(2,j+1)+x(2,j)+x(1,j+1)+x(1,j)),0.25d0*(y(2,j+1)+y(2,j)+y(1,j+1)+y(1,j)), &
                         0.25d0*(x(2,j-1)+x(2,j)+x(1,j-1)+x(1,j)),0.25d0*(y(2,j-1)+y(2,j)+y(1,j-1)+y(1,j)),1)
-          NormalEy(1,j)=-Normal(0.25d0*(x(2,j+1)+x(2,j)+x(1,j+1)+x(1,j)),0.25d0*(y(2,j+1)+y(2,j)+y(1,j+1)+y(1,j)), &
+          NormalE%y(1,j)=-Normal(0.25d0*(x(2,j+1)+x(2,j)+x(1,j+1)+x(1,j)),0.25d0*(y(2,j+1)+y(2,j)+y(1,j+1)+y(1,j)), &
                         0.25d0*(x(2,j-1)+x(2,j)+x(1,j-1)+x(1,j)),0.25d0*(y(2,j-1)+y(2,j)+y(1,j-1)+y(1,j)),2)
-          NormalNx(1,j)=Normal(0.25d0*(x(2,j+1)+x(1,j+1)+x(2,j)+x(1,j)),0.25d0*(y(2,j+1)+y(1,j+1)+y(2,j)+y(1,j)), &
+          NormalN%x(1,j)=Normal(0.25d0*(x(2,j+1)+x(1,j+1)+x(2,j)+x(1,j)),0.25d0*(y(2,j+1)+y(1,j+1)+y(2,j)+y(1,j)), &
                       M_HALF*(x(1,j+1)+x(1,j)),M_HALF*(y(1,j+1)+y(1,j)),1)
-          NormalNy(1,j)=Normal(0.25d0*(x(2,j+1)+x(1,j+1)+x(2,j)+x(1,j)),0.25d0*(y(2,j+1)+y(1,j+1)+y(2,j)+y(1,j)), &
+          NormalN%y(1,j)=Normal(0.25d0*(x(2,j+1)+x(1,j+1)+x(2,j)+x(1,j)),0.25d0*(y(2,j+1)+y(1,j+1)+y(2,j)+y(1,j)), &
                       M_HALF*(x(1,j+1)+x(1,j)),M_HALF*(y(1,j+1)+y(1,j)),2)
-          NormalSx(1,j)=-Normal(0.25d0*(x(2,j-1)+x(2,j)+x(1,j-1)+x(1,j)),0.25d0*(y(2,j-1)+y(2,j)+y(1,j-1)+y(1,j)), &
+          NormalS%x(1,j)=-Normal(0.25d0*(x(2,j-1)+x(2,j)+x(1,j-1)+x(1,j)),0.25d0*(y(2,j-1)+y(2,j)+y(1,j-1)+y(1,j)), &
                         M_HALF*(x(1,j-1)+x(1,j)),M_HALF*(y(1,j-1)+y(1,j)),1)
-          NormalSy(1,j)=-Normal(0.25d0*(x(2,j-1)+x(2,j)+x(1,j-1)+x(1,j)),0.25d0*(y(2,j-1)+y(2,j)+y(1,j-1)+y(1,j)), &
+          NormalS%y(1,j)=-Normal(0.25d0*(x(2,j-1)+x(2,j)+x(1,j-1)+x(1,j)),0.25d0*(y(2,j-1)+y(2,j)+y(1,j-1)+y(1,j)), &
                         M_HALF*(x(1,j-1)+x(1,j)),M_HALF*(y(1,j-1)+y(1,j)),2)
-          NormalWx(1,j)=Normal(M_HALF*(x(1,j+1)+x(1,j)),M_HALF*(y(1,j+1)+y(1,j)),M_HALF*(x(1,j-1)+x(1,j)), &
+          NormalW%x(1,j)=Normal(M_HALF*(x(1,j+1)+x(1,j)),M_HALF*(y(1,j+1)+y(1,j)),M_HALF*(x(1,j-1)+x(1,j)), &
                         M_HALF*(y(1,j-1)+y(1,j)),1)
-          NormalWy(1,j)=Normal(M_HALF*(x(1,j+1)+x(1,j)),M_HALF*(y(1,j+1)+y(1,j)),M_HALF*(x(1,j-1)+x(1,j)), &
+          NormalW%y(1,j)=Normal(M_HALF*(x(1,j+1)+x(1,j)),M_HALF*(y(1,j+1)+y(1,j)),M_HALF*(x(1,j-1)+x(1,j)), &
                         M_HALF*(y(1,j-1)+y(1,j)),2)
 
 !           write(*,*) "[Debug]", NormalWx(1,j)**2+NormalWy(1,j)**2
@@ -542,23 +543,23 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
 !             TangentWy(M,j)=-TangentWy(M,j)
 !           end if
 
-          NormalEx(M,j)=-Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),M_HALF*(x(M,j-1)+x(M,j)), &
+          NormalE%x(M,j)=-Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),M_HALF*(x(M,j-1)+x(M,j)), &
                         M_HALF*(y(M,j-1)+y(M,j)),1);
-          NormalEy(M,j)=-Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),M_HALF*(x(M,j-1)+x(M,j)), &
+          NormalE%y(M,j)=-Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),M_HALF*(x(M,j-1)+x(M,j)), &
                         M_HALF*(y(M,j-1)+y(M,j)),2);
-          NormalWx(M,j)=Normal(0.25d0*(x(M-1,j+1)+x(M-1,j)+x(M,j+1)+x(M,j)),0.25d0*(y(M-1,j+1)+y(M-1,j) &
+          NormalW%x(M,j)=Normal(0.25d0*(x(M-1,j+1)+x(M-1,j)+x(M,j+1)+x(M,j)),0.25d0*(y(M-1,j+1)+y(M-1,j) &
                        +y(M,j+1)+y(M,j)),0.25d0*(x(M-1,j-1)+x(M-1,j)+x(M,j-1)+x(M,j)), &
                       0.25d0*(y(M-1,j-1)+y(M-1,j)+y(M,j-1)+y(M,j)),1)
-          NormalWy(M,j)=Normal(0.25d0*(x(M-1,j+1)+x(M-1,j)+x(M,j+1)+x(M,j)),0.25d0*(y(M-1,j+1)+y(M-1,j) &
+          NormalW%y(M,j)=Normal(0.25d0*(x(M-1,j+1)+x(M-1,j)+x(M,j+1)+x(M,j)),0.25d0*(y(M-1,j+1)+y(M-1,j) &
           +y(M,j+1)+y(M,j)),0.25d0*(x(M-1,j-1)+x(M-1,j)+x(M,j-1)+x(M,j)),0.25d0*(y(M-1,j-1)+y(M-1,j) &
           +y(M,j-1)+y(M,j)),2)
-          NormalNx(M,j)=Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),0.25d0*(x(M-1,j+1) &
+          NormalN%x(M,j)=Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),0.25d0*(x(M-1,j+1) &
                       +x(M-1,j)+x(M,j+1)+x(M,j)),0.25d0*(y(M-1,j+1)+y(M-1,j)+y(M,j+1)+y(M,j)),1)
-          NormalNy(M,j)=Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),0.25d0*(x(M-1,j+1)+x(M-1,j) &
+          NormalN%y(M,j)=Normal(M_HALF*(x(M,j+1)+x(M,j)),M_HALF*(y(M,j+1)+y(M,j)),0.25d0*(x(M-1,j+1)+x(M-1,j) &
                       +x(M,j+1)+x(M,j)),0.25d0*(y(M-1,j+1)+y(M-1,j)+y(M,j+1)+y(M,j)),2)
-          NormalSx(M,j)=-Normal(M_HALF*(x(M,j-1)+x(M,j)),M_HALF*(y(M,j-1)+y(M,j)),0.25d0*(x(M-1,j-1) &
+          NormalS%x(M,j)=-Normal(M_HALF*(x(M,j-1)+x(M,j)),M_HALF*(y(M,j-1)+y(M,j)),0.25d0*(x(M-1,j-1) &
                       +x(M,j-1)+x(M-1,j)+x(M,j)),0.25d0*(y(M-1,j-1)+y(M,j-1)+y(M-1,j)+y(M,j)),1)
-          NormalSy(M,j)=-Normal(M_HALF*(x(M,j-1)+x(M,j)),M_HALF*(y(M,j-1)+y(M,j)),0.25d0*(x(M-1,j-1)+x(M,j-1) &
+          NormalS%y(M,j)=-Normal(M_HALF*(x(M,j-1)+x(M,j)),M_HALF*(y(M,j-1)+y(M,j)),0.25d0*(x(M-1,j-1)+x(M,j-1) &
                       +x(M-1,j)+x(M,j)),0.25d0*(y(M-1,j-1)+y(M,j-1)+y(M-1,j)+y(M,j)),2)
 
           CurviNx(M,j)=-Tangent(x(M,j),y(M,j),x(M,j+1),y(M,j+1),1)
@@ -573,17 +574,17 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
       end do
 
       !North-East
-        NormalEx(M,N)=-Normal(x(M,N),y(M,N),M_HALF*(x(M,N-1)+x(M,N)),M_HALF*(y(M,N-1)+y(M,N)),1)
-        NormalEy(M,N)=-Normal(x(M,N),y(M,N),M_HALF*(x(M,N-1)+x(M,N)),M_HALF*(y(M,N-1)+y(M,N)),2)
-        NormalNx(M,N)=Normal(x(M,N),y(M,N),M_HALF*(x(M-1,N)+x(M,N)),M_HALF*(y(M-1,N)+y(M,N)),1)
-        NormalNy(M,N)=Normal(x(M,N),y(M,N),M_HALF*(x(M-1,N)+x(M,N)),M_HALF*(y(M-1,N)+y(M,N)),2)
-        NormalWx(M,N)=Normal(M_HALF*(x(M-1, N)+x(M, N)),M_HALF*(y(M-1, N)+y(M, N)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
+        NormalE%x(M,N)=-Normal(x(M,N),y(M,N),M_HALF*(x(M,N-1)+x(M,N)),M_HALF*(y(M,N-1)+y(M,N)),1)
+        NormalE%y(M,N)=-Normal(x(M,N),y(M,N),M_HALF*(x(M,N-1)+x(M,N)),M_HALF*(y(M,N-1)+y(M,N)),2)
+        NormalN%x(M,N)=Normal(x(M,N),y(M,N),M_HALF*(x(M-1,N)+x(M,N)),M_HALF*(y(M-1,N)+y(M,N)),1)
+        NormalN%y(M,N)=Normal(x(M,N),y(M,N),M_HALF*(x(M-1,N)+x(M,N)),M_HALF*(y(M-1,N)+y(M,N)),2)
+        NormalW%x(M,N)=Normal(M_HALF*(x(M-1, N)+x(M, N)),M_HALF*(y(M-1, N)+y(M, N)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
                            +x(M, N)+x(M-1, N)),0.25d0*(y(M-1, N-1)+y(M, N-1)+y(M, N)+y(M-1, N)),1)
-        NormalWy(M,N)=Normal(M_HALF*(x(M-1, N)+x(M, N)),M_HALF*(y(M-1, N)+y(M, N)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
+        NormalW%y(M,N)=Normal(M_HALF*(x(M-1, N)+x(M, N)),M_HALF*(y(M-1, N)+y(M, N)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
                            +x(M, N)+x(M-1, N)),0.25d0*(y(M-1, N-1)+y(M, N-1)+y(M, N)+y(M-1, N)),2)
-        NormalSx(M,N)=-Normal(M_HALF*(x(M, N)+x(M, N-1)),M_HALF*(y(M, N)+y(M, N-1)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
+        NormalS%x(M,N)=-Normal(M_HALF*(x(M, N)+x(M, N-1)),M_HALF*(y(M, N)+y(M, N-1)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
                            +x(M, N)+x(M-1, N)),0.25d0*(y(M-1, N-1)+y(M, N-1)+y(M, N)+y(M-1, N)),1)
-        NormalSy(M,N)=-Normal(M_HALF*(x(M, N)+x(M, N-1)),M_HALF*(y(M, N)+y(M, N-1)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
+        NormalS%y(M,N)=-Normal(M_HALF*(x(M, N)+x(M, N-1)),M_HALF*(y(M, N)+y(M, N-1)),0.25d0*(x(M-1, N-1)+x(M, N-1) &
                            +x(M, N)+x(M-1, N)),0.25d0*(y(M-1, N-1)+y(M, N-1)+y(M, N)+y(M-1, N)),2)
 
         TangentNx(M,N)=-Tangent(x(M,N),y(M,N),M_HALF*(x(M-1,N)+x(M,N)),M_HALF*(y(M-1,N)+y(M,N)),1)
@@ -611,17 +612,17 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
 
 
       !South-East
-        NormalSx(M,1)=Normal(M_HALF*(x(M-1,1)+x(M,1)),M_HALF*(y(M-1,1)+y(M,1)), x(M,1), y(M,1), 1)
-        NormalSy(M,1)=Normal(M_HALF*(x(M-1,1)+x(M,1)),M_HALF*(y(M-1,1)+y(M,1)), x(M,1), y(M,1), 2)
-        NormalEx(M,1)=Normal(x(M,1), y(M,1), M_HALF*(x(M,1)+x(M,2)), M_HALF*(y(M,1)+y(M,2)), 1)
-        NormalEy(M,1)=Normal(x(M,1), y(M,1), M_HALF*(x(M,1)+x(M,2)), M_HALF*(y(M,1)+y(M,2)), 2)
-        NormalWx(M,1)=Normal(0.25d0*(x(M-1, 1)+x(M-1, 2)+x(M, 1)+x(M, 2)),0.25d0*(y(M-1, 1)+y(M-1, 2)+y(M, 1) &
+        NormalS%x(M,1)=Normal(M_HALF*(x(M-1,1)+x(M,1)),M_HALF*(y(M-1,1)+y(M,1)), x(M,1), y(M,1), 1)
+        NormalS%y(M,1)=Normal(M_HALF*(x(M-1,1)+x(M,1)),M_HALF*(y(M-1,1)+y(M,1)), x(M,1), y(M,1), 2)
+        NormalE%x(M,1)=Normal(x(M,1), y(M,1), M_HALF*(x(M,1)+x(M,2)), M_HALF*(y(M,1)+y(M,2)), 1)
+        NormalE%y(M,1)=Normal(x(M,1), y(M,1), M_HALF*(x(M,1)+x(M,2)), M_HALF*(y(M,1)+y(M,2)), 2)
+        NormalW%x(M,1)=Normal(0.25d0*(x(M-1, 1)+x(M-1, 2)+x(M, 1)+x(M, 2)),0.25d0*(y(M-1, 1)+y(M-1, 2)+y(M, 1) &
                     +y(M, 2)),M_HALF*(x(M-1, 1)+x(M, 1)),M_HALF*(y(M-1, 1)+y(M, 1)),1);
-        NormalWy(M,1)=Normal(0.25d0*(x(M-1, 1)+x(M-1, 2)+x(M, 1)+x(M, 2)),0.25d0*(y(M-1, 1)+y(M-1, 2)+y(M, 1) &
+        NormalW%y(M,1)=Normal(0.25d0*(x(M-1, 1)+x(M-1, 2)+x(M, 1)+x(M, 2)),0.25d0*(y(M-1, 1)+y(M-1, 2)+y(M, 1) &
                     +y(M, 2)),M_HALF*(x(M-1, 1)+x(M, 1)),M_HALF*(y(M-1, 1)+y(M, 1)),2);
-        NormalNx(M,1)=Normal(M_HALF*(x(M, 1)+x(M, 2)),M_HALF*(y(M, 1)+y(M, 2)),0.25d0*(x(M-1, 1)+x(M-1, 2) &
+        NormalN%x(M,1)=Normal(M_HALF*(x(M, 1)+x(M, 2)),M_HALF*(y(M, 1)+y(M, 2)),0.25d0*(x(M-1, 1)+x(M-1, 2) &
                     +x(M, 1)+x(M, 2)),0.25d0*(y(M-1, 1)+y(M-1, 2)+y(M, 1)+y(M, 2)),1);
-        NormalNy(M,1)=Normal(M_HALF*(x(M, 1)+x(M, 2)),M_HALF*(y(M, 1)+y(M, 2)),0.25d0*(x(M-1, 1)+x(M-1, 2) &
+        NormalN%y(M,1)=Normal(M_HALF*(x(M, 1)+x(M, 2)),M_HALF*(y(M, 1)+y(M, 2)),0.25d0*(x(M-1, 1)+x(M-1, 2) &
                     +x(M, 1)+x(M, 2)),0.25d0*(y(M-1, 1)+y(M-1, 2)+y(M, 1)+y(M, 2)),2);
 
         TangentNx(M,1)=-Tangent(M_HALF*(x(M,1)+x(M,2)),M_HALF*(y(M,1)+y(M,2)),0.25d0*(x(M,1)+x(M,2)+x(M-1,1) &
@@ -649,18 +650,18 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
 
 
       !South-West
-        NormalSx(1,1)=Normal(x(1,1),y(1,1),M_HALF*(x(2,1)+x(1,1)), M_HALF*(y(2,1)+y(1,1)), 1)
-        NormalSy(1,1)=Normal(x(1,1),y(1,1),M_HALF*(x(2,1)+x(1,1)), M_HALF*(y(2,1)+y(1,1)), 2)
-        NormalWx(1,1)=-Normal(x(1,1),y(1,1),M_HALF*(x(1,2)+x(1,1)), M_HALF*(y(1,2)+y(1,1)), 1)
-        NormalWy(1,1)=-Normal(x(1,1),y(1,1),M_HALF*(x(1,2)+x(1,1)), M_HALF*(y(1,2)+y(1,1)), 2)
+        NormalS%x(1,1)=Normal(x(1,1),y(1,1),M_HALF*(x(2,1)+x(1,1)), M_HALF*(y(2,1)+y(1,1)), 1)
+        NormalS%y(1,1)=Normal(x(1,1),y(1,1),M_HALF*(x(2,1)+x(1,1)), M_HALF*(y(2,1)+y(1,1)), 2)
+        NormalW%x(1,1)=-Normal(x(1,1),y(1,1),M_HALF*(x(1,2)+x(1,1)), M_HALF*(y(1,2)+y(1,1)), 1)
+        NormalW%y(1,1)=-Normal(x(1,1),y(1,1),M_HALF*(x(1,2)+x(1,1)), M_HALF*(y(1,2)+y(1,1)), 2)
 
-        NormalEx(1,1)=-Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
+        NormalE%x(1,1)=-Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
                 +y(2, 1)+y(2, 2)),M_HALF*(x(1, 1)+x(2, 1)),M_HALF*(y(1, 1)+y(2, 1)),1);
-        NormalEy(1,1)=-Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
+        NormalE%y(1,1)=-Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
                 +y(2, 1)+y(2, 2)),M_HALF*(x(1, 1)+x(2, 1)),M_HALF*(y(1, 1)+y(2, 1)),2);
-        NormalNx(1,1)=Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
+        NormalN%x(1,1)=Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
                 +y(2, 1)+y(2, 2)),M_HALF*(x(1, 1)+x(1, 2)),M_HALF*(y(1, 1)+y(1, 2)),1);
-        NormalNy(1,1)=Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
+        NormalN%y(1,1)=Normal(0.25d0*(x(1, 1)+x(1, 2)+x(2, 1)+x(2, 2)),0.25d0*(y(1, 1)+y(1, 2) &
                 +y(2, 1)+y(2, 2)),M_HALF*(x(1, 1)+x(1, 2)),M_HALF*(y(1, 1)+y(1, 2)),2);
 
         TangentNx(1,1)=-Tangent(x(1,1),y(1,1),x(1,2),y(1,2),1)
@@ -683,23 +684,23 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
 
 
       !North-West
-        NormalNx(1,N)=-Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(2,N)),M_HALF*(y(1,N)+y(2,N)),1)
-        NormalNy(1,N)=-Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(2,N)),M_HALF*(y(1,N)+y(2,N)),2)
-        NormalWx(1,N)=Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(1,N-1)),M_HALF*(y(1,N)+y(1,N-1)),1)
-        NormalWy(1,N)=Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(1,N-1)),M_HALF*(y(1,N)+y(1,N-1)),2)
-        NormalEx(1,N)=-Normal(M_HALF*(x(1, N)+x(2, N)), &
+        NormalN%x(1,N)=-Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(2,N)),M_HALF*(y(1,N)+y(2,N)),1)
+        NormalN%y(1,N)=-Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(2,N)),M_HALF*(y(1,N)+y(2,N)),2)
+        NormalW%x(1,N)=Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(1,N-1)),M_HALF*(y(1,N)+y(1,N-1)),1)
+        NormalW%y(1,N)=Normal(x(1,N),y(1,N),M_HALF*(x(1,N)+x(1,N-1)),M_HALF*(y(1,N)+y(1,N-1)),2)
+        NormalE%x(1,N)=-Normal(M_HALF*(x(1, N)+x(2, N)), &
                             M_HALF*(y(1, N)+y(2, N)), &
                             0.25d0*(x(1, N-1)+x(1, N)+x(2, N)+x(2, N-1)), &
                             0.25d0*(y(1, N-1)+y(1, N)+y(2, N)+y(2, N-1)) ,1);
-        NormalEy(1,N)=-Normal(M_HALF*(x(1, N)+x(2, N)), &
+        NormalE%y(1,N)=-Normal(M_HALF*(x(1, N)+x(2, N)), &
                             M_HALF*(y(1, N)+y(2, N)), &
                             0.25d0*(x(1, N-1)+x(1, N)+x(2, N)+x(2, N-1)), &
                             0.25d0*(y(1, N-1)+y(1, N)+y(2, N)+y(2, N-1)), 2)
-        NormalSx(1,N)=-Normal(0.25d0*(x(1, N-1)+x(1, N)+x(2, N)+x(2, N-1)), &
+        NormalS%x(1,N)=-Normal(0.25d0*(x(1, N-1)+x(1, N)+x(2, N)+x(2, N-1)), &
                             0.25d0*(y(1, N-1)+y(1, N)+y(2, N)+y(2, N-1)), &
                             M_HALF*(x(1, N-1)+x(1, N)), &
                             M_HALF*(y(1, N-1)+y(1, N)),1);
-        NormalSy(1,N)=-Normal(0.25d0*(x(1, N-1)+x(1, N)+x(2, N)+x(2, N-1)), &
+        NormalS%y(1,N)=-Normal(0.25d0*(x(1, N-1)+x(1, N)+x(2, N)+x(2, N-1)), &
                             0.25d0*(y(1, N-1)+y(1, N)+y(2, N)+y(2, N-1)), &
                             M_HALF*(x(1, N-1)+x(1, N)), &
                             M_HALF*(y(1, N-1)+y(1, N)), 2)

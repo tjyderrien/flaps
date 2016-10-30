@@ -1253,8 +1253,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    call compute_distances(Params%M, Params%N, x, y, DistN, DistS, DistE, DistW, DistDualN, &
                           DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
    !
-   call compute_norm_tan_curv(Params%M, Params%N, x, y, NormalN%x, NormalN%y, NormalS%x, NormalS%y, &
-                              NormalE%x, NormalE%y, NormalW%x, NormalW%y, TangentNx, TangentNy, TangentSx, TangentSy, &
+   call compute_norm_tan_curv(Params%M, Params%N, x, y, NormalN, NormalS, NormalE, NormalW, &
+                              TangentNx, TangentNy, TangentSx, TangentSy, &
                               TangentEx, TangentEy, TangentWx, TangentWy, &
                               CurviNx, CurviNy, CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
    !
