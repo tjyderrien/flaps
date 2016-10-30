@@ -34,6 +34,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+  use Maths_m
   use Types_m
   implicit none
 
@@ -51,14 +52,12 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
   integer :: i, j
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
 
      ! diffusion is separated from drift
      newmesh%Ne(i,j) = mesh%Ne(i,j) + dt*( GainsE(i,j)-LossesE(i,j) )
-     newmesh%Ne(i,j) = newmesh%Ne(i,j) + 0.5d0*dt*InvCellVol(i,j)*( &
+     newmesh%Ne(i,j) = newmesh%Ne(i,j) + M_HALF*dt*InvCellVol(i,j)*( &
                ShapeFactorNormalE(i,j) &
               * ( &
                  ! direct diffusion operator over irregular mesh
@@ -127,6 +126,7 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+  use Maths_m
   use Types_m
   implicit none
 
@@ -143,15 +143,13 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
   integer :: i, j
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
 
       !TODO: This can be further optimised
 
       newmesh%Nh(i,j) = mesh%Nh(i,j) + dt*( GainsH(i,j)-LossesH(i,j) )
-      newmesh%Nh(i,j) = newmesh%Nh(i,j) + 0.5d0*dt*InvCellVol(i,j)*( &
+      newmesh%Nh(i,j) = newmesh%Nh(i,j) + M_HALF*dt*InvCellVol(i,j)*( &
               ! drift
               !TODO: Warning, the commented code will have a problem of a factror ofd 0.5
 !               -((0.5d0*(JhX(i+1,j)+JhX(i,j))*NormalEx(i,j)+0.5d0*(JhY(i+1,j) &
@@ -204,6 +202,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+  use Maths_m
   use Types_m
   implicit none
 
@@ -220,14 +219,12 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
   integer :: i, j
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
 
       !TODO: This can be further optimised
       newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j)
-      newmesh%Te(i,j) = newmesh%Te(i,j) + 0.5d0 *invCe(i,j) * dt * InvCellVol(i,j)*( &
+      newmesh%Te(i,j) = newmesh%Te(i,j) + M_HALF *invCe(i,j) * dt * InvCellVol(i,j)*( &
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
               - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i-1,j)) &
               + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i,j+1)-mesh%Te(i,j)) &
@@ -254,6 +251,7 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+  use Maths_m
   use Types_m
   implicit none
 
@@ -270,14 +268,12 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
   integer :: i, j
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
 
   !TODO: This can be further optimised
         newmesh%Th(i,j) = mesh%Th(i,j) + (-CouplingH(i,j)+SourceH(i,j))*invCh(i,j)*dt
-        newmesh%Th(i,j) = newmesh%Th(i,j)+ 0.5d0*( &
+        newmesh%Th(i,j) = newmesh%Th(i,j)+ M_HALF*( &
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j))*(mesh%Th(i+1,j)-mesh%Th(i,j))  &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i,j+1)-0.25d0*Th(i+1,j-1)-0.25d0*Th(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
               - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i-1,j))  &
@@ -307,6 +303,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
+  use Maths_m
   use Types_m
   implicit none
 
@@ -329,10 +326,8 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
   w4 = h2 * h1 * h3 / (h1 * h2 + h1 * h3 + h2 * h3)
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
       ! version with cross-diffusion
 
       ! first order precision in time
@@ -394,7 +389,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 
 !         ! third order precision in time, with variable timesteps
 
-        newmesh%Ts(i,j) = ((0.5d0*( (&
+        newmesh%Ts(i,j) = ((M_HALF*( (&
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*( kappas(i,j)+kappas(i+1,j))*(mesh%Ts(i+1,j)-mesh%Ts(i,j)) &
                 !
               - NormalW2(i,j)*ShapeFactorNormalW(i,j)*( kappas(i-1,j)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i-1,j)) &
@@ -415,7 +410,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
                *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
                 ) &
-                    + 2d0*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) &
+                    + M_TWO*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) &
                 ) * InvCellVol(i,j) &
 !                     - ((h1 * h2 + h1 * h3 &
 !                     + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
@@ -447,6 +442,7 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
                       ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
                       CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
                       NormalN, NormalS, NormalE, NormalW  )
+  use Maths_m
   use Types_m
   implicit none
 
@@ -465,16 +461,14 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
   integer :: i, j
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
 
 ! form with bug corrected in derivatives and (OmegaX, OmegaY) drift transport included in finite volumes
 !     if(TransportModel < 2) then
          UeNew(i,j) = Ue(i,j) + ((SourceUe(i,j)-CouplingE(i,j))*CellVol(i,j) &
                 ! convective term for transport of the energy by the field
-                -0.5d0*(((VeX(i+1,j)+VeX(i,j))*NormalE%x(i,j)                   &
+                -M_HALF*(((VeX(i+1,j)+VeX(i,j))*NormalE%x(i,j)                   &
                         +(VeY(i+1,j)+VeY(i,j))*NormalE%y(i,j)) * CellAreaE(i,j) &
                 +       ((VeX(i,j)+VeX(i-1,j))*NormalW%x(i,j)                   &
                         +(VeY(i,j)+VeY(i-1,j))*NormalW%y(i,j)) * CellAreaW(i,j) &
@@ -493,7 +487,7 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
 !                 -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
                 )*dt*InvCellVol(i,j)
 
-          UeNew(i,j) = UeNew(i,j) + 0.5d0*5d0/3d0*dt*InvCellVol(i,j)*( &
+          UeNew(i,j) = UeNew(i,j) + M_HALF*5d0/3d0*dt*InvCellVol(i,j)*( &
                   NormalE%N(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)*invCe(i,j)+kappae(i+1,j)*invCe(i+1,j))*(Ue(i+1,j)-Ue(i,j))  &
                   !
                 - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j) &
@@ -539,7 +533,7 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
                       CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
                       NormalN, NormalS, NormalE, NormalW )
-
+  use Maths_m
   use Types_m
   implicit none
 
@@ -560,14 +554,12 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   integer :: i, j
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
 
       UhNew(i,j) = Uh(i,j) + ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j) &
                 ! convective term for transport of the energy by the field
-                -0.5d0*(((VhX(i+1,j)+VhX(i,j))*NormalE%x(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalE%y(i,j)) * CellAreaE(i,j) &
+                -M_HALF*(((VhX(i+1,j)+VhX(i,j))*NormalE%x(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalE%y(i,j)) * CellAreaE(i,j) &
                 +( (VhX(i,j)+VhX(i-1,j))*NormalW%x(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalW%y(i,j)) * CellAreaW(i,j) &
                 +( (VhX(i,j)+VhX(i,j+1))*NormalN%x(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalN%y(i,j)) * CellAreaN(i,j) &
                 +( (VhX(i,j)+VhX(i,j-1))*NormalS%x(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalS%y(i,j)) * CellAreaS(i,j)) &
@@ -582,7 +574,7 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
 !                 -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
                 )*dt*InvCellVol(i,j)
 
-     UhNew(i,j) = UhNew(i,j) +0.5d0*( &
+     UhNew(i,j) = UhNew(i,j) +M_HALF*( &
              NormalE%N(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j)*invCh(i,j)+kappah(i+1,j)*invCh(i+1,j))*(Uh(i+1,j)-Uh(i,j))  &
                   !
               - ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)*invCh(i,j)     &
@@ -626,6 +618,7 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       Ch, Uh, UhNew, VhX, VhY, CellVol, x, y, &
                       CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
                       CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
+  use Maths_m
   use Types_m
   implicit none
 
@@ -647,22 +640,22 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
 !         do j=2, N-1
 
      !TODO: This must be optmised !
-        UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-0.5d0*( &
+        UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-M_HALF*( &
                ((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) &
               +((VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) &
               +((VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
               +((VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
               + ( ((kappah(i+1,j)+kappah(i,j))/(Ch(i+1,j)+Ch(i,j))) * (Uh(i+1,j)-Uh(i,j)) &
-              /(x(i+1,j)**2-2d0*x(i+1,j)*x(i,j)+x(i,j)**2 + y(i+1,j)**2-2d0*y(i+1,j)*y(i,j)+y(i,j)**2)**(0.5d0) &
+              /(x(i+1,j)**2-M_TWO*x(i+1,j)*x(i,j)+x(i,j)**2 + y(i+1,j)**2-M_TWO*y(i+1,j)*y(i,j)+y(i,j)**2)**M_HALF &
               *CellAreaE(i,j) &
               - ((kappah(i-1,j)+kappah(i,j))/(Ch(i-1,j)+Ch(i,j))) * (Uh(i,j)-Uh(i-1,j)) &
-              /(x(i,j)**2-2d0*x(i,j)*x(i-1,j)+x(i-1,j)**2+y(i,j)**2-2d0*y(i,j)*y(i-1,j) + y(i-1,j)**2)**(0.5d0) &
+              /(x(i,j)**2-M_TWO*x(i,j)*x(i-1,j)+x(i-1,j)**2+y(i,j)**2-M_TWO*y(i,j)*y(i-1,j) + y(i-1,j)**2)**M_HALF &
               *CellAreaW(i,j) &
               + ((kappah(i,j+1)+kappah(i,j))/(Ch(i,j+1)+Ch(i,j)))*(Uh(i,j+1)-Uh(i,j)) &
-              /(x(i,j+1)**2-2d0*x(i,j+1)*x(i,j) + x(i,j)**2+y(i,j+1)**2-2d0*y(i,j+1)*y(i,j)+y(i,j)**2)**(0.5d0) &
+              /(x(i,j+1)**2-M_TWO*x(i,j+1)*x(i,j) + x(i,j)**2+y(i,j+1)**2-M_TWO*y(i,j+1)*y(i,j)+y(i,j)**2)**M_HALF &
               *CellAreaN(i,j) &
-              -1d0*((kappah(i,j)+kappah(i,j-1))/(Ch(i,j)+Ch(i,j-1)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 &
-              -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
+              -((kappah(i,j)+kappah(i,j-1))/(Ch(i,j)+Ch(i,j-1)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 &
+              -M_TWO*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-M_TWO*y(i,j)*y(i,j-1)+y(i,j-1)**2)**M_HALF) &
               )*dt*InvCellVol(i,j)+Uh(i,j)
 
     end do

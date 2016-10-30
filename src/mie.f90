@@ -31,7 +31,6 @@
 
 module Mie_m
   use Maths_m
-  implicit none
 
   private
 
@@ -64,7 +63,6 @@ contains
                                       sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
                                       x3, y3, x4, y4, x5, EintFieldR,  &
                                       y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
-      use Maths_m
       use Laser_m
       use Types_m
       implicit none

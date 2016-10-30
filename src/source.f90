@@ -70,11 +70,11 @@ contains
     this%xCenter   = 1000d-9
     this%yCenter   = 0d0*200d-9
 
-    this%omega     = 2d0*M_PI*c/this%lambda
-    this%k         = 2d0*M_PI/this%lambda
-    this%inv_omega = 1.0d0/this%omega
+    this%omega     = M_TWO*M_PI*c/this%lambda
+    this%k         = M_TWO*M_PI/this%lambda
+    this%inv_omega = M_ONE/this%omega
     this%E         = hbar*this%omega
-    this%inv_E     = 1.0d0/this%E
+    this%inv_E     = M_ONE/this%E
 
   end subroutine init_laser
 

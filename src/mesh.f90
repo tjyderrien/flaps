@@ -88,6 +88,7 @@ end subroutine copy_mesh
 
 ! interpolation bilineaire ponderee par les aires
 subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
+   use Maths_m
    use Types_m
    implicit none
    type(MeshValues), intent(INOUT) :: mesh, dual
@@ -126,7 +127,7 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    do j=1, dual%N
      do i=1, dual%M
 
-       weight = 1.0d0/ ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
+       weight = M_ONE/ ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
 
        ! interpolation bilineaire ponderee par les aires
        dual%Ne(i,j) = ( mesh%Ne(i,j)* InvCellVol(i,j) + mesh%Ne(i+1,j)*InvCellVol(i+1,j)&
@@ -151,6 +152,7 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
  end subroutine
 
  subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t)
+   use Maths_m
    use Types_m
    implicit none
 
@@ -192,11 +194,11 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
     !$OMP END DO
     !$OMP END PARALLEL
 
-    if(maxCFLxT.gt.1d0 .OR. maxCFLyT.gt.1d0) then
+    if(maxCFLxT.gt.M_ONE .OR. maxCFLyT.gt.M_ONE) then
       write(95,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
       Diverged=.true.
     end if
-    if(maxCFLxN.gt.1d0 .OR. maxCFLyN.gt.1d0) then
+    if(maxCFLxN.gt.M_ONE .OR. maxCFLyN.gt.M_ONE) then
       write(95,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
       Diverged=.true.
     end if
