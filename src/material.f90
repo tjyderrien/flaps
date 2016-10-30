@@ -57,7 +57,7 @@
 
 
 !------------------------------------------------------------------
-    complex(8) function DielectricConstant(lambda)
+    complex(8) pure function DielectricConstant(lambda)
 !> Dielectric consant for silicon mateiral at some particular wavelengths. 
 !> TODO: interface with SPP-extended-theory. 
       implicit none
@@ -223,6 +223,7 @@
       !CollisionFrequency=5d13 !
     end function ephCollisionFrequency
 
+!------------------------------------------------------------------
 
     !TODO: Create a batch version of this routine
     pure real(8) function CollisionFrequency()
@@ -230,6 +231,7 @@
 
       CollisionFrequency=1d15
     end function CollisionFrequency
+!------------------------------------------------------------------
 
     !TODO: Create a batch version of this routine
     pure real(8) function ImpactIonizationRate(Te, Eg, ImpactOff)
@@ -574,7 +576,9 @@
     !
     end subroutine UpdateCouplings_batch
 
+   !------------------------------------------------------------------
    !> Computes the Sources Gains and Losses terms for electron and holes
+   !------------------------------------------------------------------
    subroutine ComputeGainsAndLosses(Params, mesh, laser, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                               absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
@@ -658,6 +662,9 @@
     !$OMP END DO
    end subroutine ComputeGainsAndLosses
 
+
+
+    !------------------------------------------------------------------
     pure real(8) function OnePhotonIonizationRate()
       implicit none
 
@@ -665,6 +672,8 @@
       OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
     end function OnePhotonIonizationRate
 
+
+    !------------------------------------------------------------------
     pure real(8) function TwoPhotonIonizationRate(lambda)
       implicit none
       real(8), intent(in) :: lambda
@@ -692,6 +701,8 @@
       end if
     end function TwoPhotonIonizationRate
 
+
+    !------------------------------------------------------------------
     !TODO: Create a batch version of this routine
      pure real(8) function EgapValue(Ne, Ts)
       use Maths_m
@@ -712,6 +723,8 @@
     !  end if
     end function EgapValue
 
+
+    !------------------------------------------------------------------
     !TODO: Create a batch version of this routine
     integer(8) function FermiIndex(NeNc, FermiMaxLines)
       implicit none
