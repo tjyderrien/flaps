@@ -634,10 +634,8 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   integer :: i, j
 
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
-!       do i=2, M-1
-!         do j=2, N-1
 
      !TODO: This must be optmised !
         UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-M_HALF*( &
@@ -687,7 +685,7 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
 
   integer :: i, j
   !$OMP DO COLLAPSE(2)
-  do j=2, mesh%N-1 !(optimized)
+  do j=2, mesh%N-1
     do i=2, mesh%M-1
     newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
             *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) * invCe(i,j)
