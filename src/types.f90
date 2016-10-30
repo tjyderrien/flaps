@@ -81,10 +81,8 @@ module Types_m
                                     ! 0: only fourier conductivity
                                     !-1: diffusion and conductivity OFF
     integer :: CouplingDebug        !0: e/h - lattice coupling enabled, 1: disabled
-    integer :: AugerOff
-    integer :: OutputIter
-
-
+    integer :: AugerOff             !TODO: Comment this value
+    integer :: OutputIter           !TODO: Comment this value
   end type
 
 end module Types_m
