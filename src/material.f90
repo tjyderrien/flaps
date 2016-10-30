@@ -638,7 +638,7 @@
                     +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
 
         SourceUh(i,j)=((source%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
-                     + M_HALF*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
+                     + M_HALF*(M_TWO*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
                      - Egap(i,j)*work*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2)
@@ -731,6 +731,7 @@
     !------------------------------------------------------------------
     !TODO: Create a batch version of this routine
     integer(8) function FermiIndex(NeNc, FermiMaxLines)
+      use Maths_m
       implicit none
       ! Input: Value of density/DOS
       ! returns the index to take in the Fermi files
@@ -739,7 +740,7 @@
       NeNc0=1d-38
       dNeNc=1.03d0 !NeNc=NeNc0*dNeNc**n
 
-      FermiIndex=nint(log10(NeNc/NeNc0)/log10(dNeNc)+1d0)
+      FermiIndex=nint(log10(NeNc/NeNc0)/log10(dNeNc)+M_ONE)
       if(FermiIndex < 1 .OR. FermiIndex > FermiMaxLines) then
         write(*,*) "FermiIndex problem: NeNc=", NeNc, "FermiIndex=", FermiIndex
       end if

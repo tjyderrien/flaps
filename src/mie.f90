@@ -223,7 +223,7 @@ contains
         !$OMP END DO
       case default
          write(*,*) "Input ERROR. Check the MieScattering parameter."
-         stop
+         call StopProgram
       end select
 
       !TODO: NTD: Is it really needed or can I remove it?

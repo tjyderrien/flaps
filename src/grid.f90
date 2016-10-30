@@ -65,7 +65,7 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
 
    do i=2,M-1
       !NORTH
-         CellAreaN(i,N)=0d0 !M_HALF*(x(i+1,N)**2-M_TWO*x(i+1,N)*x(i-1,N)+x(i-1,N)**2+y(i+1,N)**2-M_TWO*y(i+1,N)*y(i-1,N)+y(i-1,N)**2)**M_HALF
+         CellAreaN(i,N)=M_ZERO !M_HALF*(x(i+1,N)**2-M_TWO*x(i+1,N)*x(i-1,N)+x(i-1,N)**2+y(i+1,N)**2-M_TWO*y(i+1,N)*y(i-1,N)+y(i-1,N)**2)**M_HALF
          CellAreaS(i,N)=0.25d0*(x(i+1,N)**2+M_TWO*x(i+1,N)*x(i+1,N-1)-M_TWO*x(i+1,N)*x(i-1,N-1)-M_TWO*x(i+1,N)*x(i-1,N) &
                 +x(i+1,N-1)**2-M_TWO*x(i+1,N-1)*x(i-1,N-1)-M_TWO*x(i+1,N-1)*x(i-1,N)+x(i-1,N-1)**2+M_TWO*x(i-1,N)*x(i-1,N-1) &
                 +x(i-1,N)**2+y(i+1,N)**2+M_TWO*y(i+1,N)*y(i+1,N-1)-M_TWO*y(i+1,N)*y(i-1,N-1)-M_TWO*y(i+1,N)*y(i-1,N) &
@@ -107,7 +107,7 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
                                 -M_TWO*y(i+1,1)*y(i,2)+y(i,1)**2-M_TWO*y(i,1)*y(i,2)+y(i,2)**2)**M_HALF
 
          DistN(i,1)=sqrt( (x(i,2)-x(i,1))**2 + (y(i,2)-y(i,1))**2 )
-         DistS(i,1)=0d0
+         DistS(i,1)=M_ZERO
          DistE(i,1)=sqrt( (x(i+1,1)-x(i,1))**2 + (y(i+1,1)-y(i,1))**2 )
          DistW(i,1)=sqrt( (x(i,1)-x(i-1,1))**2 + (y(i,1)-y(i-1,1))**2 )
    end do
@@ -133,7 +133,7 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
           DistN(1,j)=sqrt( (x(1,j+1)-x(1,j))**2 + (y(1,j+1)-y(1,j))**2 )
           DistS(1,j)=sqrt( (x(1,j)-x(1,j-1))**2 + (y(1,j)-y(1,j-1))**2 )
           DistE(1,j)=sqrt( (x(2,j)-x(1,j))**2 + (y(2,j)-y(1,j))**2 )
-          DistW(1,j)=0d0
+          DistW(1,j)=M_ZERO
 
      !EAST
           CellAreaN(M,j)=0.25d0*(x(M,j+1)**2+M_TWO*x(M,j+1)*x(M,j)-M_TWO*x(M,j+1)*x(M-1,j)-M_TWO*x(M,j+1)*x(M-1,j+1)+x(M,j)**2 &
@@ -155,7 +155,7 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
 
           DistN(M,j)=sqrt( (x(M,j+1)-x(M,j))**2 + (y(M,j+1)-y(M,j))**2 )
           DistS(M,j)=sqrt( (x(M,j-1)-x(M,j))**2 + (y(M,j-1)-y(M,j))**2 )
-          DistE(M,j)=0d0
+          DistE(M,j)=M_ZERO
           DistW(M,j)=sqrt( (x(M-1,j)-x(M,j))**2 + (y(M-1,j)-y(M,j))**2 )
 
    end do
@@ -174,9 +174,9 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
                 -M_TWO*y(M,N)*y(M-1,N-1)-M_TWO*y(M,N)*y(M,N-1)+y(M-1,N-1)**2+M_TWO*y(M-1,N-1)*y(M,N-1) &
                 +y(M,N-1)**2)**M_HALF
 
-        DistN(M,N)=0d0
+        DistN(M,N)=M_ZERO
         DistS(M,N)=sqrt((x(M,N)-x(M,N-1))**2+(y(M,N)-y(M,N-1))**2)
-        DistE(M,N)=0d0
+        DistE(M,N)=M_ZERO
         DistW(M,N)=sqrt((x(M,N)-x(M-1,N))**2+(y(M,N)-y(M-1,N))**2)
 
    !South-east

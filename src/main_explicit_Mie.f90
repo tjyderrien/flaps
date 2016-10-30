@@ -48,15 +48,15 @@ implicit none
 
     real(8), parameter::Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
-                        potentialNull=0d0 !, &
+                        potentialNull=M_ZERO !, &
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
-    real(8), parameter:: coeffDilaDt=2d0        ,& !diltation coeff before dt change
+    real(8), parameter:: coeffDilaDt=M_TWO        ,& !diltation coeff before dt change
                         xmin=-10d-6       ,& !mesh min
                         xmax=10d-6       ,& !mesh max
                         ymin=-10d-6       ,&                
                         ymax=10d-6       ,&
-                        tCenter=0d0             !time of gaussian intensity maximum
+                        tCenter=M_ZERO             !time of gaussian intensity maximum
 
      real(8)               tmin                !max absolute time
     
@@ -79,15 +79,15 @@ implicit none
                           
                           
         
-    real(8), parameter::   NeedleAngleDeg=1d0        ,& ! deg
+    real(8), parameter::   NeedleAngleDeg=M_ONE        ,& ! deg
                           NeedleRadius=4d-9        ,& !m
                           NeedleLength=3d-6        , &        !m
                           SORcoeff=1.2d0        ,&        ! near 1
                           MeshDensity0=5d5        ,& ! amplitude of source for mesh refinement
                           MeshConvergenceEpsilon=1d-10, & !error tolerance on meshing convergency
                           MeshDamping0=1d8, &         ! damping coefficient (m^-1) for mesh refinement
-                          ActivateInduction=0d0, &
-                          CrossCoeff=-1d0, &                ! 0d0: OFF, 1d0: ON
+                          ActivateInduction=M_ZERO, &
+                          CrossCoeff=-M_ONE, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
     integer(8), parameter:: ImpactOff=0       ,&
@@ -408,19 +408,19 @@ implicit none
                 EintField(1:Params%M,1:Params%N), EintField2(1:Params%M,1:Params%N))
 
  !Initialisation of data
- CouplingE(:,:)=0d0
- CouplingH(:,:)=0d0
- kappae(:,:) = 0.d0
- kappah(:,:) = 0.d0
- kappas(:,:) = 0.d0
- JeX(:,:)=0d0
- JeY(:,:)=0d0
- JhX(:,:)=0d0
- JhY(:,:)=0d0
- diffusionE(:,:)=0d0
- diffusionH(:,:)=0d0
- absorptionDrudeE(:,:) = 0d0
- absorptionDrudeH(:,:) = 0d0
+ CouplingE(:,:)=M_ZERO
+ CouplingH(:,:)=M_ZERO
+ kappae(:,:) = M_ZERO
+ kappah(:,:) = M_ZERO
+ kappas(:,:) = M_ZERO
+ JeX(:,:)=M_ZERO
+ JeY(:,:)=M_ZERO
+ JhX(:,:)=M_ZERO
+ JhY(:,:)=M_ZERO
+ diffusionE(:,:)=M_ZERO
+ diffusionH(:,:)=M_ZERO
+ absorptionDrudeE(:,:) = M_ZERO
+ absorptionDrudeH(:,:) = M_ZERO
 
 !******** READ GMSH MESH FILE ************
 !TODO: This is very durty
@@ -532,29 +532,29 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     AugerRateE=2.3d-43
     AugerRateH=7.8d-44
   else
-    AugerRateE=0d0
-    AugerRateH=0d0
+    AugerRateE=M_ZERO
+    AugerRateH=M_ZERO
   end if
 
     !TODO: Move to LaserParams
-    sigmaTau=source%tau/(2d0*M_SQRT2LN2)
-    sigmaX=source%spotX/(2d0*M_SQRT2LN2)
-    sigmaY=source%spotY/(2d0*M_SQRT2LN2)
+    sigmaTau=source%tau/(M_TWO*M_SQRT2LN2)
+    sigmaX=source%spotX/(M_TWO*M_SQRT2LN2)
+    sigmaY=source%spotY/(M_TWO*M_SQRT2LN2)
 
     !TODO: Move to LaserParams
-    I0=source%fluence/source%tau * sqrt(4d0 * log(2d0) / M_PI)
+    I0=source%fluence/source%tau * sqrt(4d0 * log(M_TWO) / M_PI)
     
     if(source%lambda.eq.515d-9) then
       if(Params%PolarizationSource.eq.0) then
-        x1=1.5d-7; y1=0.d0; I1=0d0*I0; spotX1=100d-9; spotY1=50d-9; !
-        x2=3.3d-7; y2=0.d0; I2=0d0*9d0*I0; spotX2=50d-9; spotY2=50d-9; !3.53W
-        x3=6.5d-7; y3=-3d-8; I3=0d0*17d0*I0; spotX3=70d-9; spotY3=150d-9; !28W
-        x4=6.5d-7; y4=3d-8; I4=0d0*17d0*I0; spotX4=70d-9; spotY4=150d-9; !28W
-        x5=9.5d-7; y5=0d0; I5=0d0*7d0*I0; spotX5=50d-9; spotY5=50d-9; !2.74W
-        x6=1.2d-6; y6=0d0; I6=0d0*8d0*I0; spotX6=50d-9; spotY6=50d-9; !3.14W
-        x7=1.37d-6; y7=0d0; I7=0d0*9d0*I0; spotX7=50d-9; spotY7=50d-9; !3.53W
-        x8=6.2d-7; y8=-40d-9; I8=0d0*0d0*I0; spotX8=250d-9; spotY8=50d-9;
-        x9=1.3d-6; y9=-20d-9; I9=0d0*0d0*I0; spotX9=500d-9; spotY9=100d-9;
+        x1=1.5d-7; y1=M_ZERO; I1=M_ZERO*I0; spotX1=100d-9; spotY1=50d-9; !
+        x2=3.3d-7; y2=M_ZERO; I2=M_ZERO*9d0*I0; spotX2=50d-9; spotY2=50d-9; !3.53W
+        x3=6.5d-7; y3=-3d-8; I3=M_ZERO*17d0*I0; spotX3=70d-9; spotY3=150d-9; !28W
+        x4=6.5d-7; y4=3d-8; I4=M_ZERO*17d0*I0; spotX4=70d-9; spotY4=150d-9; !28W
+        x5=9.5d-7; y5=M_ZERO; I5=M_ZERO*7d0*I0; spotX5=50d-9; spotY5=50d-9; !2.74W
+        x6=1.2d-6; y6=M_ZERO; I6=M_ZERO*8d0*I0; spotX6=50d-9; spotY6=50d-9; !3.14W
+        x7=1.37d-6; y7=M_ZERO; I7=M_ZERO*9d0*I0; spotX7=50d-9; spotY7=50d-9; !3.53W
+        x8=6.2d-7; y8=-40d-9; I8=M_ZERO*I0; spotX8=250d-9; spotY8=50d-9;
+        x9=1.3d-6; y9=-20d-9; I9=M_ZERO*I0; spotX9=500d-9; spotY9=100d-9;
       else
         periodX=200d-9; periodY=50d-9
         x1=1.0d-7; y1=0d-9; I1=13d0*I0; spotX1=120d-9; spotY1=70d-9; !17.15W
@@ -570,24 +570,24 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     end if
 
     !TODO: I think that one invented arrays and loops for handling similar situations ;)
-    sigmaX1=spotX1/(2e0*M_SQRT2LN2)
-    sigmaY1=spotY1/(2e0*M_SQRT2LN2)
-    sigmaX2=spotX2/(2e0*M_SQRT2LN2)
-    sigmaY2=spotY2/(2e0*M_SQRT2LN2)
-    sigmaX3=spotX3/(2e0*M_SQRT2LN2)
-    sigmaY3=spotY3/(2e0*M_SQRT2LN2)
-    sigmaX4=spotX4/(2e0*M_SQRT2LN2)
-    sigmaY4=spotY4/(2e0*M_SQRT2LN2)
-    sigmaX5=spotX5/(2e0*M_SQRT2LN2)
-    sigmaY5=spotY5/(2e0*M_SQRT2LN2)
-    sigmaX6=spotX6/(2e0*M_SQRT2LN2)
-    sigmaY6=spotY6/(2e0*M_SQRT2LN2)
-    sigmaX7=spotX7/(2e0*M_SQRT2LN2)
-    sigmaY7=spotY7/(2e0*M_SQRT2LN2)
-    sigmaX8=spotX8/(2e0*M_SQRT2LN2)
-    sigmaY8=spotY8/(2e0*M_SQRT2LN2)
-    sigmaX9=spotX9/(2e0*M_SQRT2LN2)
-    sigmaY9=spotY9/(2e0*M_SQRT2LN2)
+    sigmaX1=spotX1/(M_TWO*M_SQRT2LN2)
+    sigmaY1=spotY1/(M_TWO*M_SQRT2LN2)
+    sigmaX2=spotX2/(M_TWO*M_SQRT2LN2)
+    sigmaY2=spotY2/(M_TWO*M_SQRT2LN2)
+    sigmaX3=spotX3/(M_TWO*M_SQRT2LN2)
+    sigmaY3=spotY3/(M_TWO*M_SQRT2LN2)
+    sigmaX4=spotX4/(M_TWO*M_SQRT2LN2)
+    sigmaY4=spotY4/(M_TWO*M_SQRT2LN2)
+    sigmaX5=spotX5/(M_TWO*M_SQRT2LN2)
+    sigmaY5=spotY5/(M_TWO*M_SQRT2LN2)
+    sigmaX6=spotX6/(M_TWO*M_SQRT2LN2)
+    sigmaY6=spotY6/(M_TWO*M_SQRT2LN2)
+    sigmaX7=spotX7/(M_TWO*M_SQRT2LN2)
+    sigmaY7=spotY7/(M_TWO*M_SQRT2LN2)
+    sigmaX8=spotX8/(M_TWO*M_SQRT2LN2)
+    sigmaY8=spotY8/(M_TWO*M_SQRT2LN2)
+    sigmaX9=spotX9/(M_TWO*M_SQRT2LN2)
+    sigmaY9=spotY9/(M_TWO*M_SQRT2LN2)
     
     t0=tCenter; x0=source%xCenter; y0=source%yCenter;
     
@@ -595,14 +595,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     call InitOutputs()
     
     
-  TotalLaserEnergy=0d0; 
-  IntensityEnergy=0d0;
-  LaserIntensityEnergy=0d0; 
-  ElectronKineticEnergy=0d0; ElectronPotentialEnergy=0d0; ElectronEnergy=0d0
-  HoleEnergy=0d0
-  LatticeEnergy=0d0
-  TotalThermalEnergy=0d0; 
-  cpuefficiency=0d0; cpu_timestep_duration=0d0
+  TotalLaserEnergy=M_ZERO;
+  IntensityEnergy=M_ZERO;
+  LaserIntensityEnergy=M_ZERO;
+  ElectronKineticEnergy=M_ZERO; ElectronPotentialEnergy=M_ZERO; ElectronEnergy=M_ZERO
+  HoleEnergy=M_ZERO
+  LatticeEnergy=M_ZERO
+  TotalThermalEnergy=M_ZERO;
+  cpuefficiency=M_ZERO; cpu_timestep_duration=M_ZERO
   
   
 !***************** MESH GENERATION *****************
@@ -617,8 +617,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   ! building rectangular mesh 
   dx=(xmax-xmin)/(Params%M+1)
   dy=(ymax-ymin)/(Params%N+1)
-  x(1:Params%M,1:Params%N) = 0d0
-  y(1:Params%M,1:Params%N) = 0d0
+  x(1:Params%M,1:Params%N) = M_ZERO
+  y(1:Params%M,1:Params%N) = M_ZERO
   
   write(*,*)
 
@@ -639,16 +639,16 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     NeedleIndexX=Params%M
     NeedleIndexY=Params%N
     NeedleAngle=NeedleAngleDeg*M_DEG2RAD
-    NeedleA=NeedleRadius/(tan(NeedleAngle/2d0)**2)
-    NeedleB=NeedleRadius/tan(NeedleAngle/2d0)
-    Needlet0Limit=acos(NeedleRadius/(NeedleLength*tan(real(NeedleAngle)/2d0)**2+NeedleRadius))
+    NeedleA=NeedleRadius/(tan(NeedleAngle*M_HALF)**2)
+    NeedleB=NeedleRadius/tan(NeedleAngle*M_HALF)
+    Needlet0Limit=acos(NeedleRadius/(NeedleLength*tan(NeedleAngle*M_HALF)**2+NeedleRadius))
     
 !building of the conical mesh: write boundaries, then solve laplace, and iterate
     
-    NeedleXParam=(Needlet0Limit-0d0)/NeedleIndexX !dt0 for X (0,t0)
-    NeedleYParam=(Needlet0Limit-0d0)/NeedleIndexY !dt0 for Y (0,t0)
+    NeedleXParam=(Needlet0Limit-M_ZERO)/NeedleIndexX !dt0 for X (0,t0)
+    NeedleYParam=(Needlet0Limit-M_ZERO)/NeedleIndexY !dt0 for Y (0,t0)
     
-    P2critic=(real(Params%N)-1d0)**2/(2d0*real(j)-real(Params%N)-1)
+    P2critic=(real(Params%N)-M_ONE)**2/(M_TWO*real(j)-real(Params%N)-1)
     !! this limit applies if hyperbolic contour is chosen
 !     if(real(MeshShift)**2 > P2critic) then
 !       write(*,*) "Dilatation of the apex is too large. Reduce <= ", floor(sqrt(P2critic))
@@ -656,10 +656,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !     end if
 
 !! just to check which point has not been defined - every point should be replaced !
-    x(:,:)=-1d0
-    y(:,:)=-1d0
+    x(:,:)=-M_ONE
+    y(:,:)=-M_ONE
     
-    MeshConvergence=0d0
+    MeshConvergence=M_ONE
     
     inner: do k=1,MeshIterations
     !!! HYPERBOLIC CONTOUR
@@ -893,9 +893,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !       end do
 !     end do
     ! now we can calculate height of the cone...
-    NeedleHeight=2d0*tan(.5d0*NeedleAngle) * sqrt(1d0 - NeedleRadius**2/((tan(NeedleAngle/2d0))**4)* &
-                (x(Params%M,Params%N/2)+NeedleRadius**2/((tan(0.5d0*NeedleAngle))**2)**2)) &
-              * (x(Params%M,Params%N/2)+NeedleRadius/(tan(NeedleAngle/2d0))**2)
+    NeedleHeight=2d0*tan(M_HALF*NeedleAngle) * sqrt(M_ONE - NeedleRadius**2/((tan(NeedleAngle*M_HALF))**4)* &
+                (x(Params%M,Params%N/2)+NeedleRadius**2/((tan(M_HALF*NeedleAngle))**2)**2)) &
+              * (x(Params%M,Params%N/2)+NeedleRadius/(tan(NeedleAngle*M_HALF))**2)
   end if
 
   !rectangular mesh as Vessel domain, containing the cone
@@ -1106,9 +1106,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
   nmax=int((Params%TimeMax-tmin)/dt, 8)
   
-  Ex(:,:)=0d0 !-1d10
-  Ey(:,:)=0d0 !-1d9 !0d0
-  DummyVessel(:,:)=0d0
+  Ex(:,:)=M_ZERO !-1d10
+  Ey(:,:)=M_ZERO !-1d9 !0d0
+  DummyVessel(:,:)=M_ZERO
   
   Te0=Tout !1400d0
   Th0=Tout
@@ -1117,10 +1117,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   do j=1,Params%N
     do i=1,Params%M
         
-        VeX(i,j)=0d0
-        VeY(i,j)=0d0
-        VhX(i,j)=0d0
-        VhY(i,j)=0d0
+        VeX(i,j)=M_ZERO
+        VeY(i,j)=M_ZERO
+        VhX(i,j)=M_ZERO
+        VhY(i,j)=M_ZERO
         newmesh%Te(i,j)=Te0
         newmesh%Th(i,j)=Th0
         newmesh%Ts(i,j)=Tout
@@ -1131,16 +1131,16 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
            newmesh%Ne(i,j)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
-                    /(2d0*M_SQRT2LN2))**2)) &
+                    /(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) &
-                    /(2d0*M_SQRT2LN2))**2)) &
+                    /(M_TWO*M_SQRT2LN2))**2)) &
                   )
           newmesh%Nh(i,j)=Nh0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
-                    /(2d0*M_SQRT2LN2))**2)) &
+                    /(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) &
-                    /(2d0*M_SQRT2LN2))**2)) &
+                    /(M_TWO*M_SQRT2LN2))**2)) &
                   )
         else
           newmesh%Ne(i,j)=Ne0
@@ -1174,13 +1174,13 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         ! calculate semi-classical heat capacity
         CeOld(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
-                  -etae*(1d0-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
+                  -etae*(M_ONE-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
                   (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) &
                               /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))))
         ChOld(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
-                  -etah*(1d0-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
+                  -etah*(M_ONE-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
@@ -1197,10 +1197,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
         UhNew(i,j)=newmesh%Th(i,j)*ChOld(i,j)
         
-        intensity(i,j)=0d0
-        MaxHeating(i,j)=0d0
-        MaxHeatingTime(i,j)=0d0
-        epsilonNeedle(i,j)=epsilonStatic0-1d0
+        intensity(i,j)=M_ZERO
+        MaxHeating(i,j)=M_ZERO
+        MaxHeatingTime(i,j)=M_ZERO
+        epsilonNeedle(i,j)=epsilonStatic0-M_ONE
         
     end do
    end do
@@ -1216,7 +1216,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !    end do
 !   end if
    
-   potential(:,:)=0d0! (0d0,0d0)
+   potential(:,:)=M_ZERO! (0d0,0d0)
    
     ! $ O M P PARALLEL DEFAULT (SHARED) 
    
@@ -1230,7 +1230,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 !      end if
 !   endif
    ! $ O M P END PARALLEL
-   DielectricStatic(:,:)=DielectricStatic(:,:)+1d0 !so that equals 1 outside needle, and equals epsilonStatic0 inside
+   DielectricStatic(:,:)=DielectricStatic(:,:)+M_ONE !so that equals 1 outside needle, and equals epsilonStatic0 inside
    write(*,*) 'Done.'
    
    ! potential on vessel boundaries
@@ -1288,7 +1288,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 !     if(DisableCrossDiffusion.eq.1) then
 !       ! disable flux parallel to element boundaries
-!       TangentNx(:,:)=0d0; TangentNy(:,:)=0d0; 
+!       TangentNx(:,:)=0d0; TangentNy(:,:)=0d0;
 !       TangentSx(:,:)=0d0; TangentSy(:,:)=0d0
 !       TangentEx(:,:)=0d0; TangentEy(:,:)=0d0
 !       TangentWx(:,:)=0d0; TangentWy(:,:)=0d0
@@ -1476,9 +1476,9 @@ if(Params%UseMieScattering.eq.1) then
 !   end if
  
   ! initialisation of the displayed values
-  maxIntensity=0d0; maxTe=0d0; minTe=1d10; maxTh=0d0; minTh=1d10; maxTs=0d0; minTs=1d10; 
+  maxIntensity=0d0; maxTe=0d0; minTe=1d10; maxTh=0d0; minTh=1d10; maxTs=0d0; minTs=1d10;
   maxNe=0d0; maxNh=0d0; minNe=1d50; minNh=1d50
-  maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; maxCFLyTs=0d0; 
+  maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; maxCFLyTs=0d0;
   maxFermiIndexE=0; maxFermiIndexH=0; 
  
   !NTD: Why DistX are recomputed here? Same for CellAreaX
