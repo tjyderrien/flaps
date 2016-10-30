@@ -26,26 +26,56 @@
 !> 08 Jun 2016 - Initial Version
 !------------------------------------------------------------------------------
 
+
+module laser_m
+
+
+  private
+
+  public ::     &
+    laser,      &
+    init_laser
+
+  !> Structure defining a laser
+  type laser
+    real(8) :: lambda    !> laser wavelength (m)
+    real(8) :: fluence   !> laser fluence (J.m-2)
+    real(8) :: tau       !> FWHM pulse duration (s)
+    real(8) :: spotX     !> FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
+    real(8) :: spotY     !> FWHM spot size in Y direction
+    real(8) :: xCenter   !> X position of the max of the intensity (1030nm: 1um 0um, 515nm: idem, 343nm: 100nm x 200nm)
+    real(8) :: yCenter   !> Y position of the max of the intensity
+    real(8) :: omega     !> Laser frequency
+    real(8) :: k
+    real(8) :: inv_omega
+    real(8) :: E, inv_E  !> Laser Photon energy, and its inverse
+  end type laser
+
+contains
+
 !> Initialize laser paramters
-subroutine init_laser( laser )
+subroutine init_laser( this )
  use Maths_m
  use Types_m
  implicit none
 
- type(LaserParams), intent(inout) :: laser
+ type(Laser), intent(inout) :: this
 
-  laser%lambda    = 515d-9          !laser wavelength (m)
-  laser%fluence   = 10d0            !laser fluence (J.m-2)
-  laser%tau       = 40d-15          !FWHM pulse duration (s)
-  laser%spotX     = 50d-6           !FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
-  laser%spotY     = 50d-6           !FWHM spot size in Y direction
-  laser%xCenter   = 1000d-9         ! X position of the max of the intensity (1030nm: 1um 0um, 515nm: idem, 343nm: 100nm x 200nm)
-  laser%yCenter   = 0d0*200d-9      ! Y position of the max of the intensity
+  this%lambda    = 515d-9          !laser wavelength (m)
+  this%fluence   = 10d0            !laser fluence (J.m-2)
+  this%tau       = 40d-15          !FWHM pulse duration (s)
+  this%spotX     = 50d-6           !FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
+  this%spotY     = 50d-6           !FWHM spot size in Y direction
+  this%xCenter   = 1000d-9         ! X position of the max of the intensity (1030nm: 1um 0um, 515nm: idem, 343nm: 100nm x 200nm)
+  this%yCenter   = 0d0*200d-9      ! Y position of the max of the intensity
 
-  laser%omega     = 2d0*M_PI*c/laser%lambda !laser pulsation (s**-1)
-  laser%k         = 2d0*M_PI/laser%lambda
-  laser%inv_omega = 1.0d0/laser%omega
-  laser%E         = hbar*laser%omega
-  laser%inv_E     = 1.0d0/laser%E
+  this%omega     = 2d0*M_PI*c/this%lambda !laser pulsation (s**-1)
+  this%k         = 2d0*M_PI/this%lambda
+  this%inv_omega = 1.0d0/this%omega
+  this%E         = hbar*this%omega
+  this%inv_E     = 1.0d0/this%E
 
 end subroutine init_laser
+
+
+end module laser_m

@@ -41,21 +41,6 @@ module Types_m
     integer :: M,N !> Mesh dimension
    end type MeshValues
 
-   !> Parameters of the laser
-   type LaserParams
-     real(8) :: lambda    !> laser wavelength (m)
-     real(8) :: fluence   !> laser fluence (J.m-2)
-     real(8) :: tau       !> FWHM pulse duration (s)
-     real(8) :: spotX     !> FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
-     real(8) :: spotY     !> FWHM spot size in Y direction
-     real(8) :: xCenter   !> X position of the max of the intensity (1030nm: 1um 0um, 515nm: idem, 343nm: 100nm x 200nm)
-     real(8) :: yCenter   !> Y position of the max of the intensity
-     real(8) :: omega     !> Laser frequency
-     real(8) :: k
-     real(8) :: inv_omega
-     real(8) :: E, inv_E  !> Laser Photon energy, and its inverse
-   end type LaserParams
-
   !> A vector field structure
   type VectorField
     real(8), allocatable, dimension(:,:) :: x, y !> x, y components of a vector

@@ -45,7 +45,7 @@ depend:
 
 main_explicit_Mie.o: main_explicit_Mie.f90 input.o material.o mesh.o mie.o output.o source.o \
                      solver.o grid.o
-material.o: material.f90 types.o maths.o
+material.o: material.f90 types.o maths.o source.o
 mesh.o: mesh.f90 types.o
 mie.o: mie.f90 maths.o
 output.o: output.f90 types.o

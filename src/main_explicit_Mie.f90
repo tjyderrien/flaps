@@ -34,6 +34,7 @@ USE OMP_LIB
 ! USE Bivariate
 USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 
+use Laser_m
 use Maths_m
 use Mie_m
 use Output_m
@@ -42,7 +43,7 @@ use Types_m
 implicit none
 
     type(MeshValues) :: mesh, dual, newmesh
-    type(LaserParams):: laser
+    type(Laser)      :: source
     type(InputParameters) :: Params
 
     real(8), parameter::Tout=80d0 ,&  !external temperature (K)
@@ -512,9 +513,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 !**** INITIALIZATION
 
-  call init_laser(laser)
+  call init_laser(source)
 
-  tmin=tCenter-5d0*laser%tau
+  tmin=tCenter-5d0*source%tau
 
 
   dt=Params%TimeStep
@@ -536,14 +537,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   end if
 
     !TODO: Move to LaserParams
-    sigmaTau=laser%tau/(2d0*M_SQRT2LN2)
-    sigmaX=laser%spotX/(2d0*M_SQRT2LN2)
-    sigmaY=laser%spotY/(2d0*M_SQRT2LN2)
+    sigmaTau=source%tau/(2d0*M_SQRT2LN2)
+    sigmaX=source%spotX/(2d0*M_SQRT2LN2)
+    sigmaY=source%spotY/(2d0*M_SQRT2LN2)
 
     !TODO: Move to LaserParams
-    I0=laser%fluence/laser%tau * sqrt(4d0 * log(2d0) / M_PI)
+    I0=source%fluence/source%tau * sqrt(4d0 * log(2d0) / M_PI)
     
-    if(laser%lambda.eq.515d-9) then
+    if(source%lambda.eq.515d-9) then
       if(Params%PolarizationSource.eq.0) then
         x1=1.5d-7; y1=0.d0; I1=0d0*I0; spotX1=100d-9; spotY1=50d-9; !
         x2=3.3d-7; y2=0.d0; I2=0d0*9d0*I0; spotX2=50d-9; spotY2=50d-9; !3.53W
@@ -588,7 +589,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     sigmaX9=spotX9/(2e0*M_SQRT2LN2)
     sigmaY9=spotY9/(2e0*M_SQRT2LN2)
     
-    t0=tCenter; x0=laser%xCenter; y0=laser%yCenter;
+    t0=tCenter; x0=source%xCenter; y0=source%yCenter;
     
     ! We open the different files
     call InitOutputs()
@@ -1078,11 +1079,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   !TODO: Move to source
   write(Parameters%unit,*)
   write(Parameters%unit,*) "=========== LASER PARAMETERS ========"
-  write(Parameters%unit,*) "Laser fluence=", laser%fluence*1d-4, "J.cm-2"
-  write(Parameters%unit,*) "Laser pulse duration=", laser%tau*1d15, "fs"
-  write(Parameters%unit,*) "Laser wavelength=", laser%lambda*1d9, "nm"
+  write(Parameters%unit,*) "Laser fluence=", source%fluence*1d-4, "J.cm-2"
+  write(Parameters%unit,*) "Laser pulse duration=", source%tau*1d15, "fs"
+  write(Parameters%unit,*) "Laser wavelength=", source%lambda*1d9, "nm"
   write(Parameters%unit,*) "Laser spot position: (X,Y)=", x0*1d6, y0*1d6, "um"
-  write(Parameters%unit,*) "Laser spot size: (Sx, Sy)=", laser%spotX*1d6, laser%spotY*1d6, "um"
+  write(Parameters%unit,*) "Laser spot size: (Sx, Sy)=", source%spotX*1d6, source%spotY*1d6, "um"
   write(Parameters%unit,*) "Mie scattering:", Params%UseMieScattering
   write(Parameters%unit,*) "Laser polarization", Params%PolarizationSource
   write(Parameters%unit,*)
@@ -1322,11 +1323,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
    
    !! defining material index and ionization constants
-   epsilonInf=DielectricConstant(laser%lambda)
+   epsilonInf=DielectricConstant(source%lambda)
    OnePhotonIonizationRate0=OnePhotonIonizationRate()
-   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(laser%lambda)
+   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(source%lambda)
    
-  write(*,*) 'epsilon(', 1d9*laser%lambda, 'nm)=', epsilonInf
+  write(*,*) 'epsilon(', 1d9*source%lambda, 'nm)=', epsilonInf
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))
 if(Params%UseMieScattering.eq.1) then
   write(*,*) 'Computing the Mie scattering field distribution...'
@@ -1356,7 +1357,7 @@ if(Params%UseMieScattering.eq.1) then
   !$OMP END PARALLEL
     
 
-  !$OMP PARALLEL DEFAULT(NONE) SHARED(x, y, laser, Params, epsilonInf, &
+  !$OMP PARALLEL DEFAULT(NONE) SHARED(x, y, source, Params, epsilonInf, &
   !$OMP phiMie, Radius, EintField,EintField2)
   !$OMP DO COLLAPSE(2)
    do j=1,Params%N
@@ -1364,21 +1365,21 @@ if(Params%UseMieScattering.eq.1) then
           if(Params%PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
-            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%k) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
+            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
             EintField2(i,j)=M_ZERO
           ! formula with a super mistake on radius
-!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
+!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
 
           ! formulas for an hyperbolic needle
-!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), epsilonInf) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau))
+!           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), epsilonInf) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
 
           ! formula for debug, using a constant radius
-!         EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 100d-9, epsilonInf) ! * sqrt(2d0*laser%fluence/(c*epsilon0*laser%tau)) !with a constant radius
+!         EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 100d-9, epsilonInf) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau)) !with a constant radius
 
           else !TE polarization
 !             write(*,*) "TE polarization selected."
-            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%k)
-            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, laser%k)
+            EintField2(i,j)=M_ONE * MieScatteringTE2(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k)
+            EintField(i,j) =M_ONE * MieScatteringTE1(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k)
           end if
       end do
     end do
@@ -1597,7 +1598,7 @@ if(Params%UseMieScattering.eq.1) then
     t=t+dt; 
     
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, newmesh, dual, intensityDual, laser, Params, I0, &
+   !$OMP& mesh, newmesh, dual, intensityDual, source, Params, I0, &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
    !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
    !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
@@ -1654,16 +1655,16 @@ if(Params%UseMieScattering.eq.1) then
    nuColl=CollisionFrequency()
    !
    call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
-                                 epsilonInf, nuColl, me, laser)
+                                 epsilonInf, nuColl, me, source)
    !
-   call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, laser)
+   call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, source)
    !
-   call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, nuColl, mh, laser)
+   call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, nuColl, mh, source)
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
    !This routine computes the intensity for the entire grid with one call
-   call ComputeIntensity_batch(Params, mesh, laser, intensity, OpticalIndex, Reflectivity, &
+   call ComputeIntensity_batch(Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
                                absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                                t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0, DefectThickness, BandBendingInFDTD,  &
                                sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
@@ -1721,7 +1722,7 @@ if(Params%UseMieScattering.eq.1) then
    !
    !
    !Computes the Sources Gains and Losses terms for electron and holes
-   call ComputeGainsAndLosses(Params, mesh, laser, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+   call ComputeGainsAndLosses(Params, mesh, source, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                               absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
    !
@@ -1961,7 +1962,7 @@ if(Params%UseMieScattering.eq.1) then
     !$OMP END DO
     !$OMP END PARALLEL
 
-    if(t > 100d0*laser%tau) then
+    if(t > 100d0*source%tau) then
       !$OMP PARALLEL DO DEFAULT(NONE) SHARED(mesh,MaxHeating, MaxHeatingTime, t, Params ) &
       !$OMP COLLAPSE(2)
       do j=1,Params%N
@@ -2053,13 +2054,13 @@ if(Params%UseMieScattering.eq.1) then
     dt2=dt;
     ! chaning the timestep based on known behavior of the system
     if(AdaptativeTimeStep.eq.1) then
-      if((t>1d1*laser%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
+      if((t>1d1*source%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
         (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
         dt=10d0*Params%TimeStep
-      else if ((t > 0.5d2*laser%tau*coeffDilaDt) .AND. (dt.eq.10d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN &
+      else if ((t > 0.5d2*source%tau*coeffDilaDt) .AND. (dt.eq.10d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN &
         + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
         dt=40d0*Params%TimeStep
-      else if ((t > 1d3*laser%tau*coeffDilaDt) .AND. (dt.eq.40d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
+      else if ((t > 1d3*source%tau*coeffDilaDt) .AND. (dt.eq.40d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
         + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
           dt=1d3*Params%TimeStep
 !           else if (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs > maxCFL) then

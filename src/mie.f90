@@ -52,7 +52,7 @@ contains
    !------------------------------------------------------------------
    !This routine computes the intensity for the entire grid with one call
    !------------------------------------------------------------------
-    subroutine ComputeIntensity_batch(Params, mesh, laser, intensity, OpticalIndex, Reflectivity, &
+    subroutine ComputeIntensity_batch(Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
                                       absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                                       t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0, DefectThickness, BandBendingInFDTD,  &
                                       sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
@@ -60,12 +60,13 @@ contains
                                       x3, y3, x4, y4, x5, EintFieldR,  &
                                       y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
       use Maths_m
+      use Laser_m
       use Types_m
       implicit none
 
       type(InputParameters),  intent(in) :: Params
       type(MeshValues),  intent(in)      :: mesh
-      type(LaserParams), intent(in)      :: laser
+      type(Laser),       intent(in)      :: source
       real(8),           intent(inout)   :: intensity(mesh%M, mesh%N)
       real(8),           intent(in)      :: OpticalIndex(mesh%M, mesh%N)
       real(8),           intent(in)      :: Reflectivity(mesh%M, mesh%N)
@@ -116,7 +117,7 @@ contains
         else if(Params%UseMieScattering .eq. 0) then
           ! WITH EXTERNALLY ADJUSTED INPUTS
   !        !Lumerical mode already contains the reflectivity. Although, it doesn't consider change of optical index with ionization.
-          if(laser%lambda.eq.1030d-9) then
+          if(source%lambda.eq.1030d-9) then
             ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
                       / (1d0*exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))

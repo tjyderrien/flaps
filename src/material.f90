@@ -127,8 +127,9 @@
    !------------------------------------------------------------------
    !This routine computes the dielectric function for the entire grid with one call
     subroutine DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
-                                        epsilonInf, nuColl, me, laser)
+                                        epsilonInf, nuColl, me, source)
       use Maths_m
+      use Laser_m
       use Types_m
       implicit none
 
@@ -139,12 +140,13 @@
       real(8),        intent(inout)    :: Reflectivity(mesh%M, mesh%N)
       complex(8),        intent(in)    :: epsilonInf
       real(8),           intent(in)    :: nuColl, me
-      type(LaserParams), intent(in)    :: laser
+      type(Laser), intent(in)          :: source
 
       complex(8) :: coef, sqrtEps
       integer :: i, j
 
-      coef=ec*ec/me/epsilon0*laser%inv_omega**2/(M_ONE+M_IM*nuColl*laser%inv_omega)
+
+      coef=ec*ec/me/epsilon0*source%inv_omega**2/(M_ONE+M_IM*nuColl*source%inv_omega)
 
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
@@ -163,8 +165,9 @@
 
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
-    subroutine ComputeDielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, laser)
+    subroutine ComputeDielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, source)
       use Maths_m
+      use Laser_m
       use Types_m
       implicit none
 
@@ -174,12 +177,12 @@
       complex(8),            intent(inout) :: Dielectric(mesh%M,mesh%N)
       real(8),               intent(inout) :: absorptionDrude(mesh%M,mesh%N)
       real(8),               intent(in)    :: Collision, mass
-      type(LaserParams),     intent(in)    :: laser
+      type(Laser),           intent(in)    :: source
 
       complex(8) :: coef
       integer :: i, j
 
-      coef= ec*ec/(mass*epsilon0)*laser%inv_omega**2/(M_ONE+M_IM*Collision*laser%inv_omega)
+      coef= ec*ec/(mass*epsilon0)*source%inv_omega**2/(M_ONE+M_IM*Collision*source%inv_omega)
 
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
@@ -193,8 +196,8 @@
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
-           ! absorptionDrude(i,j)=2d0*laser%k*aimag(sqrt(Dielectric(i,j)))
-            absorptionDrude(i,j)=2d0*laser%k*sqrt( 0.5d0*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
+           ! absorptionDrude(i,j)=2d0*source%k*aimag(sqrt(Dielectric(i,j)))
+            absorptionDrude(i,j)=2d0*source%k*sqrt( 0.5d0*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
           end do
         end do
         !$OMP END DO
@@ -579,16 +582,17 @@
    !------------------------------------------------------------------
    !> Computes the Sources Gains and Losses terms for electron and holes
    !------------------------------------------------------------------
-   subroutine ComputeGainsAndLosses(Params, mesh, laser, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+   subroutine ComputeGainsAndLosses(Params, mesh, source, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                               absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
      use Maths_m
+     use Laser_m
      use Types_m
      implicit none
 
      type(InputParameters), intent(in)                 :: Params
      type(MeshValues),      intent(in)                 :: mesh
-     type(LaserParams),     intent(in)                 :: laser
+     type(Laser),           intent(in)                 :: source
      real(8), dimension(mesh%M,mesh%N), intent(inout)  :: Egap, GainsE, GainsH, SourceUe, SourceUh, &
                                                           SourceE, SourceH, LossesE, LossesH
      real(8), dimension(mesh%M,mesh%N), intent(in)     :: intensity, absorptionDrudeE, absorptionDrudeH, &
@@ -611,12 +615,12 @@
         Int2 = intensity(i,j)**2
         work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
 
-        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
+        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
-        SourceUe(i,j)= ((laser%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*laser%inv_E*((me)/(me+mh))&
+        SourceUe(i,j)= ((source%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
                      - Egap(i,j)*work*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2d0)
@@ -629,12 +633,12 @@
 
         work = ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)
 
-        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*laser%inv_E &
-                    +0.5d0*TwoPhotonIonizationRate0*Int2*laser%inv_E &
+        GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
+                    +0.5d0*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
 
-        SourceUh(i,j)=((laser%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
-                     + 0.5d0*(2d0*laser%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*laser%inv_E * ((me)/(me+mh))  &
+        SourceUh(i,j)=((source%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
+                     + 0.5d0*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
                      - Egap(i,j)*work*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
                      + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2d0)
