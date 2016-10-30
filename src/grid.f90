@@ -819,3 +819,37 @@ subroutine compute_cellvol(M, N, x, y, CellVol, InvCellVol )
 !         CellVol(1,N)=0.25d0*AreaElement(x(1,N-1),y(1,N-1),x(2,N-1),y(2,N-1),x(2,N),y(2,N),x(1,N),y(1,N))
 !         CellVol(1,N)=M_TWO*CellVol(1,N)
 end subroutine compute_cellvol
+
+subroutine deallocate_NormCurviTangent(NormalN, NormalS, NormalE, &
+                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
+                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
+                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+  use Types_m
+  implicit none
+
+  type(VectorField), intent(inout) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
+
+  real(8), dimension(:,:), allocatable,intent(inout) ::  TangentWx, TangentWy, &                ! Tangent to quadrangle elements
+                             TangentEx, TangentEy, &
+                             TangentNx, TangentNy, &
+                             TangentSx, TangentSy, &
+                             CurviWx, CurviWy, &                 ! Unit vector between cell centers
+                             CurviEx, CurviEy, &
+                             CurviNx, CurviNy, &
+                             CurviSx, CurviSy
+
+  deallocate(NormalN%x, NormalN%y, NormalN%N)
+  deallocate(NormalS%x, NormalS%y, NormalS%N)
+  deallocate(NormalE%x, NormalE%y, NormalE%N)
+  deallocate(NormalW%x, NormalW%y, NormalW%N)
+
+  deallocate(CurviWx,CurviWy)
+  deallocate(CurviNx,CurviNy)
+  deallocate(CurviSx,CurviSy)
+  deallocate(CurviEx,CurviEy)
+
+  deallocate(TangentWx,TangentWy)
+  deallocate(TangentNx,TangentNy)
+  deallocate(TangentSx,TangentSy)
+  deallocate(TangentEx,TangentEy)
+end subroutine deallocate_NormCurviTangent

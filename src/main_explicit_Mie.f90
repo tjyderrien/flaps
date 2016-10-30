@@ -1291,10 +1291,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                            xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
 
    ! Drift initialization
-   JeX(:,:)=0d0
-   JeY(:,:)=0d0
-   JhX(:,:)=0d0
-   JhY(:,:)=0d0
+   JeX(:,:)=M_ZERO
+   JeY(:,:)=M_ZERO
+   JhX(:,:)=M_ZERO
+   JhY(:,:)=M_ZERO
   
    
    !! defining material index and ionization constants
@@ -1322,9 +1322,9 @@ if(Params%UseMieScattering.eq.1) then
 !           find the radius for the cylindrical Mie scattering model
 !           Radius(i,j)=y(i,j)
         if(ExpNeedleType.eq.0) then
-          Radius(i,j)=ConeExp1Radius(1d6*y(i,j), 1d6*x(i,j), 0d0)
+          Radius(i,j)=ConeExp1Radius(1d6*y(i,j), 1d6*x(i,j), M_ZERO)
         else
-          Radius(i,j)=ConeExp2Radius(1d6*y(i,j), 1d6*x(i,j), 0d0)
+          Radius(i,j)=ConeExp2Radius(1d6*y(i,j), 1d6*x(i,j), M_ZERO)
         end if
       end do
     end do
@@ -1340,7 +1340,7 @@ if(Params%UseMieScattering.eq.1) then
           if(Params%PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
-            EintField(i,j)= M_ONE * MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
+            EintField(i,j)= MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
             EintField2(i,j)=M_ZERO
           ! formula with a super mistake on radius
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
@@ -1368,7 +1368,7 @@ if(Params%UseMieScattering.eq.1) then
     
     do j=1,Params%N
       do i=1,Params%M
-        write(Field%unit, 891, advance='yes') x(i,j), y(i,j), (EintFieldR(i,j)**2d0)**M_HALF, Radius(i,j)
+        write(Field%unit, 891, advance='yes') x(i,j), y(i,j), EintFieldR(i,j), Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
     end do
@@ -1451,33 +1451,33 @@ if(Params%UseMieScattering.eq.1) then
 !   end if
  
   ! initialisation of the displayed values
-  maxIntensity=0d0; maxTe=0d0; minTe=1d10; maxTh=0d0; minTh=1d10; maxTs=0d0; minTs=1d10;
-  maxNe=0d0; maxNh=0d0; minNe=1d50; minNh=1d50
-  maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; maxCFLyTs=0d0;
+  maxIntensity=M_ZERO; maxTe=M_ZERO; minTe=1d10; maxTh=M_ZERO; minTh=1d10; maxTs=M_ZERO; minTs=1d10;
+  maxNe=M_ZERO; maxNh=M_ZERO; minNe=1d50; minNh=1d50
+  maxCFLxT=M_ZERO; maxCFLyT=M_ZERO; maxCFLxN=0d0; maxCFLyN=M_ZERO; maxCFLxTs=M_ZERO; maxCFLyTs=M_ZERO;
   maxFermiIndexE=0; maxFermiIndexH=0; 
  
   !NTD: Why DistX are recomputed here? Same for CellAreaX
   !TJYD: To treat boundary conditions and treat everything with a loop on the complete mesh. This should be kept.
   do i=1,Params%M
-    CellAreaN(i,Params%N)=0d0
-!     CellAreaN(i,N-1)=0d0
-!     CellAreaS(i,2)=0d0
-    CellAreaS(i,1)=0d0
+    CellAreaN(i,Params%N)=M_ZERO
+!     CellAreaN(i,N-1)=M_ZERO
+!     CellAreaS(i,2)=M_ZERO
+    CellAreaS(i,1)=M_ZERO
     
-    DistN(i,Params%N-1)=sqrt((0.5d0*(x(i,Params%N-1)+x(i,Params%N))-x(i,Params%N-1))**2 &
-                            +(0.5d0*(y(i,Params%N-1)+y(i,Params%N))-y(i,Params%N-1))**2)
-    DistS(i,2)=sqrt((x(i,2)-0.5d0*(x(i,2)+x(i,1)))**2+(y(i,2)-0.5d0*(y(i,2)+y(i,1)))**2) 
+    DistN(i,Params%N-1)=sqrt((M_HALF*(x(i,Params%N-1)+x(i,Params%N))-x(i,Params%N-1))**2 &
+                            +(M_HALF*(y(i,Params%N-1)+y(i,Params%N))-y(i,Params%N-1))**2)
+    DistS(i,2)=sqrt((x(i,2)-M_HALF*(x(i,2)+x(i,1)))**2+(y(i,2)-M_HALF*(y(i,2)+y(i,1)))**2)
   end do
    
   do j=1,Params%N
-    CellAreaW(1,j)=0d0
-!     CellAreaW(2,j)=0d0
-!     CellAreaE(M-1,j)=0d0
-    CellAreaE(Params%M,j)=0d0
+    CellAreaW(1,j)=M_ZERO
+!     CellAreaW(2,j)=M_ZERO
+!     CellAreaE(M-1,j)=M_ZERO
+    CellAreaE(Params%M,j)=M_ZERO
     
-    DistW(2,j)=sqrt((x(2,j)-0.5d0*(x(2,j)+x(1,j)))**2+((y(2,j)-0.5d0*(y(2,j)+y(1,j))))**2)
-    DistE(Params%M-1,j)=sqrt((0.5d0*(x(Params%M-1,j)+x(Params%M,j))-x(Params%M-1,j))**2&
-                            +(0.5d0*(y(Params%M-1,j)+y(Params%M,j))-y(Params%M-1,j))**2)
+    DistW(2,j)=sqrt((x(2,j)-M_HALF*(x(2,j)+x(1,j)))**2+((y(2,j)-M_HALF*(y(2,j)+y(1,j))))**2)
+    DistE(Params%M-1,j)=sqrt((M_HALF*(x(Params%M-1,j)+x(Params%M,j))-x(Params%M-1,j))**2&
+                            +(M_HALF*(y(Params%M-1,j)+y(Params%M,j))-y(Params%M-1,j))**2)
   end do
   
      
@@ -1485,20 +1485,20 @@ if(Params%UseMieScattering.eq.1) then
       do i=2, Params%M-1
         ! Calcul de Grad(Ne) sur le maillage direct
         ! Première estimation peu stable
-        GradNeX(i,j) = 0.5d0 * InvCellVol(i,j) * &
+        GradNeX(i,j) = M_HALF * InvCellVol(i,j) * &
                       ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalN%x(i,j) &
                       + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalS%x(i,j) &
                       + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalW%x(i,j) &
                       + (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalE%x(i,j) )
-        GradNeY(i,j) = 0.5d0 * InvCellVol(i,j) * &
+        GradNeY(i,j) = M_HALF * InvCellVol(i,j) * &
                       ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalN%y(i,j) &
                       + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalS%y(i,j) &
                       + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalW%y(i,j) &
                       * (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalE%y(i,j) )
                       
         ! interpolation lineaire des valeurs de phi sur les bords de cellules
-!         phiN=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j)+xDual(i-1,j)))+GradNeY(i,j)*(0.5d0*(yDual(i,j)+yDual(i-1,j)))
-!         phiS=Ne(i,j)+GradNeX(i,j)*(0.5d0*(xDual(i,j-1)+xDual(i-1,j-1)))+GradNeY(i,j)*(0.5d0*(yDual(i,j-1)+yDual(i-1,j-1)))
+!         phiN=Ne(i,j)+GradNeX(i,j)*(M_HALF*(xDual(i,j)+xDual(i-1,j)))+GradNeY(i,j)*(M_HALF*(yDual(i,j)+yDual(i-1,j)))
+!         phiS=Ne(i,j)+GradNeX(i,j)*(M_HALF*(xDual(i,j-1)+xDual(i-1,j-1)))+GradNeY(i,j)*(M_HALF*(yDual(i,j-1)+yDual(i-1,j-1)))
         ! recalcul du gradient avec phi_bords
         
         end do
@@ -1605,7 +1605,8 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& PRIVATE(work)
 
 
-   NeTotal=0d0; NhTotal=0d0
+   NeTotal=M_HALF
+   NhTotal=M_HALF
    
    ! replacing old datas
    !$OMP DO COLLAPSE(2)
@@ -2005,13 +2006,13 @@ if(Params%UseMieScattering.eq.1) then
      do j=1,Params%N
        do i=1,Params%M
 
-         if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < 1d0) then
+         if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < M_ONE) then
            write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
          end if
-         if(real(FermiIndexH(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexH(i,j)) < 1d0) then
+         if(real(FermiIndexH(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexH(i,j)) < M_ONE) then
            write(*,*) "t,i,j,FermiIndexH(i,j)=", t,i,j,FermiIndexH(i,j)
          end if
-         if(real(FermiRatioE(i,j)) < 0d0 .OR. real(FermiRatioH(i,j)) < 0d0) then
+         if(real(FermiRatioE(i,j)) < M_ZERO .OR. real(FermiRatioH(i,j)) < M_ZERO) then
            write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
          end if
        end do
@@ -2032,7 +2033,7 @@ if(Params%UseMieScattering.eq.1) then
       if((t>1d1*source%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
         (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
         dt=10d0*Params%TimeStep
-      else if ((t > 0.5d2*source%tau*coeffDilaDt) .AND. (dt.eq.10d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN &
+      else if ((t > M_HALF*source%tau*coeffDilaDt) .AND. (dt.eq.10d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN &
         + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
         dt=40d0*Params%TimeStep
       else if ((t > 1d3*source%tau*coeffDilaDt) .AND. (dt.eq.40d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
@@ -2178,10 +2179,10 @@ if(Params%UseMieScattering.eq.1) then
   call releasemesh(dual)
   call releasemesh(newmesh)
 
-  deallocate(NormalN%x, NormalN%y, NormalN%N)
-  deallocate(NormalS%x, NormalS%y, NormalS%N)
-  deallocate(NormalE%x, NormalE%y, NormalE%N)
-  deallocate(NormalW%x, NormalW%y, NormalW%N)
+  call deallocate_NormCurviTangent(NormalN, NormalS, NormalE, &
+                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
+                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
+                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
 
   !TODO: Sorry but where are the file stream closed???
 
