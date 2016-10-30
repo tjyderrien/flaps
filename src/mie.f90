@@ -88,21 +88,22 @@ contains
 
       real(8) :: exp_t_t0_sigmaTau
 
-      exp_t_t0_sigmaTau = exp(-.5d0*((t-t0)/sigmaTau)**2)
+      exp_t_t0_sigmaTau = exp(-M_HALF*((t-t0)/sigmaTau)**2)
 
       !TODO: It is almost impossible to read, and per se to debug such a code.
       !TODO: @TYJD: Stop doing such coding style vandalism ;)
       !TODO: #TJYD @NTD: I commented the obselete / unphysical sources. We can then simplify this section. 
 
-      !$OMP DO COLLAPSE(2)
-      do j=1, mesh%N !(optimized)
-        do i=1, mesh%M
+      select case(Params%UseMieScattering)
+      case(-1)
+        !$OMP DO COLLAPSE(2)
+        do j=1, mesh%N
+          do i=1, mesh%M
             !local intensity
-        if(Params%UseMieScattering .eq. -1) then
   !         ! DEBUG ZONE
   ! !         if(laser%lambda.eq.343d-9) then
   !         ! uniform distribution like in Elena's paper
-          intensity(i,j)=(1d0-0e0*reflectivity(i,j))*OpticalIndex(i,j)*I0*exp_t_t0_sigmaTau
+              intensity(i,j)=(M_ONE-M_ZERO*reflectivity(i,j))*OpticalIndex(i,j)*I0*exp_t_t0_sigmaTau
   !         intensity(i,j)=I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-0.5d0*(((y(i,j)-500d-9)/sigmaY)**2+(x(i,j)/sigmaX)**2))
   !         ! with just nothing
   ! !           intensity(i,j)=(1d0-reflectivity(i,j))*I0*exp(-.5d0*((t-t0)/sigmaTau)**2)*exp(-.5d0*((x(i,j)-x0)/sigmaX)**2)*exp(-.5d0*((y(i,j)-y0)/sigmaY)**2)
@@ -113,12 +114,18 @@ contains
   ! !                         )*x &
   ! !                         +intensity(i,j-1)
   ! !          end if
+          end do
+      end do
+      !$OMP END DO
 
-        else if(Params%UseMieScattering .eq. 0) then
-          ! WITH EXTERNALLY ADJUSTED INPUTS
+      case(0)
+        !$OMP DO COLLAPSE(2)
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
+         ! WITH EXTERNALLY ADJUSTED INPUTS
   !        !Lumerical mode already contains the reflectivity. Although, it doesn't consider change of optical index with ionization.
           if(source%lambda.eq.1030d-9) then
-            ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
+            ConstBLx=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+M_ONE*TwoPhotonIonizationRate0) &
                       / (exp(-(OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*x0) &
                       * (OnePhotonIonizationRate0+absorptionDrudeE(i,j)+absorptionDrudeH(i,j)))
             ConstBLy=(absorptionDrudeE(i,j)+absorptionDrudeH(i,j)+OnePhotonIonizationRate0+1d0*TwoPhotonIonizationRate0) &
@@ -194,23 +201,35 @@ contains
 !                            )
 !  !                           *exp(-(OnePhotonIonizationRate(laser%lambda, epsilonInf)+absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*abs(x(i,j)-x(i,N)))
 !          end if
-
-        ! USING MIE SCATTERING ANALYTICAL FORMULAS !TJYD@NTD: This is more clean, here :) 
-        else if(Params%UseMieScattering .eq. 1) then
+          end do
+        end do
+        !$OMP END DO
+      case(1)
+        ! USING MIE SCATTERING ANALYTICAL FORMULAS !TJYD@NTD: This is more clean, here :)
+        !$OMP DO COLLAPSE(2)
+        do j=1, mesh%N
+          do i=1, mesh%M
         ! calculate electric field inside the tip
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), Dielectric(i,j)) !*sqrt(2d0*laser%fluence/(c*epsilon0*tau))
           ! debug formula for constant cone radius
 !           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
 !           EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real !TODO: Why this formulation would not be more physical? (TJYD)
           intensity(i,j)=I0*OpticalIndex(i,j)* EintFieldR(i,j)**2 * exp_t_t0_sigmaTau !laser laser%fluence and reflectivity is inside the field
-        else
-          write(*,*) "Input ERROR. Check the MieScattering parameter."
-          stop
-        end if
+          end do
+        end do
+        !$OMP END DO
+      case default
+         write(*,*) "Input ERROR. Check the MieScattering parameter."
+         stop
+      end select
 
-        if(intensity(i,j) < M_EPS_VAL) then
-          intensity(i,j)=M_ZERO
-        end if
+      !TODO: NTD: Is it really needed or can I remove it?
+      !$OMP DO COLLAPSE(2)
+      do j=1, mesh%N !(optimized)
+        do i=1, mesh%M
+          if(intensity(i,j) < M_EPS_VAL) then
+            intensity(i,j)=M_ZERO
+          end if
         end do
       end do
       !$OMP END DO

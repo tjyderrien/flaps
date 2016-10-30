@@ -47,6 +47,7 @@ module Maths_m
   complex(8), public, parameter :: M_ONE_CMPLX = (1.0d0,0.0d0)
   real(8), public, parameter    :: M_ZERO      = 0.0d0
   real(8), public, parameter    :: M_HALF      = 0.5d0
+  real(8), public, parameter    :: M_TWO       = 2.0d0
 
   real(8), public, parameter    :: M_EPS_VAL   = epsilon(1.0d0)
   real(8), public, parameter    :: M_HUGE_VAL  = huge(1.0d0)
