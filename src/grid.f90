@@ -47,13 +47,13 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
       do i=2,M-1
 
         CellAreaN(i,j)=sqrt(( 0.25d0*(x(i+1,j+1)+x(i,j+1)+x(i+1,j)+x(i,j))-0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)))**2 &
-                  +(  0.25d0*(y(i+1,j+1)+y(i,j+1)+y(i+1,j)+y(i,j))-0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)))**2) !0.25d0*(x(i+1,j+1)**2+2d0*x(i+1,j+1)*x(i+1,j)-2d0*x(i+1,j+1)*x(i-1,j)-2d0*x(i+1,j+1)*x(i-1,j+1)+x(i+1,j)**2-2d0*x(i+1,j)*x(i-1,j)-2d0*x(i+1,j)*x(i-1,j+1)+x(i-1,j)**2+2d0*x(i-1,j)*x(i-1,j+1)+x(i-1,j+1)**2+y(i+1,j+1)**2+2d0*y(i+1,j+1)*y(i+1,j)-2d0*y(i+1,j+1)*y(i-1,j)-2d0*y(i+1,j+1)*y(i-1,j+1)+y(i+1,j)**2-2d0*y(i+1,j)*y(i-1,j)-2d0*y(i+1,j)*y(i-1,j+1)+y(i-1,j)**2+2d0*y(i-1,j)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
+                  +(  0.25d0*(y(i+1,j+1)+y(i,j+1)+y(i+1,j)+y(i,j))-0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)))**2) !0.25d0*(x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i+1,j)-M_TWO*x(i+1,j+1)*x(i-1,j)-M_TWO*x(i+1,j+1)*x(i-1,j+1)+x(i+1,j)**2-M_TWO*x(i+1,j)*x(i-1,j)-M_TWO*x(i+1,j)*x(i-1,j+1)+x(i-1,j)**2+M_TWO*x(i-1,j)*x(i-1,j+1)+x(i-1,j+1)**2+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i+1,j)-M_TWO*y(i+1,j+1)*y(i-1,j)-M_TWO*y(i+1,j+1)*y(i-1,j+1)+y(i+1,j)**2-M_TWO*y(i+1,j)*y(i-1,j)-M_TWO*y(i+1,j)*y(i-1,j+1)+y(i-1,j)**2+M_TWO*y(i-1,j)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
         CellAreaS(i,j)=sqrt( (0.25d0*(x(i+1,j-1)+x(i,j-1)+x(i+1,j)+x(i,j))-0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i-1,j)+x(i,j)))**2 &
-                   + (0.25d0*(y(i+1,j-1)+y(i,j-1)+y(i+1,j)+y(i,j))-0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i-1,j)+y(i,j)))**2 ) !0.25d0*(x(i+1,j)**2+2d0*x(i+1,j)*x(i+1,j-1)-2d0*x(i+1,j)*x(i-1,j-1)-2d0*x(i+1,j)*x(i-1,j)+x(i+1,j-1)**2-2d0*x(i+1,j-1)*x(i-1,j-1)-2d0*x(i+1,j-1)*x(i-1,j)+x(i-1,j-1)**2+2d0*x(i-1,j-1)*x(i-1,j)+x(i-1,j)**2+y(i+1,j)**2+2d0*y(i+1,j)*y(i+1,j-1)-2d0*y(i+1,j)*y(i-1,j-1)-2d0*y(i+1,j)*y(i-1,j)+y(i+1,j-1)**2-2d0*y(i+1,j-1)*y(i-1,j-1)-2d0*y(i+1,j-1)*y(i-1,j)+y(i-1,j-1)**2+2d0*y(i-1,j-1)*y(i-1,j)+y(i-1,j)**2)**(M_HALF)
+                   + (0.25d0*(y(i+1,j-1)+y(i,j-1)+y(i+1,j)+y(i,j))-0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i-1,j)+y(i,j)))**2 ) !0.25d0*(x(i+1,j)**2+M_TWO*x(i+1,j)*x(i+1,j-1)-M_TWO*x(i+1,j)*x(i-1,j-1)-M_TWO*x(i+1,j)*x(i-1,j)+x(i+1,j-1)**2-M_TWO*x(i+1,j-1)*x(i-1,j-1)-M_TWO*x(i+1,j-1)*x(i-1,j)+x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i-1,j)+x(i-1,j)**2+y(i+1,j)**2+M_TWO*y(i+1,j)*y(i+1,j-1)-M_TWO*y(i+1,j)*y(i-1,j-1)-M_TWO*y(i+1,j)*y(i-1,j)+y(i+1,j-1)**2-M_TWO*y(i+1,j-1)*y(i-1,j-1)-M_TWO*y(i+1,j-1)*y(i-1,j)+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i-1,j)+y(i-1,j)**2)**(M_HALF)
         CellAreaE(i,j)=sqrt( (0.25d0*(x(i+1,j+1)+x(i,j+1)+x(i+1,j)+x(i,j))-0.25d0*(x(i+1,j-1)+x(i,j-1)+x(i+1,j)+x(i,j)))**2 &
-                   + (0.25d0*(y(i+1,j+1)+y(i,j+1)+y(i+1,j)+y(i,j))-0.25d0*(y(i+1,j-1)+y(i,j-1)+y(i+1,j)+y(i,j)))**2 ) !0.25d0*(x(i+1,j+1)**2+2d0*x(i+1,j+1)*x(i,j+1)-2d0*x(i+1,j+1)*x(i+1,j-1)-2d0*x(i+1,j+1)*x(i,j-1)+x(i,j+1)**2-2d0*x(i,j+1)*x(i+1,j-1)-2d0*x(i,j+1)*x(i,j-1)+x(i+1,j-1)**2+2d0*x(i+1,j-1)*x(i,j-1)+x(i,j-1)**2+y(i+1,j+1)**2+2d0*y(i+1,j+1)*y(i,j+1)-2d0*y(i+1,j+1)*y(i+1,j-1)-2d0*y(i+1,j+1)*y(i,j-1)+y(i,j+1)**2-2d0*y(i,j+1)*y(i+1,j-1)-2d0*y(i,j+1)*y(i,j-1)+y(i+1,j-1)**2+2d0*y(i+1,j-1)*y(i,j-1)+y(i,j-1)**2)**(M_HALF)
+                   + (0.25d0*(y(i+1,j+1)+y(i,j+1)+y(i+1,j)+y(i,j))-0.25d0*(y(i+1,j-1)+y(i,j-1)+y(i+1,j)+y(i,j)))**2 ) !0.25d0*(x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i,j+1)-M_TWO*x(i+1,j+1)*x(i+1,j-1)-M_TWO*x(i+1,j+1)*x(i,j-1)+x(i,j+1)**2-M_TWO*x(i,j+1)*x(i+1,j-1)-M_TWO*x(i,j+1)*x(i,j-1)+x(i+1,j-1)**2+M_TWO*x(i+1,j-1)*x(i,j-1)+x(i,j-1)**2+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i,j+1)-M_TWO*y(i+1,j+1)*y(i+1,j-1)-M_TWO*y(i+1,j+1)*y(i,j-1)+y(i,j+1)**2-M_TWO*y(i,j+1)*y(i+1,j-1)-M_TWO*y(i,j+1)*y(i,j-1)+y(i+1,j-1)**2+M_TWO*y(i+1,j-1)*y(i,j-1)+y(i,j-1)**2)**(M_HALF)
         CellAreaW(i,j)=sqrt( (0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j))-0.25d0*(x(i-1,j-1)+x(i,j-1)+x(i-1,j)+x(i,j)))**2 &
-                   + (0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j))-0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i-1,j)+y(i,j)))**2 ) !0.25d0*(x(i,j+1)**2+2d0*x(i,j+1)*x(i-1,j+1)-2d0*x(i,j+1)*x(i-1,j-1)-2d0*x(i,j+1)*x(i,j-1)+x(i-1,j+1)**2-2d0*x(i-1,j+1)*x(i-1,j-1)-2d0*x(i-1,j+1)*x(i,j-1)+x(i-1,j-1)**2+2d0*x(i-1,j-1)*x(i,j-1)+x(i,j-1)**2+y(i,j+1)**2+2d0*y(i,j+1)*y(i-1,j+1)-2d0*y(i,j+1)*y(i-1,j-1)-2d0*y(i,j+1)*y(i,j-1)+y(i-1,j+1)**2-2d0*y(i-1,j+1)*y(i-1,j-1)-2d0*y(i-1,j+1)*y(i,j-1)+y(i-1,j-1)**2+2d0*y(i-1,j-1)*y(i,j-1)+y(i,j-1)**2)**(M_HALF)
+                   + (0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j))-0.25d0*(y(i-1,j-1)+y(i,j-1)+y(i-1,j)+y(i,j)))**2 ) !0.25d0*(x(i,j+1)**2+M_TWO*x(i,j+1)*x(i-1,j+1)-M_TWO*x(i,j+1)*x(i-1,j-1)-M_TWO*x(i,j+1)*x(i,j-1)+x(i-1,j+1)**2-M_TWO*x(i-1,j+1)*x(i-1,j-1)-M_TWO*x(i-1,j+1)*x(i,j-1)+x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i,j-1)+x(i,j-1)**2+y(i,j+1)**2+M_TWO*y(i,j+1)*y(i-1,j+1)-M_TWO*y(i,j+1)*y(i-1,j-1)-M_TWO*y(i,j+1)*y(i,j-1)+y(i-1,j+1)**2-M_TWO*y(i-1,j+1)*y(i-1,j-1)-M_TWO*y(i-1,j+1)*y(i,j-1)+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i,j-1)+y(i,j-1)**2)**(M_HALF)
 
         DistN(i,j)=sqrt((x(i,j+1)-x(i,j))**2+(y(i,j+1)-y(i,j))**2)
         DistS(i,j)=sqrt((x(i,j)-x(i,j-1))**2+(y(i,j)-y(i,j-1))**2)
@@ -65,21 +65,21 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
 
    do i=2,M-1
       !NORTH
-         CellAreaN(i,N)=0d0 !M_HALF*(x(i+1,N)**2-2d0*x(i+1,N)*x(i-1,N)+x(i-1,N)**2+y(i+1,N)**2-2d0*y(i+1,N)*y(i-1,N)+y(i-1,N)**2)**M_HALF
-         CellAreaS(i,N)=0.25d0*(x(i+1,N)**2+2d0*x(i+1,N)*x(i+1,N-1)-2d0*x(i+1,N)*x(i-1,N-1)-2d0*x(i+1,N)*x(i-1,N) &
-                +x(i+1,N-1)**2-2d0*x(i+1,N-1)*x(i-1,N-1)-2d0*x(i+1,N-1)*x(i-1,N)+x(i-1,N-1)**2+2d0*x(i-1,N)*x(i-1,N-1) &
-                +x(i-1,N)**2+y(i+1,N)**2+2d0*y(i+1,N)*y(i+1,N-1)-2d0*y(i+1,N)*y(i-1,N-1)-2d0*y(i+1,N)*y(i-1,N) &
-                +y(i+1,N-1)**2-2d0*y(i+1,N-1)*y(i-1,N-1)-2d0*y(i+1,N-1)*y(i-1,N)+y(i-1,N-1)**2 &
-                                                        +2d0*y(i-1,N)*y(i-1,N-1)+y(i-1,N)**2)**M_HALF
-         CellAreaW(i,N)=0.25d0*(x(i,N)**2+2d0*x(i,N)*x(i-1,N)-2d0*x(i,N)*x(i-1,N-1)-2d0*x(i,N)*x(i,N-1)+x(i-1,N)**2 &
-                -2d0*x(i-1,N)*x(i-1,N-1)-2d0*x(i-1,N)*x(i,N-1)+x(i-1,N-1)**2+2d0*x(i-1,N-1)*x(i,N-1)+x(i,N-1)**2 &
-                +y(i,N)**2+2d0*y(i,N)*y(i-1,N)-2d0*y(i,N)*y(i-1,N-1)-2d0*y(i,N)*y(i,N-1)+y(i-1,N)**2 &
-                -2d0*y(i-1,N)*y(i-1,N-1)-2d0*y(i-1,N)*y(i,N-1)+y(i-1,N-1)**2+2d0*y(i-1,N-1)*y(i,N-1) &
+         CellAreaN(i,N)=0d0 !M_HALF*(x(i+1,N)**2-M_TWO*x(i+1,N)*x(i-1,N)+x(i-1,N)**2+y(i+1,N)**2-M_TWO*y(i+1,N)*y(i-1,N)+y(i-1,N)**2)**M_HALF
+         CellAreaS(i,N)=0.25d0*(x(i+1,N)**2+M_TWO*x(i+1,N)*x(i+1,N-1)-M_TWO*x(i+1,N)*x(i-1,N-1)-M_TWO*x(i+1,N)*x(i-1,N) &
+                +x(i+1,N-1)**2-M_TWO*x(i+1,N-1)*x(i-1,N-1)-M_TWO*x(i+1,N-1)*x(i-1,N)+x(i-1,N-1)**2+M_TWO*x(i-1,N)*x(i-1,N-1) &
+                +x(i-1,N)**2+y(i+1,N)**2+M_TWO*y(i+1,N)*y(i+1,N-1)-M_TWO*y(i+1,N)*y(i-1,N-1)-M_TWO*y(i+1,N)*y(i-1,N) &
+                +y(i+1,N-1)**2-M_TWO*y(i+1,N-1)*y(i-1,N-1)-M_TWO*y(i+1,N-1)*y(i-1,N)+y(i-1,N-1)**2 &
+                                                        +M_TWO*y(i-1,N)*y(i-1,N-1)+y(i-1,N)**2)**M_HALF
+         CellAreaW(i,N)=0.25d0*(x(i,N)**2+M_TWO*x(i,N)*x(i-1,N)-M_TWO*x(i,N)*x(i-1,N-1)-M_TWO*x(i,N)*x(i,N-1)+x(i-1,N)**2 &
+                -M_TWO*x(i-1,N)*x(i-1,N-1)-M_TWO*x(i-1,N)*x(i,N-1)+x(i-1,N-1)**2+M_TWO*x(i-1,N-1)*x(i,N-1)+x(i,N-1)**2 &
+                +y(i,N)**2+M_TWO*y(i,N)*y(i-1,N)-M_TWO*y(i,N)*y(i-1,N-1)-M_TWO*y(i,N)*y(i,N-1)+y(i-1,N)**2 &
+                -M_TWO*y(i-1,N)*y(i-1,N-1)-M_TWO*y(i-1,N)*y(i,N-1)+y(i-1,N-1)**2+M_TWO*y(i-1,N-1)*y(i,N-1) &
                 +y(i,N-1)**2)**M_HALF
-         CellAreaE(i,N)=0.25d0*(x(i+1,N)**2+2d0*x(i+1,N)*x(i,N)-2d0*x(i+1,N)*x(i+1,N-1)-2d0*x(i+1,N)*x(i,N-1)+x(i,N)**2 &
-                -2d0*x(i,N)*x(i+1,N-1)-2d0*x(i,N)*x(i,N-1)+x(i+1,N-1)**2+2d0*x(i+1,N-1)*x(i,N-1)+x(i,N-1)**2 &
-                +y(i,N)**2+2d0*y(i,N)*y(i+1,N)-2d0*y(i,N)*y(i+1,N-1)-2d0*y(i,N)*y(i,N-1)+y(i+1,N)**2 &
-                -2d0*y(i+1,N)*y(i+1,N-1)-2d0*y(i+1,N)*y(i,N-1)+y(i+1,N-1)**2+2d0*y(i+1,N-1)*y(i,N-1) &
+         CellAreaE(i,N)=0.25d0*(x(i+1,N)**2+M_TWO*x(i+1,N)*x(i,N)-M_TWO*x(i+1,N)*x(i+1,N-1)-M_TWO*x(i+1,N)*x(i,N-1)+x(i,N)**2 &
+                -M_TWO*x(i,N)*x(i+1,N-1)-M_TWO*x(i,N)*x(i,N-1)+x(i+1,N-1)**2+M_TWO*x(i+1,N-1)*x(i,N-1)+x(i,N-1)**2 &
+                +y(i,N)**2+M_TWO*y(i,N)*y(i+1,N)-M_TWO*y(i,N)*y(i+1,N-1)-M_TWO*y(i,N)*y(i,N-1)+y(i+1,N)**2 &
+                -M_TWO*y(i+1,N)*y(i+1,N-1)-M_TWO*y(i+1,N)*y(i,N-1)+y(i+1,N-1)**2+M_TWO*y(i+1,N-1)*y(i,N-1) &
                 +y(i,N-1)**2)**M_HALF
 
          DistN(i,N)=0d0 !sqrt((x(i,j+1)-x(i,j))**2+(y(i,j+1)-y(i,j))**2)
@@ -88,23 +88,23 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
          DistW(i,N)=sqrt((x(i,N)-x(i-1,N))**2+(y(i,N)-y(i-1,N))**2)
 
      !SOUTH
-         CellAreaN(i,1)=0.25d0*(x(i+1,2)**2+2d0*x(i+1,2)*x(i+1,1)-2d0*x(i+1,2)*x(i-1,1)-2d0*x(i+1,2)*x(i-1,2) &
-                 +x(i+1,1)**2-2d0*x(i+1,1)*x(i-1,1)-2d0*x(i+1,1)*x(i-1,2)+x(i-1,1)**2+2d0*x(i-1,1)*x(i-1,2)+x(i-1,2)**2 &
-                 +y(i+1,2)**2+2d0*y(i+1,2)*y(i+1,1)-2d0*y(i+1,2)*y(i-1,1)-2d0*y(i+1,2)*y(i-1,2)+y(i+1,1)**2 &
-                 -2d0*y(i+1,1)*y(i-1,1)-2d0*y(i+1,1)*y(i-1,2)+y(i-1,1)**2+2d0*y(i-1,1)*y(i-1,2)+y(i-1,2)**2)**M_HALF
+         CellAreaN(i,1)=0.25d0*(x(i+1,2)**2+M_TWO*x(i+1,2)*x(i+1,1)-M_TWO*x(i+1,2)*x(i-1,1)-M_TWO*x(i+1,2)*x(i-1,2) &
+                 +x(i+1,1)**2-M_TWO*x(i+1,1)*x(i-1,1)-M_TWO*x(i+1,1)*x(i-1,2)+x(i-1,1)**2+M_TWO*x(i-1,1)*x(i-1,2)+x(i-1,2)**2 &
+                 +y(i+1,2)**2+M_TWO*y(i+1,2)*y(i+1,1)-M_TWO*y(i+1,2)*y(i-1,1)-M_TWO*y(i+1,2)*y(i-1,2)+y(i+1,1)**2 &
+                 -M_TWO*y(i+1,1)*y(i-1,1)-M_TWO*y(i+1,1)*y(i-1,2)+y(i-1,1)**2+M_TWO*y(i-1,1)*y(i-1,2)+y(i-1,2)**2)**M_HALF
          CellAreaS(i,1)=0d0 !sqrt((M_HALF*(x(i+1,1)+x(i,1))-M_HALF*(x(i-1,1)+x(i,1)))**2+(M_HALF*(y(i+1,1)+y(i,1))-M_HALF*(y(i-1,1)+y(i,1)))**2)
-         CellAreaW(i,1)=0.25d0*(x(i,1)**2-2d0*x(i,1)*x(i,2)+2d0*x(i,1)*x(i-1,1)-2d0*x(i,1)*x(i-1,2)+x(i,2)**2 &
-                  -2d0*x(i,2)*x(i-1,1)+2d0*x(i,2)*x(i-1,2)+x(i-1,1)**2&
-                 -2d0*x(i-1,1)*x(i-1,2)+x(i-1,2)**2+y(i,1)**2-2d0*y(i,1)*y(i,2) &
-                  +2d0*y(i,1)*y(i-1,1)-2d0*y(i,1)*y(i-1,2)+y(i,2)**2 &
-                  -2d0*y(i,2)*y(i-1,1)+2d0*y(i,2)*y(i-1,2)+y(i-1,1)**2 &
-                  -2d0*y(i-1,1)*y(i-1,2)+y(i-1,2)**2)**M_HALF
-         CellAreaE(i,1)=0.25d0*(x(i+1,2)**2-2d0*x(i+1,2)*x(i+1,1)-2d0*x(i+1,2)*x(i,1)&
-                                +2d0*x(i+1,2)*x(i,2)+x(i+1,1)**2+2d0*x(i+1,1)*x(i,1) &
-                                -2d0*x(i+1,1)*x(i,2)+x(i,1)**2-2d0*x(i,1)*x(i,2)+x(i,2)**2 &
-                                +y(i+1,2)**2-2d0*y(i+1,2)*y(i+1,1)-2d0*y(i+1,2)*y(i,1) &
-                                +2d0*y(i+1,2)*y(i,2)+y(i+1,1)**2+2d0*y(i+1,1)*y(i,1)&
-                                -2d0*y(i+1,1)*y(i,2)+y(i,1)**2-2d0*y(i,1)*y(i,2)+y(i,2)**2)**M_HALF
+         CellAreaW(i,1)=0.25d0*(x(i,1)**2-M_TWO*x(i,1)*x(i,2)+M_TWO*x(i,1)*x(i-1,1)-M_TWO*x(i,1)*x(i-1,2)+x(i,2)**2 &
+                  -M_TWO*x(i,2)*x(i-1,1)+M_TWO*x(i,2)*x(i-1,2)+x(i-1,1)**2&
+                 -M_TWO*x(i-1,1)*x(i-1,2)+x(i-1,2)**2+y(i,1)**2-M_TWO*y(i,1)*y(i,2) &
+                  +M_TWO*y(i,1)*y(i-1,1)-M_TWO*y(i,1)*y(i-1,2)+y(i,2)**2 &
+                  -M_TWO*y(i,2)*y(i-1,1)+M_TWO*y(i,2)*y(i-1,2)+y(i-1,1)**2 &
+                  -M_TWO*y(i-1,1)*y(i-1,2)+y(i-1,2)**2)**M_HALF
+         CellAreaE(i,1)=0.25d0*(x(i+1,2)**2-M_TWO*x(i+1,2)*x(i+1,1)-M_TWO*x(i+1,2)*x(i,1)&
+                                +M_TWO*x(i+1,2)*x(i,2)+x(i+1,1)**2+M_TWO*x(i+1,1)*x(i,1) &
+                                -M_TWO*x(i+1,1)*x(i,2)+x(i,1)**2-M_TWO*x(i,1)*x(i,2)+x(i,2)**2 &
+                                +y(i+1,2)**2-M_TWO*y(i+1,2)*y(i+1,1)-M_TWO*y(i+1,2)*y(i,1) &
+                                +M_TWO*y(i+1,2)*y(i,2)+y(i+1,1)**2+M_TWO*y(i+1,1)*y(i,1)&
+                                -M_TWO*y(i+1,1)*y(i,2)+y(i,1)**2-M_TWO*y(i,1)*y(i,2)+y(i,2)**2)**M_HALF
 
          DistN(i,1)=sqrt( (x(i,2)-x(i,1))**2 + (y(i,2)-y(i,1))**2 )
          DistS(i,1)=0d0
@@ -114,20 +114,20 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
 
    do j=2,N-1
      !WEST
-           CellAreaN(1,j)=0.25d0*(x(2,j+1)**2+2d0*x(2,j+1)*x(2,j)-2d0*x(2,j+1)*x(1,j)-2d0*x(2,j+1)*x(1,j+1)+x(2,j)**2 &
-                  -2d0*x(2,j)*x(1,j)-2d0*x(2,j)*x(1,j+1)+x(1,j)**2+2d0*x(1,j)*x(1,j+1)+x(1,j+1)**2+y(2,j+1)**2 &
-                  +2d0*y(2,j+1)*y(2,j)-2d0*y(2,j+1)*y(1,j)-2d0*y(2,j+1)*y(1,j+1)+y(2,j)**2-2d0*y(2,j)*y(1,j) &
-                  -2d0*y(2,j)*y(1,j+1)+y(1,j)**2+2d0*y(1,j)*y(1,j+1)+y(1,j+1)**2)**M_HALF
-          CellAreaS(1,j)=0.25d0*(x(2,j)**2+2d0*x(2,j)*x(2,j-1)-2d0*x(2,j)*x(1,j)-2d0*x(2,j)*x(1,j-1)+x(2,j-1)**2 &
-                  -2d0*x(2,j-1)*x(1,j)-2d0*x(2,j-1)*x(1,j-1)+x(1,j)**2+2d0*x(1,j)*x(1,j-1)+x(1,j-1)**2+y(2,j)**2 &
-                  +2d0*y(2,j)*y(2,j-1)-2d0*y(2,j)*y(1,j)-2d0*y(2,j)*y(1,j-1)+y(2,j-1)**2-2d0*y(2,j-1)*y(1,j) &
-                  -2d0*y(2,j-1)*y(1,j-1)+y(1,j)**2+2d0*y(1,j)*y(1,j-1)+y(1,j-1)**2)**M_HALF
+           CellAreaN(1,j)=0.25d0*(x(2,j+1)**2+M_TWO*x(2,j+1)*x(2,j)-M_TWO*x(2,j+1)*x(1,j)-M_TWO*x(2,j+1)*x(1,j+1)+x(2,j)**2 &
+                  -M_TWO*x(2,j)*x(1,j)-M_TWO*x(2,j)*x(1,j+1)+x(1,j)**2+M_TWO*x(1,j)*x(1,j+1)+x(1,j+1)**2+y(2,j+1)**2 &
+                  +M_TWO*y(2,j+1)*y(2,j)-M_TWO*y(2,j+1)*y(1,j)-M_TWO*y(2,j+1)*y(1,j+1)+y(2,j)**2-M_TWO*y(2,j)*y(1,j) &
+                  -M_TWO*y(2,j)*y(1,j+1)+y(1,j)**2+M_TWO*y(1,j)*y(1,j+1)+y(1,j+1)**2)**M_HALF
+          CellAreaS(1,j)=0.25d0*(x(2,j)**2+M_TWO*x(2,j)*x(2,j-1)-M_TWO*x(2,j)*x(1,j)-M_TWO*x(2,j)*x(1,j-1)+x(2,j-1)**2 &
+                  -M_TWO*x(2,j-1)*x(1,j)-M_TWO*x(2,j-1)*x(1,j-1)+x(1,j)**2+M_TWO*x(1,j)*x(1,j-1)+x(1,j-1)**2+y(2,j)**2 &
+                  +M_TWO*y(2,j)*y(2,j-1)-M_TWO*y(2,j)*y(1,j)-M_TWO*y(2,j)*y(1,j-1)+y(2,j-1)**2-M_TWO*y(2,j-1)*y(1,j) &
+                  -M_TWO*y(2,j-1)*y(1,j-1)+y(1,j)**2+M_TWO*y(1,j)*y(1,j-1)+y(1,j-1)**2)**M_HALF
           CellAreaW(1,j)=sqrt( (M_HALF*(x(1,j+1)+x(1,j))-M_HALF*(x(1,j-1)+x(1,j)))**2 + (M_HALF*(y(1,j+1)+y(1,j)) &
                         -M_HALF*(y(1,j-1)+y(1,j)))**2 )
-          CellAreaE(1,j)=0.25d0*(x(2,j+1)**2+2d0*x(2,j+1)*x(1,j+1)-2d0*x(2,j+1)*x(2,j-1)-2d0*x(2,j+1)*x(1,j-1) &
-                  +x(1,j+1)**2-2d0*x(1,j+1)*x(2,j-1)-2d0*x(1,j+1)*x(1,j-1)+x(2,j-1)**2+2d0*x(2,j-1)*x(1,j-1) &
-                  +x(1,j-1)**2+y(2,j+1)**2+2d0*y(2,j+1)*y(1,j+1)-2d0*y(2,j+1)*y(2,j-1)-2d0*y(2,j+1)*y(1,j-1) &
-                  +y(1,j+1)**2-2d0*y(1,j+1)*y(2,j-1)-2d0*y(1,j+1)*y(1,j-1)+y(2,j-1)**2+2d0*y(2,j-1)*y(1,j-1) &
+          CellAreaE(1,j)=0.25d0*(x(2,j+1)**2+M_TWO*x(2,j+1)*x(1,j+1)-M_TWO*x(2,j+1)*x(2,j-1)-M_TWO*x(2,j+1)*x(1,j-1) &
+                  +x(1,j+1)**2-M_TWO*x(1,j+1)*x(2,j-1)-M_TWO*x(1,j+1)*x(1,j-1)+x(2,j-1)**2+M_TWO*x(2,j-1)*x(1,j-1) &
+                  +x(1,j-1)**2+y(2,j+1)**2+M_TWO*y(2,j+1)*y(1,j+1)-M_TWO*y(2,j+1)*y(2,j-1)-M_TWO*y(2,j+1)*y(1,j-1) &
+                  +y(1,j+1)**2-M_TWO*y(1,j+1)*y(2,j-1)-M_TWO*y(1,j+1)*y(1,j-1)+y(2,j-1)**2+M_TWO*y(2,j-1)*y(1,j-1) &
                   +y(1,j-1)**2)**M_HALF
 
           DistN(1,j)=sqrt( (x(1,j+1)-x(1,j))**2 + (y(1,j+1)-y(1,j))**2 )
@@ -136,20 +136,20 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
           DistW(1,j)=0d0
 
      !EAST
-          CellAreaN(M,j)=0.25d0*(x(M,j+1)**2+2d0*x(M,j+1)*x(M,j)-2d0*x(M,j+1)*x(M-1,j)-2d0*x(M,j+1)*x(M-1,j+1)+x(M,j)**2 &
-                  -2d0*x(M,j)*x(M-1,j)-2d0*x(M,j)*x(M-1,j+1)+x(M-1,j)**2+2d0*x(M-1,j)*x(M-1,j+1)+x(M-1,j+1)**2 &
-                  +y(M,j+1)**2+2d0*y(M,j+1)*y(M,j)-2d0*y(M,j+1)*y(M-1,j)-2d0*y(M,j+1)*y(M-1,j+1)+y(M,j)**2 &
-                  -2d0*y(M,j)*y(M-1,j)-2d0*y(M,j)*y(M-1,j+1)+y(M-1,j)**2+2d0*y(M-1,j)*y(M-1,j+1)+y(M-1,j+1)**2)**M_HALF
-          CellAreaS(M,j)=0.25d0*(x(M,j)**2+2d0*x(M,j)*x(M,j-1)-2d0*x(M,j)*x(M-1,j-1)-2d0*x(M,j)*x(M-1,j)+x(M,j-1)**2 &
-                  -2d0*x(M-1,j-1)*x(M,j-1)-2d0*x(M,j-1)*x(M-1,j)+x(M-1,j-1)**2+2d0*x(M-1,j-1)*x(M-1,j)+x(M-1,j)**2 &
-                  +y(M,j)**2+2d0*y(M,j)*y(M,j-1)-2d0*y(M,j)*y(M-1,j-1)-2d0*y(M,j)*y(M-1,j)+y(M,j-1)**2 &
-                  -2d0*y(M-1,j-1)*y(M,j-1)-2d0*y(M,j-1)*y(M-1,j)+y(M-1,j-1)**2+2d0*y(M-1,j-1)*y(M-1,j) &
+          CellAreaN(M,j)=0.25d0*(x(M,j+1)**2+M_TWO*x(M,j+1)*x(M,j)-M_TWO*x(M,j+1)*x(M-1,j)-M_TWO*x(M,j+1)*x(M-1,j+1)+x(M,j)**2 &
+                  -M_TWO*x(M,j)*x(M-1,j)-M_TWO*x(M,j)*x(M-1,j+1)+x(M-1,j)**2+M_TWO*x(M-1,j)*x(M-1,j+1)+x(M-1,j+1)**2 &
+                  +y(M,j+1)**2+M_TWO*y(M,j+1)*y(M,j)-M_TWO*y(M,j+1)*y(M-1,j)-M_TWO*y(M,j+1)*y(M-1,j+1)+y(M,j)**2 &
+                  -M_TWO*y(M,j)*y(M-1,j)-M_TWO*y(M,j)*y(M-1,j+1)+y(M-1,j)**2+M_TWO*y(M-1,j)*y(M-1,j+1)+y(M-1,j+1)**2)**M_HALF
+          CellAreaS(M,j)=0.25d0*(x(M,j)**2+M_TWO*x(M,j)*x(M,j-1)-M_TWO*x(M,j)*x(M-1,j-1)-M_TWO*x(M,j)*x(M-1,j)+x(M,j-1)**2 &
+                  -M_TWO*x(M-1,j-1)*x(M,j-1)-M_TWO*x(M,j-1)*x(M-1,j)+x(M-1,j-1)**2+M_TWO*x(M-1,j-1)*x(M-1,j)+x(M-1,j)**2 &
+                  +y(M,j)**2+M_TWO*y(M,j)*y(M,j-1)-M_TWO*y(M,j)*y(M-1,j-1)-M_TWO*y(M,j)*y(M-1,j)+y(M,j-1)**2 &
+                  -M_TWO*y(M-1,j-1)*y(M,j-1)-M_TWO*y(M,j-1)*y(M-1,j)+y(M-1,j-1)**2+M_TWO*y(M-1,j-1)*y(M-1,j) &
                   +y(M-1,j)**2)**M_HALF
-          CellAreaW(M,j)=0.25d0*(x(M,j+1)**2+2d0*x(M,j+1)*x(M-1,j+1)-2d0*x(M,j+1)*x(M-1,j-1)-2d0*x(M,j+1)*x(M,j-1) &
-                  +x(M-1,j+1)**2-2d0*x(M-1,j+1)*x(M-1,j-1)-2d0*x(M-1,j+1)*x(M,j-1)+x(M-1,j-1)**2+2d0*x(M-1,j-1)*x(M,j-1) &
-                  +x(M,j-1)**2+y(M,j+1)**2+2d0*y(M,j+1)*y(M-1,j+1)-2d0*y(M,j+1)*y(M-1,j-1)-2d0*y(M,j+1)*y(M,j-1) &
-                  +y(M-1,j+1)**2-2d0*y(M-1,j+1)*y(M-1,j-1)-2d0*y(M-1,j+1)*y(M,j-1)+y(M-1,j-1)**2 &
-                  +2d0*y(M-1,j-1)*y(M,j-1)+y(M,j-1)**2)**M_HALF
+          CellAreaW(M,j)=0.25d0*(x(M,j+1)**2+M_TWO*x(M,j+1)*x(M-1,j+1)-M_TWO*x(M,j+1)*x(M-1,j-1)-M_TWO*x(M,j+1)*x(M,j-1) &
+                  +x(M-1,j+1)**2-M_TWO*x(M-1,j+1)*x(M-1,j-1)-M_TWO*x(M-1,j+1)*x(M,j-1)+x(M-1,j-1)**2+M_TWO*x(M-1,j-1)*x(M,j-1) &
+                  +x(M,j-1)**2+y(M,j+1)**2+M_TWO*y(M,j+1)*y(M-1,j+1)-M_TWO*y(M,j+1)*y(M-1,j-1)-M_TWO*y(M,j+1)*y(M,j-1) &
+                  +y(M-1,j+1)**2-M_TWO*y(M-1,j+1)*y(M-1,j-1)-M_TWO*y(M-1,j+1)*y(M,j-1)+y(M-1,j-1)**2 &
+                  +M_TWO*y(M-1,j-1)*y(M,j-1)+y(M,j-1)**2)**M_HALF
           CellAreaE(M,j)=sqrt( (M_HALF*(x(M,j+1)+x(M,j))-M_HALF*(x(M,j-1)+x(M,j)) )**2 + (M_HALF*(y(M,j+1)+y(M,j)) &
                         -M_HALF*(y(M,j-1)+y(M,j)) )**2)
 
@@ -163,15 +163,15 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
    !North-east
         CellAreaE(M,N)=sqrt((x(M,N)-M_HALF*(x(M,N)+x(M,N-1)))**2+(y(M,N)-M_HALF*(y(M,N)+y(M,N-1)))**2)
         CellAreaN(M,N)=sqrt((x(M,N)-M_HALF*(x(M-1,N)+x(M,N)))**2+(y(M,N)-M_HALF*(y(M-1,N)+y(M,N)))**2)
-        CellAreaS(M,N)=0.25d0*(x(M,N)**2+2d0*x(M,N)*x(M,N-1)-2d0*x(M,N)*x(M-1,N-1)-2d0*x(M-1,N)*x(M,N)+x(M,N-1)**2 &
-                -2d0*x(M-1,N-1)*x(M,N-1)-2d0*x(M-1,N)*x(M,N-1)+x(M-1,N-1)**2+2d0*x(M-1,N)*x(M-1,N-1)+x(M-1,N)**2 &
-                +y(M,N)**2+2d0*y(M,N)*y(M,N-1)-2d0*y(M,N)*y(M-1,N-1)-2d0*y(M-1,N)*y(M,N)+y(M,N-1)**2 &
-                -2d0*y(M-1,N-1)*y(M,N-1)-2d0*y(M-1,N)*y(M,N-1)+y(M-1,N-1)**2+2d0*y(M-1,N)*y(M-1,N-1) &
+        CellAreaS(M,N)=0.25d0*(x(M,N)**2+M_TWO*x(M,N)*x(M,N-1)-M_TWO*x(M,N)*x(M-1,N-1)-M_TWO*x(M-1,N)*x(M,N)+x(M,N-1)**2 &
+                -M_TWO*x(M-1,N-1)*x(M,N-1)-M_TWO*x(M-1,N)*x(M,N-1)+x(M-1,N-1)**2+M_TWO*x(M-1,N)*x(M-1,N-1)+x(M-1,N)**2 &
+                +y(M,N)**2+M_TWO*y(M,N)*y(M,N-1)-M_TWO*y(M,N)*y(M-1,N-1)-M_TWO*y(M-1,N)*y(M,N)+y(M,N-1)**2 &
+                -M_TWO*y(M-1,N-1)*y(M,N-1)-M_TWO*y(M-1,N)*y(M,N-1)+y(M-1,N-1)**2+M_TWO*y(M-1,N)*y(M-1,N-1) &
                 +y(M-1,N)**2)**M_HALF
-        CellAreaW(M,N)=0.25d0*(x(M-1,N)**2+2d0*x(M-1,N)*x(M,N)-2d0*x(M-1,N)*x(M-1,N-1)-2d0*x(M-1,N)*x(M,N-1)+x(M,N)**2 &
-                -2d0*x(M,N)*x(M-1,N-1)-2d0*x(M,N)*x(M,N-1)+x(M-1,N-1)**2+2d0*x(M-1,N-1)*x(M,N-1)+x(M,N-1)**2 &
-                +y(M-1,N)**2+2d0*y(M-1,N)*y(M,N)-2d0*y(M-1,N)*y(M-1,N-1)-2d0*y(M-1,N)*y(M,N-1)+y(M,N)**2 &
-                -2d0*y(M,N)*y(M-1,N-1)-2d0*y(M,N)*y(M,N-1)+y(M-1,N-1)**2+2d0*y(M-1,N-1)*y(M,N-1) &
+        CellAreaW(M,N)=0.25d0*(x(M-1,N)**2+M_TWO*x(M-1,N)*x(M,N)-M_TWO*x(M-1,N)*x(M-1,N-1)-M_TWO*x(M-1,N)*x(M,N-1)+x(M,N)**2 &
+                -M_TWO*x(M,N)*x(M-1,N-1)-M_TWO*x(M,N)*x(M,N-1)+x(M-1,N-1)**2+M_TWO*x(M-1,N-1)*x(M,N-1)+x(M,N-1)**2 &
+                +y(M-1,N)**2+M_TWO*y(M-1,N)*y(M,N)-M_TWO*y(M-1,N)*y(M-1,N-1)-M_TWO*y(M-1,N)*y(M,N-1)+y(M,N)**2 &
+                -M_TWO*y(M,N)*y(M-1,N-1)-M_TWO*y(M,N)*y(M,N-1)+y(M-1,N-1)**2+M_TWO*y(M-1,N-1)*y(M,N-1) &
                 +y(M,N-1)**2)**M_HALF
 
         DistN(M,N)=0d0
@@ -182,19 +182,19 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
    !South-east
         CellAreaS(M,1)=sqrt(( x(M,1)-M_HALF*(x(M,1)+x(M-1,1)) )**2+( y(M,1)-M_HALF*(y(M,1)+y(M-1,1)) )**2)
         CellAreaE(M,1)=sqrt( ( x(M,1) - M_HALF*(x(M,1)+x(M,2)) )**2 + ( y(M,1) - M_HALF*(y(M,1)+y(M,2)) )**2 )
-        CellAreaN(M,1)=0.25d0*(x(M,1)**2+2d0*x(M,1)*x(M,2)-2d0*x(M-1,1)*x(M,1)-2d0*x(M-1,2)*x(M,1)+x(M,2)**2 &
-                -2d0*x(M-1,1)*x(M,2)-2d0*x(M-1,2)*x(M,2)+x(M-1,1)**2+2d0*x(M-1,1)*x(M-1,2)+x(M-1,2)**2 &
-                +y(M,1)**2+2d0*y(M,1)*y(M,2)-2d0*y(M-1,1)*y(M,1)-2d0*y(M-1,2)*y(M,1)+y(M,2)**2 &
-                -2d0*y(M-1,1)*y(M,2)-2d0*y(M-1,2)*y(M,2)+y(M-1,1)**2+2d0*y(M-1,1)*y(M-1,2) &
+        CellAreaN(M,1)=0.25d0*(x(M,1)**2+M_TWO*x(M,1)*x(M,2)-M_TWO*x(M-1,1)*x(M,1)-M_TWO*x(M-1,2)*x(M,1)+x(M,2)**2 &
+                -M_TWO*x(M-1,1)*x(M,2)-M_TWO*x(M-1,2)*x(M,2)+x(M-1,1)**2+M_TWO*x(M-1,1)*x(M-1,2)+x(M-1,2)**2 &
+                +y(M,1)**2+M_TWO*y(M,1)*y(M,2)-M_TWO*y(M-1,1)*y(M,1)-M_TWO*y(M-1,2)*y(M,1)+y(M,2)**2 &
+                -M_TWO*y(M-1,1)*y(M,2)-M_TWO*y(M-1,2)*y(M,2)+y(M-1,1)**2+M_TWO*y(M-1,1)*y(M-1,2) &
                 +y(M-1,2)**2)**M_HALF
-        CellAreaW(M,1)=0.25d0*(x(M-1,1)**2-2d0*x(M-1,1)*x(M-1,2)+2d0*x(M-1,1)*x(M,1)-2d0*x(M-1,1)*x(M,2) &
-                +x(M-1,2)**2-2d0*x(M-1,2)*x(M,1)+2d0*x(M-1,2)*x(M,2)+x(M,1)**2-2d0*x(M,1)*x(M,2)+x(M,2)**2 &
-                +y(M-1,1)**2-2d0*y(M-1,1)*y(M-1,2)+2d0*y(M-1,1)*y(M,1)-2d0*y(M-1,1)*y(M,2)+y(M-1,2)**2 &
-                -2d0*y(M-1,2)*y(M,1)+2d0*y(M-1,2)*y(M,2)+y(M,1)**2-2d0*y(M,1)*y(M,2)+y(M,2)**2)**M_HALF
+        CellAreaW(M,1)=0.25d0*(x(M-1,1)**2-M_TWO*x(M-1,1)*x(M-1,2)+M_TWO*x(M-1,1)*x(M,1)-M_TWO*x(M-1,1)*x(M,2) &
+                +x(M-1,2)**2-M_TWO*x(M-1,2)*x(M,1)+M_TWO*x(M-1,2)*x(M,2)+x(M,1)**2-M_TWO*x(M,1)*x(M,2)+x(M,2)**2 &
+                +y(M-1,1)**2-M_TWO*y(M-1,1)*y(M-1,2)+M_TWO*y(M-1,1)*y(M,1)-M_TWO*y(M-1,1)*y(M,2)+y(M-1,2)**2 &
+                -M_TWO*y(M-1,2)*y(M,1)+M_TWO*y(M-1,2)*y(M,2)+y(M,1)**2-M_TWO*y(M,1)*y(M,2)+y(M,2)**2)**M_HALF
 
          DistN(M,1)=sqrt( (x(M,2)-x(M,1))**2 + (y(M,2)-y(M,1))**2 )
-         DistS(M,1)=0d0
-         DistE(M,1)=0d0 !sqrt( (x(i+1,1)-x(i,1))**2 + (y(i+1,1)-y(i,1))**2 )
+         DistS(M,1)=M_ZERO
+         DistE(M,1)=M_ZERO !sqrt( (x(i+1,1)-x(i,1))**2 + (y(i+1,1)-y(i,1))**2 )
          DistW(M,1)=sqrt( (x(M,1)-x(M-1,1))**2 + (y(M,1)-y(M-1,1))**2 )
 
 
@@ -203,14 +203,14 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
         CellAreaS(1,1)=sqrt((x(1,1)-M_HALF*(x(2,1)+x(1,1)))**2+(y(1,1)-M_HALF*(y(2,1)+y(1,1)))**2)
         CellAreaW(1,1)=sqrt((x(1,1)-M_HALF*(x(1,2)+x(1,1)))**2+(y(1,1)-M_HALF*(y(1,2)+y(1,1)))**2)
         CellAreaN(1,1)=sqrt((0.25d0*(x(2,2)+x(2,1)+x(1,2)+x(1,1))-M_HALF*(x(1,1)+x(1,2)))**2 &
-                +(0.25d0*(y(2,2)+y(2,1)+y(1,2)+y(1,1))-M_HALF*(y(1,2)+y(1,1)))**2) !sqrt((M_HALF*(x(1,2)+x(1,1))-0.25d0*(x(2,2)+x(2,1)+x(1,1)+x(1,2)))**2d0+(M_HALF*(y(1,2)+y(1,1))-0.25d0*(y(2,2)+y(2,1)+y(1,1)+y(1,2)))**2d0) !0.25d0*(x(1,1)**2+2d0*x(1,1)*x(1,2)-2d0*x(1,1)*x(2,1)-2d0*x(1,1)*x(2,2)+x(1,2)**2-2d0*x(1,2)*x(2,1)-2d0*x(1,2)*x(2,2)+x(2,1)**2+2d0*x(2,1)*x(2,2)+x(2,2)**2+y(1,1)**2+2d0*y(1,1)*y(1,2)-2d0*y(1,1)*y(2,1)-2d0*y(1,1)*y(2,2)+y(1,2)**2-2d0*y(1,2)*y(2,1)-2d0*y(1,2)*y(2,2)+y(2,1)**2+2d0*y(2,1)*y(2,2)+y(2,2)**2)**(M_HALF);
+                +(0.25d0*(y(2,2)+y(2,1)+y(1,2)+y(1,1))-M_HALF*(y(1,2)+y(1,1)))**2) !sqrt((M_HALF*(x(1,2)+x(1,1))-0.25d0*(x(2,2)+x(2,1)+x(1,1)+x(1,2)))**M_TWO+(M_HALF*(y(1,2)+y(1,1))-0.25d0*(y(2,2)+y(2,1)+y(1,1)+y(1,2)))**M_TWO) !0.25d0*(x(1,1)**2+M_TWO*x(1,1)*x(1,2)-M_TWO*x(1,1)*x(2,1)-M_TWO*x(1,1)*x(2,2)+x(1,2)**2-M_TWO*x(1,2)*x(2,1)-M_TWO*x(1,2)*x(2,2)+x(2,1)**2+M_TWO*x(2,1)*x(2,2)+x(2,2)**2+y(1,1)**2+M_TWO*y(1,1)*y(1,2)-M_TWO*y(1,1)*y(2,1)-M_TWO*y(1,1)*y(2,2)+y(1,2)**2-M_TWO*y(1,2)*y(2,1)-M_TWO*y(1,2)*y(2,2)+y(2,1)**2+M_TWO*y(2,1)*y(2,2)+y(2,2)**2)**(M_HALF);
         CellAreaE(1,1)=sqrt((0.25d0*(x(2,2)+x(2,1)+x(1,2)+x(1,1))-M_HALF*(x(2,1)+x(1,1)))**2 &
-                +(0.25d0*(y(2,2)+y(2,1)+y(1,2)+y(1,1))-M_HALF*(y(2,1)+y(1,1)))**2) !0.25d0*(x(1,1)**2-2d0*x(1,1)*x(1,2)+2d0*x(1,1)*x(2,1)-2d0*x(1,1)*x(2,2)+x(1,2)**2-2d0*x(1,2)*x(2,1)+2d0*x(1,2)*x(2,2)+x(2,1)**2-2d0*x(2,1)*x(2,2)+x(2,2)**2+y(1,1)**2-2d0*y(1,1)*y(1,2)+2d0*y(1,1)*y(2,1)-2d0*y(1,1)*y(2,2)+y(1,2)**2-2d0*y(1,2)*y(2,1)+2d0*y(1,2)*y(2,2)+y(2,1)**2-2d0*y(2,1)*y(2,2)+y(2,2)**2)**(M_HALF)
+                +(0.25d0*(y(2,2)+y(2,1)+y(1,2)+y(1,1))-M_HALF*(y(2,1)+y(1,1)))**2) !0.25d0*(x(1,1)**2-M_TWO*x(1,1)*x(1,2)+M_TWO*x(1,1)*x(2,1)-M_TWO*x(1,1)*x(2,2)+x(1,2)**2-M_TWO*x(1,2)*x(2,1)+M_TWO*x(1,2)*x(2,2)+x(2,1)**2-M_TWO*x(2,1)*x(2,2)+x(2,2)**2+y(1,1)**2-M_TWO*y(1,1)*y(1,2)+M_TWO*y(1,1)*y(2,1)-M_TWO*y(1,1)*y(2,2)+y(1,2)**2-M_TWO*y(1,2)*y(2,1)+M_TWO*y(1,2)*y(2,2)+y(2,1)**2-M_TWO*y(2,1)*y(2,2)+y(2,2)**2)**(M_HALF)
 
         DistN(1,1)=sqrt((x(1,2)-x(1,1))**2+(y(1,2)-y(1,1))**2)
-        DistS(1,1)=0d0
+        DistS(1,1)=M_ZERO
         DistE(1,1)=sqrt((x(2,1)-x(1,1))**2+(y(2,1)-y(1,1))**2)
-        DistW(1,1)=0d0
+        DistW(1,1)=M_ZERO
 
   !North-West
         CellAreaN(1,N)=sqrt((x(1,N)-M_HALF*(x(1,N)+x(2,N)))**2+(y(1,N)-M_HALF*(y(1,N)+y(2,N)))**2)
@@ -220,10 +220,10 @@ subroutine compute_distances(M, N, x, y, DistN, DistS, DistE, DistW, DistDualN, 
         CellAreaE(1,N)=sqrt((M_HALF*(x(2,N)+x(1,N))-0.25d0*(x(2,N-1)+x(2,N)+x(1,N-1)+x(1,N)))**2 &
                       +(M_HALF*(y(2,N)+y(1,N))-0.25d0*(y(2,N-1)+y(2,N)+y(1,N-1)+y(1,N)))**2) !sqrt((0.25d0*(x(1,N)+x(1,N-1)+x(2,N)+x(2,N-1))-(M_HALF*(x(2,N)+x(1,N))))**2+(0.25d0*(y(1,N)+y(1,N-1)+y(2,N)+y(2,N-1))-M_HALF*(y(2,N)+y(1,N)))**2)
 
-         DistN(1,N)=0d0 !sqrt((x(i,j+1)-x(i,j))**2+(y(i,j+1)-y(i,j))**2)
+         DistN(1,N)=M_ZERO !sqrt((x(i,j+1)-x(i,j))**2+(y(i,j+1)-y(i,j))**2)
          DistS(1,N)=sqrt((x(1,N)-x(1,N-1))**2+(y(1,N)-y(1,N-1))**2)
          DistE(1,N)=sqrt((x(2,N)-x(1,N))**2+(y(2,N)-y(1,N))**2)
-         DistW(1,N)=0d0 !sqrt((x(i,N)-x(i-1,N))**2+(y(i,N)-y(i-1,N))**2)
+         DistW(1,N)=M_ZERO !sqrt((x(i,N)-x(i-1,N))**2+(y(i,N)-y(i-1,N))**2)
 
 
   ! distance for cross diffusion, equal to cell border "areas" in 2D
@@ -266,21 +266,21 @@ subroutine compute_norm_tan_curv(M, N, x, y, NormalNx, NormalNy, NormalSx, Norma
         !TODO: Optimise by defining a stencil object
 
         NormalNx(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
-                     0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)),1) !4d0*(0.25d0*y(i-1,j)+0.25d0*y(i-1,j+1)-0.25d0*y(i+1,j+1)-0.25d0*y(i+1,j))/(x(i-1,j)**2+2d0*x(i-1,j)*x(i-1,j+1)-2d0*x(i-1,j)*x(i+1,j+1)-2d0*x(i-1,j)*x(i+1,j)+x(i-1,j+1)**2-2d0*x(i-1,j+1)*x(i+1,j+1)-2d0*x(i-1,j+1)*x(i+1,j)+x(i+1,j+1)**2+2d0*x(i+1,j+1)*x(i+1,j)+x(i+1,j)**2+y(i-1,j)**2+2d0*y(i-1,j)*y(i-1,j+1)-2d0*y(i-1,j)*y(i+1,j+1)-2d0*y(i-1,j)*y(i+1,j)+y(i-1,j+1)**2-2d0*y(i-1,j+1)*y(i+1,j+1)-2d0*y(i-1,j+1)*y(i+1,j)+y(i+1,j+1)**2+2d0*y(i+1,j+1)*y(i+1,j)+y(i+1,j)**2)**(M_HALF)
+                     0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)),1) !4d0*(0.25d0*y(i-1,j)+0.25d0*y(i-1,j+1)-0.25d0*y(i+1,j+1)-0.25d0*y(i+1,j))/(x(i-1,j)**2+M_TWO*x(i-1,j)*x(i-1,j+1)-M_TWO*x(i-1,j)*x(i+1,j+1)-M_TWO*x(i-1,j)*x(i+1,j)+x(i-1,j+1)**2-M_TWO*x(i-1,j+1)*x(i+1,j+1)-M_TWO*x(i-1,j+1)*x(i+1,j)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i+1,j)+x(i+1,j)**2+y(i-1,j)**2+M_TWO*y(i-1,j)*y(i-1,j+1)-M_TWO*y(i-1,j)*y(i+1,j+1)-M_TWO*y(i-1,j)*y(i+1,j)+y(i-1,j+1)**2-M_TWO*y(i-1,j+1)*y(i+1,j+1)-M_TWO*y(i-1,j+1)*y(i+1,j)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i+1,j)+y(i+1,j)**2)**(M_HALF)
         NormalNy(i,j)=Normal(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)), 0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
-                     0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)),2) !NormalNy(i,j)=-4d0*(0.25d0*x(i-1,j)+0.25d0*x(i-1,j+1)-0.25d0*x(i+1,j+1)-0.25d0*x(i+1,j))/(x(i-1,j)**2+2d0*x(i-1,j)*x(i-1,j+1)-2d0*x(i-1,j)*x(i+1,j+1)-2d0*x(i-1,j)*x(i+1,j)+x(i-1,j+1)**2-2d0*x(i-1,j+1)*x(i+1,j+1)-2d0*x(i-1,j+1)*x(i+1,j)+x(i+1,j+1)**2+2d0*x(i+1,j+1)*x(i+1,j)+x(i+1,j)**2+y(i-1,j)**2+2d0*y(i-1,j)*y(i-1,j+1)-2d0*y(i-1,j)*y(i+1,j+1)-2d0*y(i-1,j)*y(i+1,j)+y(i-1,j+1)**2-2d0*y(i-1,j+1)*y(i+1,j+1)-2d0*y(i-1,j+1)*y(i+1,j)+y(i+1,j+1)**2+2d0*y(i+1,j+1)*y(i+1,j)+y(i+1,j)**2)**(M_HALF)
+                     0.25d0*(x(i-1,j+1)+x(i,j+1)+x(i-1,j)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i,j+1)+y(i-1,j)+y(i,j)),2) !NormalNy(i,j)=-4d0*(0.25d0*x(i-1,j)+0.25d0*x(i-1,j+1)-0.25d0*x(i+1,j+1)-0.25d0*x(i+1,j))/(x(i-1,j)**2+M_TWO*x(i-1,j)*x(i-1,j+1)-M_TWO*x(i-1,j)*x(i+1,j+1)-M_TWO*x(i-1,j)*x(i+1,j)+x(i-1,j+1)**2-M_TWO*x(i-1,j+1)*x(i+1,j+1)-M_TWO*x(i-1,j+1)*x(i+1,j)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i+1,j)+x(i+1,j)**2+y(i-1,j)**2+M_TWO*y(i-1,j)*y(i-1,j+1)-M_TWO*y(i-1,j)*y(i+1,j+1)-M_TWO*y(i-1,j)*y(i+1,j)+y(i-1,j+1)**2-M_TWO*y(i-1,j+1)*y(i+1,j+1)-M_TWO*y(i-1,j+1)*y(i+1,j)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i+1,j)+y(i+1,j)**2)**(M_HALF)
         NormalSx(i,j)=Normal(0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), &
-                     0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)),1) ! -4d0*(0.25d0*y(i-1,j-1)+0.25d0*y(i-1,j)-0.25d0*y(i+1,j)-0.25d0*y(i+1,j-1))/(x(i-1,j-1)**2+2d0*x(i-1,j-1)*x(i-1,j)-2d0*x(i-1,j-1)*x(i+1,j)-2d0*x(i-1,j-1)*x(i+1,j-1)+x(i-1,j)**2-2d0*x(i-1,j)*x(i+1,j)-2d0*x(i-1,j)*x(i+1,j-1)+x(i+1,j)**2+2d0*x(i+1,j)*x(i+1,j-1)+x(i+1,j-1)**2+y(i-1,j-1)**2+2d0*y(i-1,j-1)*y(i-1,j)-2d0*y(i-1,j-1)*y(i+1,j)-2d0*y(i-1,j-1)*y(i+1,j-1)+y(i-1,j)**2-2d0*y(i-1,j)*y(i+1,j)-2d0*y(i-1,j)*y(i+1,j-1)+y(i+1,j)**2+2d0*y(i+1,j)*y(i+1,j-1)+y(i+1,j-1)**2)**(M_HALF)
+                     0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)),1) ! -4d0*(0.25d0*y(i-1,j-1)+0.25d0*y(i-1,j)-0.25d0*y(i+1,j)-0.25d0*y(i+1,j-1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i-1,j)-M_TWO*x(i-1,j-1)*x(i+1,j)-M_TWO*x(i-1,j-1)*x(i+1,j-1)+x(i-1,j)**2-M_TWO*x(i-1,j)*x(i+1,j)-M_TWO*x(i-1,j)*x(i+1,j-1)+x(i+1,j)**2+M_TWO*x(i+1,j)*x(i+1,j-1)+x(i+1,j-1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i-1,j)-M_TWO*y(i-1,j-1)*y(i+1,j)-M_TWO*y(i-1,j-1)*y(i+1,j-1)+y(i-1,j)**2-M_TWO*y(i-1,j)*y(i+1,j)-M_TWO*y(i-1,j)*y(i+1,j-1)+y(i+1,j)**2+M_TWO*y(i+1,j)*y(i+1,j-1)+y(i+1,j-1)**2)**(M_HALF)
         NormalSy(i,j)=Normal(0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), &
-                     0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)),2) ! 4d0*(0.25d0*x(i-1,j-1)+0.25d0*x(i-1,j)-0.25d0*x(i+1,j)-0.25d0*x(i+1,j-1))/(x(i-1,j-1)**2+2d0*x(i-1,j-1)*x(i-1,j)-2d0*x(i-1,j-1)*x(i+1,j)-2d0*x(i-1,j-1)*x(i+1,j-1)+x(i-1,j)**2-2d0*x(i-1,j)*x(i+1,j)-2d0*x(i-1,j)*x(i+1,j-1)+x(i+1,j)**2+2d0*x(i+1,j)*x(i+1,j-1)+x(i+1,j-1)**2+y(i-1,j-1)**2+2d0*y(i-1,j-1)*y(i-1,j)-2d0*y(i-1,j-1)*y(i+1,j)-2d0*y(i-1,j-1)*y(i+1,j-1)+y(i-1,j)**2-2d0*y(i-1,j)*y(i+1,j)-2d0*y(i-1,j)*y(i+1,j-1)+y(i+1,j)**2+2d0*y(i+1,j)*y(i+1,j-1)+y(i+1,j-1)**2)**(M_HALF)
+                     0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)),2) ! 4d0*(0.25d0*x(i-1,j-1)+0.25d0*x(i-1,j)-0.25d0*x(i+1,j)-0.25d0*x(i+1,j-1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i-1,j)-M_TWO*x(i-1,j-1)*x(i+1,j)-M_TWO*x(i-1,j-1)*x(i+1,j-1)+x(i-1,j)**2-M_TWO*x(i-1,j)*x(i+1,j)-M_TWO*x(i-1,j)*x(i+1,j-1)+x(i+1,j)**2+M_TWO*x(i+1,j)*x(i+1,j-1)+x(i+1,j-1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i-1,j)-M_TWO*y(i-1,j-1)*y(i+1,j)-M_TWO*y(i-1,j-1)*y(i+1,j-1)+y(i-1,j)**2-M_TWO*y(i-1,j)*y(i+1,j)-M_TWO*y(i-1,j)*y(i+1,j-1)+y(i+1,j)**2+M_TWO*y(i+1,j)*y(i+1,j-1)+y(i+1,j-1)**2)**(M_HALF)
         NormalEx(i,j)=Normal(0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)), &
-                     0.25d0*(x(i+1,j+1)+x(i+1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i+1,j+1)+y(i+1,j)+y(i,j+1)+y(i,j)), 1) ! -4d0*(0.25d0*y(i+1,j-1)+0.25d0*y(i,j-1)-0.25d0*y(i+1,j+1)-0.25d0*y(i,j+1))/(x(i+1,j-1)**2+2d0*x(i+1,j-1)*x(i,j-1)-2d0*x(i+1,j-1)*x(i+1,j+1)-2d0*x(i+1,j-1)*x(i,j+1)+x(i,j-1)**2-2d0*x(i,j-1)*x(i+1,j+1)-2d0*x(i,j-1)*x(i,j+1)+x(i+1,j+1)**2+2d0*x(i+1,j+1)*x(i,j+1)+x(i,j+1)**2+y(i+1,j-1)**2+2d0*y(i+1,j-1)*y(i,j-1)-2d0*y(i+1,j-1)*y(i+1,j+1)-2d0*y(i+1,j-1)*y(i,j+1)+y(i,j-1)**2-2d0*y(i,j-1)*y(i+1,j+1)-2d0*y(i,j-1)*y(i,j+1)+y(i+1,j+1)**2+2d0*y(i+1,j+1)*y(i,j+1)+y(i,j+1)**2)**(M_HALF)
+                     0.25d0*(x(i+1,j+1)+x(i+1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i+1,j+1)+y(i+1,j)+y(i,j+1)+y(i,j)), 1) ! -4d0*(0.25d0*y(i+1,j-1)+0.25d0*y(i,j-1)-0.25d0*y(i+1,j+1)-0.25d0*y(i,j+1))/(x(i+1,j-1)**2+M_TWO*x(i+1,j-1)*x(i,j-1)-M_TWO*x(i+1,j-1)*x(i+1,j+1)-M_TWO*x(i+1,j-1)*x(i,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i+1,j+1)-M_TWO*x(i,j-1)*x(i,j+1)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i,j+1)+x(i,j+1)**2+y(i+1,j-1)**2+M_TWO*y(i+1,j-1)*y(i,j-1)-M_TWO*y(i+1,j-1)*y(i+1,j+1)-M_TWO*y(i+1,j-1)*y(i,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i+1,j+1)-M_TWO*y(i,j-1)*y(i,j+1)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i,j+1)+y(i,j+1)**2)**(M_HALF)
         NormalEy(i,j)=Normal(0.25d0*(x(i+1,j-1)+x(i+1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i+1,j-1)+y(i+1,j)+y(i,j-1)+y(i,j)), &
-                     0.25d0*(x(i+1,j+1)+x(i+1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i+1,j+1)+y(i+1,j)+y(i,j+1)+y(i,j)), 2) ! 4d0*(0.25d0*x(i+1,j-1)+0.25d0*x(i,j-1)-0.25d0*x(i+1,j+1)-0.25d0*x(i,j+1))/(x(i+1,j-1)**2+2d0*x(i+1,j-1)*x(i,j-1)-2d0*x(i+1,j-1)*x(i+1,j+1)-2d0*x(i+1,j-1)*x(i,j+1)+x(i,j-1)**2-2d0*x(i,j-1)*x(i+1,j+1)-2d0*x(i,j-1)*x(i,j+1)+x(i+1,j+1)**2+2d0*x(i+1,j+1)*x(i,j+1)+x(i,j+1)**2+y(i+1,j-1)**2+2d0*y(i+1,j-1)*y(i,j-1)-2d0*y(i+1,j-1)*y(i+1,j+1)-2d0*y(i+1,j-1)*y(i,j+1)+y(i,j-1)**2-2d0*y(i,j-1)*y(i+1,j+1)-2d0*y(i,j-1)*y(i,j+1)+y(i+1,j+1)**2+2d0*y(i+1,j+1)*y(i,j+1)+y(i,j+1)**2)**(M_HALF)
+                     0.25d0*(x(i+1,j+1)+x(i+1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i+1,j+1)+y(i+1,j)+y(i,j+1)+y(i,j)), 2) ! 4d0*(0.25d0*x(i+1,j-1)+0.25d0*x(i,j-1)-0.25d0*x(i+1,j+1)-0.25d0*x(i,j+1))/(x(i+1,j-1)**2+M_TWO*x(i+1,j-1)*x(i,j-1)-M_TWO*x(i+1,j-1)*x(i+1,j+1)-M_TWO*x(i+1,j-1)*x(i,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i+1,j+1)-M_TWO*x(i,j-1)*x(i,j+1)+x(i+1,j+1)**2+M_TWO*x(i+1,j+1)*x(i,j+1)+x(i,j+1)**2+y(i+1,j-1)**2+M_TWO*y(i+1,j-1)*y(i,j-1)-M_TWO*y(i+1,j-1)*y(i+1,j+1)-M_TWO*y(i+1,j-1)*y(i,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i+1,j+1)-M_TWO*y(i,j-1)*y(i,j+1)+y(i+1,j+1)**2+M_TWO*y(i+1,j+1)*y(i,j+1)+y(i,j+1)**2)**(M_HALF)
         NormalWx(i,j)=Normal(0.25d0*(x(i-1,j+1)+x(i-1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i-1,j)+y(i,j+1)+y(i,j)), &
-                     0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), 1) ! 4d0*(0.25d0*y(i-1,j-1)+0.25d0*y(i,j-1)-0.25d0*y(i,j+1)-0.25d0*y(i-1,j+1))/(x(i-1,j-1)**2+2d0*x(i-1,j-1)*x(i,j-1)-2d0*x(i-1,j-1)*x(i,j+1)-2d0*x(i-1,j-1)*x(i-1,j+1)+x(i,j-1)**2-2d0*x(i,j-1)*x(i,j+1)-2d0*x(i,j-1)*x(i-1,j+1)+x(i,j+1)**2+2d0*x(i,j+1)*x(i-1,j+1)+x(i-1,j+1)**2+y(i-1,j-1)**2+2d0*y(i-1,j-1)*y(i,j-1)-2d0*y(i-1,j-1)*y(i,j+1)-2d0*y(i-1,j-1)*y(i-1,j+1)+y(i,j-1)**2-2d0*y(i,j-1)*y(i,j+1)-2d0*y(i,j-1)*y(i-1,j+1)+y(i,j+1)**2+2d0*y(i,j+1)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
+                     0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), 1) ! 4d0*(0.25d0*y(i-1,j-1)+0.25d0*y(i,j-1)-0.25d0*y(i,j+1)-0.25d0*y(i-1,j+1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i,j-1)-M_TWO*x(i-1,j-1)*x(i,j+1)-M_TWO*x(i-1,j-1)*x(i-1,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i,j+1)-M_TWO*x(i,j-1)*x(i-1,j+1)+x(i,j+1)**2+M_TWO*x(i,j+1)*x(i-1,j+1)+x(i-1,j+1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i,j-1)-M_TWO*y(i-1,j-1)*y(i,j+1)-M_TWO*y(i-1,j-1)*y(i-1,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i,j+1)-M_TWO*y(i,j-1)*y(i-1,j+1)+y(i,j+1)**2+M_TWO*y(i,j+1)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
         NormalWy(i,j)=Normal(0.25d0*(x(i-1,j+1)+x(i-1,j)+x(i,j+1)+x(i,j)), 0.25d0*(y(i-1,j+1)+y(i-1,j)+y(i,j+1)+y(i,j)), &
-                     0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), 2)! -4d0*(0.25d0*x(i-1,j-1)+0.25d0*x(i,j-1)-0.25d0*x(i,j+1)-0.25d0*x(i-1,j+1))/(x(i-1,j-1)**2+2d0*x(i-1,j-1)*x(i,j-1)-2d0*x(i-1,j-1)*x(i,j+1)-2d0*x(i-1,j-1)*x(i-1,j+1)+x(i,j-1)**2-2d0*x(i,j-1)*x(i,j+1)-2d0*x(i,j-1)*x(i-1,j+1)+x(i,j+1)**2+2d0*x(i,j+1)*x(i-1,j+1)+x(i-1,j+1)**2+y(i-1,j-1)**2+2d0*y(i-1,j-1)*y(i,j-1)-2d0*y(i-1,j-1)*y(i,j+1)-2d0*y(i-1,j-1)*y(i-1,j+1)+y(i,j-1)**2-2d0*y(i,j-1)*y(i,j+1)-2d0*y(i,j-1)*y(i-1,j+1)+y(i,j+1)**2+2d0*y(i,j+1)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
+                     0.25d0*(x(i-1,j-1)+x(i-1,j)+x(i,j-1)+x(i,j)), 0.25d0*(y(i-1,j-1)+y(i-1,j)+y(i,j-1)+y(i,j)), 2)! -4d0*(0.25d0*x(i-1,j-1)+0.25d0*x(i,j-1)-0.25d0*x(i,j+1)-0.25d0*x(i-1,j+1))/(x(i-1,j-1)**2+M_TWO*x(i-1,j-1)*x(i,j-1)-M_TWO*x(i-1,j-1)*x(i,j+1)-M_TWO*x(i-1,j-1)*x(i-1,j+1)+x(i,j-1)**2-M_TWO*x(i,j-1)*x(i,j+1)-M_TWO*x(i,j-1)*x(i-1,j+1)+x(i,j+1)**2+M_TWO*x(i,j+1)*x(i-1,j+1)+x(i-1,j+1)**2+y(i-1,j-1)**2+M_TWO*y(i-1,j-1)*y(i,j-1)-M_TWO*y(i-1,j-1)*y(i,j+1)-M_TWO*y(i-1,j-1)*y(i-1,j+1)+y(i,j-1)**2-M_TWO*y(i,j-1)*y(i,j+1)-M_TWO*y(i,j-1)*y(i-1,j+1)+y(i,j+1)**2+M_TWO*y(i,j+1)*y(i-1,j+1)+y(i-1,j+1)**2)**(M_HALF)
 
 
         TangentNx(i,j)=-Tangent(0.25d0*(x(i,j)+x(i+1,j)+x(i+1,j+1)+x(i,j+1)),0.25d0*(y(i,j)+y(i+1,j)+y(i+1,j+1)+y(i,j+1)), &
@@ -702,7 +702,7 @@ subroutine compute_cellvol(M, N, x, y, CellVol, InvCellVol )
                                         (x(i-1,j)+x(i,j)+x(i,j+1)+x(i-1,j+1)), &        !x(i-1/2,j+1/2)
                                         (y(i-1,j)+y(i,j)+y(i,j+1)+y(i-1,j+1)))
 
-      InvCellVol(i,j) = 1.0d0/CellVol(i,j)
+      InvCellVol(i,j) = M_ONE/CellVol(i,j)
     end do
   end do
   !$OMP END DO
@@ -755,7 +755,7 @@ subroutine compute_cellvol(M, N, x, y, CellVol, InvCellVol )
                            M_HALF*(x(1, 1)+x(1, 2)), &
                            M_HALF*(y(1, 1)+y(1, 2)))
 !         CellVol(1,1)=0.25d0*AreaElement(x(1,1),y(1,1),x(2,1),y(2,1),x(2,2),y(2,2),x(1,2),y(1,2))
-!         CellVol(1,1)=2d0*CellVol(1,1)
+!         CellVol(1,1)=M_TWO*CellVol(1,1)
   !North-West
   CellVol(1,N)=AreaElement(M_HALF*(x(1, N-1)+x(1, N)), &
                                 M_HALF*(y(1, N-1)+y(1, N)), &
@@ -766,5 +766,5 @@ subroutine compute_cellvol(M, N, x, y, CellVol, InvCellVol )
                                 x(1,N), &
                                 y(1,N))
 !         CellVol(1,N)=0.25d0*AreaElement(x(1,N-1),y(1,N-1),x(2,N-1),y(2,N-1),x(2,N),y(2,N),x(1,N),y(1,N))
-!         CellVol(1,N)=2d0*CellVol(1,N)
+!         CellVol(1,N)=M_TWO*CellVol(1,N)
 end subroutine compute_cellvol

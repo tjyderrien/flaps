@@ -383,7 +383,7 @@ contains
 
       sqrt_diel = sqrt(dielectric)
 
-        MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt_diel)  &!TODO: sqrt of complex number must be avoided !
+      MieCoeff4= ( ( BesselJprime(order, k*radius*sqrt_diel)  &!TODO: sqrt of complex number must be avoided !
                      * BesselJ(order, M_ONE_CMPLX*k*radius) ) - sqrt_diel * (BesselJ(order,sqrt_diel*k*radius) & !TODO: sqrt of complex number must be avoided !
                      * BesselJprime(order, M_ONE_CMPLX*k*radius)) ) &
                     / (( BesselJprime(order,k*radius*sqrt_diel) * Hankel1(order, k*radius, M_ZERO) ) &!TODO: sqrt of complex number must be avoided !
