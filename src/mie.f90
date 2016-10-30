@@ -46,6 +46,11 @@ module Mie_m
             maxBesselOrder=20, &  !> Max of terms in series of Bessel for Mie scattering
             besselArray=1          !TODO: Explain what it is, if really useful. TJYD (Oct 2, 2016): I don't remember!!
 
+  !Possible values for UseMieScattering
+  integer, parameter ::              &
+       MIE_SCATTERING_CONSTANT = -1, &
+       MIE_SCATTERING_FITTED   =  0, &
+       ME_SCATTERING_ANALYTIC  =  1
 
 contains
 
@@ -95,7 +100,7 @@ contains
       !TODO: #TJYD @NTD: I commented the obselete / unphysical sources. We can then simplify this section. 
 
       select case(Params%UseMieScattering)
-      case(-1)
+      case(MIE_SCATTERING_CONSTANT)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
@@ -118,7 +123,7 @@ contains
       end do
       !$OMP END DO
 
-      case(0)
+      case(MIE_SCATTERING_FITTED)
         !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
@@ -204,7 +209,7 @@ contains
           end do
         end do
         !$OMP END DO
-      case(1)
+      case(ME_SCATTERING_ANALYTIC)
         ! USING MIE SCATTERING ANALYTICAL FORMULAS !TJYD@NTD: This is more clean, here :)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
