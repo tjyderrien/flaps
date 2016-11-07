@@ -112,6 +112,7 @@
     coefE = meDOS*kb/(2d0*M_PI*hbar**2)
     coefH = mhDOS*kb/(2d0*M_PI*hbar**2)
 
+    !$OMP PARALLEL DEFAULT(NONE) SHARED (coefE, coefH, mesh, DOSe, DOSh)
     !$OMP DO COLLAPSE(2)
     do j=1, mesh%N !(optimized)
       do i=1, mesh%M
@@ -120,6 +121,7 @@
       end do
     end do
     !$OMP END DO
+    !$OMP END PARALLEL
 
   end subroutine DensitiesOfState_batch
 
@@ -147,7 +149,9 @@
 
 
       coef=ec*ec/me/epsilon0*source%inv_omega**2/(M_ONE+M_IM*nuColl*source%inv_omega)
-
+      !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, Dielectric, epsilonInf, coef, &
+      !$OMP OpticalIndex, OpticalDamping, Reflectivity ) &
+      !$OMP PRIVATE(sqrtEps)
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
@@ -160,6 +164,7 @@
         end do
       end do
       !$OMP END DO
+      !$OMP END PARALLEL
 
     end subroutine DielectricFunction_batch
 
@@ -281,6 +286,8 @@
 
       coef = ec/(me*nuColl)
 
+      !$OMP PARALLEL DEFAULT(NONE) SHARED (coef, mesh, mobilityE, mobilityH, FermiTableE, &
+      !$OMP FermiTableH, ColFermi0, ColFermiHalf, FermiIndexE, FermiIndexH )
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
@@ -289,6 +296,7 @@
         end do
       end do
       !$OMP END DO
+      !$OMP END PARALLEL
 
     end subroutine ComputeMobilities_batch
 
@@ -321,7 +329,9 @@
            return
       end if
 
-
+      !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, diffusionE, diffusionH, &
+      !$OMP mobilityE, mobilityH, FermiTableE, FermiTableH, ColFermiHalf, &
+      !$OMP FermiIndexE, FermiIndexH, ColFermiMenusHalf)
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N
         do i=1, mesh%M
@@ -332,6 +342,7 @@
         end do
       end do
       !$OMP END DO
+      !$OMP END PARALLEL
 
     end subroutine UpdateDiffusions_batch
 
@@ -358,6 +369,7 @@
         return
       endif
 
+      !$OMP PARALLEL DEFAULT(NONE) SHARED (JeX, JeY, JhX, JhY, mobilityE, mobilityH, mesh, Ex, Ey)
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
@@ -368,6 +380,7 @@
         end do
       end do
       !$OMP END DO
+      !$OMP END PARALLEL
 
     end subroutine UpdateDriftVectors_batch
 
@@ -397,6 +410,9 @@
       real(8) :: tmp, LatticeHeatCapacity
       integer :: i, j
 
+      !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, Ce, Ch, Cs, ColFermiThreeHalf, FermiIndexE, FermiIndexH, &
+      !$OMP FermiTableE, FermiTableH, ColFermiEta, ColFermiHalf, ColFermiMenusHalf, invCe, invCh, invCs) &
+      !$OMP PRIVATE(tmp)
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
@@ -418,6 +434,7 @@
         end do
       end do
       !$OMP END DO
+      !$OMP END PARALLEL
 
     end subroutine ComputeHeatCapacities_batch
 
@@ -472,6 +489,8 @@
       if(TransportModel.eq.-1) then !No need to update the conductivity
         return
       else if (TransportModel .eq. 0 ) then
+        !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+        !$OMP FermiTableE, FermiIndexE, FermiTableH, FermiIndexH, ColFermi1, ColFermi2, ColFermi0)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
@@ -493,6 +512,7 @@
           end do
         end do
         !$OMP END DO
+        !$OMP END PARALLEL
 !      else if(TransportModel.eq.1) then
 !        !$OMP DO COLLAPSE(2)
 !        do j=1, mesh%N
@@ -605,6 +625,12 @@
      integer :: i,j
 
      ! calculation of sources
+     !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, Egap, mesh,               &
+     !$OMP GainsE, SourceUe, SourceE, Ce, CeOld, dt, intensity, source,     &
+     !$OMP OnePhotonIonizationRate0, TwoPhotonIonizationRate0, me, mh,      &
+     !$OMP absorptionDrudeE, AugerRateE, LossesE, AugerRateH, ImpactOff,    &
+     !$OMP GainsH, SourceUh, SourceH, LossesH, Ch, ChOld, absorptionDrudeH) &
+     !$OMP PRIVATE(Int2, work)
      !$OMP DO  COLLAPSE(2)
      do j=1,Params%N
        do i=1,Params%M
@@ -664,6 +690,7 @@
       end do
     end do
     !$OMP END DO
+    !$OMP END PARALLEL
    end subroutine ComputeGainsAndLosses
 
 

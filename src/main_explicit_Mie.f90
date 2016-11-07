@@ -1589,45 +1589,14 @@ if(Params%UseMieScattering.eq.1) then
   !***************************************************************
   do nbiter=1, nmax
     
-    t=t+dt; 
+   t=t+dt;
     
-   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, newmesh, dual, intensityDual, source, Params, I0, &
-   !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
-   !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
-   !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
-   !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
-   !$OMP& mobilityE, mobilityH, Egap, me, mh, meDOS, mhDOS, DOSe, DOSh, &
-   !$OMP& SourceE, SourceH, SourceUe, SourceUh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
-   !$OMP& epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
-   !$OMP& JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, & !Amatrix
-   !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
-   !$OMP& NormalN, NormalS, NormalE, NormalW, &
-   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
-   !$OMP& DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
-   !$OMP& EintField, EintFieldI, EintFieldR, NeTotal, NhTotal, &
-   !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
-   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
-   !$OMP& ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
-   !$OMP& x1, x2, x3, x4, x5, x6, x7, x8, x9, &
-   !$OMP& y1, y2, y3, y4, y5, y6, y7, y8, y9, &
-   !$OMP& sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, &
-   !$OMP& sigmaX8, sigmaX9, &
-   !$OMP& sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, &
-   !$OMP& sigmaY8, sigmaY9, &
-   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, &
-   !$OMP& t, t0, x0, y0, I1, I2, I3, I4, I5, I6, I7, &
-   !$OMP& I8, I9, OpticalIndex, OpticalDamping, &
-   !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
-   !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
-   !$OMP& Mp, Np, invCe, invCh, invCs, nuColl) &
-   !$OMP& PRIVATE(work)
-
-
    NeTotal=M_HALF
    NhTotal=M_HALF
-   
+
    ! replacing old datas
+   !$OMP PARALLEL DEFAULT(NONE) SHARED(newmesh, Ue, Uh, UeNew, UhNew, &
+   !$OMP TsPrev, TsOld, mesh, CeOld, Ce, ChOld, Ch, CsPrev2, CsPrev, CsOld, Cs )
    !$OMP DO COLLAPSE(2)
    do j=1, newmesh%N
      do i=1, newmesh%M
@@ -1637,27 +1606,44 @@ if(Params%UseMieScattering.eq.1) then
        TsOld(i,j)  = mesh%Ts(i,j)
        CeOld(i,j)  = Ce(i,j)
        ChOld(i,j)  = Ch(i,j)
-   
+
        CsPrev2(i,j)= CsPrev(i,j)
        CsPrev(i,j) = CsOld(i,j)
        CsOld(i,j)  = Cs(i,j)
      end do
    end do
-   
+   !$OMP END DO
+   !$OMP END PARALLEL
+
+
+   !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, newmesh)
    call copy_mesh(mesh, newmesh)
-   !
+   !$OMP END PARALLEL
+
    !TODO: Does this depends on the position? If yes, this has to be changed bak to an array
    nuColl=CollisionFrequency()
+   !
    !
    call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
                                  epsilonInf, nuColl, me, source)
    !
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, &
+   !$OMP absorptionDrudeH, nuColl, me, mh, source)
    call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Ne, DielectricDrudeE, absorptionDrudeE, nuColl, me, source)
    !
    call ComputeDielectricFunctionDrude_batch(Params, mesh, mesh%Nh, DielectricDrudeH, absorptionDrudeH, nuColl, mh, source)
+   !$OMP END PARALLEL
+   !
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
+   !$OMP absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+   !$OMP t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0,  &
+   !$OMP sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
+   !$OMP sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
+   !$OMP x3, y3, x4, y4, x5, EintFieldR,  &
+   !$OMP y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9)
    !This routine computes the intensity for the entire grid with one call
    call ComputeIntensity_batch(Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
                                absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
@@ -1666,12 +1652,14 @@ if(Params%UseMieScattering.eq.1) then
                                sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
                                x3, y3, x4, y4, x5, EintFieldR,  &
                                y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
-   !
+   !$OMP END PARALLEL
    !
    !
 !!!! thermal calculations in the main domain
 ! calculation of sources
-    !$OMP DO  COLLAPSE(2) 
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, DOSe, DOSh, FermiRatioH, FermiRatioE, &
+   !$OMP FermiIndexE, FermiIndexH )
+   !$OMP DO  COLLAPSE(2)
     do j=1,Params%N
         do i=1,Params%M
 
@@ -1689,6 +1677,8 @@ if(Params%UseMieScattering.eq.1) then
       end do
    end do
    !$OMP END DO
+   !$OMP END PARALLEL
+   !
    !
    !
    !Computes the electron and mobilities for the entire mesh
@@ -1721,6 +1711,30 @@ if(Params%UseMieScattering.eq.1) then
                               absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
    !
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
+   !$OMP& mesh, newmesh, dual, intensityDual, source, Params, I0, &
+   !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
+   !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
+   !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
+   !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
+   !$OMP& mobilityE, mobilityH, Egap, me, mh, DOSe, DOSh, &
+   !$OMP& SourceE, SourceH, SourceUe, SourceUh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
+   !$OMP& epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
+   !$OMP& JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, & !Amatrix
+   !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
+   !$OMP& NormalN, NormalS, NormalE, NormalW, &
+   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
+   !$OMP& DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
+   !$OMP& EintField, EintFieldI, NeTotal, NhTotal, &
+   !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
+   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
+   !$OMP& ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
+   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, &
+   !$OMP& t, t0, OpticalIndex, OpticalDamping, &
+   !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+   !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
+   !$OMP& Mp, Np, invCe, invCh, invCs, nuColl) &
+   !$OMP& PRIVATE(work)
    !Compute the new conductivites, based on the knowledge of densities and mobilities
    call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                      FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
