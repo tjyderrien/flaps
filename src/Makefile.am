@@ -41,7 +41,7 @@ flaps_LDADD = $(all_LIBS)
 CLEANFILES += flaps
 
 depend:
-	@makedepf90 $(octopus_SOURCES) 
+	@makedepf90 (flaps_SOURCES) 
 
 main_explicit_Mie.o: main_explicit_Mie.f90 input.o material.o mesh.o mie.o output.o source.o \
                      solver.o grid.o
