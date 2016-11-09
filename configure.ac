@@ -87,6 +87,7 @@ AC_PATH_PROG([PERL],perl,no)
 
 AC_CONFIG_FILES([Makefile
                  doc/Makefile
+                 doc/doxygen_input
                  external_libs/Makefile
                  external_libs/amos/Makefile
                  external_libs/gmsh/Makefile
