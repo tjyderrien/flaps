@@ -92,7 +92,7 @@ module Material_m
       select case(this%Eg_model)
       case(EG_SI_CONSTANT)!TODO: We need a proper reference for this
         Eg(1:mesh%M,1:mesh%N)=ec*1.16d0
-      case(EG_SI_KORFIATIS07) !TODO: We need a proper reference for this
+      case(EG_SI_KORFIATIS07) !REF: Korfiatis, D. P., KA Th Thoma, and J. C. Vardaxoglou. "Conditions for femtosecond laser melting of silicon." Journal of Physics D: Applied Physics 40.21 (2007): 6803.
         !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
         do j=1,mesh%N
           do i=1,mesh%M
@@ -100,12 +100,11 @@ module Material_m
           end do
         end do
         !$OMP END PARALLEL DO
-      case(EG_SI_VANDRIEL87) !TODO: We need a proper reference for this
-        !TODO: Is it really 0.33333d0 or should it be 1/3 ?
+      case(EG_SI_VANDRIEL87) !REF: Van Driel, Henry M. "Kinetics of high-density plasmas generated in Si by 1.06-and 0.53-μm picosecond laser pulses." Physical Review B 35.15 (1987): 8166.
         !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
         do j=1,mesh%N
           do i=1,mesh%M
-            Eg(i,j)=ec*(1.16d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(0.33333d0)) !Driel 1987
+            Eg(i,j)=ec*(1.16d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(1./3.)) !Driel 1987
           end do
         end do
         !$OMP END PARALLEL DO
@@ -127,7 +126,8 @@ end module Material_m
 !> Dielectric consant for silicon mateiral at some particular wavelengths. 
 !> TODO: interface with SPP-extended-theory. 
       implicit none
-!TODO: This should not be hardcoded but should be in an external file. (Not clear how to do this properly).
+!TODO: NTD: This should not be hardcoded but should be in an external file. (Not clear how to do this properly).
+!TODO: TJYD: The plan is to connect with SPP-extended-theory where Palik data [Palik, Edward D., ed. "Handbook of optical constants of solids." (1998).] are directly giving this coefficient. 
       real(8), intent(in) :: lambda
 
       if(lambda.eq.1030d-9) then
@@ -136,7 +136,7 @@ end module Material_m
       end if
 
       if(lambda.eq.800d-9) then
-        DielectricConstant=(13.46d0,0.048d0)
+        DielectricConstant=(13.64d0,0.048d0)
         return
       end if
 
@@ -781,7 +781,8 @@ end module Material_m
     end function OnePhotonIonizationRate
 
 
-    !TODO: We need a reference for these values
+    !TODO: Ideally, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
+    !We should also be able to select a tabulated Keldysh model for that. 
     !------------------------------------------------------------------
     pure real(8) function TwoPhotonIonizationRate(lambda)
       use Maths_m
