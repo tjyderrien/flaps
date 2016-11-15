@@ -279,7 +279,7 @@ end module Material_m
 
 !------------------------------------------------------------------
 
-    !TODO: Create a batch version of this routine !TJYD: What is batch version?
+    !TODO: Create a batch version of this routine
     !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai. 
     !> "Ultrafast carrier dynamics in silicon: A two-color 
     !> transient reflection grating study on a (111) surface." 
@@ -391,7 +391,6 @@ end module Material_m
 
       integer :: i, j
 
-      !TODO: This name is not really explicit
       if(Params%TransportModel.eq.-1) then
            return
       end if
