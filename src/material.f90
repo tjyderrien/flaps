@@ -545,6 +545,8 @@ end module Material_m
 
       integer :: i, j
 
+      !TODO: We have to find a nomeclature and a name for this model
+      !TODO: Is there other models?
       !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
       real(8), parameter :: aa = -8.992d0
       real(8), parameter :: bb = 68.265d0
