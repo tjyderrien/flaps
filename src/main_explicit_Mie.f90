@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien
+!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -23,9 +23,6 @@
 !> Thibault J.Y. Derrien
 !> Laboratoire Hubert Curien, UMR CNRS, St-Etienne
 !> ANR Ultrasonde
-!
-!> @date
-!> Jul-Dec 2012 - Initial Version
 !------------------------------------------------------------------------------
 
 program Flaps

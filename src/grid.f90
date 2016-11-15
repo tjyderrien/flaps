@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien
+!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -18,12 +18,6 @@
 !
 ! DESCRIPTION:
 !> @brief Everything related to the grid
-!
-!> @author
-!> Thibault J.Y. Derrien
-!
-!> @date
-!> 07 Jun 2016 - Initial Version
 !------------------------------------------------------------------------------
 
 subroutine allocate_NormCurviTangent(M, N, NormalN, NormalS, NormalE, &

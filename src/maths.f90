@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien
+!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -18,14 +18,6 @@
 !
 ! DESCRIPTION:
 !> @brief A set of math functions
-!
-!> @author
-!> Thibault J.Y. Derrien
-!> Nicolas Tancogne-Dejean
-!
-!> @date
-!> 01 Jun 2016 - Initial Version
-!> 07 Jun 2016 - Creating the Maths_m module - NTD
 !------------------------------------------------------------------------------
 
 module Maths_m

@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien
+!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -12,22 +12,6 @@
 !!
 !! You should have received a copy of the GNU General Public License
 !! along with this program.  If not, see <http://www.gnu.org/licenses/>
-
-!------------------------------------------------------------------------------
-!> @file mie.f90
-!
-! DESCRIPTION:
-!> @brief A set of math functions for Mie scattering
-!
-!> @author
-!> Thibault J.Y. Derrien
-!
-!> @date
-!> 01 Jun 2016 - Initial Version
-!> 07 Jun 2016 - Creating the Mie_m modules and moving routines - NTD
-!> 28 Oct 2016 - Changing the style of the file to be more object-oriented - NTD
-!------------------------------------------------------------------------------
-
 
 module Mie_m
   use Maths_m

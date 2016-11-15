@@ -18,12 +18,6 @@
 !
 ! DESCRIPTION:
 !> @brief All the routines for the output
-!
-!> @author
-!> Nicolas Tancogne-Dejean
-!
-!> @date
-!> 28 Jul 2016 - Initial Version
 !------------------------------------------------------------------------------
 
 module Output_m

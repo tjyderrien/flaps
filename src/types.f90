@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien
+!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -18,14 +18,8 @@
 !
 ! MODULE: Types
 !
-!> @author
-!> Nicolas Tancogne-Dejean
-!
 ! DESCRIPTION:
 !> This module defines various types used in the code
-!
-!> @date
-!> 01 Jun 2016 - Initial Version
 !------------------------------------------------------------------------------
 
 module Types_m

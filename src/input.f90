@@ -18,12 +18,6 @@
 !
 ! DESCRIPTION:
 !> @brief Provide the code with a parser for the input file.
-!
-!> @author
-!> N. Tanconge-Dejean
-!
-!> @date
-!> 26 Aug 2016 - Initial Version
 !------------------------------------------------------------------------------
 
 !> Initialize  Parameters

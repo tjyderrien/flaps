@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien
+!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -18,43 +18,7 @@
 !
 ! DESCRIPTION:
 !> @brief This file contains everything related to the properties and parameters of the material.
-!
-!> @author
-!> Thibault J.Y. Derrien
-!
-!> @date
-!> 15 Jun 2016 - Initial Version
-!> 31 Jul 2016 - NTD : Adding the routine ComputeConductivities_batch
 !------------------------------------------------------------------------------
-
-
-!------------------------------------------------------------------
-    subroutine TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
-      implicit none
-      integer, intent(in)    :: FermiMaxLines
-      real(8) :: FermiTableE(1:9,1:FermiMaxLines), FermiTableH(1:9,1:FermiMaxLines)
-
-      integer :: unit1, unit2
-      unit1=15; unit2=16
-      open (unit1,file='FermiDatasE.dat')
-      open (unit2,file='FermiDatasH.dat')
-      read (unit1,*) FermiTableE(1:9,1:FermiMaxLines) !, FermiTableE(2,:) !, FermiTableE(:,3), FermiTableE(:,4), &
-!             FermiTableE(:,5), FermiTableE(:,6), FermiTableE(:,7), FermiTableE(:,8), &
-!             FermiTableE(:,9)
-      read (unit2,*) FermiTableH(1:9,1:FermiMaxLines) !1), FermiTableH(:,2), FermiTableH(:,3), FermiTableH(:,4), &
-!              FermiTableH(:,5), FermiTableH(:,6), FermiTableH(:,7), FermiTableH(:,8), &
-!             FermiTableH(:,9)
-! 222        format (1F10.2, 3x, 1F10.2, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x)
-      close(unit1); close(unit2)
-
-      !    fi_min=0.012d0
-      !    fistep=0.2d0
-      !    fi_max=fi_num*fistep
-      write(*,*) FermiTableE(3,463), FermiTableH(3,450)
-! stop
-    end subroutine TabCreateFL
-
-
 
 !------------------------------------------------------------------
     complex(8) pure function DielectricConstant(lambda)
@@ -743,6 +707,7 @@
 
       real(8), intent(in) :: Ne, Ts
 
+      !TODO: I need a name for this one
       EgapValue=ec*1.16d0
 !        EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0)-1.5d-10*Ne**(1d0/3d0)) !Korfiatis 2007
 
@@ -755,6 +720,34 @@
     !  end if
     end function EgapValue
 
+
+
+!------------------------------------------------------------------
+    !TODO: This is not a material related property, this should not be in this file
+    subroutine TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
+      implicit none
+      integer, intent(in)    :: FermiMaxLines
+      real(8) :: FermiTableE(1:9,1:FermiMaxLines), FermiTableH(1:9,1:FermiMaxLines)
+
+      integer :: unit1, unit2
+      unit1=15; unit2=16
+      open (unit1,file='FermiDatasE.dat')
+      open (unit2,file='FermiDatasH.dat')
+      read (unit1,*) FermiTableE(1:9,1:FermiMaxLines) !, FermiTableE(2,:) !, FermiTableE(:,3), FermiTableE(:,4), &
+!             FermiTableE(:,5), FermiTableE(:,6), FermiTableE(:,7), FermiTableE(:,8), &
+!             FermiTableE(:,9)
+      read (unit2,*) FermiTableH(1:9,1:FermiMaxLines) !1), FermiTableH(:,2), FermiTableH(:,3), FermiTableH(:,4), &
+!              FermiTableH(:,5), FermiTableH(:,6), FermiTableH(:,7), FermiTableH(:,8), &
+!             FermiTableH(:,9)
+! 222        format (1F10.2, 3x, 1F10.2, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x)
+      close(unit1); close(unit2)
+
+      !    fi_min=0.012d0
+      !    fistep=0.2d0
+      !    fi_max=fi_num*fistep
+      write(*,*) FermiTableE(3,463), FermiTableH(3,450)
+! stop
+    end subroutine TabCreateFL
 
     !------------------------------------------------------------------
     !TODO: Create a batch version of this routine
