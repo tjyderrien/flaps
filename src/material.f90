@@ -20,6 +20,108 @@
 !> @brief This file contains everything related to the properties and parameters of the material.
 !------------------------------------------------------------------------------
 
+module Material_m
+  use Maths_m
+
+  private
+
+  public ::          &
+    Material,        &
+    init_material,   &
+    evaluate_bandgap
+
+  !Material index
+  integer, parameter ::   &
+       Si  = 0,           &
+       ZnO = 1
+
+  !The different model for the band-gap value
+  integer, parameter ::         &
+       !Model for the band-gap of silicon
+       EG_SI_CONSTANT      = 0,    &
+       EG_SI_KORFIATIS07   = 1,    &
+       EG_SI_VANDRIEL87    = 2
+       !Model for the band-gap of ZnO
+
+
+  type Material
+    integer :: Id       !< The material ID
+    integer :: Eg_model !< The model for the band-gap
+  end type Material
+
+  contains
+
+    subroutine init_material(this)
+      type(Material), intent(inout) :: this
+
+      !For the moment, this is hard-coded. In the future, this will be obtained from the input file
+      this%Id = Si
+      this%Eg_model = EG_SI_CONSTANT
+
+      !We need to check if the models are compatible with the material selected
+      select case(this%Id)
+      case(Si)
+        if(this%Eg_model < EG_SI_CONSTANT .or. this%Eg_model > EG_SI_VANDRIEL87) then
+          print *, 'Select band-gap model is not compatible with silicon.'
+          call StopProgram()
+        end if
+      case(ZnO)
+        if(this%Eg_model <= EG_SI_VANDRIEL87) then
+          print *, 'Select band-gap model is not compatible with silicon.'
+          call StopProgram()
+        end if
+      case default
+        print *, 'Bad value for material ID.'
+        call StopProgram()
+      end select
+    end subroutine init_material
+
+    !------------------------------------------------------------------
+    !> Evaluate the bandgap of a material from the density and the lattice temperature depending on selected model.
+    !------------------------------------------------------------------
+    subroutine evaluate_bandgap(this, mesh, N, Ts, Eg)
+      use Types_m
+      type(Material),   intent(in)    :: this
+      type(MeshValues), intent(in)    :: mesh
+      real(8),          intent(in)    :: N(:,:), Ts(:,:)
+      real(8),          intent(out)   :: Eg(:,:)
+
+      !TODO: Is seems that these three models have a very similar parametrization.
+      !This implies one implementation and coefficients outside
+
+      select case(this%Eg_model)
+      case(EG_SI_CONSTANT)!TODO: We need a proper reference for this
+        Eg(1:mesh%M,1:mesh%N)=ec*1.16d0
+      case(EG_SI_KORFIATIS07) !TODO: We need a proper reference for this
+        !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
+        do j=1,mesh%N
+          do i=1,mesh%M
+            Eg(i,j)=ec*(1.1692d0-4.9d-4*Ts(i,j)**2/(Ts(i,j)+655d0)-1.5d-10*N(i,j)**(1d0/3d0)) !Korfiatis 2007
+          end do
+        end do
+        !$OMP END PARALLEL DO
+      case(EG_SI_VANDRIEL87) !TODO: We need a proper reference for this
+        !TODO: Is it really 0.33333d0 or should it be 1/3 ?
+        !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
+        do j=1,mesh%N
+          do i=1,mesh%M
+            Eg(i,j)=ec*(1.16d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(0.33333d0)) !Driel 1987
+          end do
+        end do
+        !$OMP END PARALLEL DO
+      case default
+        Eg(1:mesh%M,1:mesh%N) = M_ZERO
+      end select
+
+      !TODO: If you want to keep these models: Reference + name
+!       EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0))
+!         EgapValue=ec*(1.1692d0) !-4.9d-4*Ts**2/(Ts+655d0))
+    end subroutine evaluate_bandgap
+
+end module Material_m
+
+
+
 !------------------------------------------------------------------
     complex(8) pure function DielectricConstant(lambda)
 !> Dielectric consant for silicon mateiral at some particular wavelengths. 
@@ -564,12 +666,16 @@
     !
     end subroutine UpdateCouplings_batch
 
+
+
    !------------------------------------------------------------------
    !> Computes the Sources Gains and Losses terms for electron and holes
    !------------------------------------------------------------------
-   subroutine ComputeGainsAndLosses(Params, mesh, source, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
-                              absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
+   subroutine ComputeGainsAndLosses(Params, mesh, source, matter, Egap, intensity, OnePhotonIonizationRate0, &
+                              TwoPhotonIonizationRate0, absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, &
+                              Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
+     use Material_m
      use Maths_m
      use Laser_m
      use Types_m
@@ -578,6 +684,7 @@
      type(InputParameters), intent(in)                 :: Params
      type(MeshValues),      intent(in)                 :: mesh
      type(Laser),           intent(in)                 :: source
+     type(Material),        intent(in)                 :: matter
      real(8), dimension(mesh%M,mesh%N), intent(inout)  :: Egap, GainsE, GainsH, SourceUe, SourceUh, &
                                                           SourceE, SourceH, LossesE, LossesH
      real(8), dimension(mesh%M,mesh%N), intent(in)     :: intensity, absorptionDrudeE, absorptionDrudeH, &
@@ -586,11 +693,17 @@
                                                           TwoPhotonIonizationRate0, AugerRateE, AugerRateH
      integer,                           intent(in)     :: ImpactOff
 
-     real(8) :: Int2, ImpactIonizationRate, EgapValue, work
+     real(8) :: Int2, ImpactIonizationRate, work
      integer :: i,j
+     real(8), dimension(mesh%M,mesh%N) :: EgapH
+
+     ! free-carrier balance sources
+     call evaluate_bandgap(matter, mesh, mesh%Ne, mesh%Ts, Egap)
+
+     call evaluate_bandgap(matter, mesh, mesh%Nh, mesh%Ts, EgapH)
 
      ! calculation of sources
-     !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, Egap, mesh,               &
+     !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, Egap, EgapH, mesh, matter,       &
      !$OMP GainsE, SourceUe, SourceE, Ce, CeOld, dt, intensity, source,     &
      !$OMP OnePhotonIonizationRate0, TwoPhotonIonizationRate0, me, mh,      &
      !$OMP absorptionDrudeE, AugerRateE, LossesE, AugerRateH, ImpactOff,    &
@@ -599,9 +712,6 @@
      !$OMP DO  COLLAPSE(2)
      do j=1,Params%N
        do i=1,Params%M
-
-        ! free-carrier balance sources
-        Egap(i,j)=EgapValue(mesh%Ne(i,j),mesh%Ts(i,j))
 
         Int2 = intensity(i,j)**2
         work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
@@ -622,7 +732,7 @@
         !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
         LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
 
-        work = ImpactIonizationRate(mesh%Th(i,j),EgapValue(mesh%Nh(i,j),mesh%Ts(i,j)), ImpactOff)
+        work = ImpactIonizationRate(mesh%Th(i,j),EgapH(i,j), ImpactOff)
 
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
                     +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
@@ -696,31 +806,6 @@
         return
       end if
     end function TwoPhotonIonizationRate
-
-
-    !------------------------------------------------------------------
-    !TODO: Create a batch version of this routine
-     pure real(8) function EgapValue(Ne, Ts)
-      use Maths_m
-
-      implicit none
-
-      real(8), intent(in) :: Ne, Ts
-
-      !TODO: I need a name for this one
-      EgapValue=ec*1.16d0
-!        EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0)-1.5d-10*Ne**(1d0/3d0)) !Korfiatis 2007
-
-!      EgapValue=ec*(1.16d0-(7.02d-4*Ts**2)/(Ts+1108d0)-1.5d-10*Ne**(0.33333d0)) !Driel 1987
-!       EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0))
-!         EgapValue=ec*(1.1692d0) !-4.9d-4*Ts**2/(Ts+655d0))
-
-    !  if(EgapValue < 0d0) then
-    !    EgapValue=0d0
-    !  end if
-    end function EgapValue
-
-
 
 !------------------------------------------------------------------
     !TODO: This is not a material related property, this should not be in this file

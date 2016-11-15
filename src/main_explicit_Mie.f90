@@ -32,16 +32,19 @@ USE OMP_LIB
 USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 
 use Laser_m
+use Material_m
 use Maths_m
 use Mie_m
 use Output_m
 use Types_m
+
 
 implicit none
 
     type(MeshValues) :: mesh, dual, newmesh
     type(Laser)      :: source
     type(InputParameters) :: Params
+    type(Material)   :: matter
 
     real(8), parameter::Tout=80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
@@ -150,7 +153,7 @@ implicit none
                 CsPrev, CsPrev2, &
                 CouplingE, CouplingH, &
                 mobilityE, mobilityH, &
-                Egap, &                        ! local gap value
+                Egap, Egap_new, &                        ! local gap value
                 SourceE, SourceH, & ! heating sources
                 SourceUe, SourceUh, & ! free carrier thermal energy sources
                 x, y, &                 ! needle position indexes
@@ -283,7 +286,7 @@ implicit none
 
     !! FUNCTIONS CALLS
      real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
-     real(8) ConeExp1, ConeExp2, DensityOfState, EgapValue, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
+     real(8) ConeExp1, ConeExp2, DensityOfState, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
              CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
 
@@ -331,6 +334,8 @@ implicit none
   call LoadInputParameters( "flaps.in", Params )
   call CheckValidityInputParameters( Params )
 
+  call init_material( matter )
+
   allocate(Ue(1:Params%M, 1:Params%N))
   allocate(Uh(1:Params%M, 1:Params%N), & !hole energy
                  UeNew(1:Params%M, 1:Params%N), & !electron energy
@@ -355,7 +360,7 @@ implicit none
                 CsPrev(1:Params%M, 1:Params%N), CsPrev2(1:Params%M, 1:Params%N), &
                 CouplingE(1:Params%M, 1:Params%N), CouplingH(1:Params%M, 1:Params%N), &
                 mobilityE(1:Params%M, 1:Params%N), mobilityH(1:Params%M, 1:Params%N), &
-                Egap(1:Params%M, 1:Params%N), &                        ! local gap value
+                Egap(1:Params%M, 1:Params%N), Egap_new(1:Params%M, 1:Params%N), &                        ! local gap value
                 SourceE(1:Params%M, 1:Params%N), SourceH(1:Params%M, 1:Params%N), & ! heating sources
                 SourceUe(1:Params%M, 1:Params%N), SourceUh(1:Params%M, 1:Params%N), & ! free carrier thermal energy sources
                 x(1:Params%M, 1:Params%N), y(1:Params%M, 1:Params%N), &                 ! needle position indexes
@@ -1704,8 +1709,9 @@ if(Params%UseMieScattering.eq.1) then
    !
    !
    !Computes the Sources Gains and Losses terms for electron and holes
-   call ComputeGainsAndLosses(Params, mesh, source, Egap, intensity, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
-                              absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
+   call ComputeGainsAndLosses(Params, mesh, source, matter, Egap, intensity, OnePhotonIonizationRate0, &
+                              TwoPhotonIonizationRate0, absorptionDrudeE, AugerRateE, absorptionDrudeH, &
+                              AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
    !
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
@@ -1987,7 +1993,10 @@ if(Params%UseMieScattering.eq.1) then
                  +absorptionDrudeH(1,Params%N/2))*intensity(1,Params%N/2)*CellVol(1,Params%N/2)*dt
 
 
-      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, Egap, &
+
+      call evaluate_bandgap(matter, newmesh, newmesh%Ne,newmesh%Ts, Egap_new)
+
+      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, matter, Egap, Egap_new, &
       !$OMP Ce, CeOld, Ch, ChOld, Cs, CsOld, OpticalIndex, CellVol, &
       !$OMP ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy) &
       !$OMP PRIVATE(work)
@@ -2004,7 +2013,7 @@ if(Params%UseMieScattering.eq.1) then
 !         HoleEnergy=HoleEnergy+Ch(i,j)*Th(i,j)*CellVol(i,j)
 !         LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
 
-          work = EgapValue(newmesh%Ne(i,j),newmesh%Ts(i,j)) - Egap(i,j)
+          work = Egap_new(i,j) - Egap(i,j)
           ! calculation of the energy contained in the solid
           ElectronEnergy=ElectronEnergy &
             + (Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
