@@ -1,6 +1,3 @@
-#                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
-
 ## Copyright (C) 2016 N. Tancogne-Dejean
 ##
 ## This program is free software: you can redistribute it and/or modify
