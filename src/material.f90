@@ -61,7 +61,7 @@
 !> Dielectric consant for silicon mateiral at some particular wavelengths. 
 !> TODO: interface with SPP-extended-theory. 
       implicit none
-
+!TODO: This should not be hardcoded but should be in an external file. (Not clear how to do this properly).
       real(8), intent(in) :: lambda
 
       if(lambda.eq.1030d-9) then
@@ -92,7 +92,7 @@
       implicit none
       real(8), intent(in) :: mDOS, T
 
-      DensityOfState = 2d0*(mDOS*kb*T/(2d0*M_PI*hbar**2))**(1.5d0)
+      DensityOfState = M_TWO*(mDOS*kb*T/(M_TWO*M_PI*hbar**2))**(1.5d0)
     end function DensityOfState
 
 !------------------------------------------------------------------
@@ -109,15 +109,15 @@
     real(8) :: coefE, coefH
     integer :: i, j
 
-    coefE = meDOS*kb/(2d0*M_PI*hbar**2)
-    coefH = mhDOS*kb/(2d0*M_PI*hbar**2)
+    coefE = meDOS*kb/(M_TWO*M_PI*hbar**2)
+    coefH = mhDOS*kb/(M_TWO*M_PI*hbar**2)
 
     !$OMP PARALLEL DEFAULT(NONE) SHARED (coefE, coefH, mesh, DOSe, DOSh)
     !$OMP DO COLLAPSE(2)
     do j=1, mesh%N !(optimized)
       do i=1, mesh%M
-        DOSe(i,j) = 2d0*(coefE*mesh%Te(i,j))**(1.5d0)
-        DOSh(i,j) = 2d0*(coefH*mesh%Th(i,j))**(1.5d0)
+        DOSe(i,j) = M_TWO*(coefE*mesh%Te(i,j))**(1.5d0)
+        DOSh(i,j) = M_TWO*(coefH*mesh%Th(i,j))**(1.5d0)
       end do
     end do
     !$OMP END DO
@@ -159,8 +159,8 @@
           sqrtEps = sqrt(Dielectric(i,j))
           OpticalIndex(i,j)   = real(sqrtEps)
           OpticalDamping(i,j) = aimag(sqrtEps)
-          Reflectivity(i,j)=  ( (OpticalIndex(i,j)-1.0d0)**2 + OpticalDamping(i,j)**2 ) &
-                             /( (OpticalIndex(i,j)+1.0d0)**2 + OpticalDamping(i,j)**2 )
+          Reflectivity(i,j)=  ( (OpticalIndex(i,j)-M_ONE)**2 + OpticalDamping(i,j)**2 ) &
+                             /( (OpticalIndex(i,j)+M_ONE)**2 + OpticalDamping(i,j)**2 )
         end do
       end do
       !$OMP END DO
@@ -202,7 +202,7 @@
         do j=1, mesh%N
           do i=1, mesh%M
            ! absorptionDrude(i,j)=2d0*source%k*aimag(sqrt(Dielectric(i,j)))
-            absorptionDrude(i,j)=2d0*source%k*sqrt( M_HALF*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
+            absorptionDrude(i,j)=M_TWO*source%k*sqrt( M_HALF*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
           end do
         end do
         !$OMP END DO
@@ -219,13 +219,14 @@
     !> transient reflection grating study on a (111) surface." 
     !> Physical review letters 81.25 (1998): 5664.) 
     pure real(8) function ephCollisionFrequency(ne)
+      use Maths_m
       implicit none
 
       real(8), intent(in) :: ne
 
       real(8), parameter :: inv_nth=1.0d0/6.02d26 !inversion of m-3
 
-      ephCollisionFrequency=1.0d0/((240d-15)*(1d0+(ne*inv_nth)**2))
+      ephCollisionFrequency=M_ONE/((240d-15)*(1d0+(ne*inv_nth)**2))
 !       CollisionFrequency=1d14 !
       ! CollisionFrequency=1d13 !
       !CollisionFrequency=5d13 !
@@ -252,7 +253,7 @@
       real(8), parameter     :: inv_kb = -1.5d0/kb
 
       if(ImpactOff.eq.1) then
-        ImpactIonizationRate=0d0
+        ImpactIonizationRate=M_ZERO
         return
       end if
 
@@ -419,18 +420,18 @@
           tmp = FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))
 
           Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(ColFermiEta,FermiIndexE(i,j)) &
-                             *(1d0-(tmp/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
+                             *(M_ONE-(tmp/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
                                      (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
 
           tmp = FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))
           Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(ColFermiEta,FermiIndexH(i,j)) &
-                               *(1d0-(tmp/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
+                               *(M_ONE-(tmp/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                                     (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
           Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
 
-          invCe(i,j) = 1.0d0/Ce(i,j)
-          invCh(i,j) = 1.0d0/Ch(i,j)
-          invCs(i,j) = 1.0d0/Cs(i,j)
+          invCe(i,j) = M_ONE/Ce(i,j)
+          invCh(i,j) = M_ONE/Ch(i,j)
+          invCs(i,j) = M_ONE/Cs(i,j)
         end do
       end do
       !$OMP END DO
@@ -507,8 +508,8 @@
 !           kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
 
             !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
-            kappas(i,j)=max(0.d0, &
-                      (aa + bb/(1d0+exp(cc-1.0d0*mesh%Ts(i,j)+dd))*(1d0-1d0/(1d0+exp(ee-2.0d0*mesh%Ts(i,j)+ff)))))
+            kappas(i,j)=max(M_ZERO, &
+                      (aa + bb/(1d0+exp(cc-M_ONE*mesh%Ts(i,j)+dd))*(M_ONE-M_ONE/(M_ONE+exp(ee-M_TWO*mesh%Ts(i,j)+ff)))))
           end do
         end do
         !$OMP END DO
@@ -704,8 +705,10 @@
     end function OnePhotonIonizationRate
 
 
+    !TODO: We need a reference for these values
     !------------------------------------------------------------------
     pure real(8) function TwoPhotonIonizationRate(lambda)
+      use Maths_m
       implicit none
       real(8), intent(in) :: lambda
 
@@ -716,18 +719,16 @@
 
       if(lambda.eq.800d-9) then
         TwoPhotonIonizationRate=1.857135194d-11
-!         TwoPhotonIonizationRate=0d0
         return
       end if
 
       if(lambda.eq.515d-9) then
         TwoPhotonIonizationRate=1.512238197d-11
-!                TwoPhotonIonizationRate=0d0
         return
       end if
 
       if(lambda.eq.343d-9) then
-        TwoPhotonIonizationRate=0d0
+        TwoPhotonIonizationRate=M_ZERO
         return
       end if
     end function TwoPhotonIonizationRate
@@ -757,6 +758,7 @@
 
     !------------------------------------------------------------------
     !TODO: Create a batch version of this routine
+    !TODO: This is not a material related property, this should not be in this file
     integer(8) function FermiIndex(NeNc, FermiMaxLines)
       use Maths_m
       implicit none
