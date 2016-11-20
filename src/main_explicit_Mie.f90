@@ -1714,6 +1714,11 @@ if(Params%UseMieScattering.eq.1) then
                               AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
    !
+   !Compute the new conductivites, based on the knowledge of densities and mobilities
+   call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                     ColFermi0, ColFermi1, ColFermi2)
+   !
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP& mesh, newmesh, dual, intensityDual, source, Params, I0, &
    !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
@@ -1738,11 +1743,6 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
    !$OMP& Mp, Np, invCe, invCh, invCs, nuColl) &
    !$OMP& PRIVATE(work)
-   !Compute the new conductivites, based on the knowledge of densities and mobilities
-   call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                     ColFermi0, ColFermi1, ColFermi2)
-   !
    ! interpolation bilineaire ponderee par les aires
    call bilinear_interpol_dual(mesh, dual, InvCellVol)
    !
