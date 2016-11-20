@@ -53,7 +53,8 @@ module Output_m
     !TODO: status unknow is not clean. Better to ensure new files
     !TODO: We should maybe check is file exists first
 
-    !TODO: we have to hav here the mkdir output_dir
+    !We create the directory for the outputs
+    call system("mkdir output")
 
     ! opening files
     LaplaceConvergence%unit = 90

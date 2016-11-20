@@ -334,9 +334,6 @@ implicit none
 
   call init_material( matter, Params%AugerOff )
 
-  !For the moment, we create the output directory here
-  call system("mkdir output")
-
   allocate(Ue(1:Params%M, 1:Params%N))
   allocate(Uh(1:Params%M, 1:Params%N), & !hole energy
                 UeNew(1:Params%M, 1:Params%N), & !electron energy
