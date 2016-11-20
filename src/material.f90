@@ -45,18 +45,29 @@ module Material_m
 
 
   type Material
-    integer :: Id       !< The material ID
-    integer :: Eg_model !< The model for the band-gap
+    integer :: Id          !< The material ID
+    integer :: Eg_model    !< The model for the band-gap
+    real(8) :: AugerRateE  !< Auger rate for electrons
+    real(8) :: AugerRateH  !< Auger rate for holes
   end type Material
 
   contains
 
-    subroutine init_material(this)
+    subroutine init_material(this, AugerOff)
       type(Material), intent(inout) :: this
+      integer,        intent(in)    :: AugerOff
 
       !For the moment, this is hard-coded. In the future, this will be obtained from the input file
       this%Id = Si
       this%Eg_model = EG_SI_CONSTANT
+      if(AugerOff.eq.0) then
+        this%AugerRateE=2.3d-43
+        this%AugerRateH=7.8d-44
+      else
+        this%AugerRateE=M_ZERO
+        this%AugerRateH=M_ZERO
+      end if
+
 
       !We need to check if the models are compatible with the material selected
       select case(this%Id)
@@ -673,7 +684,7 @@ end module Material_m
    !> Computes the Sources Gains and Losses terms for electron and holes
    !------------------------------------------------------------------
    subroutine ComputeGainsAndLosses(Params, mesh, source, matter, Egap, intensity, OnePhotonIonizationRate0, &
-                              TwoPhotonIonizationRate0, absorptionDrudeE, AugerRateE, absorptionDrudeH, AugerRateH, &
+                              TwoPhotonIonizationRate0, absorptionDrudeE, absorptionDrudeH, &
                               Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
      use Material_m
@@ -691,7 +702,7 @@ end module Material_m
      real(8), dimension(mesh%M,mesh%N), intent(in)     :: intensity, absorptionDrudeE, absorptionDrudeH, &
                                                           Ce, Ch, CeOld, ChOld
      real(8),                           intent(in)     :: dt, me, mh, OnePhotonIonizationRate0, &
-                                                          TwoPhotonIonizationRate0, AugerRateE, AugerRateH
+                                                          TwoPhotonIonizationRate0
      integer,                           intent(in)     :: ImpactOff
 
      real(8) :: Int2, ImpactIonizationRate, work
@@ -707,7 +718,7 @@ end module Material_m
      !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, Egap, EgapH, mesh, matter,       &
      !$OMP GainsE, SourceUe, SourceE, Ce, CeOld, dt, intensity, source,     &
      !$OMP OnePhotonIonizationRate0, TwoPhotonIonizationRate0, me, mh,      &
-     !$OMP absorptionDrudeE, AugerRateE, LossesE, AugerRateH, ImpactOff,    &
+     !$OMP absorptionDrudeE, LossesE, ImpactOff,    &
      !$OMP GainsH, SourceUh, SourceH, LossesH, Ch, ChOld, absorptionDrudeH) &
      !$OMP PRIVATE(Int2, work)
      !$OMP DO  COLLAPSE(2)
@@ -725,13 +736,13 @@ end module Material_m
                      + M_HALF*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
                      - Egap(i,j)*work*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2)
+                     + Egap(i,j)*(matter%AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2)
 
         !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
         SourceE(i,j) = SourceUe(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
 
         !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
-        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( AugerRateE * mesh%Ne(i,j) + AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
+        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( matter%AugerRateE * mesh%Ne(i,j) + matter%AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
 
         work = ImpactIonizationRate(mesh%Th(i,j),EgapH(i,j), ImpactOff)
 
@@ -743,7 +754,7 @@ end module Material_m
                      + M_HALF*(M_TWO*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
                      - Egap(i,j)*work*mesh%Nh(i,j) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2)
+                     + Egap(i,j)*(matter%AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2)
 
         !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
         SourceH(i,j) = SourceUh(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt

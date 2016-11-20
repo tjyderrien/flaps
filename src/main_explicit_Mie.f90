@@ -251,8 +251,7 @@ implicit none
     complex(8) epsilonInf !, SORsum !material constant
 
    
-    real(8) AugerRateE, AugerRateH, & ! For performances
-            sigmaTau, sigmaX, sigmaY, &
+    real(8) sigmaTau, sigmaX, sigmaY, &
             maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, maxCFLxTs, maxCFLyTs, &
             maxTe, minTe, maxTh, minTh, maxTs, minTs, maxIntensity, maxNe, minNe, maxNh, minNh, &
             maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, maxDiffNe, maxDiffNh, &
@@ -333,15 +332,15 @@ implicit none
   call LoadInputParameters( "flaps.in", Params )
   call CheckValidityInputParameters( Params )
 
-  call init_material( matter )
+  call init_material( matter, Params%AugerOff )
 
   !For the moment, we create the output directory here
   call system("mkdir output")
 
   allocate(Ue(1:Params%M, 1:Params%N))
   allocate(Uh(1:Params%M, 1:Params%N), & !hole energy
-                 UeNew(1:Params%M, 1:Params%N), & !electron energy
-                         UhNew(1:Params%M, 1:Params%N), & !hole energy
+                UeNew(1:Params%M, 1:Params%N), & !electron energy
+                UhNew(1:Params%M, 1:Params%N), & !hole energy
                 TsOld(1:Params%M, 1:Params%N), & !lattice temperature (time n-1)
                 TsPrev(1:Params%M,1:Params%N), & !lattice temperature (time n-2)
                 GradNeX(1:Params%M, 1:Params%N),& !Grad(Ne)_x
@@ -530,15 +529,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   ColFermiNeNc=2; ColFermiEta=3; ColFermi0=4; ColFermi1=5; ColFermi2=6; ColFermiHalf=7; 
   ColFermiThreeHalf=8; ColFermiMenusHalf=9;
 
-! test field
-!TODO: move to material.f90
-  if(Params%AugerOff.eq.0) then
-    AugerRateE=2.3d-43
-    AugerRateH=7.8d-44
-  else
-    AugerRateE=M_ZERO
-    AugerRateH=M_ZERO
-  end if
 
     !TODO: Move to LaserParams
     sigmaTau=source%tau/(M_TWO*M_SQRT2LN2)
@@ -1712,8 +1702,8 @@ if(Params%UseMieScattering.eq.1) then
    !
    !Computes the Sources Gains and Losses terms for electron and holes
    call ComputeGainsAndLosses(Params, mesh, source, matter, Egap, intensity, OnePhotonIonizationRate0, &
-                              TwoPhotonIonizationRate0, absorptionDrudeE, AugerRateE, absorptionDrudeH, &
-                              AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
+                              TwoPhotonIonizationRate0, absorptionDrudeE, absorptionDrudeH, &
+                              Ce, Ch, CeOld, ChOld, dt, me, mh, &
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, Params%ImpactOff )
    !
    !Compute the new conductivites, based on the knowledge of densities and mobilities
@@ -1749,7 +1739,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, &
    !$OMP& t, t0, OpticalIndex, OpticalDamping, &
    !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
-   !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
+   !$OMP& sigmaTau, sigmaX, sigmaY, dx, dy, &
    !$OMP& Mp, Np, invCe, invCh, invCs, nuColl) &
    !$OMP& PRIVATE(work)
    !
