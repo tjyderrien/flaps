@@ -62,6 +62,7 @@ module Types_m
     integer :: CouplingDebug        !0: e/h - lattice coupling enabled, 1: disabled
     integer :: AugerOff             !TODO: Comment this value
     integer :: OutputIter           !TODO: Comment this value
+    integer :: ImpactOff            !TODO: Comment this value
   end type
 
 end module Types_m

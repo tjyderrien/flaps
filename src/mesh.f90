@@ -117,6 +117,8 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 !     !$OMP END SECTIONS
 !     end if
 
+   !$OMP PARALLEL DEFAULT(NONE) SHARED(dual, InvCellVol, mesh) &
+   !$OMP PRIVATE(weight)
    !$OMP DO  COLLAPSE(2)
    do j=1, dual%N
      do i=1, dual%M
@@ -142,6 +144,7 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
        end do
      end do
      !$OMP END DO
+     !$OMP END PARALLEL
 
  end subroutine
 

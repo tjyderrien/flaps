@@ -90,8 +90,7 @@ implicit none
                           CrossCoeff=-M_ONE, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
-    integer(8), parameter:: ImpactOff=0       ,&
-                            ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
+    integer(8), parameter:: ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
                             DisableCrossDiffusion=0, &
                             PoissonOn=0       ,& !0: Poisson solver is OFF. 1: Calculation of potential ON. 
                             DriftOn=0       ,& !0: Drift is disabled. 1: Enabled. 
@@ -1712,12 +1711,19 @@ if(Params%UseMieScattering.eq.1) then
    call ComputeGainsAndLosses(Params, mesh, source, matter, Egap, intensity, OnePhotonIonizationRate0, &
                               TwoPhotonIonizationRate0, absorptionDrudeE, AugerRateE, absorptionDrudeH, &
                               AugerRateH, Ce, Ch, CeOld, ChOld, dt, me, mh, &
-                              GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
+                              GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, Params%ImpactOff )
    !
    !Compute the new conductivites, based on the knowledge of densities and mobilities
    call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
                                      FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                      ColFermi0, ColFermi1, ColFermi2)
+   !
+   ! interpolation bilineaire ponderee par les aires
+   call bilinear_interpol_dual(mesh, dual, InvCellVol)
+   !
+   !
+   ! solving the 2D problem
+   !
    !
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP& mesh, newmesh, dual, intensityDual, source, Params, I0, &
@@ -1743,13 +1749,6 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP& AugerRateE, AugerRateH, sigmaTau, sigmaX, sigmaY, dx, dy, &
    !$OMP& Mp, Np, invCe, invCh, invCs, nuColl) &
    !$OMP& PRIVATE(work)
-   ! interpolation bilineaire ponderee par les aires
-   call bilinear_interpol_dual(mesh, dual, InvCellVol)
-   !
-   !
-   ! solving the 2D problem
-   !
-   !
    !
    if(Params%NeOff.eq.0) then
      call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &

@@ -48,7 +48,7 @@ subroutine InitInputParameter( Params )
                                 ! 0: only fourier conductivity
                                 !-1: diffusion and conductivity OFF
     Params%CouplingDebug=0      !0: e/h - lattice coupling enabled, 1: disabled
-
+    Params%ImpactOff = 0
 
     !Mie scattering
     Params%phiMie0 = 0
@@ -142,6 +142,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%AugerOff < 0 .or. Params%AugerOff > 1 ) then
       print *, 'Bad value for AugerOff'
+      call StopProgram()
+    end if
+
+    if( Params%ImpactOff < 0 .or. Params%ImpactOff > 1 ) then
+      print *, 'Bad value for ImpactOff'
       call StopProgram()
     end if
 
@@ -282,6 +287,12 @@ subroutine LoadInputParameters( filename, Params )
               !AugerOff
               if( id .equals. 'AugerOff' ) then
                 call ParseInt( line, Params%AugerOff )
+                goto 999
+              endif
+
+              !ImpactOff
+              if( id .equals. 'ImpactOff' ) then
+                call ParseInt( line, Params%ImpactOff )
                 goto 999
               endif
 
