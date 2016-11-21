@@ -1710,6 +1710,17 @@ if(Params%UseMieScattering.eq.1) then
    ! solving the 2D problem
    !
    !
+   !
+   if(Params%NeOff.eq.0) then
+     call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
+                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                     ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+   else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop !TJYD: True...
+     newmesh%Ne(:,:)=mesh%Ne(:,:)
+   end if
+   !
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP mesh, newmesh, dual, source, Params,  &
    !$OMP Ue, Uh, FermiTableE, FermiTableH, &
@@ -1725,16 +1736,6 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP ColFermiEta, ColFermiHalf, &
    !$OMP h1, h2, h3, invCe, invCh, invCs) &
    !$OMP PRIVATE(work)
-   !
-   if(Params%NeOff.eq.0) then
-     call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
-                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                     ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-   else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop !TJYD: True... 
-     newmesh%Ne(:,:)=mesh%Ne(:,:)
-   end if
    !
    if(Params%HolesOff.eq.0 .AND. Params%NeOff.eq.0) then
      call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &

@@ -45,6 +45,9 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
 
   integer :: i, j
 
+  !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh, dt, GainsE, LossesE, InvCellVol, ShapeFactorNormalE, &
+  !$OMP diffusionE, NormalE2, ShapeFactorTangentE, dual, ShapeFactorNormalW, NormalW2, ShapeFactorTangentW, &
+  !$OMP ShapeFactorNormalN, NormalN2, ShapeFactorTangentN, ShapeFactorNormalS, NormalS2, ShapeFactorTangentS)
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
     do i=2, mesh%M-1
@@ -107,6 +110,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
     end do
   end do
   !$OMP END DO
+  !$OMP END PARALLEL
 
 end subroutine computeNe
 
