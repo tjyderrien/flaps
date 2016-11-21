@@ -90,8 +90,7 @@ implicit none
                           CrossCoeff=-M_ONE, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
-    integer(8), parameter:: DisableCrossDiffusion=0, &
-                            PoissonOn=0       ,& !0: Poisson solver is OFF. 1: Calculation of potential ON. 
+    integer(8), parameter:: PoissonOn=0       ,& !0: Poisson solver is OFF. 1: Calculation of potential ON.
                             DriftOn=0       ,& !0: Drift is disabled. 1: Enabled. 
                             CathodeZone=1        ,& !1: on the needle bottom, 0: on back vessel (not physical but stable)
                             ShiftFixedPotential=-1, &        ! while CathodeZone=1, use to adjust the number of points on which tension is applied

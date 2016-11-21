@@ -43,6 +43,7 @@ subroutine InitInputParameter( Params )
     Params%AugerOff=0
     Params%CouplingDebug=0      !0: e/h - lattice coupling enabled, 1: disabled
     Params%ImpactOff = 0
+    Params%CrossDiffusionOff = 0
 
     Params%DrudeHeating=1       ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
     Params%TransportModel = -1 ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
@@ -153,6 +154,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%ConvectionEnergy < 0 .or. Params%ConvectionEnergy > 1 ) then
       print *, 'Bad value for ConvectionEnergy'
+      call StopProgram()
+    end if
+
+    if( Params%CrossDiffusionOff < 0 .or. Params%CrossDiffusionOff > 1 ) then
+      print *, 'Bad value for CrossDiffusionOff'
       call StopProgram()
     end if
 
@@ -313,6 +319,13 @@ subroutine LoadInputParameters( filename, Params )
                 call ParseInt( line, Params%ConvectionEnergy )
                 goto 999
               endif
+
+              !CrossDiffusionOff
+              if( id .equals. 'CrossDiffusionOff' ) then
+                call ParseInt( line, Params%CrossDiffusionOff )
+                goto 999
+              endif
+
 
 ! Some examples
 

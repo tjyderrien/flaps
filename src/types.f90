@@ -54,17 +54,17 @@ module Types_m
     real(8) :: TimeStep, TimeMax
     real(8) :: phiMie0
     integer :: PolarizationSource             ! Value of the Mie angle that will be distributed on various processors
-    integer :: DrudeHeating         ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
-    integer :: TransportModel      ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
-                                    ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
-                                    ! 0: only fourier conductivity
-                                    !-1: diffusion and conductivity OFF
-    integer :: CouplingDebug        !0: e/h - lattice coupling enabled, 1: disabled
-    integer :: AugerOff             !TODO: Comment this value
-    integer :: OutputIter           !TODO: Comment this value
-    integer :: ImpactOff            !TODO: Comment this value
-    integer :: ConvectionEnergy   !0: work with Te, no convection. 1: work with Ue, convection
-
+    integer :: DrudeHeating          ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
+    integer :: TransportModel        ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
+                                     ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
+                                     ! 0: only fourier conductivity
+                                     !-1: diffusion and conductivity OFF
+    integer :: CouplingDebug         !0: e/h - lattice coupling enabled, 1: disabled
+    integer :: AugerOff              !TODO: Comment this value
+    integer :: OutputIter            !TODO: Comment this value
+    integer :: ImpactOff             !TODO: Comment this value
+    integer :: ConvectionEnergy      !0: work with Te, no convection. 1: work with Ue, convection
+    integer :: CrossDiffusionOff     !TODO: Comment this value
   end type
 
 end module Types_m
