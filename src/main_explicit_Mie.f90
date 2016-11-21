@@ -209,8 +209,6 @@ implicit none
     
     real(8), allocatable, target :: FermiTableE(:,:),&
                                      FermiTableH(:,:),& !reduced Fermi level for electrons and holes
-                                     Bvector(:),         &
-                                     Xvector(:), XvectorPrev(:),         &
                                      spectralNorm(:),                         & !objects for matrix inversion calculation
                                      xP(:,:), yP(:,:),                        &                 ! vessel position indexes
                                      ExPoisson(:, :), EyPoisson(:, :),                 & ! electric field in the vessel
@@ -1025,9 +1023,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write (*,*) "Matter cells:", Params%M, "*", Params%N, "=", Params%M*Params%N
   
 !   allocate(Amatrix(1:Mp*Np,1:Mp*Np))
-  allocate(Bvector(1:Mp*Np))
-  allocate(Xvector(1:Mp*Np))
-  allocate(XvectorPrev(1:Mp*Np))
   allocate(spectralNorm(1:Mp*Np))
   allocate(ExPoisson(1:Mp,1:Np))
   allocate(EyPoisson(1:Mp,1:Np))
@@ -1715,30 +1710,21 @@ if(Params%UseMieScattering.eq.1) then
    ! solving the 2D problem
    !
    !
-   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, dt2, dt3, dt4, UeNew, UhNew, TsOld, TsPrev, &
-   !$OMP& mesh, newmesh, dual, intensityDual, source, Params, I0, &
-   !$OMP& Ue, Uh, GradNeX, GradNeY, intensity, reflectivity, FermiTableE, FermiTableH, &
-   !$OMP& Dielectric, DielectricDrudeE, DielectricDrudeH, absorptionDrudeE, absorptionDrudeH, &
-   !$OMP& x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
-   !$OMP& kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CsPrev2, CouplingE, CouplingH, &
-   !$OMP& mobilityE, mobilityH, Egap, me, mh, DOSe, DOSh, &
-   !$OMP& SourceE, SourceH, SourceUe, SourceUh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
-   !$OMP& epsilonInf, FermiIndexE, FermiIndexH, FermiRatioE, FermiRatioH, &
-   !$OMP& JeX, JeY, JhX, JhY, VeX, VeY, VhX, VhY, DielectricStatic, Xvector, XvectorPrev, Bvector, xV, yV, xP, yP, & !Amatrix
-   !$OMP& spectralNorm, Ex, Ey, ExPoisson, EyPoisson, potential, potentialNeedle, NeP, NhP, FixedPotentialIndex, &
-   !$OMP& NormalN, NormalS, NormalE, NormalW, &
-   !$OMP& CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
-   !$OMP& DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
-   !$OMP& EintField, EintFieldI, NeTotal, NhTotal, &
-   !$OMP& ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
-   !$OMP& ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
-   !$OMP& ColFermi0, ColFermi1, ColFermi2, ColFermiEta, ColFermiHalf, &
-   !$OMP& ColFermiMenusHalf, ColFermiNeNc, ColFermiThreeHalf, &
-   !$OMP& t, t0, OpticalIndex, OpticalDamping, &
-   !$OMP& h1, h2, h3, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
-   !$OMP& sigmaTau, sigmaX, sigmaY, dx, dy, &
-   !$OMP& Mp, Np, invCe, invCh, invCs, nuColl) &
-   !$OMP& PRIVATE(work)
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, UeNew, UhNew, TsOld, TsPrev, &
+   !$OMP mesh, newmesh, dual, source, Params,  &
+   !$OMP Ue, Uh, FermiTableE, FermiTableH, &
+   !$OMP x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
+   !$OMP kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CouplingE, CouplingH, &
+   !$OMP SourceE, SourceH, SourceUe, SourceUh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
+   !$OMP FermiIndexE, FermiIndexH, VeX, VeY, VhX, VhY, &
+   !$OMP NormalN, NormalS, NormalE, NormalW, &
+   !$OMP CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
+   !$OMP DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
+   !$OMP ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
+   !$OMP ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
+   !$OMP ColFermiEta, ColFermiHalf, &
+   !$OMP h1, h2, h3, invCe, invCh, invCs) &
+   !$OMP PRIVATE(work)
    !
    if(Params%NeOff.eq.0) then
      call computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
