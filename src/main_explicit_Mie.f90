@@ -90,8 +90,7 @@ implicit none
                           CrossCoeff=-M_ONE, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
-    integer(8), parameter:: ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
-                            DisableCrossDiffusion=0, &
+    integer(8), parameter:: DisableCrossDiffusion=0, &
                             PoissonOn=0       ,& !0: Poisson solver is OFF. 1: Calculation of potential ON. 
                             DriftOn=0       ,& !0: Drift is disabled. 1: Enabled. 
                             CathodeZone=1        ,& !1: on the needle bottom, 0: on back vessel (not physical but stable)
@@ -1745,13 +1744,13 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
    !$OMP ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
-   !$OMP ColFermiEta, ColFermiHalf, &
+   !$OMP ColFermiEta, ColFermiHalf, ColFermiMenusHalf, ColFermiThreeHalf, &
    !$OMP h1, h2, h3, invCe, invCh, invCs) &
    !$OMP PRIVATE(work)
    !
    if(Params%TeOff.ne.1) then
      !
-     if(ConvectionEnergy.eq.0) then
+     if(Params%ConvectionEnergy.eq.0) then
        !
        call computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, SourceE, invCe, &
                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N,                          &
@@ -1780,7 +1779,7 @@ if(Params%UseMieScattering.eq.1) then
      !
      if(Params%HolesOff.eq.0) then
        !
-       if(ConvectionEnergy.eq.0) then
+       if(Params%ConvectionEnergy.eq.0) then
          !
          call computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, SourceH, invCh,&
                    ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
@@ -1813,7 +1812,7 @@ if(Params%UseMieScattering.eq.1) then
      !
    end if
    !
-   if(ConvectionEnergy.eq.1) then
+   if(Params%ConvectionEnergy.eq.1) then
      call computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )

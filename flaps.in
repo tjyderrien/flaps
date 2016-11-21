@@ -13,6 +13,7 @@ UseMieScattering -1 !This is a comment for this variable
 
 DrudeHeating 1
 TransportModel -1 
+ConvectionEnergy 0
 
 !Debug options
 NeOff 0

@@ -41,14 +41,15 @@ subroutine InitInputParameter( Params )
     Params%HolesOff = 0
     Params%TsOff = 0
     Params%AugerOff=0
+    Params%CouplingDebug=0      !0: e/h - lattice coupling enabled, 1: disabled
+    Params%ImpactOff = 0
 
     Params%DrudeHeating=1       ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
     Params%TransportModel = -1 ! 2: Consider ambipolar diffusion in equations (but careful with boundary conditions)
                                 ! 1: consider Tritt particle transport (great expression), but Dumber field is needed !!! -> Poisson !
                                 ! 0: only fourier conductivity
                                 !-1: diffusion and conductivity OFF
-    Params%CouplingDebug=0      !0: e/h - lattice coupling enabled, 1: disabled
-    Params%ImpactOff = 0
+    Params%ConvectionEnergy=0   !0: work with Te, no convection. 1: work with Ue, convection
 
     !Mie scattering
     Params%phiMie0 = 0
@@ -147,6 +148,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%ImpactOff < 0 .or. Params%ImpactOff > 1 ) then
       print *, 'Bad value for ImpactOff'
+      call StopProgram()
+    end if
+
+    if( Params%ConvectionEnergy < 0 .or. Params%ConvectionEnergy > 1 ) then
+      print *, 'Bad value for ConvectionEnergy'
       call StopProgram()
     end if
 
@@ -299,6 +305,12 @@ subroutine LoadInputParameters( filename, Params )
               !OutputIter
               if( id .equals. 'OutputIter' ) then
                 call ParseInt( line, Params%OutputIter )
+                goto 999
+              endif
+
+              !ConvectionEnergy
+              if( id .equals. 'ConvectionEnergy' ) then
+                call ParseInt( line, Params%ConvectionEnergy )
                 goto 999
               endif
 

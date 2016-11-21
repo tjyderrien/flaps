@@ -63,6 +63,8 @@ module Types_m
     integer :: AugerOff             !TODO: Comment this value
     integer :: OutputIter           !TODO: Comment this value
     integer :: ImpactOff            !TODO: Comment this value
+    integer :: ConvectionEnergy   !0: work with Te, no convection. 1: work with Ue, convection
+
   end type
 
 end module Types_m
