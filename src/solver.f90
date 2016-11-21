@@ -22,7 +22,6 @@
 
 
 ! This routine computes the electronic density for the entire mesh
-! We assume that we are in a OMP parallel environement
 subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diffusionE, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
