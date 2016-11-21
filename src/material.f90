@@ -89,19 +89,29 @@ module Material_m
         this%AugerRateH=M_ZERO
       end if
 
-      this%EpsStatic = EPS_INF_SI
+      !Lets select some hardcoded values, depending on the material
+      select case(this%Id)
+      case(Si)
+        this%EpsStatic = EPS_INF_SI
+      case(ZnO)
+        print *, 'Static value for ZnO not implemeted.'
+        call StopProgram()
+      case default
+        print *, 'Bad value for material ID.'
+        call StopProgram()
+      end select
 
 
       !We need to check if the models are compatible with the material selected
       select case(this%Id)
       case(Si)
         if(this%Eg_model < EG_SI_CONSTANT .or. this%Eg_model > EG_SI_VANDRIEL87) then
-          print *, 'Select band-gap model is not compatible with silicon.'
+          print *, 'Selected band-gap model is not compatible with silicon.'
           call StopProgram()
         end if
       case(ZnO)
         if(this%Eg_model <= EG_SI_VANDRIEL87) then
-          print *, 'Select band-gap model is not compatible with silicon.'
+          print *, 'Selected band-gap model is not compatible with silicon.'
           call StopProgram()
         end if
       case default
