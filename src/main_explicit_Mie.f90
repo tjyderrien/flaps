@@ -1300,7 +1300,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    
    !! defining material index and ionization constants
    epsilonInf=DielectricConstant(source%lambda)
-   OnePhotonIonizationRate0=OnePhotonIonizationRate()
+   OnePhotonIonizationRate0=OnePhotonIonizationRate(matter)
    TwoPhotonIonizationRate0=TwoPhotonIonizationRate(source%lambda)
    
   write(*,*) 'epsilon(', 1d9*source%lambda, 'nm)=', epsilonInf
@@ -1603,7 +1603,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END PARALLEL
 
    !TODO: Does this depends on the position? If yes, this has to be changed bak to an array
-   nuColl= collision_frequency()
+   nuColl= get_collision_frequency(matter)
    !
    !
    call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &

@@ -22,6 +22,8 @@
 
 module Material_m
   use Maths_m
+  use Types_m
+
 
   implicit none
 
@@ -29,7 +31,7 @@ module Material_m
 
   public ::                  &
     Material,                &
-    collision_frequency,     &
+    get_collision_frequency, &
     init_material,           &
     evaluate_bandgap,        &
     OnePhotonIonizationRate, &
@@ -124,7 +126,6 @@ module Material_m
     !> Evaluate the bandgap of a material from the density and the lattice temperature depending on selected model.
     !------------------------------------------------------------------
     subroutine evaluate_bandgap(this, mesh, N, Ts, Eg)
-      use Types_m
       type(Material),   intent(in)    :: this
       type(MeshValues), intent(in)    :: mesh
       real(8),          intent(in)    :: N(:,:), Ts(:,:)
@@ -165,19 +166,40 @@ module Material_m
 
     !------------------------------------------------------------------
     !TODO: Create a batch version of this routine
-    pure real(8) function collision_frequency()
+    real(8) function get_collision_frequency(this) result(colfreq)
+      type(Material),   intent(in)    :: this
 
-      !TODO: Add a select case and more models
-      collision_frequency=COL_FREQ_SI_CONSTANT
-    end function collision_frequency
+
+      select case(this%Id)
+      case(Si)
+        colfreq=COL_FREQ_SI_CONSTANT
+      case(ZnO)
+        print *, 'Collision frequency for ZnO not implemeted.'
+        call StopProgram()
+      case default
+        print *, 'Bad value for material ID.'
+        call StopProgram()
+      end select
+    end function get_collision_frequency
 
     !------------------------------------------------------------------
-    pure real(8) function OnePhotonIonizationRate()
+    real(8) function OnePhotonIonizationRate(this)
+      type(Material),   intent(in)    :: this
 
       !TODO: Do you want to keep this model?
 !       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
 
-      OnePhotonIonizationRate = IR1P_SI
+      select case(this%Id)
+      case(Si)
+        OnePhotonIonizationRate = IR1P_SI
+      case(ZnO)
+        print *, 'OnePhotonIonizationRate for ZnO not implemeted.'
+        call StopProgram()
+      case default
+        print *, 'Bad value for material ID.'
+        call StopProgram()
+      end select
+
     end function OnePhotonIonizationRate
 
     !TODO: Ideally, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
