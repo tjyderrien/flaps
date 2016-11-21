@@ -1721,6 +1721,18 @@ if(Params%UseMieScattering.eq.1) then
      newmesh%Ne(:,:)=mesh%Ne(:,:)
    end if
    !
+   !
+   if(Params%HolesOff.eq.0 .AND. Params%NeOff.eq.0) then
+     call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
+                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
+                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
+                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
+                     ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
+   else !So for this one? 
+     newmesh%Nh(:,:)=mesh%Nh(:,:)
+   endif
+   !
+   !
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, UeNew, UhNew, TsOld, TsPrev, &
    !$OMP mesh, newmesh, dual, source, Params,  &
    !$OMP Ue, Uh, FermiTableE, FermiTableH, &
@@ -1736,18 +1748,6 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP ColFermiEta, ColFermiHalf, &
    !$OMP h1, h2, h3, invCe, invCh, invCs) &
    !$OMP PRIVATE(work)
-   !
-   if(Params%HolesOff.eq.0 .AND. Params%NeOff.eq.0) then
-     call computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
-                     ShapeFactorNormalE, ShapeFactorTangentE, NormalE%N, &
-                     ShapeFactorNormalW, ShapeFactorTangentW, NormalW%N, &
-                     ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
-                     ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
-   else !So for this one? 
-     newmesh%Nh(:,:)=mesh%Nh(:,:)
-   endif
-   !
-   !
    !
    if(Params%TeOff.ne.1) then
      !

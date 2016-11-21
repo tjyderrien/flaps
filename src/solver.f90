@@ -117,7 +117,6 @@ end subroutine computeNe
 
 
 ! This routine computes the holes density for the entire mesh
-! We assume that we are in a OMP parallel environement
 subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diffusionH, &
                       ShapeFactorNormalE, ShapeFactorTangentE, NormalE2, &
                       ShapeFactorNormalW, ShapeFactorTangentW, NormalW2, &
@@ -139,6 +138,9 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
 
   integer :: i, j
 
+  !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh, dt, GainsH, LossesH, InvCellVol, ShapeFactorNormalE, &
+  !$OMP diffusionH, NormalE2, ShapeFactorTangentE, dual, ShapeFactorNormalW, NormalW2, ShapeFactorTangentW, &
+  !$OMP ShapeFactorNormalN, NormalN2, ShapeFactorTangentN, ShapeFactorNormalS, NormalS2, ShapeFactorTangentS)
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
     do i=2, mesh%M-1
@@ -187,6 +189,7 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
     end do
   end do
   !$OMP END DO
+  !$OMP END PARALLEL
 
 end subroutine computeNh
 
