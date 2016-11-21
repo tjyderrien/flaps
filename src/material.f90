@@ -318,7 +318,10 @@ end module Material_m
       !> "Ultrafast carrier dynamics in silicon: A two-color 
       !> transient reflection grating study on a (111) surface." 
       !> Physical review letters 81.25 (1998): 5664.)
-      ephCollisionFrequency=M_ONE/((240d-15)*(1d0+(ne*inv_nth)**2))
+      ephCollisionFrequency=M_ONE/((240d-15)*(M_ONE+(ne*inv_nth)**2))
+
+
+      !TODO: can we remove these lines. Do you want to keep them?
 !       CollisionFrequency=1d14 !
       ! CollisionFrequency=1d13 !
       !CollisionFrequency=5d13 !
@@ -341,6 +344,7 @@ end module Material_m
         return
       end if
 
+      !TODO: Where is 3.6 comes from? Add a REF here.
       ImpactIonizationRate = 3.6d10*exp(inv_kb*Eg/Te)
 
     end function ImpactIonizationRate
