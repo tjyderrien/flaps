@@ -39,21 +39,29 @@ module Material_m
        ZnO = 1
 
   !The different model for the band-gap value
-  integer, parameter ::         &
+  integer, parameter ::            &
        !Model for the band-gap of silicon
        EG_SI_CONSTANT      = 0,    &
        EG_SI_KORFIATIS07   = 1,    &
        EG_SI_VANDRIEL87    = 2
        !Model for the band-gap of ZnO
 
+  !Collision frequency
   real, parameter::            &
-    COL_FREQ_SI_CONSTANT = 1d15
+    COL_FREQ_SI_CONSTANT = 1d15 !TODO: Add a REF for this
+
+  !Static dielectric constant
+  real(8), parameter::         &
+    EPS_INF_SI    =  11.66570433d0 !,0.01404457712d0)  !TODO: Add a REF for this
+                     !TODO: Do you really believe al these digits?
+
 
   type Material
-    integer :: Id          !< The material ID
-    integer :: Eg_model    !< The model for the band-gap
-    real(8) :: AugerRateE  !< Auger rate for electrons
-    real(8) :: AugerRateH  !< Auger rate for holes
+    integer :: Id              !< The material ID
+    integer :: Eg_model        !< The model for the band-gap
+    real(8) :: AugerRateE      !< Auger rate for electrons
+    real(8) :: AugerRateH      !< Auger rate for holes
+    real(8) :: EpsStatic       !< dielectric constant for static field
   end type Material
 
   contains
@@ -72,6 +80,8 @@ module Material_m
         this%AugerRateE=M_ZERO
         this%AugerRateH=M_ZERO
       end if
+
+      this%EpsStatic = EPS_INF_SI
 
 
       !We need to check if the models are compatible with the material selected

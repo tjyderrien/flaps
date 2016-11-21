@@ -102,8 +102,6 @@ implicit none
                             NewtonIterations=1000, &
                             ExpNeedleType=0
         
-    real(8), parameter::  epsilonStatic0=11.66570433d0 !,0.01404457712d0)                ! dielectric constant for static field
-
     real(8):: me       ,&    ! electron effective mass for conductivity !0.24 (source ?)
               mh       ,&    ! hole effective mass for conductivity !0.81 (source ?)
               meDOS       ,& ! electron effective mass for DOS
@@ -1184,7 +1182,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         intensity(i,j)=M_ZERO
         MaxHeating(i,j)=M_ZERO
         MaxHeatingTime(i,j)=M_ZERO
-        epsilonNeedle(i,j)=epsilonStatic0-M_ONE
+        epsilonNeedle(i,j)=matter%EpsStatic-M_ONE
         
     end do
    end do
