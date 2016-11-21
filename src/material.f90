@@ -262,7 +262,6 @@ end module Material_m
       type(Laser),           intent(in)    :: source
 
       complex(8) :: coef
-      real(8) :: tmp
       integer :: i, j
 
       coef= ec*ec/(mass*epsilon0)*source%inv_omega**2/(M_ONE+M_IM*Collision*source%inv_omega)
@@ -280,8 +279,7 @@ end module Material_m
         do j=1, mesh%N
           do i=1, mesh%M
            ! absorptionDrude(i,j)=2d0*source%k*aimag(sqrt(Dielectric(i,j)))
-            tmp = M_HALF*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) )
-            absorptionDrude(i,j)=M_TWO*source%k*sqrt( tmp )
+            absorptionDrude(i,j)=M_TWO*source%k*sqrt( M_HALF*( abs(Dielectric(i,j)) - real(Dielectric(i,j)) ) )
           end do
         end do
         !$OMP END DO
