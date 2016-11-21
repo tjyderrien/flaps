@@ -1607,7 +1607,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END PARALLEL
 
    !TODO: Does this depends on the position? If yes, this has to be changed bak to an array
-   nuColl=CollisionFrequency()
+   nuColl= collision_frequency()
    !
    !
    call DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &

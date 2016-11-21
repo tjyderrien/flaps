@@ -23,11 +23,14 @@
 module Material_m
   use Maths_m
 
+  implicit none
+
   private
 
-  public ::          &
-    Material,        &
-    init_material,   &
+  public ::              &
+    Material,            &
+    collision_frequency, &
+    init_material,       &
     evaluate_bandgap
 
   !Material index
@@ -43,6 +46,8 @@ module Material_m
        EG_SI_VANDRIEL87    = 2
        !Model for the band-gap of ZnO
 
+  real, parameter::            &
+    COL_FREQ_SI_CONSTANT = 1d15
 
   type Material
     integer :: Id          !< The material ID
@@ -97,6 +102,8 @@ module Material_m
       real(8),          intent(in)    :: N(:,:), Ts(:,:)
       real(8),          intent(out)   :: Eg(:,:)
 
+      integer :: i,j
+
       !TODO: Is seems that these three models have a very similar parametrization.
       !This implies one implementation and coefficients outside
 
@@ -127,6 +134,14 @@ module Material_m
 !       EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0))
 !         EgapValue=ec*(1.1692d0) !-4.9d-4*Ts**2/(Ts+655d0))
     end subroutine evaluate_bandgap
+
+    !------------------------------------------------------------------
+    !TODO: Create a batch version of this routine
+    pure real(8) function collision_frequency()
+
+      !TODO: Add a select case and more models
+      collision_frequency=COL_FREQ_SI_CONSTANT
+    end function collision_frequency
 
 end module Material_m
 
@@ -291,10 +306,6 @@ end module Material_m
 !------------------------------------------------------------------
 
     !TODO: Create a batch version of this routine
-    !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai. 
-    !> "Ultrafast carrier dynamics in silicon: A two-color 
-    !> transient reflection grating study on a (111) surface." 
-    !> Physical review letters 81.25 (1998): 5664.) 
     pure real(8) function ephCollisionFrequency(ne)
       use Maths_m
       implicit none
@@ -303,20 +314,16 @@ end module Material_m
 
       real(8), parameter :: inv_nth=1.0d0/6.02d26 !inversion of m-3
 
+      !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai.
+      !> "Ultrafast carrier dynamics in silicon: A two-color 
+      !> transient reflection grating study on a (111) surface." 
+      !> Physical review letters 81.25 (1998): 5664.)
       ephCollisionFrequency=M_ONE/((240d-15)*(1d0+(ne*inv_nth)**2))
 !       CollisionFrequency=1d14 !
       ! CollisionFrequency=1d13 !
       !CollisionFrequency=5d13 !
     end function ephCollisionFrequency
 
-!------------------------------------------------------------------
-
-    !TODO: Create a batch version of this routine
-    pure real(8) function CollisionFrequency()
-      implicit none
-
-      CollisionFrequency=1d15
-    end function CollisionFrequency
 !------------------------------------------------------------------
 
     !TODO: Create a batch version of this routine
