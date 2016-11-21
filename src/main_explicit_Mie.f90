@@ -278,7 +278,7 @@ implicit none
 
     !! FUNCTIONS CALLS
      real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
-     real(8) ConeExp1, ConeExp2, DensityOfState, TwoPhotonIonizationRate, OnePhotonIonizationRate, &
+     real(8) ConeExp1, ConeExp2, DensityOfState, &
              CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
 

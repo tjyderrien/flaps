@@ -27,11 +27,13 @@ module Material_m
 
   private
 
-  public ::              &
-    Material,            &
-    collision_frequency, &
-    init_material,       &
-    evaluate_bandgap
+  public ::                  &
+    Material,                &
+    collision_frequency,     &
+    init_material,           &
+    evaluate_bandgap,        &
+    OnePhotonIonizationRate, &
+    TwoPhotonIonizationRate
 
   !Material index
   integer, parameter ::   &
@@ -55,6 +57,12 @@ module Material_m
     EPS_INF_SI    =  11.66570433d0 !,0.01404457712d0)  !TODO: Add a REF for this
                      !TODO: Do you really believe al these digits?
 
+  !One-photon ionization rate
+  real(8), parameter ::        &
+    IR1P_SI       =  3.4536819356d6
+
+  !Two-photon ionization rate
+  !TODO: To be implemented
 
   type Material
     integer :: Id              !< The material ID
@@ -152,6 +160,42 @@ module Material_m
       !TODO: Add a select case and more models
       collision_frequency=COL_FREQ_SI_CONSTANT
     end function collision_frequency
+
+    !------------------------------------------------------------------
+    pure real(8) function OnePhotonIonizationRate()
+
+      !TODO: Do you want to keep this model?
+!       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
+
+      OnePhotonIonizationRate = IR1P_SI
+    end function OnePhotonIonizationRate
+
+    !TODO: Ideally, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
+    !We should also be able to select a tabulated Keldysh model for that.
+    !------------------------------------------------------------------
+    pure real(8) function TwoPhotonIonizationRate(lambda)
+      real(8), intent(in) :: lambda
+
+      if(lambda.eq.1030d-9) then
+        TwoPhotonIonizationRate=1.933288399d-11
+        return
+      end if
+
+      if(lambda.eq.800d-9) then
+        TwoPhotonIonizationRate=1.857135194d-11
+        return
+      end if
+
+      if(lambda.eq.515d-9) then
+        TwoPhotonIonizationRate=1.512238197d-11
+        return
+      end if
+
+      if(lambda.eq.343d-9) then
+        TwoPhotonIonizationRate=M_ZERO
+        return
+      end if
+    end function TwoPhotonIonizationRate
 
 end module Material_m
 
@@ -800,46 +844,6 @@ end module Material_m
     !$OMP END DO
     !$OMP END PARALLEL
    end subroutine ComputeGainsAndLosses
-
-
-
-    !------------------------------------------------------------------
-    pure real(8) function OnePhotonIonizationRate()
-      implicit none
-
-!       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
-      OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
-    end function OnePhotonIonizationRate
-
-
-    !TODO: Ideally, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
-    !We should also be able to select a tabulated Keldysh model for that. 
-    !------------------------------------------------------------------
-    pure real(8) function TwoPhotonIonizationRate(lambda)
-      use Maths_m
-      implicit none
-      real(8), intent(in) :: lambda
-
-      if(lambda.eq.1030d-9) then
-        TwoPhotonIonizationRate=1.933288399d-11
-        return
-      end if
-
-      if(lambda.eq.800d-9) then
-        TwoPhotonIonizationRate=1.857135194d-11
-        return
-      end if
-
-      if(lambda.eq.515d-9) then
-        TwoPhotonIonizationRate=1.512238197d-11
-        return
-      end if
-
-      if(lambda.eq.343d-9) then
-        TwoPhotonIonizationRate=M_ZERO
-        return
-      end if
-    end function TwoPhotonIonizationRate
 
 !------------------------------------------------------------------
     !TODO: This is not a material related property, this should not be in this file
