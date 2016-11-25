@@ -766,9 +766,9 @@ subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, Dri
       newmesh%Th(1,j)=newmesh%Th(2,j)
       newmesh%Ts(1,j)=newmesh%Ts(2,j)
 
-      newmesh%Te(newmesh%M,j)=newmesh%Te(newmesh%M-1,j) !Tout
-      newmesh%Th(newmesh%M,j)=newmesh%Th(newmesh%M-1,j) !Tout
-      newmesh%Ts(newmesh%M,j)=newmesh%Ts(newmesh%M-1,j) ! Tout !cooling by diffusion from outside, TsNew(M-1,j)
+      newmesh%Te(newmesh%M,j)=newmesh%Te(newmesh%M-1,j)
+      newmesh%Th(newmesh%M,j)=newmesh%Th(newmesh%M-1,j)
+      newmesh%Ts(newmesh%M,j)=newmesh%Ts(newmesh%M-1,j) !cooling by diffusion from outside, TsNew(M-1,j)
 
     !       potential(1,j)=0d0 !(0d0, 0d0)
     !       potential(M,j)=potential0 !(potential0, 0d0)

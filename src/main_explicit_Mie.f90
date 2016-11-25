@@ -46,7 +46,7 @@ implicit none
     type(InputParameters) :: Params
     type(Material)   :: matter
 
-    real(8), parameter::Tout=80d0 ,&  !external temperature (K)
+    real(8), parameter:: Text =80d0 ,&  !external temperature (K)
                         potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
                         potentialNull=M_ZERO !, &
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
@@ -1092,8 +1092,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   Ey(:,:)=M_ZERO !-1d9 !0d0
   DummyVessel(:,:)=M_ZERO
   
-  Te0=Tout !1400d0
-  Th0=Tout
+  Te0=Text
+  Th0=Text
   
   ! $ OMP DO
   do j=1,Params%N
@@ -1105,9 +1105,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         VhY(i,j)=M_ZERO
         newmesh%Te(i,j)=Te0
         newmesh%Th(i,j)=Th0
-        newmesh%Ts(i,j)=Tout
-        TsOld(i,j)=Tout
-        TsPrev(i,j)=Tout
+        newmesh%Ts(i,j)=Text
+        TsOld(i,j)=Text
+        TsPrev(i,j)=Text
         
         if(BandBendingInFDTD.eq.1) then
            newmesh%Ne(i,j)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
@@ -1166,14 +1166,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-         CsOld(i,j)=LatticeHeatCapacity(Tout)
-         CsPrev(i,j)=LatticeHeatCapacity(Tout)
-         CsPrev2(i,j)=LatticeHeatCapacity(Tout)
+        CsOld(i,j)=LatticeHeatCapacity(Text)
+        CsPrev(i,j)=LatticeHeatCapacity(Text)
+        CsPrev2(i,j)=LatticeHeatCapacity(Text)
 
 
         Ce(i,j)=CeOld(i,j)
         Ch(i,j)=ChOld(i,j)
-        Cs(i,j)=LatticeHeatCapacity(Tout)
+        Cs(i,j)=LatticeHeatCapacity(Text)
 
         
         UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
