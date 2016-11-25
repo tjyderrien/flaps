@@ -398,7 +398,7 @@ end module Material_m
 
       real(8), intent(in) :: ne
 
-      real(8), parameter :: inv_nth=1.0d0/6.02d26 !inversion of m-3
+      real(8), parameter :: inv_nth=M_ONE/6.02d26 !inversion of m-3
 
       !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai.
       !> "Ultrafast carrier dynamics in silicon: A two-color 
