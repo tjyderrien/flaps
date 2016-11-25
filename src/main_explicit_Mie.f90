@@ -1091,6 +1091,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   Ey(:,:)=M_ZERO !-1d9 !0d0
   DummyVessel(:,:)=M_ZERO
   
+  work = LatticeHeatCapacity(Params%Text)
    ! $ OMP DO
   do j=1,Params%N
     do i=1,Params%M
@@ -1100,9 +1101,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         TsOld(i,j)=Params%Text
         TsPrev(i,j)=Params%Text
 
-        CsOld(i,j)=LatticeHeatCapacity(Params%Text)
-        CsPrev(i,j)=LatticeHeatCapacity(Params%Text)
-        CsPrev2(i,j)=LatticeHeatCapacity(Params%Text)
+        CsOld(i,j)=work
+        CsPrev(i,j)=work
+        CsPrev2(i,j)=work
     end do
   end do
   ! $ OMP END DO
@@ -1157,7 +1158,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 
-      etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
+        etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
         etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
 
         ! calculate semi-classical heat capacity
