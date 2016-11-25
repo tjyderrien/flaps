@@ -8,7 +8,7 @@ TimeMax 0.0e-15
 Text 80.0
 
 PolarizationSource 0
-phiMie0 270
+phiMie0 270.0
 UseMieScattering -1 !This is a comment for this variable
 
 

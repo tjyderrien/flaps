@@ -60,8 +60,6 @@ subroutine InitInputParameter( Params )
     Params%phiMie0 = 0
     Params%PolarizationSource = 0
 
-
-
 end subroutine InitInputParameter
 
 !> Destroy Input Parameters
@@ -338,7 +336,7 @@ subroutine LoadInputParameters( filename, Params )
 
               !Text
               if( id .equals. 'Text' ) then
-                call ParseFloat( line, Params%Text )
+                call ParseDouble( line, Params%Text )
                 goto 999
               endif
 
@@ -369,5 +367,55 @@ subroutine LoadInputParameters( filename, Params )
     endif
     CLOSE( UNIT=unit )
 
+    call PrintInputParameters(Params)
+
 end subroutine LoadInputParameters
+
+
+subroutine PrintInputParameters(Params)
+  use Types_m
+  implicit none
+  type(InputParameters), intent(in) :: Params
+
+  integer :: unit, ios
+
+  unit = 1
+
+  OPEN( UNIT=unit, FILE='parser.log', STATUS="unknown",access='sequential', ACTION="write", IOSTAT=ios )
+  if ( ios /= 0 ) then ! Probleme ea l'ouverture
+        print *, 'Error opening parser.log'
+        call StopProgram()
+  else
+    !Physical parameters of the simulation
+    write(unit, '(a,e12.5)') 'TimeStep = ', Params%TimeStep
+    write(unit, '(a,e12.5)') 'TimeMax = ', Params%TimeMax
+    write(unit, '(a,e12.5)') 'Text = ', Params%Text
+
+    !Numerical parameters of the simulation
+    write(unit, '(a,i3)') 'UseMieScattering = ', Params%UseMieScattering
+    write(unit, '(a,i5)') 'M = ', Params%M
+    write(unit, '(a,i5)') 'N = ', Params%N
+    write(unit, '(a,i5)') 'OutputIter = ', Params%OutputIter
+
+    !Debug options
+    write(unit, '(a,i2)') 'NeOff = ', Params%NeOff
+    write(unit, '(a,i2)') 'TeOff = ', Params%TeOff
+    write(unit, '(a,i2)') 'HolesOff = ', Params%HolesOff
+    write(unit, '(a,i2)') 'TsOff = ', Params%TsOff
+    write(unit, '(a,i2)') 'AugerOff = ', Params%AugerOff
+    write(unit, '(a,i2)') 'CouplingDebug = ', Params%CouplingDebug
+    write(unit, '(a,i2)') 'ImpactOff = ', Params%ImpactOff
+    write(unit, '(a,i2)') 'CrossDiffusionOff = ', Params%CrossDiffusionOff
+    write(unit, '(a,i2)') 'DrudeHeating = ', Params%DrudeHeating
+    write(unit, '(a,i2)') 'TransportModel = ', Params%TransportModel
+    write(unit, '(a,i2)') 'ConvectionEnergy = ', Params%ConvectionEnergy
+
+    !Mie scattering
+    write(unit, '(a,e12.5)') 'phiMie0 = ', Params%phiMie0
+    write(unit, '(a,i2)') 'PolarizationSource = ', Params%PolarizationSource
+  end if
+
+  CLOSE( UNIT=unit )
+
+end subroutine PrintInputParameters
 

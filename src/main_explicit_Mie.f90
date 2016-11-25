@@ -1091,6 +1091,22 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   Ey(:,:)=M_ZERO !-1d9 !0d0
   DummyVessel(:,:)=M_ZERO
   
+   ! $ OMP DO
+  do j=1,Params%N
+    do i=1,Params%M
+        newmesh%Te(i,j)=Params%Text
+        newmesh%Th(i,j)=Params%Text
+        newmesh%Ts(i,j)=Params%Text
+        TsOld(i,j)=Params%Text
+        TsPrev(i,j)=Params%Text
+
+        CsOld(i,j)=LatticeHeatCapacity(Params%Text)
+        CsPrev(i,j)=LatticeHeatCapacity(Params%Text)
+        CsPrev2(i,j)=LatticeHeatCapacity(Params%Text)
+    end do
+  end do
+  ! $ OMP END DO
+
   ! $ OMP DO
   do j=1,Params%N
     do i=1,Params%M
@@ -1099,12 +1115,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         VeY(i,j)=M_ZERO
         VhX(i,j)=M_ZERO
         VhY(i,j)=M_ZERO
-        newmesh%Te(i,j)=Params%Text
-        newmesh%Th(i,j)=Params%Text
-        newmesh%Ts(i,j)=Params%Text
-        TsOld(i,j)=Params%Text
-        TsPrev(i,j)=Params%Text
-        
+
         if(BandBendingInFDTD.eq.1) then
            newmesh%Ne(i,j)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
@@ -1162,14 +1173,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-        CsOld(i,j)=LatticeHeatCapacity(Params%Text)
-        CsPrev(i,j)=LatticeHeatCapacity(Params%Text)
-        CsPrev2(i,j)=LatticeHeatCapacity(Params%Text)
-
 
         Ce(i,j)=CeOld(i,j)
         Ch(i,j)=ChOld(i,j)
-        Cs(i,j)=LatticeHeatCapacity(Params%Text)
+        Cs(i,j)=CsPrev(i,j)
 
         
         UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
