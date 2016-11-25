@@ -46,9 +46,8 @@ implicit none
     type(InputParameters) :: Params
     type(Material)   :: matter
 
-    real(8), parameter:: Text =80d0 ,&  !external temperature (K)
-                        potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
-                        potentialNull=M_ZERO !, &
+    real(8), parameter:: potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
+                         potentialNull=M_ZERO !, &
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: coeffDilaDt=M_TWO        ,& !diltation coeff before dt change
@@ -117,7 +116,7 @@ implicit none
     integer(8)         nbiter, i, j, k, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
                 Mp, Np, RunningIndex
     real(8)         t, t0, dx, dy, x0, y0, dt, dt2, dt3, dt4, h1, h2, h3
-    real(8)         Te0, Th0, I0 !initial values of the problem
+    real(8)         I0 !initial values of the problem
 
     real(8)     nuColl, &!        total collision frequency
                 etae, etah, &        ! reduced chemical Fermi potential
@@ -1092,9 +1091,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   Ey(:,:)=M_ZERO !-1d9 !0d0
   DummyVessel(:,:)=M_ZERO
   
-  Te0=Text
-  Th0=Text
-  
   ! $ OMP DO
   do j=1,Params%N
     do i=1,Params%M
@@ -1103,11 +1099,11 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         VeY(i,j)=M_ZERO
         VhX(i,j)=M_ZERO
         VhY(i,j)=M_ZERO
-        newmesh%Te(i,j)=Te0
-        newmesh%Th(i,j)=Th0
-        newmesh%Ts(i,j)=Text
-        TsOld(i,j)=Text
-        TsPrev(i,j)=Text
+        newmesh%Te(i,j)=Params%Text
+        newmesh%Th(i,j)=Params%Text
+        newmesh%Ts(i,j)=Params%Text
+        TsOld(i,j)=Params%Text
+        TsPrev(i,j)=Params%Text
         
         if(BandBendingInFDTD.eq.1) then
            newmesh%Ne(i,j)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
@@ -1166,14 +1162,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
                   FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
                               /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-        CsOld(i,j)=LatticeHeatCapacity(Text)
-        CsPrev(i,j)=LatticeHeatCapacity(Text)
-        CsPrev2(i,j)=LatticeHeatCapacity(Text)
+        CsOld(i,j)=LatticeHeatCapacity(Params%Text)
+        CsPrev(i,j)=LatticeHeatCapacity(Params%Text)
+        CsPrev2(i,j)=LatticeHeatCapacity(Params%Text)
 
 
         Ce(i,j)=CeOld(i,j)
         Ch(i,j)=ChOld(i,j)
-        Cs(i,j)=LatticeHeatCapacity(Text)
+        Cs(i,j)=LatticeHeatCapacity(Params%Text)
 
         
         UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)

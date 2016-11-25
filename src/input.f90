@@ -24,15 +24,19 @@
 !> @param Params Structure containing input parameters
 subroutine InitInputParameter( Params )
     use Types_m
+    use Maths_m
     implicit none
     type(InputParameters) :: Params
 
-    !Paramters of the simulation
+    !Physical parameters of the simulation
+    Params%TimeStep = M_ZERO
+    Params%TimeMax  = M_ZERO
+    Params%Text     = -M_ONE
+
+    !Numerical parameters of the simulation
     Params%UseMieScattering = -2
     Params%M = -1
     Params%N = -1
-    Params%TimeStep = 0.d0
-    Params%TimeMax  = 0.d0
     Params%OutputIter = 10000
 
     !Debug options
@@ -73,6 +77,7 @@ end subroutine ReleaseInputParameters
 !> @param Params Structure containing input parameters
 subroutine CheckValidityInputParameters( Params )
     use Types_m
+    use Maths_m
 
     implicit none
     type(InputParameters) :: Params
@@ -164,6 +169,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%OutputIter <= 0 ) then
       print *, 'Bad value for OutputIter'
+      call StopProgram()
+    end if
+
+    if( Params%Text <= M_ZERO ) then
+      print *, 'Bad value for the external temperature Text'
       call StopProgram()
     end if
 
@@ -323,6 +333,12 @@ subroutine LoadInputParameters( filename, Params )
               !CrossDiffusionOff
               if( id .equals. 'CrossDiffusionOff' ) then
                 call ParseInt( line, Params%CrossDiffusionOff )
+                goto 999
+              endif
+
+              !Text
+              if( id .equals. 'Text' ) then
+                call ParseFloat( line, Params%Text )
                 goto 999
               endif
 

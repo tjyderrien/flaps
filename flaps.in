@@ -5,6 +5,7 @@ M 11
 N 11
 TimeStep 1.0e-18
 TimeMax 0.0e-15
+Text 80.0
 
 PolarizationSource 0
 phiMie0 270
