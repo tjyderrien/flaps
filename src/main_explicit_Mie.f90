@@ -1971,94 +1971,93 @@ if(Params%UseMieScattering.eq.1) then
 
 
 
-      call evaluate_bandgap(matter, newmesh, newmesh%Ne,newmesh%Ts, Egap_new)
+    call evaluate_bandgap(matter, newmesh, newmesh%Ne,newmesh%Ts, Egap_new)
 
-      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, matter, Egap, Egap_new, &
-      !$OMP Ce, CeOld, Ch, ChOld, Cs, CsOld, OpticalIndex, CellVol, &
-      !$OMP ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy) &
-      !$OMP PRIVATE(work)
-      !$OMP DO COLLAPSE(2) REDUCTION(+:ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy)
-      do j=1,Params%N
-        do i=1,Params%M
-        
-!         if(TransportModel.eq.-1) then
-!            TeNew(i,j)=Tout; ThNew(i,j)=Tout; 
-!         end if
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, matter, Egap, Egap_new, &
+    !$OMP Ce, CeOld, Ch, ChOld, Cs, CsOld, OpticalIndex, CellVol, &
+    !$OMP ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy) &
+    !$OMP PRIVATE(work)
+    !$OMP DO COLLAPSE(2) REDUCTION(+:ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy,HoleEnergy,LatticeEnergy)
+    do j=1,Params%N
+      do i=1,Params%M
 
-!         CAUTION: These definitions are erroneously including initial temperature into account. 
-!         ElectronEnergy=ElectronEnergy+Ce(i,j)*Te(i,j)*CellVol(i,j)
-!         HoleEnergy=HoleEnergy+Ch(i,j)*Th(i,j)*CellVol(i,j)
-!         LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
+!       if(TransportModel.eq.-1) then
+!          TeNew(i,j)=Tout; ThNew(i,j)=Tout;
+!       end if
+!       CAUTION: These definitions are erroneously including initial temperature into account.
+!       ElectronEnergy=ElectronEnergy+Ce(i,j)*Te(i,j)*CellVol(i,j)
+!       HoleEnergy=HoleEnergy+Ch(i,j)*Th(i,j)*CellVol(i,j)
+!       LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
 
-          work = Egap_new(i,j) - Egap(i,j)
-          ! calculation of the energy contained in the solid
-          ElectronEnergy=ElectronEnergy &
+        work = Egap_new(i,j) - Egap(i,j)
+        ! calculation of the energy contained in the solid
+        ElectronEnergy=ElectronEnergy &
             + (Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
             + (mesh%Ne(i,j)*work  &
-              + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
+            + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
               
-          ElectronKineticEnergy=ElectronKineticEnergy &
-                   +(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
-          ElectronPotentialEnergy=ElectronPotentialEnergy &
-                   +(mesh%Ne(i,j)*work  &
-                   + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
-!         ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
+        ElectronKineticEnergy=ElectronKineticEnergy &
+                 +(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
+        ElectronPotentialEnergy=ElectronPotentialEnergy &
+                 +(mesh%Ne(i,j)*work  &
+                 + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
+!       ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
 
-          HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
+        HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
         
-          LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
+        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
 
-       end do
      end do
-     !$OMP END DO
-     !$OMP END PARALLEL
+   end do
+   !$OMP END DO
+   !$OMP END PARALLEL
 
-     call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
+   call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
 
-     !TODO: Move this to check_divergences
-     !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, FermiIndexE, FermiIndexH, &
-     !$OMP FermiRatioE, FermiRatioH, mesh, DOSe, DOSh, t)
-     !$OMP DO COLLAPSE(2)
-     do j=1,Params%N
-       do i=1,Params%M
+   !TODO: Move this to check_divergences
+   !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, FermiIndexE, FermiIndexH, &
+   !$OMP FermiRatioE, FermiRatioH, mesh, DOSe, DOSh, t)
+   !$OMP DO COLLAPSE(2)
+   do j=1,Params%N
+     do i=1,Params%M
 
-         if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < M_ONE) then
-           write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
-         end if
-         if(real(FermiIndexH(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexH(i,j)) < M_ONE) then
-           write(*,*) "t,i,j,FermiIndexH(i,j)=", t,i,j,FermiIndexH(i,j)
-         end if
-         if(real(FermiRatioE(i,j)) < M_ZERO .OR. real(FermiRatioH(i,j)) < M_ZERO) then
-           write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
-         end if
-       end do
+       if(real(FermiIndexE(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexE(i,j)) < M_ONE) then
+         write(*,*) "t,i,j,FermiIndexE(i,j)=", t,i,j,FermiIndexE(i,j)
+       end if
+       if(real(FermiIndexH(i,j)) > real(FermiMaxLines) .OR. real(FermiIndexH(i,j)) < M_ONE) then
+         write(*,*) "t,i,j,FermiIndexH(i,j)=", t,i,j,FermiIndexH(i,j)
+       end if
+       if(real(FermiRatioE(i,j)) < M_ZERO .OR. real(FermiRatioH(i,j)) < M_ZERO) then
+         write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
+       end if
      end do
-     !$OMP END DO
-     !$OMP END PARALLEL
-   end if
+   end do
+   !$OMP END DO
+   !$OMP END PARALLEL
+  end if
 
-    !TODO: There should be a module managing the adaptative time step
-    ! lets change dt when fast reponse is finished in order to catch the long one.
+  !TODO: There should be a module managing the adaptative time step
+  ! lets change dt when fast reponse is finished in order to catch the long one.
 
-    ! saving the timesteps of several previous steps (used for the high order calculation of d/dt).
-    dt4=dt3;
-    dt3=dt2;
-    dt2=dt;
-    ! chaning the timestep based on known behavior of the system
-    if(Params%AdaptativeTimeStep.eq.1) then
-      if((t>1d1*source%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
-        (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
-        dt=10d0*Params%TimeStep
-      else if ((t > M_HALF*source%tau*coeffDilaDt) .AND. (dt.eq.10d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN &
-        + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
-        dt=40d0*Params%TimeStep
-      else if ((t > 1d3*source%tau*coeffDilaDt) .AND. (dt.eq.40d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
-        + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
-          dt=1d3*Params%TimeStep
+  ! saving the timesteps of several previous steps (used for the high order calculation of d/dt).
+  dt4=dt3;
+  dt3=dt2;
+  dt2=dt;
+  ! chaning the timestep based on known behavior of the system
+  if(Params%AdaptativeTimeStep.eq.1) then
+    if((t>1d1*source%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
+      (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
+      dt=10d0*Params%TimeStep
+    else if ((t > M_HALF*source%tau*coeffDilaDt) .AND. (dt.eq.10d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN &
+      + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
+      dt=40d0*Params%TimeStep
+    else if ((t > 1d3*source%tau*coeffDilaDt) .AND. (dt.eq.40d0*Params%TimeStep) .AND. (maxCFLxN+maxCFLyN + maxCFLxT &
+      + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
+        dt=1d3*Params%TimeStep
 !           else if (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs > maxCFL) then
 !             dt=dt/1d1
-      end if
     end if
+  end if
 
    !
    if(mod(nbiter,Params%OutputIter*iterOutMaps).eq.0) then
