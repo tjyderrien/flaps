@@ -1817,7 +1817,11 @@ if(Params%UseMieScattering.eq.1) then
                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
    end if
+   !$OMP END PARALLEL
    !
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, x, y, Params, diffusionE, kappae, kappas, &
+   !$OMP CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, DistN, DistS, DistE, DistW, invCe, invCh, invCs) &
+   !$OMP PRIVATE(work)
    !$OMP DO COLLAPSE(2) !(optimized)
    do j=2, Params%N-1 !(optimized)
      do i=2, Params%M-1 !(optimized)
