@@ -684,6 +684,8 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
   integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
 
   integer :: i, j
+  !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh,UeNew, Ue, FermiTableE, ColFermiThreeHalf, FermiIndexE, ColFermiHalf, &
+  !$OMP invCe, UhNew, Uh, FermiTableH, FermiIndexH, invCh)
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
     do i=2, mesh%M-1
@@ -694,6 +696,7 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
     end do
   end do
   !$OMP END DO
+  !$OMP END PARALLEL
 
 end subroutine computeConvection
 

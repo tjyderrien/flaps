@@ -1811,20 +1811,20 @@ if(Params%UseMieScattering.eq.1) then
                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
      !
    end if
+   !$OMP END PARALLEL
    !
    if(Params%ConvectionEnergy.eq.1) then
      call computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
    end if
-   !$OMP END PARALLEL
    !
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, x, y, Params, diffusionE, kappae, kappas, &
    !$OMP CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, DistN, DistS, DistE, DistW, invCe, invCh, invCs) &
    !$OMP PRIVATE(work)
-   !$OMP DO COLLAPSE(2) !(optimized)
-   do j=2, Params%N-1 !(optimized)
-     do i=2, Params%M-1 !(optimized)
+   !$OMP DO COLLAPSE(2)
+   do j=2, Params%N-1
+     do i=2, Params%M-1
        !
        work = dt/(M_HALF*(DistW(i,j)+DistE(i,j)))**2
        CFLxT(i,j)  = kappae(i,j)*invCe(i,j) * work
