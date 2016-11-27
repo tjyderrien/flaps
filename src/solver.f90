@@ -325,6 +325,9 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
   w3 = h1 * h2 / h3 / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2)
   w4 = h2 * h1 * h3 / (h1 * h2 + h1 * h3 + h2 * h3)
 
+  !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh, NormalE2, ShapeFactorNormalE, kappas, NormalW2, NormalN2, NormalS2, &
+  !$OMP ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, ShapeFactorTangentN, ShapeFactorTangentS, TsOld, TsPrev, &
+  !$OMP ShapeFactorTangentE, ShapeFactorTangentW, dual, CouplingE, CouplingH, CellVol, InvCellVol, invCs, w1, w2, w3, w4)
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
     do i=2, mesh%M-1
@@ -410,7 +413,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
                *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
                 ) &
-                    + M_TWO*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) &
+                    + M_TWO*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) & !TODO: Remove InvCellVol *CellVol
                 ) * InvCellVol(i,j) &
 !                     - ((h1 * h2 + h1 * h3 &
 !                     + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
@@ -431,6 +434,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
     end do
   end do
   !$OMP END DO
+  !$OMP END PARALLEL
 
 end subroutine computeTs
 

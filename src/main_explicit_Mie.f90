@@ -1732,21 +1732,19 @@ if(Params%UseMieScattering.eq.1) then
    endif
    !
    !
-   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, UeNew, UhNew, TsOld, TsPrev, &
+   !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, UeNew, UhNew, &
    !$OMP mesh, newmesh, dual, source, Params,  &
    !$OMP Ue, Uh, FermiTableE, FermiTableH, &
    !$OMP x, y, diffusionE, diffusionH, GainsE, GainsH, LossesE, LossesH, &
    !$OMP kappae, kappah, kappas, Ce, CeOld, Ch, ChOld, Cs, CsOld, CsPrev, CouplingE, CouplingH, &
-   !$OMP SourceE, SourceH, SourceUe, SourceUh, CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, &
-   !$OMP FermiIndexE, FermiIndexH, VeX, VeY, VhX, VhY, &
+   !$OMP SourceE, SourceH, SourceUe, SourceUh, &
+   !$OMP VeX, VeY, VhX, VhY, &
    !$OMP NormalN, NormalS, NormalE, NormalW, &
    !$OMP CellVolume, CellAreaN, CellAreaS, CellAreaE, CellAreaW, CellVol, InvCellVol, &
    !$OMP DistN, DistS, DistE, DistW, DistDualN, DistDualS, DistDualE, DistDualW, &
    !$OMP ShapeFactorNormalE, ShapeFactorNormalN, ShapeFactorNormalS, ShapeFactorNormalW, &
    !$OMP ShapeFactorTangentE, ShapeFactorTangentN, ShapeFactorTangentS, ShapeFactorTangentW, &
-   !$OMP ColFermiEta, ColFermiHalf, ColFermiMenusHalf, ColFermiThreeHalf, &
-   !$OMP h1, h2, h3, invCe, invCh, invCs) &
-   !$OMP PRIVATE(work)
+   !$OMP h1, h2, h3, invCe, invCh, invCs)
    !
    if(Params%TeOff.ne.1) then
      !
@@ -1800,6 +1798,7 @@ if(Params%UseMieScattering.eq.1) then
      endif
      !
    endif
+   !$OMP END PARALLEL
    !
    if(Params%TsOff.ne.1) then
      !
@@ -1811,7 +1810,6 @@ if(Params%UseMieScattering.eq.1) then
                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
      !
    end if
-   !$OMP END PARALLEL
    !
    if(Params%ConvectionEnergy.eq.1) then
      call computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
