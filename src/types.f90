@@ -66,6 +66,7 @@ module Types_m
     integer :: ConvectionEnergy      !0: work with Te, no convection. 1: work with Ue, convection
     integer :: CrossDiffusionOff     !TODO: Comment this value
     real(8) :: Text                  !external temperature (K)
+    integer :: AdaptativeTimeStep
   end type
 
 end module Types_m

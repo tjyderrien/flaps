@@ -68,8 +68,7 @@ implicit none
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
                           MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
-                          FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
-                          AdaptativeTimeStep=1
+                          FermiMaxLines=3584            ! >= number of lines in Fermi file
        !                   SORiterations=1        ,&        !iteration number for over-relaxation method
        !                   InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
        !                   UseInterpolation=0        ,&
@@ -1077,7 +1076,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Initial timestep=", Params%TimeStep
   write(Parameters%unit,*) "Maximal timestep=", tmin
   write(Parameters%unit,*) "Maximum time t=", Params%TimeMax
-  write(Parameters%unit,*) "Enable adaptative timestep=", AdaptativeTimeStep
+  write(Parameters%unit,*) "Enable adaptative timestep=", Params%AdaptativeTimeStep
   write(Parameters%unit,*) "Time output each ", Params%OutputIter, "iterations."
   write(Parameters%unit,*) "Map output each", iterOutMaps*Params%OutputIter, "iterations."
   
@@ -2044,7 +2043,7 @@ if(Params%UseMieScattering.eq.1) then
     dt3=dt2;
     dt2=dt;
     ! chaning the timestep based on known behavior of the system
-    if(AdaptativeTimeStep.eq.1) then
+    if(Params%AdaptativeTimeStep.eq.1) then
       if((t>1d1*source%tau*coeffDilaDt) .AND. (dt.eq.Params%TimeStep) .AND. &
         (maxCFLxN+maxCFLyN + maxCFLxT + maxCFLyT + maxCFLxTs+maxCFLyTs < maxCFL)) then
         dt=10d0*Params%TimeStep

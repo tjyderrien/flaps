@@ -32,6 +32,7 @@ subroutine InitInputParameter( Params )
     Params%TimeStep = M_ZERO
     Params%TimeMax  = M_ZERO
     Params%Text     = -M_ONE
+    Params%AdaptativeTimeStep = 1
 
     !Numerical parameters of the simulation
     Params%UseMieScattering = -2
@@ -172,6 +173,11 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%Text <= M_ZERO ) then
       print *, 'Bad value for the external temperature Text'
+      call StopProgram()
+    end if
+
+    if( Params%AdaptativeTimeStep < 0 .or. Params%AdaptativeTimeStep > 1 ) then
+      print *, 'Bad value for AdaptativeTimeStep'
       call StopProgram()
     end if
 
@@ -340,6 +346,11 @@ subroutine LoadInputParameters( filename, Params )
                 goto 999
               endif
 
+              !AdaptativeTimeStep
+              if( id .equals. 'AdaptativeTimeStep' ) then
+                call ParseInt( line, Params%AdaptativeTimeStep )
+                goto 999
+              endif
 
 ! Some examples
 
@@ -390,9 +401,10 @@ subroutine PrintInputParameters(Params)
     write(unit, '(a,e12.5)') 'TimeStep = ', Params%TimeStep
     write(unit, '(a,e12.5)') 'TimeMax = ', Params%TimeMax
     write(unit, '(a,e12.5)') 'Text = ', Params%Text
+    write(unit, '(a,i2)') 'AdaptativeTimeStep = ', Params%AdaptativeTimeStep
 
     !Numerical parameters of the simulation
-    write(unit, '(a,i3)') 'UseMieScattering = ', Params%UseMieScattering
+    write(unit, '(a,i2)') 'UseMieScattering = ', Params%UseMieScattering
     write(unit, '(a,i5)') 'M = ', Params%M
     write(unit, '(a,i5)') 'N = ', Params%N
     write(unit, '(a,i5)') 'OutputIter = ', Params%OutputIter
