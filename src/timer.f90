@@ -17,49 +17,59 @@
 !> @file Timer.f90
 !
 ! DESCRIPTION:
-!> @brief Classe qui fournit les routines pour un timer\n
-!> Voir le site de l'IDRIS http://www.idris.fr/su/Shared/fct_F95.html
+!> @brief A timer module \n
+!> See IDRIS website http://www.idris.fr/su/Shared/fct_F95.html
 !------------------------------------------------------------------------------
 
-!> Methode qui initialise le timer
-SUBROUTINE TimerInit  ( )
-    INTEGER :: nb_periodes_initial,&
-    nb_periodes_max,     & ! valeur maximale du compteur d'horloge
-    nb_periodes_sec        ! nombre de periodes d'horloge par seconde
-    COMMON /InitialPeriod/ nb_periodes_initial
-    COMMON /PeriodMax/ nb_periodes_max
-    COMMON /PeriodSec/ nb_periodes_sec
+module Timer_m
+  implicit none
+
+  private
+
+  public ::                &
+    timer,                 &
+    timer_init,            &
+    timer_start,           &
+    timer_elapsedtime
+
+  type Timer
+    integer :: nb_period_init
+    integer :: nb_period_max
+    integer :: nb_period_sec
+  end type
+
+  contains
+
+
+  !> Init the timer
+  subroutine timer_init( this )
+    type(Timer), intent(inout) :: this
 
     ! Initialisation
-    CALL SYSTEM_CLOCK(COUNT_RATE=nb_periodes_sec, COUNT_MAX=nb_periodes_max)
-END SUBROUTINE TimerInit
+    CALL SYSTEM_CLOCK(COUNT_RATE=this%nb_period_sec, COUNT_MAX=this%nb_period_max)
+  end subroutine timer_init
 
-!> Methode qui demarre le timer
-SUBROUTINE TimerStart( )
-    implicit none
-    INTEGER :: nb_periodes_initial ! valeur initiale du compteur de periodes d'horloge
-    COMMON /InitialPeriod/ nb_periodes_initial
+  !> Start the timer
+  subroutine timer_start( this )
+    type(Timer), intent(inout) :: this
 
-    CALL SYSTEM_CLOCK(COUNT=nb_periodes_initial)
-END SUBROUTINE TimerStart
+    CALL SYSTEM_CLOCK(COUNT=this%nb_period_init)
+  end subroutine timer_start
 
 
-!> Fonction qui retourne le temps en seconde ecoule depuis l'appel de la fonction Timer_Start
-REAL FUNCTION ElapsedTime ( )
-    implicit none
-    INTEGER :: &
-    nb_periodes_initial, & ! valeur initiale du compteur de periodes d'horloge
-    nb_periodes_final,   & ! valeur finale   du compteur de periodes d'horloge
-    nb_periodes_max,     & ! valeur maximale du compteur d'horloge
-    nb_periodes_sec,     & ! nombre de periodes d'horloge par seconde
-    nb_periodes            ! nombre de periodes d'horloge du code
-    COMMON /InitialPeriod/ nb_periodes_initial
-    COMMON /PeriodMax/ nb_periodes_max
-    COMMON /PeriodSec/ nb_periodes_sec
+  !>  Return the time elapsed from the last call of timer_start
+  real function timer_elapsedtime ( this ) result(elapsed)
+    type(Timer), intent(in) :: this
 
-    CALL SYSTEM_CLOCK(COUNT=nb_periodes_final)
-    nb_periodes = nb_periodes_final - nb_periodes_initial
-    IF (nb_periodes_final < nb_periodes_initial) &
-        nb_periodes = nb_periodes + nb_periodes_max
-    ElapsedTime   = REAL(nb_periodes) / nb_periodes_sec
-END FUNCTION
+    integer :: nb_period_final,   & ! final value of the clock period counter
+               nb_period            ! Number of clock period
+
+    CALL SYSTEM_CLOCK(COUNT=nb_period_final)
+    nb_period = nb_period_final - this%nb_period_init
+    IF (nb_period_final < this%nb_period_init) &
+        nb_period = nb_period + this%nb_period_max
+
+    elapsed   = REAL(nb_period) / this%nb_period_sec
+  end function timer_elapsedtime
+
+end module Timer_m

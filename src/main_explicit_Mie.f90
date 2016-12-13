@@ -36,6 +36,7 @@ use Material_m
 use Maths_m
 use Mie_m
 use Output_m
+use Timer_m
 use Types_m
 
 
@@ -45,6 +46,7 @@ implicit none
     type(Laser)      :: source
     type(InputParameters) :: Params
     type(Material)   :: matter
+    type(Timer)      :: full_timer
 
     real(8), parameter:: potential0=7d3,&         ! potential at the bottom of the needle ; default = 7d3
                          potentialNull=M_ZERO !, &
@@ -318,7 +320,7 @@ implicit none
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
-  call TimerInit()
+  call timer_init(full_timer)
 
   call InitInputParameter( Params )
   call LoadInputParameters( "flaps.in", Params )
@@ -1082,7 +1084,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
   call flush(Parameters%unit)
   
-  call TimerStart( )
+  call timer_start(full_timer)
 
   nmax=int((Params%TimeMax-tmin)/dt, 8)
   
@@ -1383,7 +1385,7 @@ if(Params%UseMieScattering.eq.1) then
  
   t=tmin
   
-  write(*,*) 'Elapsed time : ', ElapsedTime ( )
+  write(*,*) 'Elapsed time : ', timer_elapsedtime( full_timer )
   write(*,*) "[Poisson eq.] Filling matrix"
 !   if(PoissonOn.eq.1 .AND. PoissonSolver.eq.0) then
 !     !******************* Let's make a Gauss inversion of Amatrix here !
@@ -1567,7 +1569,7 @@ if(Params%UseMieScattering.eq.1) then
   h3=dt+dt2+dt3
   
   write(*,*) "Starting time loop."
-  call TimerStart( )
+  call timer_start(full_timer)
 
   !***************************************************************
   !***************** temporal loop *******************************
@@ -2117,7 +2119,7 @@ if(Params%UseMieScattering.eq.1) then
     ! output to files
     if(mod(nbiter,Params%OutputIter).eq.0) then
       !
-      cpu_timestep_duration = ElapsedTime() / real(nbiter)
+      cpu_timestep_duration = timer_elapsedtime(full_timer) / real(nbiter)
       cpuefficiency=real(nthreads)/cpu_timestep_duration
       !
       !This should be moved to output.F90 file
