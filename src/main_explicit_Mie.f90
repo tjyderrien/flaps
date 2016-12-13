@@ -26,21 +26,22 @@
 !------------------------------------------------------------------------------
 
 program Flaps
-USE OMP_LIB
-! include 'Bivariate.f'
-! USE Bivariate
-USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
+  USE OMP_LIB
+  ! include 'Bivariate.f'
+  ! USE Bivariate
+  USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 
-use Laser_m
-use Material_m
-use Maths_m
-use Mie_m
-use Output_m
-use Timer_m
-use Types_m
+  use Laser_m
+  use Material_m
+  use Maths_m
+  use Mie_m
+  use Output_m
+  use Profiler_m
+  use Timer_m
+  use Types_m
 
 
-implicit none
+  implicit none
 
     type(MeshValues) :: mesh, dual, newmesh
     type(Laser)      :: source
@@ -320,6 +321,7 @@ implicit none
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
+  call Profiler_start(prof_init, 'INIT')
   call timer_init(full_timer)
 
   call InitInputParameter( Params )
@@ -1571,10 +1573,14 @@ if(Params%UseMieScattering.eq.1) then
   write(*,*) "Starting time loop."
   call timer_start(full_timer)
 
+  call Profiler_stop(prof_init)
+
   !***************************************************************
   !***************** temporal loop *******************************
   !***************************************************************
   do nbiter=1, nmax
+
+   call Profiler_start(prof_timeloop, 'TIME LOOP')
     
    t=t+dt;
     
@@ -2188,6 +2194,7 @@ if(Params%UseMieScattering.eq.1) then
     end if
     !
     !
+  call Profiler_stop(prof_timeloop)
     !
   end do !end of time loop
 
@@ -2201,6 +2208,8 @@ if(Params%UseMieScattering.eq.1) then
   !TODO: Sorry but where are the file stream closed???
 
   call ReleaseInputParameters( Params )
+
+  call Profiler_write_report( )
 
 end program Flaps
 
