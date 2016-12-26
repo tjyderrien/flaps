@@ -187,7 +187,7 @@ implicit none
 
     type(VectorField) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
                 
-                 !TODO: Use dimension. TDJY: What do you have in mind? Example? 
+                 !TODO: Use dimension. TJYD: What do you have in mind? Example? 
     real(8), allocatable :: CurviWx(:,:), CurviWy(:,:), &                 ! Unit vector between cell centers
                             CurviEx(:,:), CurviEy(:,:), &
                             CurviNx(:,:), CurviNy(:,:), &
@@ -1605,7 +1605,8 @@ if(Params%UseMieScattering.eq.1) then
    call copy_mesh(mesh, newmesh)
    !$OMP END PARALLEL
 
-   !TODO: Does this depends on the position? If yes, this has to be changed bak to an array
+   !TODO: Does this depends on the position? If yes, this has to be changed bak to an array. 
+   !TODO: TJYD: this can depend on position, if we apply a model for the collision frequency. This would be nice, actually. 
    nuColl= get_collision_frequency(matter)
    !
    !
