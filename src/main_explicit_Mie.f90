@@ -289,6 +289,7 @@ implicit none
 
   !TODO: move to material.f90
   !TODO: Should be a parameter, to guaranty no modification
+  !TODO: TJYD: this should be imposed by the model we gonna call in the continuum description library. 
   me=M_HALF*me0       ! electron effective mass for conductivity !0.24 (source ?)
   mh=M_HALF*me0       ! hole effective mass for conductivity !0.81 (source ?)
   meDOS=0.36d0*me0   ! electron effective mass for DOS
@@ -415,7 +416,7 @@ implicit none
  absorptionDrudeH(:,:) = M_ZERO
 
 !******** READ GMSH MESH FILE ************
-!TODO: This is very durty
+!TODO: This is very dirty
 namefile_msh='external_libs/gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
 ! CALL extract_parameters(namefile_msh, namefile_vf)
