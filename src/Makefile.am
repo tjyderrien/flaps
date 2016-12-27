@@ -34,6 +34,7 @@ flaps_SOURCES =        \
           string.f90   \
           timer.f90    \
           utils.f90    \
+          profiler.f90 \
           main_explicit_Mie.f90
 
 flaps_LDADD = $(all_LIBS)
@@ -44,7 +45,7 @@ depend:
 	@makedepf90 (flaps_SOURCES) 
 
 main_explicit_Mie.o: main_explicit_Mie.f90 input.o material.o mesh.o mie.o output.o source.o \
-                     solver.o grid.o
+                     solver.o grid.o timer.o
 material.o: material.f90 types.o maths.o source.o
 mesh.o: mesh.f90 types.o
 mie.o: mie.f90 maths.o
@@ -56,3 +57,4 @@ input.o: input.f90 types.o string.o utils.o
 string.o: string.f90
 timer.o: timer.f90
 utils.o: utils.f90
+profiler.o : profiler.f90 timer.o
