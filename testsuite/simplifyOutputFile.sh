@@ -1,12 +1,21 @@
 #!/bin/bash
 
-if [ -z $1 ]; then
-	echo "Description: Reshape the output data from the input file <Time*.dat>."
-	echo "Usage: ./simplifyOutputFile.sh <TimeMax.dat | TimeApex.dat | TimeUp.dat | TimeDown.dat> > NewFile.dat"
-else 
-	if [ "$1" == "TimeMax.dat" ] || [ "$1" == "TimeApex.dat" ] || [ "$1" == "TimeUp.dat" ] || [ "$1" == "TimeBottom.dat" ]; then
-		awk '{ print $1, $2, $3, $4, $5, $6, $7, $8, $9 }' $1 
-	else 
-		echo "Please use a file name Time<Max | Apex | Up | Down>.dat."
-	fi
+Simplify() {
+	awk '{ print $1, $2, $3, $4, $5, $6, $7, $8, $9 }' $1
+}
+
+
+if [ -z $2 ]; then
+	echo "Description: Compare the 9 first columns of the <file1> and <file2>."
+	echo "Required: this script needs numdiff installed. See http://www.nongnu.org/numdiff/." 
+	echo "Usage: ./simplifyOutputFile.sh <File1> <File2>"
+else
+	echo "Info: Files were saved in BAK, in case."
+	cp $1 $1.bak
+	cp $2 $2.bak
+	echo "Info: Simplifying..."
+	Simplify $1 > $1.simplified.dat
+	Simplify $2 > $2.simplified.dat
+	echo "Info: Performing the comparison..."
+	numdiff $1.simplified.dat $2.simplified.dat
 fi
