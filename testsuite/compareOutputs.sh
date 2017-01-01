@@ -8,7 +8,7 @@ Simplify() {
 if [ -z $2 ]; then
 	echo "Description: Compare the 9 first columns of the <file1> and <file2>."
 	echo "Required: this script needs numdiff installed. See http://www.nongnu.org/numdiff/." 
-	echo "Usage: ./simplifyOutputFile.sh <File1> <File2>"
+	echo "Usage: ./compareOutputs.sh <File1> <File2>"
 else
 	echo "Info: Files were saved in BAK, in case."
 	cp $1 $1.bak
