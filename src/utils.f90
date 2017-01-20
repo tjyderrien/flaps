@@ -170,7 +170,6 @@ end subroutine PrintComputerName
 SUBROUTINE StopProgram ()
     implicit none
 
-    CLOSE(UNIT =1) ! Si un fichier est ouvert, on libère la resource
     print *, 'Decision is taken to leave ... '
 
     stop

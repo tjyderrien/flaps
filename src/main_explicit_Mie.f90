@@ -37,6 +37,7 @@ program Flaps
   use Mie_m
   use Output_m
   use Profiler_m
+  use Restart_m
   use Timer_m
   use Types_m
 
@@ -115,7 +116,7 @@ program Flaps
                          DefectThickness=1d-7
 !                      epsilonStatic0=(11.66570433d0,0.01404457712d0)                ! dielectric constant for static field
     
-    integer(8)         nbiter, i, j, k, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
+    integer(8)         nbiter, i, j, k, nmin, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
                 Mp, Np, RunningIndex
     real(8)         t, t0, dx, dy, x0, y0, dt, dt2, dt3, dt4, h1, h2, h3
     real(8)         I0 !initial values of the problem
@@ -1575,10 +1576,16 @@ if(Params%UseMieScattering.eq.1) then
 
   call Profiler_stop(prof_init)
 
+  if(Params%RestartCalc == 1) then
+    call Restart_load( mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, nmin )
+  else
+    nmin = 1
+  end if
+
   !***************************************************************
   !***************** temporal loop *******************************
   !***************************************************************
-  do nbiter=1, nmax
+  do nbiter=nmin, nmax
 
    call Profiler_start(prof_timeloop, 'TIME LOOP')
     
@@ -2193,6 +2200,9 @@ if(Params%UseMieScattering.eq.1) then
 
     end if
     !
+    if(mod(nbiter,Params%DumpInterval).eq.0) then
+      call Restart_dump(mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, nbiter )
+    end if
     !
   call Profiler_stop(prof_timeloop)
     !

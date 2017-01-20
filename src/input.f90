@@ -33,6 +33,8 @@ subroutine InitInputParameter( Params )
     Params%TimeMax  = M_ZERO
     Params%Text     = -M_ONE
     Params%AdaptativeTimeStep = 1
+    Params%RestartCalc = 0
+    Params%DumpInterval = 10000
 
     !Numerical parameters of the simulation
     Params%UseMieScattering = -2
@@ -178,6 +180,16 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%AdaptativeTimeStep < 0 .or. Params%AdaptativeTimeStep > 1 ) then
       print *, 'Bad value for AdaptativeTimeStep'
+      call StopProgram()
+    end if
+
+    if( Params%RestartCalc < 0 .or. Params%RestartCalc > 1 ) then
+      print *, 'Bad value for RestartCalc'
+      call StopProgram()
+    end if
+
+    if( Params%DumpInterval < 0 ) then
+      print *, 'Bad value for DumpInterval'
       call StopProgram()
     end if
 
@@ -352,6 +364,17 @@ subroutine LoadInputParameters( filename, Params )
                 goto 999
               endif
 
+              !RestartCalc
+              if( id .equals. 'RestartCalc' ) then
+                call ParseInt( line, Params%RestartCalc )
+                goto 999
+              endif
+
+              !DumpInterval
+              if( id .equals. 'DumpInterval' ) then
+                call ParseInt( line, Params%DumpInterval )
+                goto 999
+              endif
 ! Some examples
 
 !              !Type de la base d'orbitales
@@ -402,6 +425,9 @@ subroutine PrintInputParameters(Params)
     write(unit, '(a,e12.5)') 'TimeMax = ', Params%TimeMax
     write(unit, '(a,e12.5)') 'Text = ', Params%Text
     write(unit, '(a,i2)') 'AdaptativeTimeStep = ', Params%AdaptativeTimeStep
+    write(unit, '(a,i2)') 'RestartCalc = ', Params%RestartCalc
+    write(unit, '(a,i2)') 'DumpInterval = ', Params%DumpInterval
+
 
     !Numerical parameters of the simulation
     write(unit, '(a,i2)') 'UseMieScattering = ', Params%UseMieScattering

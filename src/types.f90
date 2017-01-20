@@ -67,6 +67,8 @@ module Types_m
     integer :: CrossDiffusionOff     !TODO: Comment this value
     real(8) :: Text                  !external temperature (K)
     integer :: AdaptativeTimeStep
+    integer :: RestartCalc
+    integer :: DumpInterval
   end type
 
 end module Types_m
