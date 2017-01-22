@@ -94,16 +94,16 @@ module Output_m
     close(Density%unit)
   end subroutine CloseOutputs
 
-  subroutine output_open(unit, filename, RestartCalc)
+  subroutine output_open(unit, filename, append)
     integer,          intent(in) :: unit
     character(len=*), intent(in) :: filename
-    integer,          intent(in) :: RestartCalc
+    logical,          intent(in) :: append
 
     logical :: exist
 
     inquire(file=trim(filename), exist=exist)
     if(exist) then
-      if(RestartCalc == 1) then
+      if(append) then
         open(unit, file=trim(filename), status="old", position="append", action="write", access='sequential')
       else
         open(unit, file=trim(filename), status="old", position="rewind", action="write", access='sequential')
