@@ -580,7 +580,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     t0=tCenter; x0=source%xCenter; y0=source%yCenter;
     
     ! We open the different files
-    call InitOutputs()
+    call InitOutputs(Params%RestartCalc)
     
     
   TotalLaserEnergy=M_ZERO;
@@ -610,8 +610,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
   write(*,*)
 
+  call output_open(MeshInfo%unit,'output/mesh.dat', 0)               ! format 885, 8852
+
   if(MeshChoice.eq.0) then  !rectangular mesh as main domain
-    do i=1,Params%M
+     do i=1,Params%M
       do j=1,Params%N
         x(i,j)=dx*real(i)+xmin
         y(i,j)=dy*real(j)+ymin
@@ -993,6 +995,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     end do
     
   end if
+  close(MeshInfo%unit)
 
   if(MeshChoice.eq.2) then
      Mp=Mv
@@ -1010,12 +1013,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
      yP(:,:)=y(:,:)
   end if
   
+  call output_open(MeshVessel%unit,'output/meshVessel.dat', 0)
   do i=1,Mp
     do j=1,Np
       write(MeshVessel%unit,885) xP(i,j), yP(i,j), i, j
     end do
     write(MeshVessel%unit,*) " "
   end do
+  close(MeshVessel%unit)
       
   
   write (*,*) "Vessel cells:", Mp, "*", Np,"=", Mp*Np
@@ -1055,7 +1060,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
     !uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
-
+  call output_open(Parameters%unit,'output/parameters.dat', 0)
   write(Parameters%unit,*) "========== CONE PARAMETERS ========="
   write(Parameters%unit,*) "Cone length=", NeedleLength*1d6, "um"
   write(Parameters%unit,*) "Cone height=", NeedleHeight*1d6, "um"
@@ -1084,8 +1089,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Enable adaptative timestep=", Params%AdaptativeTimeStep
   write(Parameters%unit,*) "Time output each ", Params%OutputIter, "iterations."
   write(Parameters%unit,*) "Map output each", iterOutMaps*Params%OutputIter, "iterations."
-  
-  call flush(Parameters%unit)
+  close(Parameters%unit)
   
   call timer_start(full_timer)
 
@@ -1374,13 +1378,14 @@ if(Params%UseMieScattering.eq.1) then
     EintFieldR=real(sqrt( EintField * conjg(EintField) + EintField2 * conjg(EintField2) ))
     
 
-    
+    call output_open(Field%unit,'output/Field.dat', 0) ! format 891
     do j=1,Params%N
       do i=1,Params%M
         write(Field%unit, 891, advance='yes') x(i,j), y(i,j), EintFieldR(i,j), Radius(i,j)
 891        FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       end do
     end do
+    close(Field%unit)
 
 
   write(*,*) 'Done.'
@@ -2077,9 +2082,8 @@ if(Params%UseMieScattering.eq.1) then
    !
    if(mod(nbiter,Params%OutputIter*iterOutMaps).eq.0) then
      !
-     !TODO: Why do you use flush???
-     call flush(Error%unit)
      !
+     call output_open(Depth%unit,'output/Depth.dat', Params%RestartCalc)               ! format 887
      do i=1,Params%M
        do j=1,Params%N
          !
@@ -2097,24 +2101,24 @@ if(Params%UseMieScattering.eq.1) then
        end do !on Y
        write(Depth%unit,'(3x)', advance="yes")
      end do !on X
-     !
-     call flush(Depth%unit);
+     close(Depth%unit);
      !
      ! writing result for the electrostatic calculations
-      do i=1,Mp
-        do j=1,Np
-          ! ecriture des donnees dans un fichier different
-          write(DepthVessel%unit,889, advance="yes") t, xP(i,j), yP(i,j), real(potential(i,j)), real(ExPoisson(i,j)), & !
+     call output_open(DepthVessel%unit,'output/DepthVessel.dat', Params%RestartCalc)       ! format 889
+     do i=1,Mp
+       do j=1,Np
+         ! ecriture des donnees dans un fichier different
+         write(DepthVessel%unit,889, advance="yes") t, xP(i,j), yP(i,j), real(potential(i,j)), real(ExPoisson(i,j)), & !
                 real(EyPoisson(i,j)), DielectricStatic(i,j), NeP(i,j), NhP(i,j)
   889 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, & !TODO: Please use short notation with prenthesis !!
   1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5) 
         end do
       end do
-      !
-      call flush(DepthVessel%unit);
+      close(DepthVessel%unit);
       !
       ! write the functions on Dual Mesh
       !
+      call output_open(DualDepth%unit,'output/DualDepth.dat', Params%RestartCalc)! format 890
       do i=1,Params%M-1
         do j=1,Params%N-1
           !
@@ -2123,8 +2127,7 @@ if(Params%UseMieScattering.eq.1) then
           !
         end do
       end do
-      !
-      call flush(TimeMax%unit); call flush(TimeApex%unit); call flush(TimeUp%unit); call flush(DepthVessel%unit)
+      close(DualDepth%unit)
       !
     end if
     !
@@ -2137,12 +2140,14 @@ if(Params%UseMieScattering.eq.1) then
       !
       !This should be moved to output.F90 file
       !
+      call output_open(EnergyConservation%unit, 'output/EnergyConservation.dat', Params%RestartCalc) !format 892
       write(EnergyConservation%unit,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, & !5
           TotalMeshVolume, LaserIntensityEnergy, ElectronKineticEnergy, ElectronPotentialEnergy !9
-      
 892 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+      close(EnergyConservation%unit)
 
+      call output_open(TimeMax%unit,'output/TimeMax.dat', Params%RestartCalc)                ! format 888
       write(TimeMax%unit,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
                     maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, &        !9
                     maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, &        !14
@@ -2160,8 +2165,10 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, 3x, 1E19.11, &
 3x, 1E19.11, 3x, 1E19.11)
-                
-        write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,Params%N/2), mesh%Th(1,Params%N/2), &
+       close(TimeMax%unit)
+
+       call output_open(TimeApex%unit, 'output/TimeApex.dat', Params%RestartCalc)         ! format 884
+       write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,Params%N/2), mesh%Th(1,Params%N/2), &
               mesh%Ts(1,Params%N/2), mesh%Ne(1,Params%N/2), &                        !5
               mesh%Nh(1,Params%N/2), intensity(1,Params%N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
               SourceE(1,Params%N/2), GainsE(1,Params%N/2), SourceH(1,Params%N/2), GainsH(1,Params%N/2), Egap(1,Params%N/2), &                !14
@@ -2174,8 +2181,10 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+       close(TimeApex%unit)
 
-        write(TimeUp%unit,883, advance="YES") t, mesh%Te(Params%M/2,Params%N), mesh%Th(Params%M/2,Params%N),&
+       call output_open(TimeUp%unit, 'output/TimeUp.dat', Params%RestartCalc)          ! format 883
+       write(TimeUp%unit,883, advance="YES") t, mesh%Te(Params%M/2,Params%N), mesh%Th(Params%M/2,Params%N),&
                           mesh%Ts(Params%M/2,Params%N), mesh%Ne(Params%M/2,Params%N), &
               mesh%Nh(Params%M/2,Params%N), intensity(Params%M/2,Params%N), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,Params%N), GainsE(Params%M/2,Params%N), SourceH(Params%M/2,Params%N),&
@@ -2186,9 +2195,11 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+      close(TimeUp%unit)
 
 
-        write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2,1), mesh%Th(Params%M/2,1), mesh%Ne(Params%M/2,1), &
+      call output_open(TimeBottom%unit, 'output/TimeBottom.dat', Params%RestartCalc)         ! format 882
+      write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2,1), mesh%Th(Params%M/2,1), mesh%Ne(Params%M/2,1), &
               mesh%Nh(Params%M/2,1), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2,1), &
               real(FermiIndexE(Params%M/2,1)), real(FermiIndexH(Params%M/2,1))
@@ -2197,6 +2208,7 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
+      close(TimeBottom%unit)
 
     end if
     !
@@ -2215,7 +2227,7 @@ if(Params%UseMieScattering.eq.1) then
 
   call deallocate_Norm(NormalN, NormalS, NormalE, NormalW )
 
-  !TODO: Sorry but where are the file stream closed???
+  call CloseOutputs()
 
   call ReleaseInputParameters( Params )
 

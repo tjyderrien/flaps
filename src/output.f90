@@ -46,70 +46,73 @@ module Output_m
 
   contains
 
-  subroutine InitOutputs()
-    implicit none
+  subroutine InitOutputs(RestartCalc)
+    integer :: RestartCalc
 
-
-    !TODO: status unknow is not clean. Better to ensure new files
-    !TODO: We should maybe check is file exists first
 
     !We create the directory for the outputs
     call system("mkdir output")
 
     ! opening files
     LaplaceConvergence%unit = 90
-    open(LaplaceConvergence%unit,FILE='output/LaplaceConvergence.dat', access='sequential',status='unknown')
-
     LaplaceMatrix%unit = 91
-    open(LaplaceMatrix%unit, FILE='output/LaplaceMatrix.dat',access='sequential',status='unknown')
-
     TimeBottom%unit = 92
-    open(TimeBottom%unit, FILE='output/TimeBottom.dat', access='sequential', status='unknown')         ! format 882
-
     TimeUp%unit = 93
-    open(TimeUp%unit, FILE='output/TimeUp.dat', access='sequential', status='unknown')         ! format 883
-
     TimeApex%unit = 94
-    open(TimeApex%unit, FILE='output/TimeApex.dat', access='sequential', status='unknown')         ! format 884
-
     Error%unit = 95
-    open(Error%unit,FILE='output/error.dat', access='sequential', status='unknown')
-
     Parameters%unit = 96
-    open(Parameters%unit,FILE='output/parameters.dat', access='sequential', status='unknown')
-
     Depth%unit = 97
-    open(Depth%unit,FILE='output/Depth.dat',access='sequential',status='unknown')                ! format 887
-
     TimeMax%unit = 98
-    open(TimeMax%unit,FILE='output/TimeMax.dat',access='sequential',status='unknown')                 ! format 888
-
     MeshInfo%unit = 99
-    open(MeshInfo%unit,FILE='output/mesh.dat',access='sequential',status='unknown')                ! format 885, 8852
-
     MeshVessel%unit = 100
-    open(MeshVessel%unit,FILE='output/meshVessel.dat',access='sequential',status='unknown')
-
     DepthVessel%unit = 101
-    open(DepthVessel%unit,FILE='output/DepthVessel.dat',access='sequential',status='unknown')         ! format 889
-
     DualDepth%unit = 103
-    open(DualDepth%unit,FILE='output/DualDepth.dat', access='sequential', status='unknown') ! format 890
-
     Field%unit = 104
-    open(Field%unit,FILE='output/Field.dat', access='sequential', status='unknown') ! format 891
-
     EnergyConservation%unit = 105
-    open(EnergyConservation%unit, FILE='output/EnergyConservation.dat', access='sequential', status='unknown') !format 892
-    
     Temperature%unit = 106
-    open(Temperature%unit, FILE='output/Temperature.dat', access='sequential', status='unknown') !format 893
-    
     Temperature%unit = 107
-    open(Density%unit, FILE='output/Density.dat', access='sequential', status='unknown') !format 894
-
   end subroutine InitOutputs
 
+  subroutine CloseOutputs()
+
+    close(LaplaceConvergence%unit)
+    close(LaplaceMatrix%unit)
+    close(TimeBottom%unit)
+    close(TimeUp%unit)
+    close(TimeApex%unit)
+    close(Error%unit)
+    close(Parameters%unit)
+    close(Depth%unit)
+    close(TimeMax%unit)
+    close(MeshInfo%unit)
+    close(MeshVessel%unit)
+    close(DepthVessel%unit)
+    close(DualDepth%unit)
+    close(Field%unit)
+    close(EnergyConservation%unit)
+    close(Temperature%unit)
+    close(Density%unit)
+  end subroutine CloseOutputs
+
+  subroutine output_open(unit, filename, RestartCalc)
+    integer,          intent(in) :: unit
+    character(len=*), intent(in) :: filename
+    integer,          intent(in) :: RestartCalc
+
+    logical :: exist
+
+    inquire(file=trim(filename), exist=exist)
+    if(exist) then
+      if(RestartCalc == 1) then
+        open(unit, file=trim(filename), status="old", position="append", action="write", access='sequential')
+      else
+        open(unit, file=trim(filename), status="old", position="rewind", action="write", access='sequential')
+      end if
+    else
+      open(unit, file=trim(filename), status="new", action="write",access='sequential')
+    end if
+
+  end subroutine
 
 end module Output_m
 
