@@ -36,11 +36,14 @@ module Restart_m
   !------------------------------------------------------------------
   !> Load previously stored data
   !------------------------------------------------------------------
-  subroutine Restart_load( mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, iter )
+  subroutine Restart_load( mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, iter, &
+       IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy, HoleEnergy, LatticeEnergy )
     type(MeshValues),                 intent(inout) :: mesh
     real(8), dimension(mesh%M, mesh%N), intent(out) :: UeNew, UhNew, TsOld, Ce, Ch, Cs, CsPrev, CsOld
     real(8),                            intent(out) :: t
     integer(8),                         intent(out) :: iter
+    real(8),                            intent(out) :: IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, &
+                                                       ElectronPotentialEnergy, HoleEnergy, LatticeEnergy
 
     integer :: unit, ios, N, M, i, j
     logical :: exists
@@ -144,6 +147,8 @@ module Restart_m
         end do
       end do
 
+     read(unit,*,end=999) IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy, HoleEnergy, LatticeEnergy
+
     close(unit)
 
     end if
@@ -160,11 +165,14 @@ module Restart_m
     !------------------------------------------------------------------
   !> Load previously stored data
   !------------------------------------------------------------------
-  subroutine Restart_dump(mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, iter )
+  subroutine Restart_dump(mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, iter, &
+      IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy, HoleEnergy, LatticeEnergy )
     type(MeshValues),                    intent(in) :: mesh
     real(8), dimension(mesh%M, mesh%N), intent(in) :: UeNew, UhNew, TsOld, Ce, Ch, Cs, CsPrev, CsOld
     real(8),                            intent(in) :: t
     integer(8),                         intent(in) :: iter
+    real(8),                            intent(in) :: IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, &
+                                                      ElectronPotentialEnergy, HoleEnergy, LatticeEnergy
 
     integer :: unit, ios, i, j
 
@@ -257,6 +265,10 @@ module Restart_m
           write(unit,*) Cs(i,j)
         end do
       end do
+
+      write(unit,*) IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, &
+                        ElectronPotentialEnergy, HoleEnergy, LatticeEnergy
+
 
       write(unit,*) 'End of file'
 

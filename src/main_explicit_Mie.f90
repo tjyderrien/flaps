@@ -1582,7 +1582,8 @@ if(Params%UseMieScattering.eq.1) then
   call Profiler_stop(prof_init)
 
   if(Params%RestartCalc == 1) then
-    call Restart_load( mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, nmin )
+    call Restart_load( mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, nmin, &
+          IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy, HoleEnergy, LatticeEnergy )
   else
     nmin = 1
   end if
@@ -1985,10 +1986,11 @@ if(Params%UseMieScattering.eq.1) then
       !$OMP END PARALLEL DO
     endif
 
+    !TODO: Add a type Energy
+
     ! calculation of the absorbed laser energy involved in the simulated slice !
     IntensityEnergy=IntensityEnergy+(OnePhotonIonizationRate0+absorptionDrudeE(1,Params%N/2) &
                  +absorptionDrudeH(1,Params%N/2))*intensity(1,Params%N/2)*CellVol(1,Params%N/2)*dt
-
 
 
     call evaluate_bandgap(matter, newmesh, newmesh%Ne,newmesh%Ts, Egap_new)
@@ -2213,7 +2215,8 @@ if(Params%UseMieScattering.eq.1) then
     end if
     !
     if(mod(nbiter,Params%DumpInterval).eq.0) then
-      call Restart_dump(mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, nbiter )
+      call Restart_dump(mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, nbiter, &
+            IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy, HoleEnergy, LatticeEnergy )
     end if
     !
   call Profiler_stop(prof_timeloop)

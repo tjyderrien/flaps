@@ -54,7 +54,7 @@ contains
       type(InputParameters),  intent(in) :: Params
       type(MeshValues),  intent(in)      :: mesh
       type(Laser),       intent(in)      :: source
-      real(8),           intent(out)   :: intensity(mesh%M, mesh%N)
+      real(8),           intent(out)     :: intensity(mesh%M, mesh%N)
       real(8),           intent(in)      :: OpticalIndex(mesh%M, mesh%N)
       real(8),           intent(in)      :: Reflectivity(mesh%M, mesh%N)
       real(8),           intent(in)      :: absorptionDrudeE(mesh%M, mesh%N)
