@@ -191,7 +191,7 @@ program Flaps
 
     type(VectorField) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
                 
-                 !TODO: Use dimension. TDJY: What do you have in mind? Example? 
+                 !TODO: Use dimension. TJYD: What do you have in mind? Example? 
     real(8), allocatable :: CurviWx(:,:), CurviWy(:,:), &                 ! Unit vector between cell centers
                             CurviEx(:,:), CurviEy(:,:), &
                             CurviNx(:,:), CurviNy(:,:), &
@@ -293,6 +293,7 @@ program Flaps
 
   !TODO: move to material.f90
   !TODO: Should be a parameter, to guaranty no modification
+  !TODO: TJYD: this should be imposed by the model we gonna call in the continuum description library. 
   me=M_HALF*me0       ! electron effective mass for conductivity !0.24 (source ?)
   mh=M_HALF*me0       ! hole effective mass for conductivity !0.81 (source ?)
   meDOS=0.36d0*me0   ! electron effective mass for DOS
@@ -420,7 +421,7 @@ program Flaps
  absorptionDrudeH(:,:) = M_ZERO
 
 !******** READ GMSH MESH FILE ************
-!TODO: This is very durty
+!TODO: This is very dirty
 namefile_msh='external_libs/gmsh/mesh.msh'
 RunningIndex=1 !gonna be used to mesh down
 ! CALL extract_parameters(namefile_msh, namefile_vf)
@@ -1626,7 +1627,8 @@ if(Params%UseMieScattering.eq.1) then
    call copy_mesh(mesh, newmesh)
    !$OMP END PARALLEL
 
-   !TODO: Does this depends on the position? If yes, this has to be changed bak to an array
+   !TODO: Does this depends on the position? If yes, this has to be changed bak to an array. 
+   !TODO: TJYD: this can depend on position, if we apply a model for the collision frequency. This would be nice, actually. 
    nuColl= get_collision_frequency(matter)
    !
    !

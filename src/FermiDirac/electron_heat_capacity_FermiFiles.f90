@@ -1,6 +1,36 @@
-!calculation of intrinsic hole and electron density in semiconductor
-!for given temperature, band gap, effective masses and fermi level
-!calculate fermi integrals of different orders and its relations
+!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
+!!
+!! This program is free software: you can redistribute it and/or modify
+!! it under the terms of the GNU General Public License as published by
+!! the Free Software Foundation, either version 3 of the License, or
+!! (at your option) any later version.
+!!
+!! This program is distributed in the hope that it will be useful,
+!! but WITHOUT ANY WARRANTY; without even the implied warranty of
+!! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!! GNU General Public License for more details.
+!!
+!! You should have received a copy of the GNU General Public License
+!! along with this program.  If not, see <http://www.gnu.org/licenses/>
+
+!------------------------------------------------------------------------------
+!> @file main_explicit_Mie.f90
+!
+! DESCRIPTION:
+!> @brief Build a table with several values of Fermi-Dirac functions
+!>
+!> @author
+!> Thibault J.Y. Derrien
+!> Laboratoire Hubert Curien, UMR CNRS, St-Etienne
+!> ANR Ultrasonde
+!> 
+!> Calculation of intrinsic hole and electron density in semiconductor
+!> for given temperature, band gap, effective masses and fermi level
+!> calculate fermi integrals of different orders and its relations
+!> 
+!> The best way to control the number of lines for generating FermiDatasE|H.dat
+!> is given in this file. 
+!> It is however totally unknown if this file or the other file is valid.
 
 program fermi
 
