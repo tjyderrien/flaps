@@ -14,3 +14,8 @@ doc/Makefile.in
 src/Makefile
 src/Makefile.in
 src/flaps
+build-aux/
+external_libs/libflaps.a
+external_libs/gmsh/libgmsh.a
+external_libs/amos/libamos.a
+external_libs/gmsh/msh2vf
