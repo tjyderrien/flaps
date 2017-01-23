@@ -3,3 +3,14 @@
 *genmod*
 aclocal.m4
 autom4te.cache/*
+Makefile
+Makefile.in
+config.h
+config.log
+config.status
+configure
+doc/Makefile
+doc/Makefile.in
+src/Makefile
+src/Makefile.in
+src/flaps
