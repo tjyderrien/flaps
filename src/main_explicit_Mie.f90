@@ -1586,13 +1586,13 @@ if(Params%UseMieScattering.eq.1) then
     call Restart_load( mesh, UeNew, UhNew, TsOld, Ce, Ch, CsPrev, CsOld, Cs, t, nmin, &
           IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy, HoleEnergy, LatticeEnergy )
   else
-    nmin = 1
+    nmin = 0
   end if
 
   !***************************************************************
   !***************** temporal loop *******************************
   !***************************************************************
-  do nbiter=nmin, nmax
+  do nbiter=nmin+1, nmax
 
    call Profiler_start(prof_timeloop, 'TIME LOOP')
     
@@ -2084,10 +2084,10 @@ if(Params%UseMieScattering.eq.1) then
   end if
 
    !
-   if(mod(nbiter,Params%OutputIter*iterOutMaps).eq.0) then
+   if(mod(nbiter,Params%OutputIter*iterOutMaps).eq.0  .or. nbiter == 1) then
      !
      !
-     call output_open(Depth%unit,'output/Depth.dat', (nbiter/=nmin .or. Params%RestartCalc == 1))               ! format 887
+     call output_open(Depth%unit,'output/Depth.dat', (nbiter/=1 .or. Params%RestartCalc == 1))               ! format 887
      do i=1,Params%M
        do j=1,Params%N
          !
@@ -2108,7 +2108,7 @@ if(Params%UseMieScattering.eq.1) then
      close(Depth%unit);
      !
      ! writing result for the electrostatic calculations
-     call output_open(DepthVessel%unit,'output/DepthVessel.dat', (nbiter/=nmin .or. Params%RestartCalc == 1))       ! format 889
+     call output_open(DepthVessel%unit,'output/DepthVessel.dat', (nbiter/=1 .or. Params%RestartCalc == 1))       ! format 889
      do i=1,Mp
        do j=1,Np
          ! ecriture des donnees dans un fichier different
@@ -2122,7 +2122,7 @@ if(Params%UseMieScattering.eq.1) then
       !
       ! write the functions on Dual Mesh
       !
-      call output_open(DualDepth%unit,'output/DualDepth.dat', (nbiter/=nmin .or. Params%RestartCalc == 1))! format 890
+      call output_open(DualDepth%unit,'output/DualDepth.dat', (nbiter/=1 .or. Params%RestartCalc == 1))! format 890
       do i=1,Params%M-1
         do j=1,Params%N-1
           !
@@ -2137,7 +2137,7 @@ if(Params%UseMieScattering.eq.1) then
     !
     !
     ! output to files
-    if(mod(nbiter,Params%OutputIter).eq.0) then
+    if(mod(nbiter,Params%OutputIter).eq.0 .or. nbiter == 1) then
       !
       cpu_timestep_duration = timer_elapsedtime(full_timer) / real(nbiter)
       cpuefficiency=real(nthreads)/cpu_timestep_duration
@@ -2151,7 +2151,7 @@ if(Params%UseMieScattering.eq.1) then
 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
       close(EnergyConservation%unit)
 
-      call output_open(TimeMax%unit,'output/TimeMax.dat', (nbiter/=nmin .or. Params%RestartCalc == 1))                ! format 888
+      call output_open(TimeMax%unit,'output/TimeMax.dat', (nbiter/=1 .or. Params%RestartCalc == 1))                ! format 888
       write(TimeMax%unit,888, advance="YES") t, maxTe, maxTh, maxTs, maxNe, &         !5
                     maxNh, maxIntensity, TotalLaserEnergy, TotalThermalEnergy, &        !9
                     maxSourceE, maxGainsE, maxSourceH, maxGainsH, maxGap, &        !14
@@ -2171,7 +2171,7 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E19.11, 3x, 1E19.11)
        close(TimeMax%unit)
 
-       call output_open(TimeApex%unit, 'output/TimeApex.dat', (nbiter/=nmin .or. Params%RestartCalc == 1))         ! format 884
+       call output_open(TimeApex%unit, 'output/TimeApex.dat', (nbiter/=1 .or. Params%RestartCalc == 1))         ! format 884
        write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,Params%N/2), mesh%Th(1,Params%N/2), &
               mesh%Ts(1,Params%N/2), mesh%Ne(1,Params%N/2), &                        !5
               mesh%Nh(1,Params%N/2), intensity(1,Params%N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
@@ -2187,7 +2187,7 @@ if(Params%UseMieScattering.eq.1) then
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5)
        close(TimeApex%unit)
 
-       call output_open(TimeUp%unit, 'output/TimeUp.dat', (nbiter/=nmin .or. Params%RestartCalc == 1))          ! format 883
+       call output_open(TimeUp%unit, 'output/TimeUp.dat', (nbiter/=1 .or. Params%RestartCalc == 1))          ! format 883
        write(TimeUp%unit,883, advance="YES") t, mesh%Te(Params%M/2,Params%N), mesh%Th(Params%M/2,Params%N),&
                           mesh%Ts(Params%M/2,Params%N), mesh%Ne(Params%M/2,Params%N), &
               mesh%Nh(Params%M/2,Params%N), intensity(Params%M/2,Params%N), TotalLaserEnergy, TotalThermalEnergy, &
@@ -2202,7 +2202,7 @@ if(Params%UseMieScattering.eq.1) then
       close(TimeUp%unit)
 
 
-      call output_open(TimeBottom%unit, 'output/TimeBottom.dat', (nbiter/=nmin .or. Params%RestartCalc == 1))         ! format 882
+      call output_open(TimeBottom%unit, 'output/TimeBottom.dat', (nbiter/=1 .or. Params%RestartCalc == 1))         ! format 882
       write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2,1), mesh%Th(Params%M/2,1), mesh%Ne(Params%M/2,1), &
               mesh%Nh(Params%M/2,1), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2,1), &
