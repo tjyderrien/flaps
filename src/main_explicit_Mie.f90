@@ -117,7 +117,7 @@ program Flaps
 !                      epsilonStatic0=(11.66570433d0,0.01404457712d0)                ! dielectric constant for static field
     
     integer(8)         nbiter, i, j, k, nmin, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
-                Mp, Np, RunningIndex
+                Mp, Np, RunningIndex, FermiIndex
     real(8)         t, t0, dx, dy, x0, y0, dt, dt2, dt3, dt4, h1, h2, h3
     real(8)         I0 !initial values of the problem
 
