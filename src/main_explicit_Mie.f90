@@ -1058,7 +1058,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
-   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
+!    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
     !uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
   call output_open(Parameters%unit,'output/parameters.dat', .false.)
@@ -1163,8 +1163,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
+        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
+        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 
         etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
@@ -1674,8 +1674,8 @@ if(Params%UseMieScattering.eq.1) then
         !         write(*,*) "Esprit es-tu la ?"
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
+        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
+        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "NeNc=", Ne(i,j)/DOSe(i,j), Nh(i,j)/DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "FermiIndex=", FermiIndex(Ne(i,j)/DOSe(i,j), FermiMaxLines), FermiIndex(Nh(i,j)/DOSh(i,j), FermiMaxLines)
