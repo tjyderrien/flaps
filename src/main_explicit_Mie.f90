@@ -1720,9 +1720,9 @@ if(Params%UseMieScattering.eq.1) then
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, Params%ImpactOff )
    !
    !Compute the new conductivites, based on the knowledge of densities and mobilities
-   call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                     ColFermi0, ColFermi1, ColFermi2)
+   call UpdateConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                           ColFermi0, ColFermi1, ColFermi2, Params%TransportModel)
    !
    ! interpolation bilineaire ponderee par les aires
    call bilinear_interpol_dual(mesh, dual, InvCellVol)
