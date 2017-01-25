@@ -1260,9 +1260,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   allocate(TangentSy(1:Params%M,1:Params%N))
 
    call allocate_NormCurviTangent(Params%M, Params%N, NormalN, NormalS, NormalE, &
-                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
-                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
-                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+                                 NormalW )
+
 
    call compute_distances(Params%M, Params%N, x, y, DistN, DistS, DistE, DistW, DistDualN, &
                           DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
