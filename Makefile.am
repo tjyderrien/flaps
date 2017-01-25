@@ -24,3 +24,6 @@ SUBDIRS = external_libs  \
 DISTCLEANFILES = \
         ChangeLog config.log config.status
 
+doc:
+	@cd doc; $(MAKE)
+
