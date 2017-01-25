@@ -511,7 +511,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 !**** INITIALIZATION
 
-  call init_laser(source)
+  call init_laser(source, Params)
 
   tmin=tCenter-5d0*source%tau
 
