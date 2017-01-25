@@ -27,7 +27,7 @@ subroutine poisson_init_dual( M,N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
   use Maths_m
   implicit none
 
-  integer,                 intent(in)    :: M, N
+  integer(8),              intent(in)    :: M, N
   real(8), dimension(M,N), intent(in)    :: x, y
   real(8), dimension(M,N), intent(inout) :: xDualSW, yDualSW, xDualSE, yDualSE, &
                                             xDualNE, yDualNE, xDualNW, yDualNW, &
