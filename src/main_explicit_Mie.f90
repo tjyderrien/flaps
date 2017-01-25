@@ -256,7 +256,7 @@ program Flaps
             localT, P2critic, TotalNumOfE, TotalNumOfH, &
             xmin2, xmax2, ymin2, ymax2, &
             MeshConvergence, MeshConvergenceOld
-    real :: cpuefficiency, cpu_timestep_duration, ElapsedTime
+    real :: cpuefficiency, cpu_timestep_duration
             
     real(8) sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, sigmaX8, sigmaX9, &
             sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, sigmaY8, sigmaY9, &
@@ -281,7 +281,7 @@ program Flaps
     !! FUNCTIONS CALLS
      real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, DensityOfState, &
-             CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate
+             LatticeHeatCapacity
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
 
             
