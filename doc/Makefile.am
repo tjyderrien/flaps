@@ -15,4 +15,20 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+RM := rm -rf
+
+# All Target
+all: doc
+
+# Tool invocations
+doc:
+	@echo "Generating Documentation"
+	doxygen doxygen.in > doxygen.log 
+
+# Other Targets
+clean:
+	$(RM) html latex rtf *.log
+	@echo ' '
+
+.PHONY: clean
 
