@@ -203,8 +203,8 @@ subroutine CheckValidityInputParameters( Params )
       call StopProgram()
     end if
     
-    if( (Params%Wavelength .le. 0d0) .or. (Params%Wavelength  .ne. 343d-9) .or. (Params%Wavelength  .ne. 515d-9) &
-        .or. (Params%Wavelength  .ne. 800d-9 ) .or. ( Params%Wavelength  .ne. 1030d-9 ) ) then
+    if( (Params%Wavelength .le. 0e0) .or. (Params%Wavelength  .ne. 343e-9) .or. (Params%Wavelength  .ne. 515e-9) &
+        .or. (Params%Wavelength  .ne. 800e-9 ) .or. ( Params%Wavelength  .ne. 1030e-9 ) ) then
       print *, 'Laser wavelength is for now limited to 343, 515, 800, and 1030 nm.'
       call StopProgram()
     end if
@@ -405,7 +405,7 @@ subroutine LoadInputParameters( filename, Params )
               
               !pulseFWHM
               if( id .equals. 'PulseFWHM' ) then
-                call ParseDouble( line, Params%pulseFWHM )
+                call ParseDouble( line, Params%PulseFWHM )
                 goto 999
               endif
               
