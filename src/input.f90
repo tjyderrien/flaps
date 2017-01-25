@@ -203,8 +203,8 @@ subroutine CheckValidityInputParameters( Params )
       call StopProgram()
     end if
     
-    if( (Params%Wavelength .le. 0e0) .or. ( (Params%Wavelength  .ne. 343e-9) .and. (Params%Wavelength  .ne. 515e-9) &
-        .and. (Params%Wavelength  .ne. 800e-9 ) .and. ( Params%Wavelength  .ne. 1030e-9 ) ) ) then
+    if( (Params%Wavelength .le. 0e0) ) then !.or. ( (Params%Wavelength  .ne. 343e-9) .and. (Params%Wavelength  .ne. 515e-9) &
+        !.and. (Params%Wavelength  .ne. 800e-9 ) .and. ( Params%Wavelength  .ne. 1030e-9 ) ) ) then
       print *, 'Laser wavelength is for now limited to 343, 515, 800, and 1030 nm.'
       call StopProgram()
     end if
