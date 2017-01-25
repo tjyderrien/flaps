@@ -399,19 +399,19 @@ subroutine LoadInputParameters( filename, Params )
               
               !Wavelength
               if( id .equals. 'Wavelength' ) then
-                call ParseInt( line, Params%Wavelength )
+                call ParseDouble( line, Params%Wavelength )
                 goto 999
               endif
               
               !pulseFWHM
               if( id .equals. 'PulseFWHM' ) then
-                call ParseInt( line, Params%pulseFWHM )
+                call ParseDouble( line, Params%pulseFWHM )
                 goto 999
               endif
               
               !Fluence
               if( id .equals. 'Fluence' ) then
-                call ParseInt( line, Params%Fluence )
+                call ParseDouble( line, Params%Fluence )
                 goto 999
               endif
 ! Some examples
