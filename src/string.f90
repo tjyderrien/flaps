@@ -97,6 +97,7 @@ SUBROUTINE ParseDouble( line, value )
 
     i = index(line, ' ')
     read( line(i:), '(e12.5)' ) value
+    !TODO: input like 10e0 are not well interpreted. 
 END SUBROUTINE ParseDouble
 
 
