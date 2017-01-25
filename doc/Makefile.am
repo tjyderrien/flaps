@@ -16,3 +16,16 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 
+# Tool invocations
+all-local: doxyfile.stamp
+
+doxyfile.stamp:
+	doxygen doxygen_input.in > doxygen.log 
+	echo Timestamp > doxyfile.stamp
+
+
+# Other Targets
+DISTCLEANFILES = \
+         html latex rtf *.log
+
+CLEANFILES = doxyfile.stamp
