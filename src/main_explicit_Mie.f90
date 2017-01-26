@@ -1300,8 +1300,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                                             NormalWxP, NormalWyP, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP )
 
 
-  call poisson_init_dual( Params%M,Params%N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
-                           xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
+!   call poisson_init_dual( Params%M,Params%N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
+!                            xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
 
    ! Drift initialization
    JeX(:,:)=M_ZERO

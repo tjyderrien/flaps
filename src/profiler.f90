@@ -14,7 +14,7 @@
 !! along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 !------------------------------------------------------------------------------
-!> @file Timer.f90
+!> @file profiler.f90
 !
 ! DESCRIPTION:
 !> @brief A timer module \n

@@ -14,7 +14,7 @@
 !! along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 !------------------------------------------------------------------------------
-!> @file Utils.f90
+!> @file utils.f90
 !
 ! DESCRIPTION:
 !> @brief Classe qui fournit les routines la gestion des fichiers ( ouverture et recherche de noms )

@@ -14,7 +14,7 @@
 !! along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 !------------------------------------------------------------------------------
-!> @file Restart.f90
+!> @file restart.f90
 !
 ! DESCRIPTION:
 !> @brief Restart module to compute calculations on long times.
