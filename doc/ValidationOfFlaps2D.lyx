@@ -1,0 +1,5065 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass revtex4-1
+\options aps, print
+\use_default_options false
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman charter
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement h
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_title "Validation of Flaps2D simulation code"
+\pdf_author "Thibault J.-Y. Derrien <derrien@fzu.cz>"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks true
+\pdf_backref false
+\pdf_pdfusetitle true
+\pdf_quoted_options "citecolor=blue, urlcolor=blue, linkcolor=blue"
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Validation of the Flaps 2D simulation code
+\end_layout
+
+\begin_layout Author
+Thibault J.-Y.
+ Derrien
+\end_layout
+
+\begin_layout Author Email
+derrien@fzu.cz
+\end_layout
+
+\begin_layout Affiliation
+HiLASE Centre, Institute of Physics, Academy of Science of the Czech Republic,
+ 
+\begin_inset Newline newline
+\end_inset
+
+Za Radnicí 828/5, 25241 Dolní Břežany, Czech Republic
+\end_layout
+
+\begin_layout Date
+August 30th, 2015
+\end_layout
+
+\begin_layout Abstract
+This report aims to document and verify the 
+\begin_inset Quotes eld
+\end_inset
+
+Flaps 2D
+\begin_inset Quotes erd
+\end_inset
+
+ simulation tool, developed by myself since February 2012, to investigate
+ the physics of laser-matter interaction in nanostructured materials.
+ 
+\end_layout
+
+\begin_layout Section*
+Context of the simulation tool
+\end_layout
+
+\begin_layout Standard
+The development of this work has been supported during 11 months by the
+ french National Research Agency (ANR) under the project 
+\begin_inset Quotes eld
+\end_inset
+
+Ultrasonde
+\begin_inset Quotes erd
+\end_inset
+
+ leaded by Tatiana Itina, Laboratoire Hubert Curien, Saint-Etienne, France.
+ 
+\end_layout
+
+\begin_layout Standard
+Today, I'm still working on the development of this code which, at term,
+ allows to study the absorption by a structured material irradiated by a
+ femtosecond laser.
+ The code has been designed so that material can be also polarized by a
+ high voltage.
+ The coupling of polarized materials with laser illumination allow tomographic
+ reconstruction of atomic lattices in 3D with metals, dielectrics and oxides.
+ The code can also be used to study the transport of free-carriers in nanostruct
+ures considering the effect of the geometry.
+ This aspect is also a promiseful domain for a better understanding of the
+ carrier and heat transport properties at the nanoscale.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage clearpage
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+System of equations solved by the code
+\end_layout
+
+\begin_layout Standard
+The drift induced by the external field and by the charge separation is
+ neglected.
+ 
+\end_layout
+
+\begin_layout Paragraph
+Free-carrier generation and transport
+\end_layout
+
+\begin_layout Standard
+
+\size small
+\begin_inset Formula 
+\begin{equation}
+\begin{cases}
+\frac{\partial n_{e}}{\partial t}+\boldsymbol{\nabla}\cdot\boldsymbol{J_{e}} & =G_{e}-R_{e}\\
+\frac{\partial n_{h}}{\partial t}+\boldsymbol{\nabla}\cdot\boldsymbol{J_{h}} & =G_{h}-R_{h}.
+\end{cases}\label{eq:Transport}
+\end{equation}
+
+\end_inset
+
+
+\size default
+
+\begin_inset Formula 
+\[
+G_{e,h}=\sigma_{1}I+\sigma_{2}I^{2}+\delta_{II}^{e,h}n_{e,h}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+R_{e,h}=R_{h}^{A}+R_{e}^{A}=C_{h}^{AR}n_{h}^{2}n_{e}+C_{e}^{AR}n_{e}^{2}n_{h}
+\]
+
+\end_inset
+
+
+\size small
+
+\begin_inset Formula 
+\[
+\boldsymbol{J_{e,h}}=-D_{e,h}\boldsymbol{\nabla}n_{e,h}
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+D_{e,h}=\mu_{e,h}\frac{k_{B}T_{e,h}}{e}\frac{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{-1/2}\left(\eta_{e,h}\right)},
+\]
+
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+\mu_{e,h}=\frac{q_{e,h}}{m_{e,h}^{\star}\nu_{e,h}}\frac{\mathcal{F}_{0}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Free-carrier energy 
+\end_layout
+
+\begin_layout Standard
+
+\size small
+\begin_inset Formula 
+\begin{equation}
+\begin{cases}
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right) & +\boldsymbol{\nabla}\left(\kappa_{e}\boldsymbol{\nabla}T_{e}\right)=Q_{e}-\gamma_{e-ph}(T_{e}-T_{s})\\
+\frac{\partial}{\partial t}\left(C_{h}T_{h}\right) & +\boldsymbol{\nabla}\left(\kappa_{h}\boldsymbol{\nabla}T_{h}\right)=Q_{h}-\gamma_{h-ph}(T_{h}-T_{s})
+\end{cases}\label{eq:TTMe}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size small
+\begin_inset Formula 
+\[
+\frac{\partial\left(C_{Si}T_{Si}\right)}{\partial t}=\nabla\left(\kappa_{Si}\nabla T_{Si}\right)+\gamma_{e-ph}(T_{e}-T_{Si})+\gamma_{h-ph}(T_{h}-T_{Si})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size small
+\begin_inset Formula 
+\[
+C_{e,h}=\frac{3}{2}k_{B}n_{e,h}\left\{ \frac{\mathcal{F}_{3/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}-\eta_{e,h}\left[1-\frac{\mathcal{F}_{3/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}.\frac{\mathcal{F}_{-1/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}\right]\right\} 
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\size small
+\begin_inset Formula 
+\[
+\kappa_{e,h}=\frac{k_{B}^{2}n_{e,h}\mu_{e,h}T_{e,h}}{e}\left[6\frac{\mathcal{F}_{2}\left(\eta_{e,h}\right)}{\mathcal{F}_{0}\left(\eta_{e,h}\right)}-4\frac{\mathcal{F}_{1}\left(\eta_{e,h}\right)^{2}}{\mathcal{F}_{0}\left(\eta_{e,h}\right)^{2}}\right]
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+Q_{e,h} & =\frac{\hbar\omega-E_{gap}}{\hbar\omega}\sigma_{1}I+\frac{2\hbar\omega-E_{gap}}{2\hbar\omega}\sigma_{2}I^{2}\\
+ & -E_{gap}\delta_{II}(T_{e,h})n_{e,h}+\alpha_{fcr}^{e,h}I+E_{gap}R_{e,h}^{A}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Lattice energy
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\left(C_{s}T_{s}\right)}{\partial t}-\boldsymbol{\nabla}\left(\kappa_{s}\boldsymbol{\nabla}T_{s}\right)=\gamma_{e-ph}(T_{e}-T_{s})+\gamma_{h-ph}(T_{h}-T_{s})\label{eq:TTMlattice}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\gamma_{e,h-ph}=C_{e,h}\nu_{e,h-ph}.\label{eq:Coupling}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nu_{e,h-ph}^{-1}=\tau_{ph}^{0}\left[1+\left(\frac{n_{e,h}}{n_{th}}\right)^{2}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+C_{s}\left(T_{s}\right)=10^{3}\rho_{Si}\times\left(a_{0}T_{s}+a_{1}T_{s}^{a_{2}}\right)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\kappa_{s}(T_{s})=10^{2}\left(a_{0}+\frac{a_{1}}{1+e^{-\frac{T_{s}-T_{c}+\frac{w_{1}}{2}}{w_{2}}}}\right)\left(1-\frac{1}{1+e^{-\frac{T_{s}-T_{c}-\frac{w_{1}}{2}}{w_{3}}}}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Since the Fermi-Dirac statistics strongly reduce the possible comparison
+ with analytical solutions, it will be neglected in the following Sections
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Free-carrier-density:-Validation"
+
+\end_inset
+
+, 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Free-carrier-energy:-validation"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Coupled-effects"
+
+\end_inset
+
+.
+ However, it will be considered in the section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Control-of-the"
+
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+Free-carrier density: Validation of analytical cases
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Free-carrier-density:-Validation"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Auger recombination
+\end_layout
+
+\begin_layout Standard
+The formulation proposed by 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Silaeva2012a"
+
+\end_inset
+
+ has to be validated within several steps.
+ Auger recombination is modeled by a coupled non-linear system.
+ In that section, we only consider the equation of free-carrier given by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial n_{e}}{\partial t}=\frac{\partial n_{h}}{\partial t}=C_{h}^{AR}n_{h}^{2}n_{e}+C_{e}^{AR}n_{e}^{2}n_{h}\label{eq:AugerNe}
+\end{equation}
+
+\end_inset
+
+Analytical solution of the equation is given by 
+\begin_inset Formula 
+\[
+n_{e}(t)=\frac{C_{AR}^{(h)}n_{e}^{0}n_{h}^{0}}{\left(n_{e}^{0}C_{AR}^{(e)}+n_{h}^{0}C_{AR}^{(h)}\right)\exp\left(C_{AR}^{(h)}n_{h}^{2}t\right)-C_{AR}^{(e)}n_{e}^{0}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20140314-ValidationOfAuger.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:AugerNe"
+
+\end_inset
+
+Relative error calculation (%) of Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:AugerNe"
+
+\end_inset
+
+ as a function of time.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:AugerNe"
+
+\end_inset
+
+ presents the comparison between the numerical calculation and the analytical
+ solution for an initial value problem, where densities have been fixed
+ at 
+\begin_inset Formula $N_{e,h}(t=0)=10^{27}$
+\end_inset
+
+ m
+\begin_inset Formula $^{-3}$
+\end_inset
+
+.
+ The mismatch between numerical and analytical calculations is smaller than
+ 
+\begin_inset Formula $0.005$
+\end_inset
+
+%.
+ 
+\end_layout
+
+\begin_layout Subsection
+Interband absorption
+\end_layout
+
+\begin_layout Paragraph
+One-photon absorption
+\end_layout
+
+\begin_layout Standard
+Validation on analytical function at 
+\begin_inset Formula $\lambda=343$
+\end_inset
+
+ nm has been performed but is not yet presented.
+ 
+\end_layout
+
+\begin_layout Paragraph
+Two-photon absorption
+\end_layout
+
+\begin_layout Standard
+Test at 
+\begin_inset Formula $\lambda=1030$
+\end_inset
+
+ nm.
+ Test is shitty ! Go to second order time integration scheme.
+ 
+\end_layout
+
+\begin_layout Subsection
+Impact ionization
+\end_layout
+
+\begin_layout Standard
+To be completed.
+ 
+\end_layout
+
+\begin_layout Section
+Free-carrier energy: validation of analytical cases
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Free-carrier-energy:-validation"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Heating of the interband absorption
+\end_layout
+
+\begin_layout Standard
+In this subsection, we simply consider the interband absorption at 343 nm.
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\strikeout off
+\uuline off
+\uwave off
+\noun off
+\color none
+
+\begin_inset Formula 
+\[
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right)=\frac{\hbar\omega-E_{gap}}{\hbar\omega}\sigma_{1}I
+\]
+
+\end_inset
+
+where the free-carrier density has been fixed to 
+\begin_inset Formula $n_{e}=10^{27}$
+\end_inset
+
+ m
+\begin_inset Formula $^{-3}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20130905-HeatingIonization-1E27.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:ErrorSigma1-Heating"
+
+\end_inset
+
+Relative error between numerical and analytical solutions for the interband
+ absorption of electrons.
+ 
+\begin_inset Formula $\lambda=343$
+\end_inset
+
+ nm.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:ErrorSigma1-Heating"
+
+\end_inset
+
+ shows the relative error between the numerical and the analytical solution.
+ The maximum relative error is 
+\begin_inset Formula $0.1$
+\end_inset
+
+%, which is reasonable.
+ This relative error can be reduced by replacing the first-order upwind
+ time integrator by a second-order one.
+ 
+\end_layout
+
+\begin_layout Standard
+At 1030 nm, the two-photon absorption plays an important role.
+ It is thus of interest to validate the integrator at this wavelength.
+ For that purpose, we push the laser fluence to 
+\begin_inset Formula $100$
+\end_inset
+
+ J.m
+\begin_inset Formula $^{-2}$
+\end_inset
+
+ in order to reach a good 2-photon absorption probability.
+ Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:TwoPhotonTeError"
+
+\end_inset
+
+ presents the free-carrier heating by the 2-photon absorption process at
+ 
+\begin_inset Formula $n_{e}=10^{27}$
+\end_inset
+
+ m
+\begin_inset Formula $^{-3}$
+\end_inset
+
+.
+ 
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20130905-HeatingIonization2-1E27.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:TwoPhotonTeError"
+
+\end_inset
+
+Relative error between numerical and analytical solutions for the calculation
+ of 2-photon absorption at 
+\begin_inset Formula $\lambda=1030$
+\end_inset
+
+ nm wavelength, 
+\begin_inset Formula $F=100$
+\end_inset
+
+ J.m
+\begin_inset Formula $^{-2}$
+\end_inset
+
+ and pulse duration 
+\begin_inset Formula $\tau=40$
+\end_inset
+
+ fs.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Validation of the electron energy coupling with lattice
+\end_layout
+
+\begin_layout Paragraph
+Cooling of the electrons by the cold lattice
+\end_layout
+
+\begin_layout Standard
+In this section, the equations are reduced to the following
+\size small
+
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right)=-\gamma_{e-ph}(T_{e}-T_{s})\label{eq:TTMe-2}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\gamma_{e,h-ph}=C_{e,h}\nu_{e,h-ph}.\label{eq:Coupling-1}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nu_{e,h-ph}^{-1}=\tau_{ph}^{0}\left[1+\left(\frac{n_{e,h}}{n_{th}}\right)^{2}\right]
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Free-carrier density 
+\begin_inset Formula $n_{e}$
+\end_inset
+
+ is taken as a constant 
+\begin_inset Formula $n_{e}=10^{27}$
+\end_inset
+
+ m
+\begin_inset Formula $^{-3}$
+\end_inset
+
+.
+ The initial carrier temperature is set to the value of 
+\begin_inset Formula $T_{e}=300,000$
+\end_inset
+
+ K.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20140317-CheckCoupling.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Relative-error-on-Te-Coupling"
+
+\end_inset
+
+Relative error on the calculation of the free-carrier temperature.
+ In this result, only the thermal coupling between electrons and lattice
+ has been checked.
+ The sudden change of the relative error is due to the change of timestep
+ during the calculation.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Relative-error-on-Te-Coupling"
+
+\end_inset
+
+ presents the relative error between the numerical and the analytical solution
+ as a function of time.
+ Results show that the free-carrier temperature is calculated with an error
+ lower than 
+\begin_inset Formula $0.01$
+\end_inset
+
+ % from the exact value.
+ The effect of the change of time-step is also observed: the change at 
+\begin_inset Formula $t=10^{-12}$
+\end_inset
+
+ s induces a less precise calculation, which is then amplified until the
+ end of the interaction.
+ The overall error remains however lower than 
+\begin_inset Formula $0.015$
+\end_inset
+
+ %, which is rather good.
+ 
+\end_layout
+
+\begin_layout Section
+Validation of lattice thermal coupling
+\end_layout
+
+\begin_layout Subsection
+Heating of the lattice by hot electrons
+\end_layout
+
+\begin_layout Paragraph
+Reduction to a 
+\begin_inset Quotes eld
+\end_inset
+
+simple
+\begin_inset Quotes erd
+\end_inset
+
+ case
+\end_layout
+
+\begin_layout Standard
+This section investigates the heating of the lattice in our conditions.
+ Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:TTMlattice"
+
+\end_inset
+
+ is reduced to its simplest form allowing to validate to calculate the heating
+ of the lattice.
+ The laser source is disabled, and we only consider the coupling between
+ a gas of hot electrons at a fixed density coupled with the lattice.
+ This allows to set the carrier density 
+\begin_inset Formula $n_{e}$
+\end_inset
+
+ as a constant, and the free-carrier temperature 
+\begin_inset Formula $T_{e}$
+\end_inset
+
+ as a constant.
+ Thus, the carrier heat capacity 
+\begin_inset Formula $C_{e}$
+\end_inset
+
+, and the electron-lattice coupling rate 
+\begin_inset Formula $\gamma_{e-ph}$
+\end_inset
+
+ are constant.
+ These approximations lead to set the following equation 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\frac{\partial\left[C_{s}(T_{s}(t))\times T_{s}(t)\right]}{\partial t}=\gamma_{e-ph}\left[T_{e}^{0}-T_{s}(t)\right]\label{eq:TTMlattice-1}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula 
+\begin{equation}
+\gamma_{e,h-ph}=C_{e,h}\nu_{e,h-ph}.\label{eq:Coupling-1-1}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\nu_{e,ph}^{-1}=\tau_{ph}^{0}\left[1+\left(\frac{n_{e}^{0}}{n_{th}}\right)^{2}\right].
+\]
+
+\end_inset
+
+In our case, the lattice heat capacity strongly depends to the lattice temperatu
+re 
+\begin_inset Formula $T_{s}$
+\end_inset
+
+.
+ Depending on the form of the coefficient 
+\begin_inset Formula $C_{s}\left(T_{s}\right)$
+\end_inset
+
+, Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:TTMlattice-1"
+
+\end_inset
+
+ will therefore exhibit strong non-linearities.
+ Before considering solving this equation, we first develop the possible
+ functions used to adjust the lattice heat capacity on the available experimenta
+l results.
+ In all the cases, the equation is non-linear and does not admit a simple
+ analytical solution.
+ We are thus able to compare the quality of the numerical integration with
+ other numerical integration packages and keep checking the energy conservation
+ of our results.
+ However, no error estimation will be possible to perform since no analytical
+ solution is available.
+ 
+\end_layout
+
+\begin_layout Paragraph
+Adjustment of the lattice heat capacity
+\end_layout
+
+\begin_layout Standard
+Here is a list of the functions which have been built as a function of lattice
+ temperature fitting the experimental measurements of Refs.
+ 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Flubacher1959,Okhotin1972"
+
+\end_inset
+
+.
+ Each case will lead to different types of non-linearities.
+ Since we have different possibilities to adjust the experimental data,
+ the type of function should be chosen in order to minimizer the difficulties
+ over the numerical integration.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Exponent fraction
+\begin_inset Formula 
+\[
+C_{s}(T_{s})=\frac{a_{0}}{e^{a_{1}/T_{s}}-a_{2}}=\frac{0.4129\times10^{3}\rho_{Si}}{e^{\frac{88.183}{T_{s}}}-0.6765}
+\]
+
+\end_inset
+
+The resulting type of the equation is 
+\begin_inset Formula 
+\[
+a_{0}a_{1}\left(\frac{\partial{\it T_{s}}}{\partial t}\right){\rm e}^{\frac{a_{1}}{{\it T_{s}}\left(t\right)}}\left({\rm e}^{\frac{a_{1}}{{\it T_{s}}\left(t\right)}}-a_{2}\right)^{-2}\left({\it T_{s}}\left(t\right)\right)^{-1}+a_{0}\frac{\partial T_{s}}{\partial t}\left({\rm e}^{\frac{a_{1}}{T_{s}\left(t\right)}}-a_{2}\right)^{-1}=\frac{{\it C_{e}}\left({\it T_{e}^{0}}-{\it T_{s}}\left(t\right)\right)}{{\it \tau_{e}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Sum of exponents
+\begin_inset Formula 
+\[
+C_{s}(T_{s})=\eta\left(ae^{bT_{s}}+ce^{dT_{s}}\right)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\eta=10^{3}\rho_{Si}$
+\end_inset
+
+, 
+\begin_inset Formula $a=0.899$
+\end_inset
+
+, 
+\begin_inset Formula $b=5.455\times10^{-5}$
+\end_inset
+
+, 
+\begin_inset Formula $c=-0.959$
+\end_inset
+
+, and 
+\begin_inset Formula $d=-0.004218$
+\end_inset
+
+.
+ The resulting type of equation is 
+\begin_inset Formula 
+\[
+\left(\frac{\partial{\it T_{s}}}{\partial t}\right)\eta\left({\it T_{s}}\left(t\right)abe^{b\times{\it T_{s}}\left(t\right)}+{\it T_{s}}\left(t\right)cd{e}^{d\times{\it T_{s}}\left(t\right)}+ae^{b\times{\it T_{s}}\left(t\right)}+ce^{d\times{\it T_{s}}\left(t\right)}\right)=\frac{{\it C_{e}}\left(-{\it T_{e}^{0}}+{\it T_{s}}\left(t\right)\right)}{\tau_{e}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Real-valued polynomial
+\begin_inset Formula 
+\[
+C_{s}\left(T_{s}\right)=\sum_{i=0}^{i=5}a_{i}T_{s}^{i}
+\]
+
+\end_inset
+
+ where 
+\begin_inset Formula $a_{5}$
+\end_inset
+
+ = 
+\begin_inset Formula $2.36\times10^{-16}$
+\end_inset
+
+, 
+\begin_inset Formula $a_{4}=-1.707\times10^{-12}$
+\end_inset
+
+, 
+\begin_inset Formula $a_{3}=4.619\times10^{-9}$
+\end_inset
+
+, 
+\begin_inset Formula $a_{2}=-5.912\times10^{-6}$
+\end_inset
+
+, 
+\begin_inset Formula $a_{1}=3.733\times10^{-3}$
+\end_inset
+
+, and 
+\begin_inset Formula $a_{0}=-0.0494$
+\end_inset
+
+.
+ The resulting of equation is 
+\begin_inset Formula 
+\[
+\left(\frac{\partial T_{s}}{\partial t}\right)\left(2a_{1}{\it T_{s}}\left(t\right)+3a_{2}\left({\it T_{s}}\left(t\right)\right)^{2}+4a_{3}\left({\it T_{s}}\left(t\right)\right)^{3}+5a_{4}\left({\it T_{s}}\left(t\right)\right)^{4}+6a_{5}\left({\it T_{s}}\left(t\right)\right)^{5}+a_{0}\right)=\frac{{\it C_{e}}\left(-{\it T_{e}^{0}}+{\it T_{s}}\left(t\right)\right)}{\tau_{e}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
+Sum of sinus
+\begin_inset Formula 
+\[
+C_{s}\left(T_{s}\right)=\sum_{i=1}^{4}a_{i}\sin\left(b_{i}T_{s}+c_{i}\right)
+\]
+
+\end_inset
+
+leads to the following type of ODE
+\begin_inset Formula 
+\[
+\left(\frac{\partial T_{s}}{\partial t}\right)\left[\left(1+T_{s}(t)\right)\cos\left(T_{s}\right)\right]=\frac{{\it C_{e}}\,\left(-{\it T_{e}^{0}}+{\it T_{s}}\left(t\right)\right)}{\tau_{e}}
+\]
+
+\end_inset
+
+and is very unstable.
+ 
+\end_layout
+
+\end_inset
+
+Van Driel's style fit function
+\begin_inset Formula 
+\[
+C_{s}\left(T_{s}\right)=10^{3}\rho_{Si}\times\left(a_{0}T_{s}+a_{1}T_{s}^{a_{2}}\right)
+\]
+
+\end_inset
+
+with 
+\begin_inset Formula $a_{0}=-0.003592$
+\end_inset
+
+, 
+\begin_inset Formula $a_{1}=0.01458$
+\end_inset
+
+, and 
+\begin_inset Formula $a_{2}=0.8316$
+\end_inset
+
+.
+ The stability of this function is very good.
+ However, the temperature validity range of this function is limited to
+ 1400 K.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /media/thibault/PHD/Travail/Post Doc/Calculs/CiKi-Silicon/20131101-CiModels.eps
+	width 12cm
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Heat capacity of Si and various adjustments.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Numerical integration
+\end_layout
+
+\begin_layout Standard
+Several possibilities can be tried to deal with the non-linearity.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Use a higher-order precision scheme on the time integration for the 
+\begin_inset Formula $T_{s}$
+\end_inset
+
+ equation.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Use a Runge-Kutta solver.
+ However, there gonna be diffusive terms enabled later, which will not be
+ mathematically clean with such a scheme.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Iterate the solution and ensure convergence 
+\emph on
+before going to the next time-step 
+\emph default
+(can really multiply the calculation time)
+\emph on
+.
+\end_layout
+
+\begin_layout Standard
+Applying a higher-order precision scheme allows to obtain solutions closer
+ to the 
+\begin_inset Quotes eld
+\end_inset
+
+exact
+\begin_inset Quotes erd
+\end_inset
+
+ solution.
+ Here, the 
+\begin_inset Quotes eld
+\end_inset
+
+exact
+\begin_inset Quotes erd
+\end_inset
+
+ solution is considered to be the one given by the 4th order Runge Kutta
+ scheme (
+\begin_inset Quotes eld
+\end_inset
+
+ode45
+\begin_inset Quotes erd
+\end_inset
+
+ function of Maple and Matlab).
+ However, using an eulerian scheme does not provide a sufficiently good
+ convergence of the solution even at the 4th order.
+ The choice of the fitting function using the Van Driel's form interestingly
+ allows to obtain a solution equal to the 
+\begin_inset Quotes eld
+\end_inset
+
+exact
+\begin_inset Quotes erd
+\end_inset
+
+ one.
+ The origin of this numerical recipe is not understood yet.
+ 
+\end_layout
+
+\begin_layout Standard
+It should be mentioned that in the all the cases considered in this section,
+ the energy conservation has been verified and did not show any deficiency.
+ The serious non-linearity that we face in this section is important for
+ the topic and can strongly affect the final results given by the code.
+ 
+\end_layout
+
+\begin_layout Section
+Verification of the coupled effects
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Coupled-effects"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Change of carrier heat capacity
+\end_layout
+
+\begin_layout Subsection
+Auger recombination
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial n_{e}}{\partial t}=\frac{\partial n_{h}}{\partial t}=C_{h}^{AR}n_{h}^{2}n_{e}+C_{e}^{AR}n_{e}^{2}n_{h}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right) & =E_{gap}C_{AR}^{(e)}N_{e}^{2}N_{h}\\
+\frac{\partial}{\partial t}\left(C_{h}T_{h}\right) & =E_{gap}C_{AR}^{(h)}N_{h}^{2}N_{e}
+\end{align}
+
+\end_inset
+
+If 
+\begin_inset Formula $n_{e}(t=0)=n_{h}(t=0)$
+\end_inset
+
+, then 
+\begin_inset Formula $n_{e}(t)=n_{h}(t)$
+\end_inset
+
+.
+ The system is thus equivalent to the following 
+\begin_inset Formula 
+\begin{equation}
+\begin{cases}
+\frac{\partial n_{e}}{\partial t} & =C_{AR}^{(e)}n_{e}^{3}\\
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right) & =E_{gap}C_{AR}^{(e)}N_{e}^{3}
+\end{cases}\label{eq:AugerCoupled}
+\end{equation}
+
+\end_inset
+
+with the initial conditions 
+\begin_inset Formula $T_{e,h}(t=0)=T_{e,h}^{(0)}$
+\end_inset
+
+ and 
+\begin_inset Formula $N_{e}(t=0)=N_{e}^{(0)}$
+\end_inset
+
+.
+ The solution of the Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:AugerCoupled"
+
+\end_inset
+
+ is 
+\begin_inset Formula 
+\[
+\begin{cases}
+N_{e}(t) & =\left(\frac{1}{N_{e,0}^{2}}+2C_{AR}^{(e)}t+2C_{AR}^{(h)}t\right)^{-\frac{1}{2}}\\
+T_{e}(t) & =\frac{\left\{ \sqrt{2t\left(C_{AR}^{(e)}+C_{AR}^{(h)}\right)+N_{e,0}^{-2}}\left[3k_{B}T_{e}N_{e,0}\left(C_{AR}^{(e)}+C_{AR}^{(h)}\right)+2E_{g}C_{AR}^{(e)}N_{e,0}\right]-2E_{g}C_{AR}^{(e)}\right\} }{3k_{B}\left(C_{AR}^{(e)}+C_{AR}^{(h)}\right)}
+\end{cases}
+\]
+
+\end_inset
+
+In that calculation, the band gap energy is taken constant.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20140314-ValidationOfAugerCoupledTeNe.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:ErrorOnAugerCoupled"
+
+\end_inset
+
+Calculation of the error (%) made on the solutions 
+\begin_inset Formula $N_{e,h}(t)$
+\end_inset
+
+ and 
+\begin_inset Formula $T_{e,h}(t)$
+\end_inset
+
+ for 
+\begin_inset Formula $N_{e,h}(t=0)=10^{27}$
+\end_inset
+
+ m
+\begin_inset Formula $^{-3}$
+\end_inset
+
+, 
+\begin_inset Formula $T_{e,h}(t=0)=80$
+\end_inset
+
+ K.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:ErrorOnAugerCoupled"
+
+\end_inset
+
+ shows the relative error 
+\begin_inset Formula $\zeta$
+\end_inset
+
+ between the numerical and analytical results, calculated for 
+\begin_inset Formula $T_{e,h}$
+\end_inset
+
+ and 
+\begin_inset Formula $N_{e,h}$
+\end_inset
+
+ using the following formula
+\begin_inset Formula 
+\[
+\zeta(T_{e})=100\times\frac{T_{e}^{(num)}-T_{e}^{(exact)}}{T_{e}^{(exact)}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The first conclusion is that the Auger recombination is very well solved.
+ Calculating on a time range of 
+\begin_inset Formula $10^{-8}$
+\end_inset
+
+ s with a timestep of 
+\begin_inset Formula $dt\sim10^{-17}$
+\end_inset
+
+ s, the relative error is lower than 0.1 % on the carrier temperature, and
+ lower than 
+\begin_inset Formula $5\times10^{-3}$
+\end_inset
+
+ % on the carrier density.
+ The multiple time scale of the problem is taken into account by changing
+ the timestep during the calculations.
+ In this calculation, the timestep has been changed at 
+\begin_inset Formula $t=10^{-12}$
+\end_inset
+
+ s, 
+\begin_inset Formula $t=10^{-11}$
+\end_inset
+
+s, and 
+\begin_inset Formula $t=10^{-10}$
+\end_inset
+
+ s by multiplying 
+\begin_inset Formula $dt'\leftarrow10\times dt$
+\end_inset
+
+.
+ We can directly observe the negligible consequences of the timestep modificatio
+n as a function of time.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/CheckAuger/20140312-Energy.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:AugerEnergyConservation"
+
+\end_inset
+
+Energy of the free-carriers as a function of time after the maximum of the
+ laser pulse.
+ 
+\begin_inset Formula $F=10$
+\end_inset
+
+ 
+\begin_inset Formula $J.m^{-2}$
+\end_inset
+
+, 
+\begin_inset Formula $\tau=40$
+\end_inset
+
+ fs, 
+\begin_inset Formula $\lambda=343$
+\end_inset
+
+ nm.
+ It is worth to note that considering Fermi-Dirac statistics leads to the
+ same result.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:AugerEnergyConservation"
+
+\end_inset
+
+ presents the conservation of the carrier energy after their excitation
+ by 1 photon absorption.
+ The Fermi-Dirac statistics are here taken into account.
+ It is shown that the free-carrier energy is well conserved.
+ 
+\end_layout
+
+\begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Control-of-the"
+
+\end_inset
+
+Control of the energy conservation
+\end_layout
+
+\begin_layout Standard
+Since the mesh is not regular and that finding analytical solution to the
+ equation using an arbitrary contour in a reasonable duration is beyond
+ the capabilities of the author, it has been decided to study the energy
+ conservation as a function of time.
+ The timescale of the processes investigated by this code is near from the
+ nanosecond reaction of the system, which is 6 orders of magnitude larger
+ than the laser pulse duration (of about 40 fs to 500 fs).
+ The validity of the time-integrator is thus of major importance in this
+ multi-scale problem, the connexion to the spatial steps is thus straightforward.
+ 
+\end_layout
+
+\begin_layout Subsection
+Energy of the carriers
+\end_layout
+
+\begin_layout Standard
+Since we model an external laser pulse irradiating the sample by its intensity
+ evolution with time and space through the function 
+\begin_inset Formula $I(t,x,y)$
+\end_inset
+
+, then we will express the total energy considering the invariance by translatio
+n with the 
+\begin_inset Formula $z$
+\end_inset
+
+ axis, normal to the orientation of this document plane.
+ 
+\end_layout
+
+\begin_layout Standard
+The total energy study will be expressed in 
+\begin_inset Formula $J/m$
+\end_inset
+
+.
+ Actually, the energy of the carriers in 2D is defined by 
+\begin_inset Formula 
+\[
+dE_{e}\left[J.m^{-3}\right]=dE_{e,kin}+dE_{pot}=d\left(C_{e}T_{e}\right)+d\left(E_{g}n_{e}\right)
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\mathcal{V}$
+\end_inset
+
+ [m
+\begin_inset Formula $^{2}$
+\end_inset
+
+] is the control volume of each 2D cell of the mesh, 
+\begin_inset Formula $E_{e,kin}$
+\end_inset
+
+ expresses the thermal energy of conduction band electrons, 
+\begin_inset Formula $E_{e,pot}$
+\end_inset
+
+ expresses the potential energy of the conduction band electrons.
+ This latter expression can be also written for holes.
+ However, since the origin of the potential energies is taken at the edge
+ of the valence band, then holes have a potential energy equal to 0.
+ Thus we can write 
+\begin_inset Formula 
+\[
+dE_{h}\left[J.m^{-3}\right]=dE_{h,kin}+dE_{h,pot}=d\left(C_{h}T_{h}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Integrating over the two dimensions of the problem leads to write the total
+ energy 
+\begin_inset Formula $\xi_{e,h}$
+\end_inset
+
+ at a given instant in the whole sample volume by 
+\begin_inset Formula 
+\begin{alignat*}{1}
+\xi_{e}\,[J.m^{-1}] & =\iint dE_{e}\, d\mbox{\mathcal{V}}\\
+ & =\iint\left(T_{e}dC_{e}+C_{e}dT_{e}+dE_{g}n_{e}+E_{g}dn_{e}\right)\, d\mathcal{V}
+\end{alignat*}
+
+\end_inset
+
+ 
+\begin_inset Formula 
+\begin{alignat*}{1}
+\xi_{h}\,[J.m^{-1}] & =\iint dE_{h}\, d\mbox{\mathcal{V}}\\
+ & =\iint\left(T_{h}dC_{h}+C_{h}dT_{h}\right)\, d\mathcal{V}
+\end{alignat*}
+
+\end_inset
+
+Band gap is a function of lattice temperature 
+\begin_inset Formula $T_{s}$
+\end_inset
+
+ and carrier density 
+\begin_inset Formula $n_{e}$
+\end_inset
+
+ expressed via 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Driel1987"
+
+\end_inset
+
+ 
+\begin_inset Formula 
+\[
+E_{g}(T_{s},n_{e})=1.17-4.73\times10^{-4}\frac{T_{s}^{2}}{T_{s}+636}-1.5\times10^{-10}n_{e}^{1/3}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Control of the laser energy
+\end_layout
+
+\begin_layout Standard
+Now we have chosen the unity to express the energy in the problem, we express
+ now the total laser energy is by the expression
+\begin_inset Formula 
+\[
+\xi_{sample}[J.m^{-1}](y)=\iint I(t,x,y)\, dt\, dx
+\]
+
+\end_inset
+
+integrated over the diameter of the laser spot.
+ 
+\end_layout
+
+\begin_layout Standard
+However, the shape of the surface is not flat, and the surface reflectivity
+ is taken into account by the analytical solutions of Mie scattering, assuming
+ a scattering on a 3D cylinder from which a plane section is studied: the
+ intersection between the study plane and the entire 3D space.
+ Consequently, the calculation of the overall reflectivity and transmittance
+ by the problem shape is rather difficult.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Calculation of the tip absorptance
+\end_layout
+
+\begin_layout Standard
+We try to solve this problem by studying the energy absorbed by the nanometric
+ sized sample via 
+\begin_inset Formula 
+\[
+\xi_{absorbed}[J.m^{-1}]=\iiint\alpha I(t,x,y)\, dt\, dx\, dy
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the conditions of the experiments (
+\begin_inset Formula $\tau=40$
+\end_inset
+
+ fs, 
+\begin_inset Formula $F=10$
+\end_inset
+
+ J/m
+\begin_inset Formula $^{2}$
+\end_inset
+
+, 
+\begin_inset Formula $\lambda=343$
+\end_inset
+
+ nm), the order of magnitude of 
+\begin_inset Formula $\xi_{absorbed}$
+\end_inset
+
+ is 
+\begin_inset Formula $10^{-4}$
+\end_inset
+
+ J.
+ In order to calculate the overall absorbed laser energy, we define 
+\begin_inset Formula 
+\[
+A=\frac{\xi_{absorbed}}{\xi_{laser}}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula 
+\[
+\xi_{laser}=F\times\mathcal{V}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="11" columns="7">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $M$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $N$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+MeshShift
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $\mathcal{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $dt$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $\xi_{absorbed}$
+\end_inset
+
+ (J)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $A(\%)$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+11
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+11
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.7004\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $10$
+\end_inset
+
+ as
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $5.2097\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $77.75$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+11
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+11
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.72711\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $5.5004\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $81.76$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+51
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+51
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.73268\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.1999\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $92.08$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.73404\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.4153\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $95.26$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+10
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.73415\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.4271\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $95.44$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+20
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.73432\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.4122\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $95.21$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+151
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+151
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.73439\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.4955\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $96.45$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+151
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+151
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+20
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.7345\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $6.4528\times10^{-11}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size small
+\begin_inset Formula $95.81$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:Optical-energy"
+
+\end_inset
+
+Optical energy as a function of the mesh precision for an homogeneous energy
+ distribution 
+\begin_inset Formula $\nabla I(x,y)=0$
+\end_inset
+
+, where 
+\begin_inset Formula $F=10$
+\end_inset
+
+ 
+\begin_inset Formula $J.m^{-2}$
+\end_inset
+
+, and 
+\begin_inset Formula $\tau=40$
+\end_inset
+
+ fs.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:Optical-energy"
+
+\end_inset
+
+ presents the total optical energy deposited in the sample as a function
+ of the mesh properties in case of an homogeneous distribution of laser
+ energy.
+ This allows to calculate the minimal mesh and timestep parameters required
+ to reach convergence in the numerical sample volume and the convergence
+ of the intensity calculation.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+Calculation of the incident laser energy
+\end_layout
+
+\begin_layout Standard
+The intensity at the tip apex interface is defined by the following formula
+\begin_inset Formula 
+\[
+E_{laser}\left[J\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\, d\mathcal{A}\, dt
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\overrightarrow{S}$
+\end_inset
+
+ is the Poynting vector, 
+\begin_inset Formula $\overrightarrow{n}$
+\end_inset
+
+ is the normal to the 3D surface of the cone, and 
+\begin_inset Formula $\mathcal{A}$
+\end_inset
+
+ is the area element defined around the normal vector.
+ The intensity is defined by the flux of the Poynting vector by the surface
+ of area 
+\begin_inset Formula $d\mathcal{A}$
+\end_inset
+
+.
+ In the plane of the simulation 
+\begin_inset Formula $\left(xOy\right)$
+\end_inset
+
+, we can write the following relation 
+\begin_inset Formula 
+\[
+\overrightarrow{S}\cdot\overrightarrow{n}=I\left[x,y_{\partial\Omega}\right]\cos\theta_{\partial\Omega}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula 
+\[
+\tan\theta_{\partial\Omega}=\frac{\partial x}{\partial y}.
+\]
+
+\end_inset
+
+Since we consider only two dimensions with an invariance by translation
+ along the coordinate 
+\begin_inset Formula $z$
+\end_inset
+
+, we can build the quantity
+\begin_inset Formula 
+\[
+\xi_{laser}\left[J.m^{-1}\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\, d\mathcal{L}\, dt
+\]
+
+\end_inset
+
+using the contour of the cone in the plane of the model 
+\begin_inset Formula $\left(xOy\right)$
+\end_inset
+
+, where the projection of the Poynting vector at the interface is known.
+ 
+\end_layout
+
+\begin_layout Standard
+The arc length along the curve 
+\begin_inset Formula $x(y)$
+\end_inset
+
+ is given by 
+\begin_inset Formula 
+\[
+\mathcal{L}=\int\left|\frac{\partial x}{\partial y}\right|\, dy
+\]
+
+\end_inset
+
+Therefore, we can write
+\begin_inset Formula 
+\[
+\xi_{laser}\left[J.m^{-1}\right]=\iint I\left[x_{\partial\Omega}\left(y\right),y,t\right]\cos\left(\arctan\frac{\partial x}{\partial y}\right)\left|\frac{\partial x}{\partial y}\right|\, dy\, dt.
+\]
+
+\end_inset
+
+For a constant intensity defined by 
+\begin_inset Formula $I(x,y,t)=I_{0}e^{-\frac{1}{2}\left(\frac{t}{\sigma_{t}}\right)^{2}}$
+\end_inset
+
+, 
+\begin_inset Formula $\sigma_{t}=\frac{\tau}{2\sqrt{2\ln2}}$
+\end_inset
+
+, 
+\begin_inset Formula $I_{0}=\frac{F}{\tau}\sqrt{\frac{4\ln2}{\pi}}$
+\end_inset
+
+, 
+\begin_inset Formula $F=10$
+\end_inset
+
+ 
+\begin_inset Formula $J.m^{-2}$
+\end_inset
+
+, and 
+\begin_inset Formula $\tau=40$
+\end_inset
+
+ fs, it is found 
+\end_layout
+
+\begin_layout Subsubsection
+Verification of the calculated intensity
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\xi_{laser}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I_{0}(t,x,y)\, d\Omega\, dt
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\xi_{opt}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I(t,x,y)\, d\Omega\, dt
+\]
+
+\end_inset
+
+We define the numerical trust value which corresponds to the ratio between
+ the energy absorbed contained the solid, with the energy given by the laser
+ intensity distribution.
+ 
+\begin_inset Formula 
+\[
+\eta=\frac{\xi_{solid}}{\xi_{opt}}
+\]
+
+\end_inset
+
+We also define the absorptivity by 
+\begin_inset Formula 
+\[
+\overline{A}=\frac{\xi_{opt}}{\xi_{laser}}
+\]
+
+\end_inset
+
+ which is the effective absorptivity of the laser pulse considering the
+ shape of the cone.
+ 
+\end_layout
+
+\begin_layout Paragraph
+Results
+\end_layout
+
+\begin_layout Standard
+Table 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "tab:EnergyBalanceMie"
+
+\end_inset
+
+ shows the results for 343 nm using different meshes.
+ It is clear that :
+\end_layout
+
+\begin_layout Itemize
+The 
+\begin_inset Quotes eld
+\end_inset
+
+numerical trust index
+\begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Formula $\eta$
+\end_inset
+
+ demonstrates that the size of the mesh is of major importance for obtaining
+ a good energy conservation between the field and the solid.
+ But why, since the equations are using the same mesh ? It can be due to
+ the fact that the strongest absorption zone at 343 nm is at the boundary,
+ and that the first energy contained in the cells of the boundary is neglected.
+ Thus, at 515 nm, we shall need less cells to reach the energy balance between
+ the fields and the solid.
+ 
+\end_layout
+
+\begin_layout Itemize
+the effect of the meshgrid is negligible in the energy balance.
+ It will take its importance only for the energy diffusion conservation.
+\end_layout
+
+\begin_layout Itemize
+A problem is identified in the definition of the optical absorption which
+ simply cannot be so small.
+ Indeed, at 
+\begin_inset Formula $\lambda=343$
+\end_inset
+
+ nm, the penetration depth of the field is nearly 9 nm, which is clearly
+ smaller than the size of the cone.
+ Thus, it is not possible that the absorbed energy is so small.
+ Its definition might be wrong or reveals a numerical problem.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float table
+wide true
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="9" columns="13">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $M$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $N$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+MeshShift
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\mathcal{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $dt$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\lambda$
+\end_inset
+
+ (nm)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+Pola
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\phi$
+\end_inset
+
+ (rad)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\xi_{laser}$
+\end_inset
+
+ (mJ.m
+\begin_inset Formula $^{-1}$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\xi_{opt}$
+\end_inset
+
+ (mJ.m
+\begin_inset Formula $^{-1}$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\xi_{solid}$
+\end_inset
+
+ (mJ.m
+\begin_inset Formula $^{-1}$
+\end_inset
+
+)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+Trust 
+\begin_inset Formula $\eta$
+\end_inset
+
+ (%)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $\overline{A}=1-R-T$
+\end_inset
+
+ (%)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $6.73404\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $343$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+TM
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $7.384$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $33.71\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $13.75\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $40.7$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0.46$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+10
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $6.73415\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+101
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+20
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $6.73432\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+151
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+151
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $6.73439\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $343$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+TM
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $7.384$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $29.53\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $18.07\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $61.2$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0.40$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+251
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+251
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $6.73462\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $343$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+TM
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $7.384$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $27.093\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $21.808\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $80.49$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0.37$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+351
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+351
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+40
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $6.73472\times10^{-12}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Quotes eld
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $343$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+TM
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $7.384$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $26.340\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $23.061\times10^{-3}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $88.95$
+\end_inset
+
+ (no diff.)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" bottomline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\size scriptsize
+\begin_inset Formula $0.356$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "tab:EnergyBalanceMie"
+
+\end_inset
+
+Optical energy as a function of the mesh precision for an inhomogeneous
+ energy distribution 
+\begin_inset Formula $\nabla I(x,y)\neq0$
+\end_inset
+
+, where 
+\begin_inset Formula $F=10$
+\end_inset
+
+ 
+\begin_inset Formula $J.m^{-2}$
+\end_inset
+
+, and 
+\begin_inset Formula $\tau=40$
+\end_inset
+
+ fs.
+ 
+\begin_inset Quotes eld
+\end_inset
+
+Trust
+\begin_inset Quotes erd
+\end_inset
+
+ is defined by 
+\begin_inset Formula $\eta=\frac{\xi_{solid}}{\xi_{opt}}$
+\end_inset
+
+.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Generation and control of the mesh
+\end_layout
+
+\begin_layout Paragraph
+Definition of the contour
+\end_layout
+
+\begin_layout Paragraph
+Regularization of the mesh
+\end_layout
+
+\begin_layout Standard
+The mesh is built by defining a contour and solving 
+\begin_inset Formula 
+\[
+\Delta\left(\begin{array}{c}
+x\\
+y
+\end{array}\right)=0
+\]
+
+\end_inset
+
+ by a simple iterative method
+\begin_inset Formula 
+\[
+x_{i}=\frac{1}{4}\left(x_{i-1,j-1}+x_{i-1,j+1}+x_{i+1,j-1}+x_{i+1,j+1}\right)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+y_{i}=\frac{1}{4}\left(y_{i-1,j-1}+y_{i-1,j+1}+y_{i+1,j-1}+y_{i+1,j+1}\right)
+\]
+
+\end_inset
+
+Round about 70 000 iterations are required to reach convergence of the mesh.
+ 
+\end_layout
+
+\begin_layout Standard
+This method is optimum on a single core since convergence rate of this technique
+ is rather good (how to quantify ?) in respect of the global calculation
+ time.
+ 
+\end_layout
+
+\begin_layout Section
+Optimization of the code
+\end_layout
+
+\begin_layout Standard
+Optimization is a big word for telling many things.
+ First, we have designed a model which is actually already simplified to
+ decrease the amount of necessary operations.
+ In this section, purpose is to perform optimizations over the code, especially
+ over the way to perform the operations on a single processor, and to decrease
+ the waste of operations.
+ 
+\end_layout
+
+\begin_layout Subsection
+Sequential code: checking the bottlenecks
+\end_layout
+
+\begin_layout Standard
+Using the Intel Loop Observer software (or GNU profiler), we can monitor
+ the number of calls to the loops and number of calls to the functions.
+ 
+\end_layout
+
+\begin_layout Standard
+By performing a first test during one night, I already figured out that
+ a function was using 25% of the calculation time (sequential) despite that
+ it was not necessary.
+ The number of operations was found to be 
+\begin_inset Formula $10^{12}$
+\end_inset
+
+ after one night.
+ Actually, this operation was required once, and then replaced by calls
+ to memory.
+ But is this call to memory really saves time instead of performing such
+ simple operation each time ? 
+\end_layout
+
+\begin_layout Standard
+In the next section, we focus on optimizing the way to perform calculations
+ with several cores, to parallelize the operations.
+ First, we will define the tools used to quantify the efficiency of a parallel
+ code, and we will also perform some verification allowing to avoid the
+ unnecessary operations.
+ 
+\end_layout
+
+\begin_layout Subsection
+Calculation of the code velocity
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+CPU=\frac{N_{timesteps}}{t_{current}-t_{initial}}\times N_{threads}
+\]
+
+\end_inset
+
+where 
+\begin_inset Formula $t_{current}$
+\end_inset
+
+ is the CPU time captured just before performing the outputs, and 
+\begin_inset Formula $t_{initial}$
+\end_inset
+
+ is the CPU time captured at the initialization of the code.
+ Hence, CPU is supposed to be constant within the execution time of the
+ code.
+ 
+\end_layout
+
+\begin_layout Standard
+The coefficient 
+\begin_inset Formula $CPU$
+\end_inset
+
+ is built to be independent to number of cores used.
+ In this purpose, it becomes possible to calculate the speedup 
+\begin_inset Formula $\eta$
+\end_inset
+
+ in core-number-independent way.
+ Of course, the speedup may increase while increasing the number of cores,
+ hopefully, until saturation.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/Codes/Flaps/Optimization/20150208-SpeedUp.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+CPU efficiency as a function of core number.
+ Note that these calculations were performed with a homogeneous energy source
+ in the sample.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+One understands that the definition of CPU is dependent to the frequency
+ of the CPU clock.
+ Hence, it is not reasonable to compare the CPU quantity between different
+ computers.
+ However, we can normalize the CPU by the velocity of the code in sequential
+ mode on a single computer in order to build the speed up 
+\begin_inset Formula $\eta$
+\end_inset
+
+, a quantity that it is intrinsic to the efficiency of the code.
+ 
+\begin_inset Formula 
+\[
+\eta(N)=\frac{CPU_{N-cores}}{CPU_{1-core}}
+\]
+
+\end_inset
+
+Hence, it looks that speedup of our parallelization method is greater than
+ 1, but is lower than 2 with the available number of cores.
+\end_layout
+
+\begin_layout Subsection
+Changing the order of the loops
+\end_layout
+
+\begin_layout Standard
+The main loop of the code is consuming 30% of the calculation time in sequential
+ mode.
+ By changing the order of the loops, and by parallelizing the inner or outer
+ ones, we can obtain serious improvement over the speedup.
+ Fig.
+ 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Optimization1"
+
+\end_inset
+
+ demonstrates a very strong influence over the order of the loop iterations
+ and distribution.
+ Despite that one solution looks to be more efficient than the others, it
+ is not sure if such optimization conserves the physical meaning of the
+ result.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/Codes/Flaps/Optimization/20150208-OptimizeLoopOrder.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Optimization1"
+
+\end_inset
+
+Qualitative increase of the efficiency as a function of the main loop order
+ in Flaps2D.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Parallel code: reduce the number of conditional branches
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+If
+\noun default
+ instruction is consuming a lot of time.
+ Hence, it must be removed, especially from loops.
+ Problem is that a large code allows to perform many types of calculations
+ and to select various parameters.
+ How can we select sub-modes of calculations into a code without using condition
+ branches ? 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/Codes/Flaps/Optimization/20150208-SplitTheLoops.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:Comparison-before-and"
+
+\end_inset
+
+Comparison before and after reduction of the IF branches inside parallelized
+ loops.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:Comparison-before-and"
+
+\end_inset
+
+ indicates that actually, cutting the loops into one parallel loop per equation
+ is not the best idea.
+ Indeed, the physical quantities are independent, since we use an explicit
+ solving scheme.
+ Hence, increasing the number of parallel loops increase the number of synchroni
+zation delays expected at the end of solving each equation.
+ It is then more efficient to parallelize one mesh node per loop and to
+ solve everything in this mesh node using the same core.
+ 
+\end_layout
+
+\begin_layout Subsection
+Efficiency of the parallelization method
+\end_layout
+
+\begin_layout Paragraph
+Distribution of the loops on CPU cores
+\end_layout
+
+\begin_layout Standard
+The method of distributing the loops over the various cores has a limited
+ efficiency.
+ However, we can try to optimize the way they are distributed with the command
+ 
+\noun on
+omp_schedule.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/Codes/Flaps/Optimization/20150208-OptimizeLoopDistrib.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:CPU-efficiency-as"
+
+\end_inset
+
+CPU efficiency as a function of the method to distribute the loops with
+ OpenMP using 8 cores.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:CPU-efficiency-as"
+
+\end_inset
+
+ presents the CPU efficiency evolution as a function of the strategy to
+ distribute the loops over the cores.
+ These calculations were performed only using 8 cores.
+ 
+\end_layout
+
+\begin_layout Paragraph
+Explicit integration VS implicit integration
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename home/thibault/Documents/Codes/Flaps/Optimization/20150208-ComparisonExplImpl.eps
+	width 8cm
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:ComparisonExplImpl"
+
+\end_inset
+
+CPU efficiency as a function of the method to distribute the loops with
+ OpenMP using 8 cores.
+ 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+Overall the optimization performed until now, Figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:ComparisonExplImpl"
+
+\end_inset
+
+ presents the efficiency of the code for the implicit version and the explicit
+ version, including recent optimizations.
+ The implicit version of the code consumes round about 7 GB of RAM, and
+ the explicit version consumes ~ 400 MB.
+ 
+\end_layout
+
+\begin_layout Paragraph
+
+\emph on
+Which parallelization method can be investigated to strongly increase the
+ speedup ? 
+\end_layout
+
+\begin_layout Enumerate
+Go to GPU.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Find OpenMP bottlenecks using OpenMP profiler program.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Try the code on 16 cores CPU to verify scalability.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "/media/thibault/PHD/Travail/These/Articles/bibliographie_lue"
+options "unsrtnat"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
