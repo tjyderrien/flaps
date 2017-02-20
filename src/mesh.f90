@@ -161,30 +161,30 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    logical Diverged
 
    Diverged = .false.
-    call output_open(ErrorFile%unit, 'output/error.log', (nbiter/=1 .or. Params%RestartCalc == 1))
+    call output_open(Error%unit, 'output/error.log', (nbiter/=1 .or. Params%RestartCalc == 1))
     !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t)
     !$OMP DO COLLAPSE(2)
 
     do i=1,mesh%M
       do j=1,mesh%N
         if(isnan(mesh%Te(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(Error%unit,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Th(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(Error%unit,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Ts(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(Error%unit,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Ne(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(Error%unit,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Nh(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(Error%unit,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
       end do
@@ -193,11 +193,11 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
     !$OMP END PARALLEL
 
     if(maxCFLxT.gt.M_ONE .OR. maxCFLyT.gt.M_ONE) then
-      write(ErrorFile%unit,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
+      write(Error%unit,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
       Diverged=.true.
     end if
     if(maxCFLxN.gt.M_ONE .OR. maxCFLyN.gt.M_ONE) then
-      write(ErrorFile%unit,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
+      write(Error%unit,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
       Diverged=.true.
     end if
 
@@ -205,5 +205,5 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
           write(*,*) "Divergence detected. Please check error.dat for more information."
           stop
     end if
-    close(ErrorFile%unit)
+    close(Error%unit)
  end subroutine check_divergences
