@@ -148,21 +148,24 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 
  end subroutine
 
- subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t)
+ subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t, nbiter, nmin, Params)
    use Maths_m
+   use Output_m
    use Types_m
    implicit none
 
    type(MeshValues), intent(in) :: mesh
    real(8), intent(in)          :: t, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN
    real(8), intent(in)          :: x(mesh%M, mesh%N), y(mesh%M, mesh%N)
+   integer, intent(in)          :: nbiter, nmin
+   type(InputParameters), intent(in) :: Params
 
    integer(8)          :: i, j
    logical Diverged
 
    Diverged = .false.
     call output_open(ErrorFile%unit, 'output/error.log', (nbiter/=nmin .or. Params%RestartCalc == 1))
-    !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t)
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t, ErrorFile)
     !$OMP DO COLLAPSE(2)
 
     do i=1,mesh%M
