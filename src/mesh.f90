@@ -186,6 +186,11 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
           write(95,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
+
+        if(Diverged .eqv. .true.) then
+          write(*,*) "Divergence detected. Please check error.dat for more information."
+          stop
+        end if
       end do
     end do
     !$OMP END DO
@@ -198,11 +203,6 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
     if(maxCFLxN.gt.M_ONE .OR. maxCFLyN.gt.M_ONE) then
       write(95,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
       Diverged=.true.
-    end if
-
-    if(Diverged .eqv. .true.) then
-          write(*,*) "Divergence detected. Please check error.dat for more information."
-          stop
     end if
 
  end subroutine check_divergences
