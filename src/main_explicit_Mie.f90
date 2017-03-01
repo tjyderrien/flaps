@@ -2035,7 +2035,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
 
-   call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
+   call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t, nbiter, nmin, Params )
 
    !TODO: Move this to check_divergences
    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, FermiIndexE, FermiIndexH, &

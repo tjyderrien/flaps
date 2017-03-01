@@ -1,5 +1,8 @@
 #! gnuplot
 
+file_electrons="Ce.dat"
+file_holes="Ch.dat"
+
 kb=1.38e-23
 
 reset
@@ -10,7 +13,7 @@ set ylabel 'Ne [m^{-3}]'
 set log xy 
 set yrange [1e22:]
 set zrange [-50:100]
-splot "Ce.dat" u 2:1:3 w d
+splot file_electrons u 2:1:3 w d
 
 # set ztics format "%3.0e"
 reset
@@ -20,7 +23,7 @@ set xlabel 'Te [K]'
 set ylabel 'Ne [m^{-3}]'
 set zlabel 'C_{e}/(k_B n_e)'
 # set log y
-splot "Ce.dat" u 2:1:6 w d
+splot file_electrons u 2:1:6 w d
 
 reset
 set size 0.8
@@ -30,7 +33,7 @@ set title 'eta(Te;Ne)'
 set xlabel 'Te [K]'
 set ylabel '{/Symbol h}'
 set yrange [-10:100]
-plot "Ce.dat" u 2:3 notitle
+plot file_electrons u 2:3 notitle
 set output '20120703-EtaChenModel-Corrected.eps'
 set terminal postscript eps enhanced monochrome
 replot
@@ -48,17 +51,18 @@ set title 'Ce(Te;Ne)/k_B n_e'
 set xlabel 'Te [K]'
 set ylabel 'Ce/(k_B n_e)'
 # set yrange [0.01:100]
-plot "< awk '{ if($1==1E21) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{21} m^{-3}', \
-"< awk '{ if($1==1E22) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{22} m^{-3}', \
-"< awk '{ if($1==1E23) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{23} m^{-3}', \
-"< awk '{ if($1==1E24) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{24} m^{-3}', \
-"< awk '{ if($1==1E25) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{25} m^{-3}', \
-"< awk '{ if($1==1E26) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{26} m^{-3}'
-"< awk '{ if($1==1E27) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{27} m^{-3}' 
-"< awk '{ if($1==1E28) print }' Ce.dat" u 2:6 w l lw 2 t 'n_e=10^{28} m^{-3}' 
+plot \
+"< awk '{ if($1==1E21) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{21} m^{-3}', \
+"< awk '{ if($1==1E22) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{22} m^{-3}', \
+"< awk '{ if($1==1E23) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{23} m^{-3}', \
+"< awk '{ if($1==1E24) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{24} m^{-3}', \
+"< awk '{ if($1==1E25) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{25} m^{-3}', \
+"< awk '{ if($1==1E26) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{26} m^{-3}'
+# "< awk '{ if($1==1E27) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{27} m^{-3}', \
+# "< awk '{ if($1==1E28) print }' ".file_electrons u 2:6 w l lw 2 t 'n_e=10^{28} m^{-3}' 
 
-# "< awk '{ if($1==1E19) print }' Ce.dat" u 2:6 w l t 'n_e=10^{19} m^{-3}', \
-# "< awk '{ if($1==1E20) print }' Ce.dat" u 2:6 w l t 'n_e=10^{20} m^{-3}', \
+# "< awk '{ if($1==1E19) print }' " u 2:6 w l t 'n_e=10^{19} m^{-3}', \
+# "< awk '{ if($1==1E20) print }' " u 2:6 w l t 'n_e=10^{20} m^{-3}', \
 
 set output '20120703-ChChenModel-Corrected.eps'
 set terminal postscript eps enhanced monochrome
@@ -75,16 +79,17 @@ set title 'Ke(Te;Ne)'
 set xlabel 'Te [K]'
 set ylabel 'Ke [W.m^{-1}.K^{-1}]'
 # set yrange [0.01:100]
-plot "< awk '{ if($1==1E19) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{19} m^{-3}', \
-"< awk '{ if($1==1E20) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{20} m^{-3}', \
-"< awk '{ if($1==1E21) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{21} m^{-3}', \
-"< awk '{ if($1==1E22) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{22} m^{-3}', \
-"< awk '{ if($1==1E23) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{23} m^{-3}', \
-"< awk '{ if($1==1E24) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{24} m^{-3}', \
-"< awk '{ if($1==1E25) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{25} m^{-3}', \
-"< awk '{ if($1==1E26) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{26} m^{-3}'
-# "< awk '{ if($1==1E27) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{27} m^{-3}' 
-# "< awk '{ if($1==1E28) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{28} m^{-3}' 
+plot \
+"< awk '{ if($1==1E19) print }' ".file_holes u 2:7 w lp t 'n_e=10^{19} m^{-3}', \
+"< awk '{ if($1==1E20) print }' ".file_holes u 2:7 w lp t 'n_e=10^{20} m^{-3}', \
+"< awk '{ if($1==1E21) print }' ".file_holes u 2:7 w lp t 'n_e=10^{21} m^{-3}', \
+"< awk '{ if($1==1E22) print }' ".file_holes u 2:7 w lp t 'n_e=10^{22} m^{-3}', \
+"< awk '{ if($1==1E23) print }' ".file_holes u 2:7 w lp t 'n_e=10^{23} m^{-3}', \
+"< awk '{ if($1==1E24) print }' ".file_holes u 2:7 w lp t 'n_e=10^{24} m^{-3}', \
+"< awk '{ if($1==1E25) print }' ".file_holes u 2:7 w lp t 'n_e=10^{25} m^{-3}', \
+"< awk '{ if($1==1E26) print }' ".file_holes u 2:7 w lp t 'n_e=10^{26} m^{-3}'
+# "< awk '{ if($1==1E27) print }' " u 2:7 w lp t 'n_e=10^{27} m^{-3}' 
+# "< awk '{ if($1==1E28) print }' " u 2:7 w lp t 'n_e=10^{28} m^{-3}' 
 
 set output '20120703-KeChenModel.eps'
 set terminal postscript eps enhanced monochrome
@@ -101,16 +106,17 @@ set title 'De(Te;Ne)'
 set xlabel 'Te [K]'
 set ylabel 'De [m^{2}.s^{-1}]'
 # set yrange [0.01:100]
-plot "< awk '{ if($1==1E19) print }' Ce.dat" u 2:8 w l t 'n_e=10^{19} m^{-3}', \
-"< awk '{ if($1==1E20) print }' Ce.dat" u 2:8 w l t 'n_e=10^{20} m^{-3}', \
-"< awk '{ if($1==1E21) print }' Ce.dat" u 2:8 w l t 'n_e=10^{21} m^{-3}', \
-"< awk '{ if($1==1E22) print }' Ce.dat" u 2:8 w l t 'n_e=10^{22} m^{-3}', \
-"< awk '{ if($1==1E23) print }' Ce.dat" u 2:8 w l t 'n_e=10^{23} m^{-3}', \
-"< awk '{ if($1==1E24) print }' Ce.dat" u 2:8 w l t 'n_e=10^{24} m^{-3}', \
-"< awk '{ if($1==1E25) print }' Ce.dat" u 2:8 w l t 'n_e=10^{25} m^{-3}', \
-"< awk '{ if($1==1E26) print }' Ce.dat" u 2:8 w l t 'n_e=10^{26} m^{-3}'
-# "< awk '{ if($1==1E27) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{27} m^{-3}' 
-# "< awk '{ if($1==1E28) print }' Ce.dat" u 2:7 w lp t 'n_e=10^{28} m^{-3}' 
+plot \
+"< awk '{ if($1==1E19) print }' ".file_electrons u 2:8 w l t 'n_e=10^{19} m^{-3}', \
+"< awk '{ if($1==1E20) print }' ".file_electrons u 2:8 w l t 'n_e=10^{20} m^{-3}', \
+"< awk '{ if($1==1E21) print }' ".file_electrons u 2:8 w l t 'n_e=10^{21} m^{-3}', \
+"< awk '{ if($1==1E22) print }' ".file_electrons u 2:8 w l t 'n_e=10^{22} m^{-3}', \
+"< awk '{ if($1==1E23) print }' ".file_electrons u 2:8 w l t 'n_e=10^{23} m^{-3}', \
+"< awk '{ if($1==1E24) print }' ".file_electrons u 2:8 w l t 'n_e=10^{24} m^{-3}', \
+"< awk '{ if($1==1E25) print }' ".file_electrons u 2:8 w l t 'n_e=10^{25} m^{-3}', \
+"< awk '{ if($1==1E26) print }' ".file_electrons u 2:8 w l t 'n_e=10^{26} m^{-3}'
+# "< awk '{ if($1==1E27) print }' " u 2:7 w lp t 'n_e=10^{27} m^{-3}' 
+# "< awk '{ if($1==1E28) print }' " u 2:7 w lp t 'n_e=10^{28} m^{-3}' 
 
 set output '20120703-DeChenModel.eps'
 set terminal postscript eps enhanced monochrome
@@ -253,7 +259,7 @@ kb=1.38e-23
 # "< awk '{ if($1==1E27) print }' Ce.dat" u 2:6 w lp t 'n_e=10^{27} m^{-3}' 
 # "< awk '{ if($1==1E28) print }' Ce.dat" u 2:6 w lp t 'n_e=10^{28} m^{-3}' 
 
-# splot "Ce.dat" u 1:2:($6/time($1)) w p t 'Coupling rate (W.m^{-3}.K^{-1})', \
+# splot file_electrons u 1:2:($6/time($1)) w p t 'Coupling rate (W.m^{-3}.K^{-1})', \
 set xrange [:1e28]
 set xlabel 'Ne (m^{-3})'
 set ylabel 'Coupling rate (W.m^{-3}.K^{-1})'
@@ -286,7 +292,7 @@ set xlabel 'eta'
 set ylabel 'Ne/Nc'
 set y2label 'Alog10(Ne/Nc)+B'
 # set multiplot layout 1,2
-plot "Ce.dat" u 3:10 w p t 'Ne/Nc real' axis x1y1 ,\
+plot file_electrons u 3:10 w p t 'Ne/Nc real' axis x1y1 ,\
      "FermiDatas.dat" u 4:3 w p lw 1 t 'Ne/Nc tabulated' axis x1y1, \
      "FermiDatas.dat" u 4:1 w p t 'A log(Ne/Nc) + B' axis x1y2
      

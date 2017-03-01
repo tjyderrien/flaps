@@ -1,0 +1,969 @@
+%% LyX 2.0.8.1 created this file.  For more info, see http://www.lyx.org/.
+%% Do not edit unless you really know what you are doing.
+\documentclass[english,aps, print]{revtex4-1}
+\usepackage{charter}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\setcounter{secnumdepth}{3}
+\usepackage{color}
+\usepackage{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{esint}
+\usepackage[unicode=true,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=false,pdfborder={0 0 0},backref=false,colorlinks=true]
+ {hyperref}
+\hypersetup{pdftitle={Validation of Flaps2D simulation code},
+ pdfauthor={Thibault J.-Y. Derrien <derrien@fzu.cz>},
+ citecolor=blue, urlcolor=blue, linkcolor=blue}
+
+\makeatletter
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LyX specific LaTeX commands.
+\newcommand{\noun}[1]{\textsc{#1}}
+%% Because html converters don't know tabularnewline
+\providecommand{\tabularnewline}{\\}
+
+\makeatother
+
+\begin{document}
+
+\title{Validation of the Flaps 2D simulation code}
+
+
+\author{Thibault J.-Y. Derrien}
+
+\email{derrien@fzu.cz}
+
+
+\affiliation{HiLASE Centre, Institute of Physics, Academy of Science of the Czech
+Republic, \\
+Za Radnicí 828/5, 25241 Dolní B\v{r}e¸any, Czech Republic}
+
+
+\date{August 30th, 2015}
+\begin{abstract}
+This report aims to document and verify the ``Flaps 2D'' simulation
+tool, developed by myself since February 2012, to investigate the
+physics of laser-matter interaction in nanostructured materials. 
+\end{abstract}
+\maketitle
+
+\section*{Context of the simulation tool}
+
+The development of this work has been supported during 11 months by
+the french National Research Agency (ANR) under the project ``Ultrasonde''
+leaded by Tatiana Itina, Laboratoire Hubert Curien, Saint-Etienne,
+France. 
+
+Today, I'm still working on the development of this code which, at
+term, allows to study the absorption by a structured material irradiated
+by a femtosecond laser. The code has been designed so that material
+can be also polarized by a high voltage. The coupling of polarized
+materials with laser illumination allow tomographic reconstruction
+of atomic lattices in 3D with metals, dielectrics and oxides. The
+code can also be used to study the transport of free-carriers in nanostructures
+considering the effect of the geometry. This aspect is also a promiseful
+domain for a better understanding of the carrier and heat transport
+properties at the nanoscale. 
+
+\tableofcontents{}
+
+\clearpage{}
+
+
+\section{System of equations solved by the code}
+
+The drift induced by the external field and by the charge separation
+is neglected. 
+
+
+\paragraph{Free-carrier generation and transport}
+
+{\small{}
+\begin{equation}
+\begin{cases}
+\frac{\partial n_{e}}{\partial t}+\boldsymbol{\nabla}\cdot\boldsymbol{J_{e}} & =G_{e}-R_{e}\\
+\frac{\partial n_{h}}{\partial t}+\boldsymbol{\nabla}\cdot\boldsymbol{J_{h}} & =G_{h}-R_{h}.
+\end{cases}\label{eq:Transport}
+\end{equation}
+}
+\[
+G_{e,h}=\sigma_{1}I+\sigma_{2}I^{2}+\delta_{II}^{e,h}n_{e,h}
+\]
+\[
+R_{e,h}=R_{h}^{A}+R_{e}^{A}=C_{h}^{AR}n_{h}^{2}n_{e}+C_{e}^{AR}n_{e}^{2}n_{h}
+\]
+{\small{}
+\[
+\boldsymbol{J_{e,h}}=-D_{e,h}\boldsymbol{\nabla}n_{e,h}
+\]
+\[
+D_{e,h}=\mu_{e,h}\frac{k_{B}T_{e,h}}{e}\frac{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{-1/2}\left(\eta_{e,h}\right)},
+\]
+ 
+\[
+\mu_{e,h}=\frac{q_{e,h}}{m_{e,h}^{\star}\nu_{e,h}}\frac{\mathcal{F}_{0}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}
+\]
+}{\small \par}
+
+
+\paragraph{Free-carrier energy }
+
+{\small{}
+\begin{equation}
+\begin{cases}
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right) & +\boldsymbol{\nabla}\left(\kappa_{e}\boldsymbol{\nabla}T_{e}\right)=Q_{e}-\gamma_{e-ph}(T_{e}-T_{s})\\
+\frac{\partial}{\partial t}\left(C_{h}T_{h}\right) & +\boldsymbol{\nabla}\left(\kappa_{h}\boldsymbol{\nabla}T_{h}\right)=Q_{h}-\gamma_{h-ph}(T_{h}-T_{s})
+\end{cases}\label{eq:TTMe}
+\end{equation}
+}{\small \par}
+
+{\small{}
+\[
+\frac{\partial\left(C_{Si}T_{Si}\right)}{\partial t}=\nabla\left(\kappa_{Si}\nabla T_{Si}\right)+\gamma_{e-ph}(T_{e}-T_{Si})+\gamma_{h-ph}(T_{h}-T_{Si})
+\]
+}{\small \par}
+
+{\small{}
+\[
+C_{e,h}=\frac{3}{2}k_{B}n_{e,h}\left\{ \frac{\mathcal{F}_{3/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}-\eta_{e,h}\left[1-\frac{\mathcal{F}_{3/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}.\frac{\mathcal{F}_{-1/2}\left(\eta_{e,h}\right)}{\mathcal{F}_{1/2}\left(\eta_{e,h}\right)}\right]\right\} 
+\]
+}{\small \par}
+
+{\small{}
+\[
+\kappa_{e,h}=\frac{k_{B}^{2}n_{e,h}\mu_{e,h}T_{e,h}}{e}\left[6\frac{\mathcal{F}_{2}\left(\eta_{e,h}\right)}{\mathcal{F}_{0}\left(\eta_{e,h}\right)}-4\frac{\mathcal{F}_{1}\left(\eta_{e,h}\right)^{2}}{\mathcal{F}_{0}\left(\eta_{e,h}\right)^{2}}\right]
+\]
+\begin{align*}
+Q_{e,h} & =\frac{\hbar\omega-E_{gap}}{\hbar\omega}\sigma_{1}I+\frac{2\hbar\omega-E_{gap}}{2\hbar\omega}\sigma_{2}I^{2}\\
+ & -E_{gap}\delta_{II}(T_{e,h})n_{e,h}+\alpha_{fcr}^{e,h}I+E_{gap}R_{e,h}^{A}
+\end{align*}
+}{\small \par}
+
+
+\paragraph{Lattice energy}
+
+\begin{equation}
+\frac{\partial\left(C_{s}T_{s}\right)}{\partial t}-\boldsymbol{\nabla}\left(\kappa_{s}\boldsymbol{\nabla}T_{s}\right)=\gamma_{e-ph}(T_{e}-T_{s})+\gamma_{h-ph}(T_{h}-T_{s})\label{eq:TTMlattice}
+\end{equation}
+
+
+\begin{equation}
+\gamma_{e,h-ph}=C_{e,h}\nu_{e,h-ph}.\label{eq:Coupling}
+\end{equation}
+\[
+\nu_{e,h-ph}^{-1}=\tau_{ph}^{0}\left[1+\left(\frac{n_{e,h}}{n_{th}}\right)^{2}\right]
+\]
+
+
+\[
+C_{s}\left(T_{s}\right)=10^{3}\rho_{Si}\times\left(a_{0}T_{s}+a_{1}T_{s}^{a_{2}}\right)
+\]
+\[
+\kappa_{s}(T_{s})=10^{2}\left(a_{0}+\frac{a_{1}}{1+e^{-\frac{T_{s}-T_{c}+\frac{w_{1}}{2}}{w_{2}}}}\right)\left(1-\frac{1}{1+e^{-\frac{T_{s}-T_{c}-\frac{w_{1}}{2}}{w_{3}}}}\right)
+\]
+
+
+Since the Fermi-Dirac statistics strongly reduce the possible comparison
+with analytical solutions, it will be neglected in the following Sections
+\ref{sec:Free-carrier-density:-Validation}, \ref{sec:Free-carrier-energy:-validation}
+and \ref{sec:Coupled-effects}. However, it will be considered in
+the section \ref{sec:Control-of-the}. 
+
+
+\section{Free-carrier density: Validation of analytical cases\label{sec:Free-carrier-density:-Validation}}
+
+
+\subsection{Auger recombination}
+
+The formulation proposed by \cite{Silaeva2012a} has to be validated
+within several steps. Auger recombination is modeled by a coupled
+non-linear system. In that section, we only consider the equation
+of free-carrier given by
+
+\begin{equation}
+\frac{\partial n_{e}}{\partial t}=\frac{\partial n_{h}}{\partial t}=C_{h}^{AR}n_{h}^{2}n_{e}+C_{e}^{AR}n_{e}^{2}n_{h}\label{eq:AugerNe}
+\end{equation}
+Analytical solution of the equation is given by 
+\[
+n_{e}(t)=\frac{C_{AR}^{(h)}n_{e}^{0}n_{h}^{0}}{\left(n_{e}^{0}C_{AR}^{(e)}+n_{h}^{0}C_{AR}^{(h)}\right)\exp\left(C_{AR}^{(h)}n_{h}^{2}t\right)-C_{AR}^{(e)}n_{e}^{0}}
+\]
+
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20140314-ValidationOfAuger.eps}
+\par\end{centering}
+
+\caption{\label{fig:AugerNe}Relative error calculation (\%) of Eq. (\ref{eq:AugerNe})
+as a function of time. }
+\end{figure}
+Figure \ref{fig:AugerNe} presents the comparison between the numerical
+calculation and the analytical solution for an initial value problem,
+where densities have been fixed at $N_{e,h}(t=0)=10^{27}$ m$^{-3}$.
+The mismatch between numerical and analytical calculations is smaller
+than $0.005$\%. 
+
+
+\subsection{Interband absorption}
+
+
+\paragraph{One-photon absorption}
+
+Validation on analytical function at $\lambda=343$ nm has been performed
+but is not yet presented. 
+
+
+\paragraph{Two-photon absorption}
+
+Test at $\lambda=1030$ nm. Test is shitty ! Go to second order time
+integration scheme. 
+
+
+\subsection{Impact ionization}
+
+To be completed. 
+
+
+\section{Free-carrier energy: validation of analytical cases\label{sec:Free-carrier-energy:-validation}}
+
+
+\subsection{Heating of the interband absorption}
+
+In this subsection, we simply consider the interband absorption at
+343 nm. 
+\[
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right)=\frac{\hbar\omega-E_{gap}}{\hbar\omega}\sigma_{1}I
+\]
+where the free-carrier density has been fixed to $n_{e}=10^{27}$
+m$^{-3}$. 
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20130905-HeatingIonization-1E27.eps}
+\par\end{centering}
+
+\caption{\label{fig:ErrorSigma1-Heating}Relative error between numerical and
+analytical solutions for the interband absorption of electrons. $\lambda=343$
+nm. }
+\end{figure}
+Figure \ref{fig:ErrorSigma1-Heating} shows the relative error between
+the numerical and the analytical solution. The maximum relative error
+is $0.1$\%, which is reasonable. This relative error can be reduced
+by replacing the first-order upwind time integrator by a second-order
+one. 
+
+At 1030 nm, the two-photon absorption plays an important role. It
+is thus of interest to validate the integrator at this wavelength.
+For that purpose, we push the laser fluence to $100$ J.m$^{-2}$
+in order to reach a good 2-photon absorption probability. Figure \ref{fig:TwoPhotonTeError}
+presents the free-carrier heating by the 2-photon absorption process
+at $n_{e}=10^{27}$ m$^{-3}$. 
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20130905-HeatingIonization2-1E27.eps}
+\par\end{centering}
+
+\caption{\label{fig:TwoPhotonTeError}Relative error between numerical and
+analytical solutions for the calculation of 2-photon absorption at
+$\lambda=1030$ nm wavelength, $F=100$ J.m$^{-2}$ and pulse duration
+$\tau=40$ fs. }
+
+
+\end{figure}
+
+
+
+\subsection{Validation of the electron energy coupling with lattice}
+
+
+\paragraph{Cooling of the electrons by the cold lattice}
+
+In this section, the equations are reduced to the following{\small{}
+\begin{equation}
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right)=-\gamma_{e-ph}(T_{e}-T_{s})\label{eq:TTMe-2}
+\end{equation}
+}{\small \par}
+
+\begin{equation}
+\gamma_{e,h-ph}=C_{e,h}\nu_{e,h-ph}.\label{eq:Coupling-1}
+\end{equation}
+\[
+\nu_{e,h-ph}^{-1}=\tau_{ph}^{0}\left[1+\left(\frac{n_{e,h}}{n_{th}}\right)^{2}\right]
+\]
+
+
+Free-carrier density $n_{e}$ is taken as a constant $n_{e}=10^{27}$
+m$^{-3}$. The initial carrier temperature is set to the value of
+$T_{e}=300,000$ K. 
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20140317-CheckCoupling.eps}
+\par\end{centering}
+
+\caption{\label{fig:Relative-error-on-Te-Coupling}Relative error on the calculation
+of the free-carrier temperature. In this result, only the thermal
+coupling between electrons and lattice has been checked. The sudden
+change of the relative error is due to the change of timestep during
+the calculation. }
+\end{figure}
+Figure \ref{fig:Relative-error-on-Te-Coupling} presents the relative
+error between the numerical and the analytical solution as a function
+of time. Results show that the free-carrier temperature is calculated
+with an error lower than $0.01$ \% from the exact value. The effect
+of the change of time-step is also observed: the change at $t=10^{-12}$
+s induces a less precise calculation, which is then amplified until
+the end of the interaction. The overall error remains however lower
+than $0.015$ \%, which is rather good. 
+
+
+\section{Validation of lattice thermal coupling}
+
+
+\subsection{Heating of the lattice by hot electrons}
+
+
+\paragraph{Reduction to a ``simple'' case}
+
+This section investigates the heating of the lattice in our conditions.
+Eq. \ref{eq:TTMlattice} is reduced to its simplest form allowing
+to validate to calculate the heating of the lattice. The laser source
+is disabled, and we only consider the coupling between a gas of hot
+electrons at a fixed density coupled with the lattice. This allows
+to set the carrier density $n_{e}$ as a constant, and the free-carrier
+temperature $T_{e}$ as a constant. Thus, the carrier heat capacity
+$C_{e}$, and the electron-lattice coupling rate $\gamma_{e-ph}$
+are constant. These approximations lead to set the following equation 
+
+\begin{equation}
+\frac{\partial\left[C_{s}(T_{s}(t))\times T_{s}(t)\right]}{\partial t}=\gamma_{e-ph}\left[T_{e}^{0}-T_{s}(t)\right]\label{eq:TTMlattice-1}
+\end{equation}
+where 
+\begin{equation}
+\gamma_{e,h-ph}=C_{e,h}\nu_{e,h-ph}.\label{eq:Coupling-1-1}
+\end{equation}
+\[
+\nu_{e,ph}^{-1}=\tau_{ph}^{0}\left[1+\left(\frac{n_{e}^{0}}{n_{th}}\right)^{2}\right].
+\]
+In our case, the lattice heat capacity strongly depends to the lattice
+temperature $T_{s}$. Depending on the form of the coefficient $C_{s}\left(T_{s}\right)$,
+Eq. \ref{eq:TTMlattice-1} will therefore exhibit strong non-linearities.
+Before considering solving this equation, we first develop the possible
+functions used to adjust the lattice heat capacity on the available
+experimental results. In all the cases, the equation is non-linear
+and does not admit a simple analytical solution. We are thus able
+to compare the quality of the numerical integration with other numerical
+integration packages and keep checking the energy conservation of
+our results. However, no error estimation will be possible to perform
+since no analytical solution is available. 
+
+
+\paragraph{Adjustment of the lattice heat capacity}
+
+Here is a list of the functions which have been built as a function
+of lattice temperature fitting the experimental measurements of Refs.
+\cite{Flubacher1959,Okhotin1972}. Each case will lead to different
+types of non-linearities. Since we have different possibilities to
+adjust the experimental data, the type of function should be chosen
+in order to minimizer the difficulties over the numerical integration. 
+\begin{enumerate}
+\item Exponent fraction
+\[
+C_{s}(T_{s})=\frac{a_{0}}{e^{a_{1}/T_{s}}-a_{2}}=\frac{0.4129\times10^{3}\rho_{Si}}{e^{\frac{88.183}{T_{s}}}-0.6765}
+\]
+The resulting type of the equation is 
+\[
+a_{0}a_{1}\left(\frac{\partial{\it T_{s}}}{\partial t}\right){\rm e}^{\frac{a_{1}}{{\it T_{s}}\left(t\right)}}\left({\rm e}^{\frac{a_{1}}{{\it T_{s}}\left(t\right)}}-a_{2}\right)^{-2}\left({\it T_{s}}\left(t\right)\right)^{-1}+a_{0}\frac{\partial T_{s}}{\partial t}\left({\rm e}^{\frac{a_{1}}{T_{s}\left(t\right)}}-a_{2}\right)^{-1}=\frac{{\it C_{e}}\left({\it T_{e}^{0}}-{\it T_{s}}\left(t\right)\right)}{{\it \tau_{e}}}
+\]
+
+\item Sum of exponents
+\[
+C_{s}(T_{s})=\eta\left(ae^{bT_{s}}+ce^{dT_{s}}\right)
+\]
+where $\eta=10^{3}\rho_{Si}$, $a=0.899$, $b=5.455\times10^{-5}$,
+$c=-0.959$, and $d=-0.004218$. The resulting type of equation is
+\[
+\left(\frac{\partial{\it T_{s}}}{\partial t}\right)\eta\left({\it T_{s}}\left(t\right)abe^{b\times{\it T_{s}}\left(t\right)}+{\it T_{s}}\left(t\right)cd{e}^{d\times{\it T_{s}}\left(t\right)}+ae^{b\times{\it T_{s}}\left(t\right)}+ce^{d\times{\it T_{s}}\left(t\right)}\right)=\frac{{\it C_{e}}\left(-{\it T_{e}^{0}}+{\it T_{s}}\left(t\right)\right)}{\tau_{e}}
+\]
+
+\item Real-valued polynomial
+\[
+C_{s}\left(T_{s}\right)=\sum_{i=0}^{i=5}a_{i}T_{s}^{i}
+\]
+ where $a_{5}$ = $2.36\times10^{-16}$, $a_{4}=-1.707\times10^{-12}$,
+$a_{3}=4.619\times10^{-9}$, $a_{2}=-5.912\times10^{-6}$, $a_{1}=3.733\times10^{-3}$,
+and $a_{0}=-0.0494$. The resulting of equation is 
+\[
+\left(\frac{\partial T_{s}}{\partial t}\right)\left(2a_{1}{\it T_{s}}\left(t\right)+3a_{2}\left({\it T_{s}}\left(t\right)\right)^{2}+4a_{3}\left({\it T_{s}}\left(t\right)\right)^{3}+5a_{4}\left({\it T_{s}}\left(t\right)\right)^{4}+6a_{5}\left({\it T_{s}}\left(t\right)\right)^{5}+a_{0}\right)=\frac{{\it C_{e}}\left(-{\it T_{e}^{0}}+{\it T_{s}}\left(t\right)\right)}{\tau_{e}}
+\]
+
+\item Van Driel's style fit function
+\[
+C_{s}\left(T_{s}\right)=10^{3}\rho_{Si}\times\left(a_{0}T_{s}+a_{1}T_{s}^{a_{2}}\right)
+\]
+with $a_{0}=-0.003592$, $a_{1}=0.01458$, and $a_{2}=0.8316$. The
+stability of this function is very good. However, the temperature
+validity range of this function is limited to 1400 K. 
+\end{enumerate}
+\begin{figure}[h]
+\centering{}\includegraphics[width=12cm]{\string"/media/thibault/PHD/Travail/Post Doc/Calculs/CiKi-Silicon/20131101-CiModels\string".pdf}\caption{Heat capacity of Si and various adjustments. }
+\end{figure}
+
+
+
+\paragraph{Numerical integration}
+
+Several possibilities can be tried to deal with the non-linearity. 
+\begin{enumerate}
+\item Use a higher-order precision scheme on the time integration for the
+$T_{s}$ equation. 
+\item Use a Runge-Kutta solver. However, there gonna be diffusive terms
+enabled later, which will not be mathematically clean with such a
+scheme. 
+\item Iterate the solution and ensure convergence \emph{before going to
+the next time-step }(can really multiply the calculation time)\emph{.}
+\end{enumerate}
+Applying a higher-order precision scheme allows to obtain solutions
+closer to the ``exact'' solution. Here, the ``exact'' solution
+is considered to be the one given by the 4th order Runge Kutta scheme
+(``ode45'' function of Maple and Matlab). However, using an eulerian
+scheme does not provide a sufficiently good convergence of the solution
+even at the 4th order. The choice of the fitting function using the
+Van Driel's form interestingly allows to obtain a solution equal to
+the ``exact'' one. The origin of this numerical recipe is not understood
+yet. 
+
+It should be mentioned that in the all the cases considered in this
+section, the energy conservation has been verified and did not show
+any deficiency. The serious non-linearity that we face in this section
+is important for the topic and can strongly affect the final results
+given by the code. 
+
+
+\section{Verification of the coupled effects\label{sec:Coupled-effects}}
+
+
+\subsection{Change of carrier heat capacity}
+
+
+\subsection{Auger recombination}
+
+\[
+\frac{\partial n_{e}}{\partial t}=\frac{\partial n_{h}}{\partial t}=C_{h}^{AR}n_{h}^{2}n_{e}+C_{e}^{AR}n_{e}^{2}n_{h}
+\]
+
+
+\begin{align}
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right) & =E_{gap}C_{AR}^{(e)}N_{e}^{2}N_{h}\\
+\frac{\partial}{\partial t}\left(C_{h}T_{h}\right) & =E_{gap}C_{AR}^{(h)}N_{h}^{2}N_{e}
+\end{align}
+If $n_{e}(t=0)=n_{h}(t=0)$, then $n_{e}(t)=n_{h}(t)$. The system
+is thus equivalent to the following 
+\begin{equation}
+\begin{cases}
+\frac{\partial n_{e}}{\partial t} & =C_{AR}^{(e)}n_{e}^{3}\\
+\frac{\partial}{\partial t}\left(C_{e}T_{e}\right) & =E_{gap}C_{AR}^{(e)}N_{e}^{3}
+\end{cases}\label{eq:AugerCoupled}
+\end{equation}
+with the initial conditions $T_{e,h}(t=0)=T_{e,h}^{(0)}$ and $N_{e}(t=0)=N_{e}^{(0)}$.
+The solution of the Eq. (\ref{eq:AugerCoupled}) is 
+\[
+\begin{cases}
+N_{e}(t) & =\left(\frac{1}{N_{e,0}^{2}}+2C_{AR}^{(e)}t+2C_{AR}^{(h)}t\right)^{-\frac{1}{2}}\\
+T_{e}(t) & =\frac{\left\{ \sqrt{2t\left(C_{AR}^{(e)}+C_{AR}^{(h)}\right)+N_{e,0}^{-2}}\left[3k_{B}T_{e}N_{e,0}\left(C_{AR}^{(e)}+C_{AR}^{(h)}\right)+2E_{g}C_{AR}^{(e)}N_{e,0}\right]-2E_{g}C_{AR}^{(e)}\right\} }{3k_{B}\left(C_{AR}^{(e)}+C_{AR}^{(h)}\right)}
+\end{cases}
+\]
+In that calculation, the band gap energy is taken constant. 
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/20140314-ValidationOfAugerCoupledTeNe.eps}
+\par\end{centering}
+
+\caption{\label{fig:ErrorOnAugerCoupled}Calculation of the error (\%) made
+on the solutions $N_{e,h}(t)$ and $T_{e,h}(t)$ for $N_{e,h}(t=0)=10^{27}$
+m$^{-3}$, $T_{e,h}(t=0)=80$ K. }
+\end{figure}
+Figure \ref{fig:ErrorOnAugerCoupled} shows the relative error $\zeta$
+between the numerical and analytical results, calculated for $T_{e,h}$
+and $N_{e,h}$ using the following formula
+\[
+\zeta(T_{e})=100\times\frac{T_{e}^{(num)}-T_{e}^{(exact)}}{T_{e}^{(exact)}}
+\]
+
+
+The first conclusion is that the Auger recombination is very well
+solved. Calculating on a time range of $10^{-8}$ s with a timestep
+of $dt\sim10^{-17}$ s, the relative error is lower than 0.1 \% on
+the carrier temperature, and lower than $5\times10^{-3}$ \% on the
+carrier density. The multiple time scale of the problem is taken into
+account by changing the timestep during the calculations. In this
+calculation, the timestep has been changed at $t=10^{-12}$ s, $t=10^{-11}$s,
+and $t=10^{-10}$ s by multiplying $dt'\leftarrow10\times dt$. We
+can directly observe the negligible consequences of the timestep modification
+as a function of time. 
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/LaAPT/Flaps2D/09-EnergyConservation/CheckAuger/20140312-Energy.eps}
+\par\end{centering}
+
+\caption{\label{fig:AugerEnergyConservation}Energy of the free-carriers as
+a function of time after the maximum of the laser pulse. $F=10$ $J.m^{-2}$,
+$\tau=40$ fs, $\lambda=343$ nm. It is worth to note that considering
+Fermi-Dirac statistics leads to the same result. }
+\end{figure}
+Figure \ref{fig:AugerEnergyConservation} presents the conservation
+of the carrier energy after their excitation by 1 photon absorption.
+The Fermi-Dirac statistics are here taken into account. It is shown
+that the free-carrier energy is well conserved. 
+
+
+\section{\label{sec:Control-of-the}Control of the energy conservation}
+
+Since the mesh is not regular and that finding analytical solution
+to the equation using an arbitrary contour in a reasonable duration
+is beyond the capabilities of the author, it has been decided to study
+the energy conservation as a function of time. The timescale of the
+processes investigated by this code is near from the nanosecond reaction
+of the system, which is 6 orders of magnitude larger than the laser
+pulse duration (of about 40 fs to 500 fs). The validity of the time-integrator
+is thus of major importance in this multi-scale problem, the connexion
+to the spatial steps is thus straightforward. 
+
+
+\subsection{Energy of the carriers}
+
+Since we model an external laser pulse irradiating the sample by its
+intensity evolution with time and space through the function $I(t,x,y)$,
+then we will express the total energy considering the invariance by
+translation with the $z$ axis, normal to the orientation of this
+document plane. 
+
+The total energy study will be expressed in $J/m$. Actually, the
+energy of the carriers in 2D is defined by 
+\[
+dE_{e}\left[J.m^{-3}\right]=dE_{e,kin}+dE_{pot}=d\left(C_{e}T_{e}\right)+d\left(E_{g}n_{e}\right)
+\]
+where $\mathcal{V}$ {[}m$^{2}${]} is the control volume of each
+2D cell of the mesh, $E_{e,kin}$ expresses the thermal energy of
+conduction band electrons, $E_{e,pot}$ expresses the potential energy
+of the conduction band electrons. This latter expression can be also
+written for holes. However, since the origin of the potential energies
+is taken at the edge of the valence band, then holes have a potential
+energy equal to 0. Thus we can write 
+\[
+dE_{h}\left[J.m^{-3}\right]=dE_{h,kin}+dE_{h,pot}=d\left(C_{h}T_{h}\right)
+\]
+
+
+Integrating over the two dimensions of the problem leads to write
+the total energy $\xi_{e,h}$ at a given instant in the whole sample
+volume by 
+\begin{alignat*}{1}
+\xi_{e}\,[J.m^{-1}] & =\iint dE_{e}\, d\mbox{\ensuremath{\mathcal{V}}}\\
+ & =\iint\left(T_{e}dC_{e}+C_{e}dT_{e}+dE_{g}n_{e}+E_{g}dn_{e}\right)\, d\mathcal{V}
+\end{alignat*}
+ 
+\begin{alignat*}{1}
+\xi_{h}\,[J.m^{-1}] & =\iint dE_{h}\, d\mbox{\ensuremath{\mathcal{V}}}\\
+ & =\iint\left(T_{h}dC_{h}+C_{h}dT_{h}\right)\, d\mathcal{V}
+\end{alignat*}
+Band gap is a function of lattice temperature $T_{s}$ and carrier
+density $n_{e}$ expressed via \cite{Driel1987} 
+\[
+E_{g}(T_{s},n_{e})=1.17-4.73\times10^{-4}\frac{T_{s}^{2}}{T_{s}+636}-1.5\times10^{-10}n_{e}^{1/3}
+\]
+
+
+
+\subsection{Control of the laser energy}
+
+Now we have chosen the unity to express the energy in the problem,
+we express now the total laser energy is by the expression
+\[
+\xi_{sample}[J.m^{-1}](y)=\iint I(t,x,y)\, dt\, dx
+\]
+integrated over the diameter of the laser spot. 
+
+However, the shape of the surface is not flat, and the surface reflectivity
+is taken into account by the analytical solutions of Mie scattering,
+assuming a scattering on a 3D cylinder from which a plane section
+is studied: the intersection between the study plane and the entire
+3D space. Consequently, the calculation of the overall reflectivity
+and transmittance by the problem shape is rather difficult. 
+
+
+\subsubsection{Calculation of the tip absorptance}
+
+We try to solve this problem by studying the energy absorbed by the
+nanometric sized sample via 
+\[
+\xi_{absorbed}[J.m^{-1}]=\iiint\alpha I(t,x,y)\, dt\, dx\, dy
+\]
+
+
+In the conditions of the experiments ($\tau=40$ fs, $F=10$ J/m$^{2}$,
+$\lambda=343$ nm), the order of magnitude of $\xi_{absorbed}$ is
+$10^{-4}$ J. In order to calculate the overall absorbed laser energy,
+we define 
+\[
+A=\frac{\xi_{absorbed}}{\xi_{laser}}
+\]
+where 
+\[
+\xi_{laser}=F\times\mathcal{V}
+\]
+
+
+\begin{table}[h]
+\begin{centering}
+\begin{tabular}{ccc|cc|c|c}
+ &  & \multicolumn{1}{c}{} &  & \multicolumn{1}{c}{} & \multicolumn{1}{c}{} & \tabularnewline
+\hline 
+\hline 
+{\small{}$M$} & {\small{}$N$} & {\small{}MeshShift} & {\small{}$\mathcal{V}$} & {\small{}$dt$} & {\small{}$\xi_{absorbed}$ (J)} & {\small{}$A(\%)$}\tabularnewline
+\hline 
+{\small{}11} & {\small{}11} & {\small{}1} & {\small{}$6.7004\times10^{-12}$} & {\small{}$10$ as} & {\small{}$5.2097\times10^{-11}$} & {\small{}$77.75$}\tabularnewline
+{\small{}11} & {\small{}11} & {\small{}4} & {\small{}$6.72711\times10^{-12}$} & {\small{}``} & {\small{}$5.5004\times10^{-11}$} & {\small{}$81.76$}\tabularnewline
+{\small{}51} & {\small{}51} & {\small{}4} & {\small{}$6.73268\times10^{-12}$} & {\small{}``} & {\small{}$6.1999\times10^{-11}$} & {\small{}$92.08$}\tabularnewline
+{\small{}101} & {\small{}101} & {\small{}4} & {\small{}$6.73404\times10^{-12}$} & {\small{}``} & {\small{}$6.4153\times10^{-11}$} & {\small{}$95.26$}\tabularnewline
+{\small{}101} & {\small{}101} & {\small{}10} & {\small{}$6.73415\times10^{-12}$} & {\small{}``} & {\small{}$6.4271\times10^{-11}$} & {\small{}$95.44$}\tabularnewline
+{\small{}101} & {\small{}101} & {\small{}20} & {\small{}$6.73432\times10^{-12}$} & {\small{}``} & {\small{}$6.4122\times10^{-11}$} & {\small{}$95.21$}\tabularnewline
+{\small{}151} & {\small{}151} & {\small{}4} & {\small{}$6.73439\times10^{-12}$} & {\small{}``} & {\small{}$6.4955\times10^{-11}$} & {\small{}$96.45$}\tabularnewline
+{\small{}151} & {\small{}151} & {\small{}20} & {\small{}$6.7345\times10^{-12}$} & {\small{}``} & {\small{}$6.4528\times10^{-11}$} & {\small{}$95.81$}\tabularnewline
+\hline 
+\hline 
+ &  & \multicolumn{1}{c}{} &  & \multicolumn{1}{c}{} & \multicolumn{1}{c}{} & \tabularnewline
+\end{tabular}
+\par\end{centering}
+
+\caption{\label{tab:Optical-energy}Optical energy as a function of the mesh
+precision for an homogeneous energy distribution $\nabla I(x,y)=0$,
+where $F=10$ $J.m^{-2}$, and $\tau=40$ fs. }
+\end{table}
+Table \ref{tab:Optical-energy} presents the total optical energy
+deposited in the sample as a function of the mesh properties in case
+of an homogeneous distribution of laser energy. This allows to calculate
+the minimal mesh and timestep parameters required to reach convergence
+in the numerical sample volume and the convergence of the intensity
+calculation. 
+
+
+\subsubsection{Calculation of the incident laser energy}
+
+The intensity at the tip apex interface is defined by the following
+formula
+\[
+E_{laser}\left[J\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\, d\mathcal{A}\, dt
+\]
+where $\overrightarrow{S}$ is the Poynting vector, $\overrightarrow{n}$
+is the normal to the 3D surface of the cone, and $\mathcal{A}$ is
+the area element defined around the normal vector. The intensity is
+defined by the flux of the Poynting vector by the surface of area
+$d\mathcal{A}$. In the plane of the simulation $\left(xOy\right)$,
+we can write the following relation 
+\[
+\overrightarrow{S}\cdot\overrightarrow{n}=I\left[x,y_{\partial\Omega}\right]\cos\theta_{\partial\Omega}
+\]
+where 
+\[
+\tan\theta_{\partial\Omega}=\frac{\partial x}{\partial y}.
+\]
+Since we consider only two dimensions with an invariance by translation
+along the coordinate $z$, we can build the quantity
+\[
+\xi_{laser}\left[J.m^{-1}\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\, d\mathcal{L}\, dt
+\]
+using the contour of the cone in the plane of the model $\left(xOy\right)$,
+where the projection of the Poynting vector at the interface is known. 
+
+The arc length along the curve $x(y)$ is given by 
+\[
+\mathcal{L}=\int\left|\frac{\partial x}{\partial y}\right|\, dy
+\]
+Therefore, we can write
+\[
+\xi_{laser}\left[J.m^{-1}\right]=\iint I\left[x_{\partial\Omega}\left(y\right),y,t\right]\cos\left(\arctan\frac{\partial x}{\partial y}\right)\left|\frac{\partial x}{\partial y}\right|\, dy\, dt.
+\]
+For a constant intensity defined by $I(x,y,t)=I_{0}e^{-\frac{1}{2}\left(\frac{t}{\sigma_{t}}\right)^{2}}$,
+$\sigma_{t}=\frac{\tau}{2\sqrt{2\ln2}}$, $I_{0}=\frac{F}{\tau}\sqrt{\frac{4\ln2}{\pi}}$,
+$F=10$ $J.m^{-2}$, and $\tau=40$ fs, it is found 
+
+
+\subsubsection{Verification of the calculated intensity}
+
+\[
+\xi_{laser}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I_{0}(t,x,y)\, d\Omega\, dt
+\]
+\[
+\xi_{opt}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I(t,x,y)\, d\Omega\, dt
+\]
+We define the numerical trust value which corresponds to the ratio
+between the energy absorbed contained the solid, with the energy given
+by the laser intensity distribution. 
+\[
+\eta=\frac{\xi_{solid}}{\xi_{opt}}
+\]
+We also define the absorptivity by 
+\[
+\overline{A}=\frac{\xi_{opt}}{\xi_{laser}}
+\]
+ which is the effective absorptivity of the laser pulse considering
+the shape of the cone. 
+
+
+\paragraph{Results}
+
+Table \ref{tab:EnergyBalanceMie} shows the results for 343 nm using
+different meshes. It is clear that :
+\begin{itemize}
+\item The ``numerical trust index'' $\eta$ demonstrates that the size
+of the mesh is of major importance for obtaining a good energy conservation
+between the field and the solid. But why, since the equations are
+using the same mesh ? It can be due to the fact that the strongest
+absorption zone at 343 nm is at the boundary, and that the first energy
+contained in the cells of the boundary is neglected. Thus, at 515
+nm, we shall need less cells to reach the energy balance between the
+fields and the solid. 
+\item the effect of the meshgrid is negligible in the energy balance. It
+will take its importance only for the energy diffusion conservation.
+\item A problem is identified in the definition of the optical absorption
+which simply cannot be so small. Indeed, at $\lambda=343$ nm, the
+penetration depth of the field is nearly 9 nm, which is clearly smaller
+than the size of the cone. Thus, it is not possible that the absorbed
+energy is so small. Its definition might be wrong or reveals a numerical
+problem. 
+\end{itemize}
+\begin{table*}[h]
+\begin{centering}
+\begin{tabular}{ccc|cc|ccc|ccc|cc}
+ &  & \multicolumn{1}{c}{} &  & \multicolumn{1}{c}{} &  &  & \multicolumn{1}{c}{} &  &  & \multicolumn{1}{c}{} &  & \tabularnewline
+\hline 
+\hline 
+{\scriptsize{}$M$} & {\scriptsize{}$N$} & {\scriptsize{}MeshShift} & {\scriptsize{}$\mathcal{V}$} & {\scriptsize{}$dt$} & {\scriptsize{}$\lambda$ (nm)} & {\scriptsize{}Pola} & {\scriptsize{}$\phi$ (rad)} & {\scriptsize{}$\xi_{laser}$ (mJ.m$^{-1}$)} & {\scriptsize{}$\xi_{opt}$ (mJ.m$^{-1}$)} & {\scriptsize{}$\xi_{solid}$ (mJ.m$^{-1}$)} & {\scriptsize{}Trust $\eta$ (\%)} & {\scriptsize{}$\overline{A}=1-R-T$ (\%)}\tabularnewline
+\hline 
+{\scriptsize{}101} & {\scriptsize{}101} & {\scriptsize{}4} & {\scriptsize{}$6.73404\times10^{-12}$} & {\scriptsize{}``} & {\scriptsize{}$343$} & {\scriptsize{}TM} & {\scriptsize{}$0$} & {\scriptsize{}$7.384$} & {\scriptsize{}$33.71\times10^{-3}$} & {\scriptsize{}$13.75\times10^{-3}$} & {\scriptsize{}$40.7$} & {\scriptsize{}$0.46$}\tabularnewline
+{\scriptsize{}101} & {\scriptsize{}101} & {\scriptsize{}10} & {\scriptsize{}$6.73415\times10^{-12}$} & {\scriptsize{}``} &  &  &  &  &  &  &  & \tabularnewline
+{\scriptsize{}101} & {\scriptsize{}101} & {\scriptsize{}20} & {\scriptsize{}$6.73432\times10^{-12}$} & {\scriptsize{}``} &  &  &  &  &  &  &  & \tabularnewline
+{\scriptsize{}151} & {\scriptsize{}151} & {\scriptsize{}4} & {\scriptsize{}$6.73439\times10^{-12}$} & {\scriptsize{}``} & {\scriptsize{}$343$} & {\scriptsize{}TM} & {\scriptsize{}$0$} & {\scriptsize{}$7.384$} & {\scriptsize{}$29.53\times10^{-3}$} & {\scriptsize{}$18.07\times10^{-3}$} & {\scriptsize{}$61.2$} & {\scriptsize{}$0.40$}\tabularnewline
+{\scriptsize{}251} & {\scriptsize{}251} & {\scriptsize{}4} & {\scriptsize{}$6.73462\times10^{-12}$} & {\scriptsize{}``} & {\scriptsize{}$343$} & {\scriptsize{}TM} & {\scriptsize{}$0$} & {\scriptsize{}$7.384$} & {\scriptsize{}$27.093\times10^{-3}$} & {\scriptsize{}$21.808\times10^{-3}$} & {\scriptsize{}$80.49$} & {\scriptsize{}$0.37$}\tabularnewline
+{\scriptsize{}351} & {\scriptsize{}351} & {\scriptsize{}40} & {\scriptsize{}$6.73472\times10^{-12}$} & {\scriptsize{}``} & {\scriptsize{}$343$} & {\scriptsize{}TM} & {\scriptsize{}$0$} & {\scriptsize{}$7.384$} & {\scriptsize{}$26.340\times10^{-3}$} & {\scriptsize{}$23.061\times10^{-3}$} & {\scriptsize{}$88.95$ (no diff.)} & {\scriptsize{}$0.356$}\tabularnewline
+\hline 
+\hline 
+ &  & \multicolumn{1}{c}{} &  & \multicolumn{1}{c}{} &  &  & \multicolumn{1}{c}{} &  &  & \multicolumn{1}{c}{} &  & \tabularnewline
+\end{tabular}
+\par\end{centering}
+
+\caption{\label{tab:EnergyBalanceMie}Optical energy as a function of the mesh
+precision for an inhomogeneous energy distribution $\nabla I(x,y)\protect\neq0$,
+where $F=10$ $J.m^{-2}$, and $\tau=40$ fs. ``Trust'' is defined
+by $\eta=\frac{\xi_{solid}}{\xi_{opt}}$.}
+\end{table*}
+
+
+
+\section{Generation and control of the mesh}
+
+
+\paragraph{Definition of the contour}
+
+
+\paragraph{Regularization of the mesh}
+
+The mesh is built by defining a contour and solving 
+\[
+\Delta\left(\begin{array}{c}
+x\\
+y
+\end{array}\right)=0
+\]
+ by a simple iterative method
+\[
+x_{i}=\frac{1}{4}\left(x_{i-1,j-1}+x_{i-1,j+1}+x_{i+1,j-1}+x_{i+1,j+1}\right)
+\]
+
+
+\[
+y_{i}=\frac{1}{4}\left(y_{i-1,j-1}+y_{i-1,j+1}+y_{i+1,j-1}+y_{i+1,j+1}\right)
+\]
+Round about 70 000 iterations are required to reach convergence of
+the mesh. 
+
+This method is optimum on a single core since convergence rate of
+this technique is rather good (how to quantify ?) in respect of the
+global calculation time. 
+
+
+\section{Optimization of the code}
+
+Optimization is a big word for telling many things. First, we have
+designed a model which is actually already simplified to decrease
+the amount of necessary operations. In this section, purpose is to
+perform optimizations over the code, especially over the way to perform
+the operations on a single processor, and to decrease the waste of
+operations. 
+
+
+\subsection{Sequential code: checking the bottlenecks}
+
+Using the Intel Loop Observer software (or GNU profiler), we can monitor
+the number of calls to the loops and number of calls to the functions. 
+
+By performing a first test during one night, I already figured out
+that a function was using 25\% of the calculation time (sequential)
+despite that it was not necessary. The number of operations was found
+to be $10^{12}$ after one night. Actually, this operation was required
+once, and then replaced by calls to memory. But is this call to memory
+really saves time instead of performing such simple operation each
+time ? 
+
+In the next section, we focus on optimizing the way to perform calculations
+with several cores, to parallelize the operations. First, we will
+define the tools used to quantify the efficiency of a parallel code,
+and we will also perform some verification allowing to avoid the unnecessary
+operations. 
+
+
+\subsection{Calculation of the code velocity}
+
+\[
+CPU=\frac{N_{timesteps}}{t_{current}-t_{initial}}\times N_{threads}
+\]
+where $t_{current}$ is the CPU time captured just before performing
+the outputs, and $t_{initial}$ is the CPU time captured at the initialization
+of the code. Hence, CPU is supposed to be constant within the execution
+time of the code. 
+
+The coefficient $CPU$ is built to be independent to number of cores
+used. In this purpose, it becomes possible to calculate the speedup
+$\eta$ in core-number-independent way. Of course, the speedup may
+increase while increasing the number of cores, hopefully, until saturation. 
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/Codes/Flaps/Optimization/20150208-SpeedUp.eps}
+\par\end{centering}
+
+\caption{CPU efficiency as a function of core number. Note that these calculations
+were performed with a homogeneous energy source in the sample. }
+\end{figure}
+
+
+One understands that the definition of CPU is dependent to the frequency
+of the CPU clock. Hence, it is not reasonable to compare the CPU quantity
+between different computers. However, we can normalize the CPU by
+the velocity of the code in sequential mode on a single computer in
+order to build the speed up $\eta$, a quantity that it is intrinsic
+to the efficiency of the code. 
+\[
+\eta(N)=\frac{CPU_{N-cores}}{CPU_{1-core}}
+\]
+Hence, it looks that speedup of our parallelization method is greater
+than 1, but is lower than 2 with the available number of cores.
+
+
+\subsection{Changing the order of the loops}
+
+The main loop of the code is consuming 30\% of the calculation time
+in sequential mode. By changing the order of the loops, and by parallelizing
+the inner or outer ones, we can obtain serious improvement over the
+speedup. Fig. \ref{fig:Optimization1} demonstrates a very strong
+influence over the order of the loop iterations and distribution.
+Despite that one solution looks to be more efficient than the others,
+it is not sure if such optimization conserves the physical meaning
+of the result. 
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/Codes/Flaps/Optimization/20150208-OptimizeLoopOrder.eps}
+\par\end{centering}
+
+\caption{\label{fig:Optimization1}Qualitative increase of the efficiency as
+a function of the main loop order in Flaps2D.}
+\end{figure}
+
+
+
+\subsection{Parallel code: reduce the number of conditional branches}
+
+\noun{If} instruction is consuming a lot of time. Hence, it must be
+removed, especially from loops. Problem is that a large code allows
+to perform many types of calculations and to select various parameters.
+How can we select sub-modes of calculations into a code without using
+condition branches ? 
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/Codes/Flaps/Optimization/20150208-SplitTheLoops.eps}
+\par\end{centering}
+
+\caption{\label{fig:Comparison-before-and}Comparison before and after reduction
+of the IF branches inside parallelized loops. }
+\end{figure}
+
+
+Figure \ref{fig:Comparison-before-and} indicates that actually, cutting
+the loops into one parallel loop per equation is not the best idea.
+Indeed, the physical quantities are independent, since we use an explicit
+solving scheme. Hence, increasing the number of parallel loops increase
+the number of synchronization delays expected at the end of solving
+each equation. It is then more efficient to parallelize one mesh node
+per loop and to solve everything in this mesh node using the same
+core. 
+
+
+\subsection{Efficiency of the parallelization method}
+
+
+\paragraph{Distribution of the loops on CPU cores}
+
+The method of distributing the loops over the various cores has a
+limited efficiency. However, we can try to optimize the way they are
+distributed with the command \noun{omp\_schedule. }
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/Codes/Flaps/Optimization/20150208-OptimizeLoopDistrib.eps}
+\par\end{centering}
+
+\caption{\label{fig:CPU-efficiency-as}CPU efficiency as a function of the
+method to distribute the loops with OpenMP using 8 cores. }
+\end{figure}
+Figure \ref{fig:CPU-efficiency-as} presents the CPU efficiency evolution
+as a function of the strategy to distribute the loops over the cores.
+These calculations were performed only using 8 cores. 
+
+
+\paragraph{Explicit integration VS implicit integration}
+
+\begin{figure}[h]
+\begin{centering}
+\includegraphics[width=8cm,bb = 0 0 200 100, draft, type=eps]{home/thibault/Documents/Codes/Flaps/Optimization/20150208-ComparisonExplImpl.eps}
+\par\end{centering}
+
+\caption{\label{fig:ComparisonExplImpl}CPU efficiency as a function of the
+method to distribute the loops with OpenMP using 8 cores. }
+\end{figure}
+Overall the optimization performed until now, Figure \ref{fig:ComparisonExplImpl}
+presents the efficiency of the code for the implicit version and the
+explicit version, including recent optimizations. The implicit version
+of the code consumes round about 7 GB of RAM, and the explicit version
+consumes \textasciitilde{} 400 MB. 
+
+
+\paragraph{\emph{Which parallelization method can be investigated to strongly
+increase the speedup ? }}
+\begin{enumerate}
+\item Go to GPU. 
+\item Find OpenMP bottlenecks using OpenMP profiler program. 
+\item Try the code on 16 cores CPU to verify scalability. 
+\end{enumerate}
+\bibliographystyle{unsrtnat}
+\bibliography{/media/thibault/PHD/Travail/These/Articles/bibliographie_lue}
+
+\end{document}
