@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
+!! Copyright (C) 2012-2017 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 module Material_m
   use Maths_m
   use Types_m
+  use laser_m
 
 
   implicit none
@@ -31,6 +32,7 @@ module Material_m
 
   public ::                  &
     Material,                &
+    Laser,                   &
     get_collision_frequency, &
     init_material,           &
     evaluate_bandgap,        &
@@ -64,7 +66,8 @@ module Material_m
 
   !One-photon ionization rate
   real(8), parameter ::        &
-    IR1P_SI       =  3.4536819356d6 !TODO: this is actually wavelenth-dependent, and is calculated directly from EPSILON. 
+    IR1P_SI       =  3.4536819356d6 
+    !TODO: HUGE ERROR ! This was calculated directly from the wavelenth-dependent dielectric Permittivity! 
 
   !Two-photon ionization rate
   !TODO: To be implemented
@@ -80,9 +83,10 @@ module Material_m
 
   contains
 
-    subroutine init_material(this, AugerOff)
+    subroutine init_material(this, AugerOff, source)
       type(Material), intent(inout) :: this
       integer,        intent(in)    :: AugerOff
+      type(Laser),    intent(in)    :: source
 
       !TODO: For the moment, this is hard-coded. In the future, this will be obtained from the input file
       this%Id = Si
@@ -98,7 +102,7 @@ module Material_m
       !Lets select some hardcoded values, depending on the material
       select case(this%Id)
       case(Si)
-        this%EpsStatic = EPS_INF_SI
+        this%EpsStatic = DielectricConstant(source%lambda)
       case(ZnO)
         print *, 'Static value for ZnO not implemeted.'
         this%EpsStatic = EPS_INF_ZNO
@@ -177,8 +181,7 @@ module Material_m
       case(Si)
         colfreq=COL_FREQ_SI_CONSTANT
       case(ZnO)
-        print *, 'Collision frequency for ZnO not implemeted.'
-        call StopProgram()
+        colfreq=COL_FREQ_ZNO_CONSTANT
       case default
         print *, 'Bad value for material ID.'
         call StopProgram()
@@ -186,50 +189,56 @@ module Material_m
     end function get_collision_frequency
 
     !------------------------------------------------------------------
-    real(8) function OnePhotonIonizationRate(this)
+    real(8) function OnePhotonIonizationRate(this, lambda)
+      real(8),          intent(in)    :: lambda
       type(Material),   intent(in)    :: this
 
-      !TODO: Do you want to keep this model?
+      !TODO: NTD: Do you want to keep this model?
+      !TODO: TJYD: YES! This formula was very general, and has been replaced 
+      !by a particular case for a particular wavelength and a particular 
+      !material.  :-( 
 !       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
 
       select case(this%Id)
-      case(Si)
-        OnePhotonIonizationRate = IR1P_SI
-      case(ZnO)
-        print *, 'OnePhotonIonizationRate for ZnO not implemeted.'
-        call StopProgram()
+      case(Si)  !basically valid for any band gap material
+	   OnePhotonIonizationRate = 4d0*pi/lambda*aimag(sqrt(epsilonLinear)) !IR1P_SI
+      case(ZnO) !basically valid for any band gap material
+        OnePhotonIonizationRate = 4d0*pi/lambda*aimag(sqrt(epsilonLinear)) !IR1P_SI
       case default
-        print *, 'Bad value for material ID.'
+        print *, 'OnePhotonAbsorption: invalid material choice. '
         call StopProgram()
       end select
-
     end function OnePhotonIonizationRate
 
-    !TODO: Ideally, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
-    !We should also be able to select a tabulated Keldysh model for that.
+    !TODO: For Si, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
+    !We should also be able to select a tabulated Keldysh model from that.
     !------------------------------------------------------------------
-    pure real(8) function TwoPhotonIonizationRate(lambda)
+    pure real(8) function TwoPhotonIonizationRate(this, lambda)
+	 type(Material),   intent(in)    :: this
       real(8), intent(in) :: lambda
 
-      if(lambda.eq.1030d-9) then
-        TwoPhotonIonizationRate=1.933288399d-11
-        return
-      end if
-
-      if(lambda.eq.800d-9) then
-        TwoPhotonIonizationRate=1.857135194d-11
-        return
-      end if
-
-      if(lambda.eq.515d-9) then
-        TwoPhotonIonizationRate=1.512238197d-11
-        return
-      end if
-
-      if(lambda.eq.343d-9) then
-        TwoPhotonIonizationRate=M_ZERO
-        return
-      end if
+      select case (this%Id)
+	   case (Si)
+		select case (lambda)
+		  case(1030d-9)
+		    TwoPhotonIonizationRate=1.933288399d-11
+		  case(800d-9)
+		    TwoPhotonIonizationRate=1.857135194d-11
+		  case(515d-9)
+		    TwoPhotonIonizationRate=1.512238197d-11
+		  case(343d-9) 
+		    TwoPhotonIonizationRate=M_ZERO
+		  case default
+		    write(*,'(a)') 'Wavelength is not in database for material ID.'
+		    call StopProgram()
+		end select !case on wavelength
+	   case (ZnO)
+		write(*,'(a)') 'Wavelength is not in database for material ID.'
+		call StopProgram()
+	   case default
+		write(*,'(a)') 'Wavelength is not in database for material ID.'
+		call StopProgram()
+	 end select
     end function TwoPhotonIonizationRate
 
 end module Material_m
