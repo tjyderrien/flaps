@@ -47,21 +47,24 @@ module Material_m
        !Model for the band-gap of silicon
        EG_SI_CONSTANT      = 0,    &
        EG_SI_KORFIATIS07   = 1,    &
-       EG_SI_VANDRIEL87    = 2
+       EG_SI_VANDRIEL87    = 2,    &
        !Model for the band-gap of ZnO
+       EG_ZNO_CONSTANT     = 3
 
   !Collision frequency
   real, parameter::            &
-    COL_FREQ_SI_CONSTANT = 1d15 !TODO: Add a REF for this
+    COL_FREQ_SI_CONSTANT = 1d15, & !Silaeva et al, New Journal of Physics 15, 089401 (2013)
+    COL_FREQ_ZNO_CONSTANT= 1d15    !Dufft and Bonse, Journal of Applied Physics 105, 034908 (2009)
 
   !Static dielectric constant
   real(8), parameter::         &
-    EPS_INF_SI    =  11.66570433d0 !,0.01404457712d0)  !TODO: Add a REF for this
-                     !TODO: Do you really believe al these digits?
+    EPS_INF_SI    =  11.66570433d0, & !,0.01404457712d0)  !Palik, E. D. Handbook of Optical Constants of Solids Academic Press, 1985
+    !TODO: Do you really believe al these digits? TJYD: The higher, the better. SPP spectroscopy has no limits ;)
+    EPS_INF_ZNO   = (1.9d0)**2        !TODO: HASARDOUS, based on refractiveindex.info, with incomplete data. 
 
   !One-photon ionization rate
   real(8), parameter ::        &
-    IR1P_SI       =  3.4536819356d6
+    IR1P_SI       =  3.4536819356d6 !TODO: this is actually wavelenth-dependent, and is calculated directly from EPSILON. 
 
   !Two-photon ionization rate
   !TODO: To be implemented
@@ -72,6 +75,7 @@ module Material_m
     real(8) :: AugerRateE      !< Auger rate for electrons
     real(8) :: AugerRateH      !< Auger rate for holes
     real(8) :: EpsStatic       !< dielectric constant for static field
+    real(8) :: Dielectric	 !< dielectric permittivity at a given wavelength !TODO: SHOULD BE A FUNCTION OF WAVELENGTH AND TEMPERATURE
   end type Material
 
   contains
@@ -80,7 +84,7 @@ module Material_m
       type(Material), intent(inout) :: this
       integer,        intent(in)    :: AugerOff
 
-      !For the moment, this is hard-coded. In the future, this will be obtained from the input file
+      !TODO: For the moment, this is hard-coded. In the future, this will be obtained from the input file
       this%Id = Si
       this%Eg_model = EG_SI_CONSTANT
       if(AugerOff.eq.0) then
@@ -97,6 +101,7 @@ module Material_m
         this%EpsStatic = EPS_INF_SI
       case(ZnO)
         print *, 'Static value for ZnO not implemeted.'
+        this%EpsStatic = EPS_INF_ZNO
         call StopProgram()
       case default
         print *, 'Bad value for material ID.'
@@ -112,8 +117,8 @@ module Material_m
           call StopProgram()
         end if
       case(ZnO)
-        if(this%Eg_model <= EG_SI_VANDRIEL87) then
-          print *, 'Selected band-gap model is not compatible with silicon.'
+        if(this%Eg_model < EG_ZNO_CONSTANT) then
+          print *, 'Selected band-gap model is not compatible with ZnO.'
           call StopProgram()
         end if
       case default
@@ -151,7 +156,7 @@ module Material_m
         !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
         do j=1,mesh%N
           do i=1,mesh%M
-            Eg(i,j)=ec*(1.16d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(1./3.)) !Driel 1987
+            Eg(i,j)=ec*(1.1692d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(1d0/3d0)) !Driel 1987
           end do
         end do
         !$OMP END PARALLEL DO
@@ -160,8 +165,6 @@ module Material_m
       end select
 
       !TODO: If you want to keep these models: Reference + name
-!       EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0))
-!         EgapValue=ec*(1.1692d0) !-4.9d-4*Ts**2/(Ts+655d0))
     end subroutine evaluate_bandgap
 
     !------------------------------------------------------------------
