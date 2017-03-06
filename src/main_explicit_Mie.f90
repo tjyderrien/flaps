@@ -329,8 +329,9 @@ program Flaps
   call InitInputParameter( Params )
   call LoadInputParameters( "flaps.in", Params )
   call CheckValidityInputParameters( Params )
-
-  call init_material( matter, Params%AugerOff )
+  
+  call init_laser(source, Params)
+  call init_material( matter, Params%AugerOff, source)
 
   allocate(Ue(1:Params%M, 1:Params%N))
   allocate(Uh(1:Params%M, 1:Params%N), & !hole energy
@@ -510,8 +511,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 
 !**** INITIALIZATION
-
-  call init_laser(source, Params)
 
   tmin=tCenter-5d0*source%tau
 
@@ -1312,8 +1311,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    
    !! defining material index and ionization constants
    epsilonInf=DielectricConstant(source%lambda)
-   OnePhotonIonizationRate0=OnePhotonIonizationRate(matter)
-   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(source%lambda)
+   OnePhotonIonizationRate0=OnePhotonIonizationRate(matter, source%lambda)
+   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(matter, source%lambda)
    
   write(*,*) 'epsilon(', 1d9*source%lambda, 'nm)=', epsilonInf
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))

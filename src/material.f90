@@ -58,16 +58,16 @@ module Material_m
     COL_FREQ_SI_CONSTANT = 1d15, & !Silaeva et al, New Journal of Physics 15, 089401 (2013)
     COL_FREQ_ZNO_CONSTANT= 1d15    !Dufft and Bonse, Journal of Applied Physics 105, 034908 (2009)
 
-  !Static dielectric constant
+  !Static dielectric permittivity. Useful in case of constant field before the laser irradiation.
   real(8), parameter::         &
     EPS_INF_SI    =  11.66570433d0, & !,0.01404457712d0)  !Palik, E. D. Handbook of Optical Constants of Solids Academic Press, 1985
     !TODO: Do you really believe al these digits? TJYD: The higher, the better. SPP spectroscopy has no limits ;)
     EPS_INF_ZNO   = (1.9d0)**2        !TODO: HASARDOUS, based on refractiveindex.info, with incomplete data. 
 
-  !One-photon ionization rate
-  real(8), parameter ::        &
-    IR1P_SI       =  3.4536819356d6 
-    !TODO: HUGE ERROR ! This was calculated directly from the wavelenth-dependent dielectric Permittivity! 
+! === Not necessary ===
+!   real(8), parameter ::        &
+!     IR1P_SI       =  3.4536819356d6 
+!     !TODO: This must be calculated calculated directly from the wavelenth-dependent dielectric Permittivity! 
 
   !Two-photon ionization rate
   !TODO: To be implemented
@@ -77,8 +77,8 @@ module Material_m
     integer :: Eg_model        !< The model for the band-gap
     real(8) :: AugerRateE      !< Auger rate for electrons
     real(8) :: AugerRateH      !< Auger rate for holes
-    real(8) :: EpsStatic       !< dielectric constant for static field
-    real(8) :: Dielectric	 !< dielectric permittivity at a given wavelength !TODO: SHOULD BE A FUNCTION OF WAVELENGTH AND TEMPERATURE
+    real(8) :: EpsStatic       !< dielectric constant for static field: useful when Poisson will be solved for static fields
+    real(8) :: Dielectric	 !< dielectric permittivity at a given wavelength !TODO: How to put a function of wavelength and temperature here? 
   end type Material
 
   contains
@@ -87,6 +87,8 @@ module Material_m
       type(Material), intent(inout) :: this
       integer,        intent(in)    :: AugerOff
       type(Laser),    intent(in)    :: source
+      
+      complex(8) :: DielectricConstant
 
       !TODO: For the moment, this is hard-coded. In the future, this will be obtained from the input file
       this%Id = Si
@@ -167,8 +169,6 @@ module Material_m
       case default
         Eg(1:mesh%M,1:mesh%N) = M_ZERO
       end select
-
-      !TODO: If you want to keep these models: Reference + name
     end subroutine evaluate_bandgap
 
     !------------------------------------------------------------------
@@ -192,46 +192,43 @@ module Material_m
     real(8) function OnePhotonIonizationRate(this, lambda)
       real(8),          intent(in)    :: lambda
       type(Material),   intent(in)    :: this
-
-      !TODO: NTD: Do you want to keep this model?
-      !TODO: TJYD: YES! This formula was very general, and has been replaced 
-      !by a particular case for a particular wavelength and a particular 
-      !material.  :-( 
-!       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
-
-      select case(this%Id)
-      case(Si)  !basically valid for any band gap material
-	   OnePhotonIonizationRate = 4d0*pi/lambda*aimag(sqrt(epsilonLinear)) !IR1P_SI
-      case(ZnO) !basically valid for any band gap material
-        OnePhotonIonizationRate = 4d0*pi/lambda*aimag(sqrt(epsilonLinear)) !IR1P_SI
-      case default
-        print *, 'OnePhotonAbsorption: invalid material choice. '
-        call StopProgram()
-      end select
+      
+      complex(8) :: epsilonOmega, DielectricConstant
+      
+      epsilonOmega=DielectricConstant(lambda)
+      
+!       select case(this%Id)
+!       case(Si)  !basically valid for any band gap material
+	 OnePhotonIonizationRate = 4d0*M_PI/lambda*aimag(sqrt(epsilonOmega))
+!       case(ZnO) 
+!         OnePhotonIonizationRate = 4d0*M_PI/lambda*aimag(sqrt(epsilonOmega))
+!       case default
+!         print *, 'OnePhotonAbsorption: invalid material choice. '
+!         call StopProgram()
+!       end select
     end function OnePhotonIonizationRate
 
     !TODO: For Si, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
     !We should also be able to select a tabulated Keldysh model from that.
     !------------------------------------------------------------------
-    pure real(8) function TwoPhotonIonizationRate(this, lambda)
+    real(8) function TwoPhotonIonizationRate(this, lambda)
 	 type(Material),   intent(in)    :: this
       real(8), intent(in) :: lambda
 
       select case (this%Id)
 	   case (Si)
-		select case (lambda)
-		  case(1030d-9)
-		    TwoPhotonIonizationRate=1.933288399d-11
-		  case(800d-9)
-		    TwoPhotonIonizationRate=1.857135194d-11
-		  case(515d-9)
-		    TwoPhotonIonizationRate=1.512238197d-11
-		  case(343d-9) 
-		    TwoPhotonIonizationRate=M_ZERO
-		  case default
-		    write(*,'(a)') 'Wavelength is not in database for material ID.'
-		    call StopProgram()
-		end select !case on wavelength
+		if(lambda.eq.(1030d-9)) then
+		  TwoPhotonIonizationRate=1.933288399d-11
+		elseif (lambda.eq.(800d-9)) then
+		  TwoPhotonIonizationRate=1.857135194d-11
+		elseif(lambda.eq.(515d-9)) then
+		  TwoPhotonIonizationRate=1.512238197d-11
+		elseif(lambda.eq.(343d-9)) then
+		  TwoPhotonIonizationRate=M_ZERO
+		else
+		  write(*,'(a)') 'Wavelength is not in database for material ID.'
+		  call StopProgram()
+		end if
 	   case (ZnO)
 		write(*,'(a)') 'Wavelength is not in database for material ID.'
 		call StopProgram()
@@ -243,12 +240,10 @@ module Material_m
 
 end module Material_m
 
-
-
 !------------------------------------------------------------------
     complex(8) pure function DielectricConstant(lambda)
-!> Dielectric consant for silicon mateiral at some particular wavelengths. 
-!> TODO: interface with SPP-extended-theory. 
+!> Dielectric constant for silicon material at some particular wavelengths. 
+!> TODO: interface with SPP-extended-theory to obtain any value in spectrum
       implicit none
 !TODO: NTD: This should not be hardcoded but should be in an external file. (Not clear how to do this properly).
 !TODO: TJYD: The plan is to connect with SPP-extended-theory where Palik data [Palik, Edward D., ed. "Handbook of optical constants of solids." (1998).] are directly giving this coefficient. 
@@ -415,14 +410,8 @@ end module Material_m
       !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai.
       !> "Ultrafast carrier dynamics in silicon: A two-color 
       !> transient reflection grating study on a (111) surface." 
-      !> Physical review letters 81.25 (1998): 5664.)
+      !> Physical review letters 81.25 (1998): 5664.]
       ephCollisionFrequency=M_ONE/((240d-15)*(M_ONE+(ne*inv_nth)**2))
-
-
-      !TODO: can we remove these lines. Do you want to keep them?
-!       CollisionFrequency=1d14 !
-      ! CollisionFrequency=1d13 !
-      !CollisionFrequency=5d13 !
     end function ephCollisionFrequency
 
 !------------------------------------------------------------------
@@ -442,14 +431,15 @@ end module Material_m
         return
       end if
 
-      !TODO: Where is 3.6 comes from? Add a REF here.
+      !> Reference: [Driel, H. V. Kinetics of high-density plasmas generated in Si 
+      !> by 1.06- and 0.53-$m picosecond laser pulses Phys. Rev. B, 1987, 35, 8166-8176
       ImpactIonizationRate = 3.6d10*exp(inv_kb*Eg/Te)
 
     end function ImpactIonizationRate
 
 
    !-------------------------------------------------------------------------------------
-   !> Computes the electron and mobilities for the entire mesh
+   !> Computes the electron and hole mobilities for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine ComputeMobilities_batch(mesh, mobilityE, mobilityH, &
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
@@ -702,6 +692,7 @@ end module Material_m
         !$OMP END DO
         !$OMP END PARALLEL
 !      else if(TransportModel.eq.1) then
+!      TODO: Add reference (Tritt or Chen et al 2005 ?)
 !        !$OMP DO COLLAPSE(2)
 !        do j=1, mesh%N
 !          do i=1, mesh%M
@@ -757,7 +748,7 @@ end module Material_m
       if(Params%CouplingDebug.eq.1) then !No need to update the couplings, as they are zero
           return
       end if
-      !
+      !TODO: why repeating the case on electrons, here? 
       if(Params%HolesOff.eq.0) then
         !
         !$OMP DO COLLAPSE(2)
@@ -837,7 +828,7 @@ end module Material_m
         Int2 = intensity(i,j)**2
         work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
 
-        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
+        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E & 
                     +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
