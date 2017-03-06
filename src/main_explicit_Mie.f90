@@ -1931,9 +1931,9 @@ if(Params%UseMieScattering.eq.1) then
          TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
          !
          !
-         work = intensity(i,j)/(1d0-reflectivity(i,j))
-         TotalLaserEnergy = TotalLaserEnergy + &
-                         OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
+         work = intensity(i,j)*(1d0-reflectivity(i,j))
+         TotalLaserEnergy = TotalLaserEnergy + & !TODO: is this expression valid ?!
+                         OnePhotonIonizationRate0 * work    & !energy loss by one photon absorption
                        + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
                   + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
        end do
