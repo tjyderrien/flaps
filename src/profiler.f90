@@ -145,7 +145,8 @@ module Profiler_m
       call StopProgram()
     endif
 
-    write(iunit, '(a,3x,a,3x,a,3x,a,3x,a,3x,a)') '# Name         ', '# of calls', ' % ', 'Self time [s]', 'Cumulative time [s]', &
+    write(iunit, '(a,3x,a,3x,a,3x,a,3x,a,3x,a)') '# Name              ', '# of calls', ' % ', 'Self time [s]', &
+                                             'Cumulative time [s]', &
                                              'Time/call [ms/call]'
 
    call addtorepport(iunit,prof_full)
@@ -169,7 +170,7 @@ module Profiler_m
 
      percent = prof%self_time/prof_full%cumulative_time*100.0
 
-     write(iunit, '(a15,3x,i11,3x,f12.5,3x,f6.2,3x,f12.5,3x,f12.5)') trim(prof%name), prof%num_calls, prof%self_time, &
+     write(iunit, '(a20,3x,i11,3x,f12.5,3x,f6.2,3x,f12.5,3x,f12.5)') trim(prof%name), prof%num_calls, percent, prof%self_time, &
                        prof%cumulative_time, prof%cumulative_time/prof%num_calls*1000.0
 
      !Recurive call

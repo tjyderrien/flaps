@@ -22,9 +22,9 @@
 
 module Material_m
   use Maths_m
+  use Profiler_m
   use Types_m
   use laser_m
-
 
   implicit none
 
@@ -284,7 +284,10 @@ end module Material_m
   !Routine that computes both electron and hole density of states, on the full grid
   subroutine DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
     use Maths_m
+    use Profiler_m
     use Types_m
+    use laser_m
+
     implicit none
 
     type(MeshValues),  intent(in)    :: mesh
@@ -293,6 +296,10 @@ end module Material_m
 
     real(8) :: coefE, coefH
     integer :: i, j
+    type(Profiler), save :: prof
+
+    call Profiler_start(prof, 'DENSITY_OF_STATES')
+
 
     coefE = meDOS*kb/(M_TWO*M_PI*hbar**2)
     coefH = mhDOS*kb/(M_TWO*M_PI*hbar**2)
@@ -308,6 +315,8 @@ end module Material_m
     !$OMP END DO
     !$OMP END PARALLEL
 
+    call profiler_stop(prof)
+
   end subroutine DensitiesOfState_batch
 
 
@@ -316,6 +325,7 @@ end module Material_m
     subroutine DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
                                         epsilonInf, nuColl, me, source)
       use Maths_m
+      use Profiler_m
       use Laser_m
       use Types_m
       implicit none
@@ -331,6 +341,9 @@ end module Material_m
 
       complex(8) :: coef, sqrtEps
       integer :: i, j
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'DIELECTRIC_FUNCTION')
 
 
       coef=ec*ec/me/epsilon0*source%inv_omega**2/(M_ONE+M_IM*nuColl*source%inv_omega)
@@ -351,12 +364,14 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
     end subroutine DielectricFunction_batch
 
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
     subroutine ComputeDielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, source)
       use Maths_m
+      use Profiler_m
       use Laser_m
       use Types_m
       implicit none
@@ -371,6 +386,11 @@ end module Material_m
 
       complex(8) :: coef
       integer :: i, j
+      type(Profiler), save :: prof
+
+      !$OMP MASTER
+      call Profiler_start(prof, 'DRUDE')
+      !$OMP END MASTER
 
       coef= ec*ec/(mass*epsilon0)*source%inv_omega**2/(M_ONE+M_IM*Collision*source%inv_omega)
 
@@ -392,6 +412,10 @@ end module Material_m
         end do
         !$OMP END DO
       end if
+
+      !$OMP MASTER
+      call profiler_stop(prof)
+      !$OMP END MASTER
 
     end subroutine ComputeDielectricFunctionDrude_batch
 
@@ -445,6 +469,7 @@ end module Material_m
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                        ColFermi0, ColFermiHalf, nuColl, me)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -460,6 +485,9 @@ end module Material_m
 
       integer :: i, j
       real(8) :: coef
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'MOBILITIES')
 
       coef = ec/(me*nuColl)
 
@@ -475,6 +503,8 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
+
     end subroutine ComputeMobilities_batch
 
    !-------------------------------------------------------------------------------------
@@ -484,6 +514,7 @@ end module Material_m
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                        ColFermiHalf, ColFermiMenusHalf)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -500,10 +531,14 @@ end module Material_m
       integer(8),            intent(in)    :: ColFermiMenusHalf, ColFermiHalf
 
       integer :: i, j
+      type(Profiler), save :: prof
 
       if(Params%TransportModel.eq.-1) then
-           return
+        return
       end if
+
+      call Profiler_start(prof, 'DIFFUSIONS')
+
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, diffusionE, diffusionH, &
       !$OMP mobilityE, mobilityH, FermiTableE, FermiTableH, ColFermiHalf, &
@@ -520,6 +555,8 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
+
     end subroutine UpdateDiffusions_batch
 
    !-------------------------------------------------------------------------------------
@@ -527,6 +564,7 @@ end module Material_m
    !-------------------------------------------------------------------------------------
     subroutine UpdateDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -540,10 +578,14 @@ end module Material_m
       integer(8),        intent(in)    :: DriftOn
 
       integer :: i, j
+      type(Profiler), save :: prof
 
       if(DriftOn.eq.0) then !No need to update these values
         return
       endif
+
+      call Profiler_start(prof, 'DRIFT_VECTORS')
+
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (JeX, JeY, JhX, JhY, mobilityE, mobilityH, mesh, Ex, Ey)
       !$OMP DO COLLAPSE(2)
@@ -558,6 +600,7 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
     end subroutine UpdateDriftVectors_batch
 
    !-------------------------------------------------------------------------------------
@@ -567,6 +610,7 @@ end module Material_m
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                            ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta  )
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -585,6 +629,9 @@ end module Material_m
 
       real(8) :: tmp, LatticeHeatCapacity
       integer :: i, j
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'HEAT_CAPACITIES')
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, Ce, Ch, Cs, ColFermiThreeHalf, FermiIndexE, FermiIndexH, &
       !$OMP FermiTableE, FermiTableH, ColFermiEta, ColFermiHalf, ColFermiMenusHalf, invCe, invCh, invCs) &
@@ -612,6 +659,7 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
     end subroutine ComputeHeatCapacities_batch
 
 
@@ -637,6 +685,7 @@ end module Material_m
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                            ColFermi0, ColFermi1, ColFermi2, TransportModel)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -653,7 +702,6 @@ end module Material_m
       integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, TransportModel
 
       integer :: i, j
-
       !TODO: We have to find a nomeclature and a name for this model
       !TODO: Is there other models?
       !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
@@ -663,6 +711,11 @@ end module Material_m
       real(8), parameter :: dd = 2.315984470d0
       real(8), parameter :: ee = -.4756634637d0
       real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
+
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'CONDUCTIVITIES')
+
 
       if(TransportModel.eq.-1) then !No need to update the conductivity
         return
@@ -724,6 +777,8 @@ end module Material_m
 !      !$OMP END DO
     end if
 
+    call profiler_stop(prof)
+
     end subroutine UpdateConductivities_batch
 
    !-------------------------------------------------------------------------------------
@@ -731,6 +786,7 @@ end module Material_m
    !-------------------------------------------------------------------------------------
     subroutine UpdateCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -745,6 +801,10 @@ end module Material_m
       real(8) :: nuColleph!        electron-phonon collision frequency
       real(8) :: ephCollisionFrequency
       !
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'COUPLINGS')
+
       if(Params%CouplingDebug.eq.1) then !No need to update the couplings, as they are zero
           return
       end if
@@ -775,6 +835,8 @@ end module Material_m
        !$OMP END DO
        !
       end if
+      !
+      call profiler_stop(prof)
     !
     end subroutine UpdateCouplings_batch
 
@@ -789,6 +851,7 @@ end module Material_m
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
      use Material_m
      use Maths_m
+     use Profiler_m
      use Laser_m
      use Types_m
      implicit none
@@ -808,6 +871,10 @@ end module Material_m
      real(8) :: Int2, ImpactIonizationRate, work
      integer :: i,j
      real(8), dimension(mesh%M,mesh%N) :: EgapH
+
+     type(Profiler), save :: prof
+
+     call Profiler_start(prof, 'GAINS_AND_LOSSES')
 
      ! free-carrier balance sources
      call evaluate_bandgap(matter, mesh, mesh%Ne, mesh%Ts, Egap)
@@ -878,6 +945,8 @@ end module Material_m
     end do
     !$OMP END DO
     !$OMP END PARALLEL
+
+    call profiler_stop(prof)
    end subroutine ComputeGainsAndLosses
 
 !------------------------------------------------------------------
