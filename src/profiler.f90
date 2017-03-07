@@ -57,7 +57,7 @@ module Profiler_m
   type(Profiler), public  :: prof_init
   type(Profiler), public  :: prof_timeloop
 
-  type(Profiler), target  :: prof_full
+  type(Profiler), save, target  :: prof_full
   type(Profiler), pointer :: prof_current
 
   contains
@@ -67,9 +67,18 @@ module Profiler_m
   !------------------------------------------------------------------
   subroutine Profiler_global_init( )
 
-    call Profiler_start(prof_full, "FULL")
+    prof_full%cumulative_time = 0.0
+    prof_full%num_calls = 0
+    call Timer_init( prof_full%timer )
+    call Timer_start( prof_full%timer )
+    prof_full%initialized = .true.
+    prof_full%name = "FULL"
+    prof_current => prof_full
 
+    !Tree related initialization
+    nullify(prof_full%parent)
     prof_full%nchild = 0
+
   end subroutine Profiler_global_init
 
   !------------------------------------------------------------------
@@ -136,7 +145,8 @@ module Profiler_m
       call StopProgram()
     endif
 
-    write(iunit, '(a,3x,a,3x,a,3x,a)') '# Name         ', '# of calls', 'Self time [s]', 'Cumulative time [s]', 'Time/call [s]'
+    write(iunit, '(a,3x,a,3x,a,3x,a,3x,a,3x,a)') '# Name         ', '# of calls', ' % ', 'Self time [s]', 'Cumulative time [s]', &
+                                             'Time/call [ms/call]'
 
    call addtorepport(iunit,prof_full)
 
@@ -149,6 +159,7 @@ module Profiler_m
      type(Profiler), intent(inout) :: prof
 
      integer :: ichild
+     real :: percent
 
      !We compute the time which is spend in the profiled region, and that it is not spent in children
      prof%self_time = prof%cumulative_time
@@ -156,8 +167,10 @@ module Profiler_m
        prof%self_time = prof%self_time - prof%children(ichild)%p%cumulative_time
      end do
 
-     write(iunit, '(a15,3x,i11,3x,f12.5,3x,f12.5,3x,f12.5)') trim(prof%name), prof%num_calls, prof%self_time, &
-                       prof%cumulative_time, prof%cumulative_time/prof%num_calls
+     percent = prof%self_time/prof_full%cumulative_time*100.0
+
+     write(iunit, '(a15,3x,i11,3x,f12.5,3x,f6.2,3x,f12.5,3x,f12.5)') trim(prof%name), prof%num_calls, prof%self_time, &
+                       prof%cumulative_time, prof%cumulative_time/prof%num_calls*1000.0
 
      !Recurive call
      do ichild = 1, prof%nchild
