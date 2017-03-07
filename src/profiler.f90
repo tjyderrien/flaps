@@ -126,7 +126,6 @@ module Profiler_m
   subroutine Profiler_end_global( )
 
     integer :: iunit, ios
-    type(Profiler), pointer :: current_prof
 
     call Profiler_stop(prof_full)
 
@@ -139,14 +138,7 @@ module Profiler_m
 
     write(iunit, '(a,3x,a,3x,a,3x,a)') '# Name         ', '# of calls', 'Self time [s]', 'Cumulative time [s]', 'Time/call [s]'
 
-   current_prof => prof_full
    call addtorepport(iunit,prof_full)
-
-!   do while(associated(current_prof%child))
-!
-!     call addtorepport(iunit, current_prof)
-!     current_prof => current_prof%child
-!   end do
 
    CLOSE( UNIT=iunit )
   end subroutine Profiler_end_global
