@@ -32,26 +32,52 @@ module Profiler_m
     Profiler_init,         &
     Profiler_start,        &
     Profiler_stop,         &
-    Profiler_write_report
+    Profiler_global_init,  &
+    Profiler_end_global
+
+
+  type ptr
+    type(Profiler), pointer :: p
+  end type ptr
 
   type Profiler
     real           :: cumulative_time
+    real           :: self_time
     integer        :: num_calls
     type(Timer)    :: timer
     logical        :: initialized = .false.
     character(256) :: name
+
+    type(Profiler), pointer :: parent
+    integer        :: nchild
+    type(ptr)      :: children(512)
   end type
+
 
   type(Profiler), public :: prof_init
   type(Profiler), public :: prof_timeloop
 
+  type(Profiler), target,  public :: prof_full
+  type(Profiler), pointer, public :: prof_current
 
   contains
+
+  !------------------------------------------------------------------
+  !> Init global timer and the associated tree
+  !------------------------------------------------------------------
+  subroutine Profiler_global_init( )
+
+    prof_current => prof_full
+    call Profiler_init(prof_full, "FULL")
+
+    prof_full%nchild = 0
+  end subroutine Profiler_global_init
+
   !------------------------------------------------------------------
   !> Init the timer
   !------------------------------------------------------------------
   subroutine Profiler_init( this, name )
-    type(Profiler), intent(inout) :: this
+    type(Profiler), target, intent(inout) :: this
     character(len=*),   intent(in) :: name
 
     this%cumulative_time = 0.0
@@ -59,19 +85,31 @@ module Profiler_m
     call Timer_init( this%timer )
     this%initialized = .true.
     this%name = name
+
+    !Tree related initialization
+    this%parent => prof_current
+    this%nchild = 0
+    this%parent%nchild = this%parent%nchild +1
+    this%parent%children(this%parent%nchild)%p => this
   end subroutine Profiler_init
 
 
   !------------------------------------------------------------------
   subroutine Profiler_start( this, name )
-    type(Profiler) , intent(inout) :: this
+    type(Profiler) , target, intent(inout) :: this
     character(len=*),   intent(in) :: name
 
     if(.not.this%initialized) then
       call Profiler_init(this, name)
     end if
 
+    if(name /= this%name) then
+      print *, 'The profiler ', name, ' has already been used with a different name.'
+      call StopProgram()
+    endif
+
     call Timer_start( this%timer )
+    prof_current => this
 
   end subroutine Profiler_start
 
@@ -81,35 +119,59 @@ module Profiler_m
 
     this%num_calls = this%num_calls + 1
     this%cumulative_time = this%cumulative_time + Timer_elapsedtime(this%timer)
+
+    prof_current => this%parent
   end subroutine Profiler_stop
 
   !------------------------------------------------------------------
-  subroutine Profiler_write_report( )
+  subroutine Profiler_end_global( )
 
     integer :: iunit, ios
+    type(Profiler), pointer :: current_prof
+
+    call Profiler_stop(prof_full)
 
     iunit = 1
-
     OPEN( UNIT=iunit, FILE='profiling.log', STATUS="unknown",access='sequential', ACTION="write", IOSTAT=ios )
     if ( ios /= 0 ) then ! Probleme ea l'ouverture
       print *, 'Error opening profiling.log'
       call StopProgram()
     endif
 
-    write(iunit, '(a,3x,a,3x,a,3x,a)') '# Name', '# of calls', 'Cumulative time', 'Time/call'
-    call addtorepport(iunit,prof_init)
-    call addtorepport(iunit,prof_timeloop)
+    write(iunit, '(a,3x,a,3x,a,3x,a)') '# Name         ', '# of calls', 'Self time [s]', 'Cumulative time [s]', 'Time/call [s]'
 
-    CLOSE( UNIT=iunit )
-  end subroutine Profiler_write_report
+   current_prof => prof_full
+   call addtorepport(iunit,prof_full)
+
+!   do while(associated(current_prof%child))
+!
+!     call addtorepport(iunit, current_prof)
+!     current_prof => current_prof%child
+!   end do
+
+   CLOSE( UNIT=iunit )
+  end subroutine Profiler_end_global
 
    !------------------------------------------------------------------
    subroutine addtorepport(iunit, prof)
      integer,        intent(in) :: iunit
-     type(Profiler), intent(in) :: prof
+     type(Profiler), intent(inout) :: prof
 
-     write(iunit, '(a,3x,i7,3x,e12.5,3x,e12.5)') trim(prof%name), prof%num_calls, prof%cumulative_time, &
-                                                prof%cumulative_time/prof%num_calls
+     integer :: ichild
+
+     !We compute the time which is spend in the profiled region, and that it is not spent in children
+     prof%self_time = prof%cumulative_time
+     do ichild = 1, prof%nchild
+       prof%self_time = prof%self_time - prof%children(ichild)%p%cumulative_time
+     end do
+
+     write(iunit, '(a15,3x,i11,3x,f12.5,3x,f12.5,3x,f12.5)') trim(prof%name), prof%num_calls, prof%self_time, &
+                       prof%cumulative_time, prof%cumulative_time/prof%num_calls
+
+     !Recurive call
+     do ichild = 1, prof%nchild
+       call addtorepport(iunit, prof%children(ichild)%p)
+     end do
 
    end subroutine addtorepport
 end module Profiler_m

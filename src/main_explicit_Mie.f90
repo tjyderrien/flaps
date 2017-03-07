@@ -323,6 +323,7 @@ program Flaps
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
+  call Profiler_global_init()
   call Profiler_start(prof_init, 'INIT')
   call timer_init(full_timer)
 
@@ -2234,7 +2235,7 @@ if(Params%UseMieScattering.eq.1) then
 
   call ReleaseInputParameters( Params )
 
-  call Profiler_write_report( )
+  call Profiler_end_global( )
 
 end program Flaps
 
