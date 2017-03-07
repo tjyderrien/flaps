@@ -67,8 +67,7 @@ module Profiler_m
   !------------------------------------------------------------------
   subroutine Profiler_global_init( )
 
-    prof_current => prof_full
-    call Profiler_init(prof_full, "FULL")
+    call Profiler_start(prof_full, "FULL")
 
     prof_full%nchild = 0
   end subroutine Profiler_global_init
