@@ -54,11 +54,11 @@ module Profiler_m
   end type
 
 
-  type(Profiler), public :: prof_init
-  type(Profiler), public :: prof_timeloop
+  type(Profiler), public  :: prof_init
+  type(Profiler), public  :: prof_timeloop
 
-  type(Profiler), target,  public :: prof_full
-  type(Profiler), pointer, public :: prof_current
+  type(Profiler), target  :: prof_full
+  type(Profiler), pointer :: prof_current
 
   contains
 
