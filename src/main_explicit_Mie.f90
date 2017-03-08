@@ -2035,6 +2035,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
 
+
    call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t, nbiter, nmin, Params )
 
    !TODO: Move this to check_divergences
@@ -2057,7 +2058,8 @@ if(Params%UseMieScattering.eq.1) then
    end do
    !$OMP END DO
    !$OMP END PARALLEL
-  end if
+
+  end if !mod(nbiter,Params%OutputIter).eq.0
 
   !TODO: There should be a module managing the adaptative time step
   ! lets change dt when fast reponse is finished in order to catch the long one.

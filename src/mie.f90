@@ -48,6 +48,7 @@ contains
                                       x3, y3, x4, y4, x5, EintFieldR,  &
                                       y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
       use Laser_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -74,6 +75,9 @@ contains
       real(8) :: OnePhotonIonizationRate
 
       real(8) :: exp_t_t0_sigmaTau
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'INTENSITY_BATCH')
 
       exp_t_t0_sigmaTau = exp(-M_HALF*((t-t0)/sigmaTau)**2)
 
@@ -221,6 +225,7 @@ contains
       end do
       !$OMP END DO
 
+      call profiler_stop(prof)
     end subroutine ComputeIntensity_batch
   !------------------------------------------------------------------
 

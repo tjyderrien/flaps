@@ -83,6 +83,7 @@ end subroutine copy_mesh
 ! interpolation bilineaire ponderee par les aires
 subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    use Maths_m
+   use Profiler_m
    use Types_m
    implicit none
    type(MeshValues), intent(INOUT) :: mesh, dual
@@ -90,6 +91,10 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 
    integer :: i,j
    real(8) :: weight
+
+   type(Profiler), save :: prof
+
+   call Profiler_start(prof, 'BILINEAr_INTERP')
 
     ! interpolation on dual mesh
     ! InterpolateBiCubic(phi_source, x_s, y_s, x_t, y_t, SizeXs, SizeYs, SizeXt, SizeYt, phi_target, Grad(phi)_targetX, Grad(phi)_targetY)
@@ -146,6 +151,7 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
      !$OMP END DO
      !$OMP END PARALLEL
 
+   call profiler_stop(prof)
  end subroutine
 
  subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t, nbiter, nmin, Params)
