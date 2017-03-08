@@ -313,8 +313,8 @@ end module Material_m
     !$OMP DO COLLAPSE(2)
     do j=1, mesh%N !(optimized)
       do i=1, mesh%M
-        DOSe(i,j) = M_TWO*(coefE*mesh%Te(i,j))**(1.5d0)
-        DOSh(i,j) = M_TWO*(coefH*mesh%Th(i,j))**(1.5d0)
+        DOSe(i,j) = M_TWO*sqrt((coefE*mesh%Te(i,j))**3)
+        DOSh(i,j) = M_TWO*sqrt((coefH*mesh%Th(i,j))**3)
       end do
     end do
     !$OMP END DO

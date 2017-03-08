@@ -94,7 +94,7 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 
    type(Profiler), save :: prof
 
-   call Profiler_start(prof, 'BILINEAr_INTERP')
+   call Profiler_start(prof, 'BILINEAR_INTERP')
 
     ! interpolation on dual mesh
     ! InterpolateBiCubic(phi_source, x_s, y_s, x_t, y_t, SizeXs, SizeYs, SizeXt, SizeYt, phi_target, Grad(phi)_targetX, Grad(phi)_targetY)
