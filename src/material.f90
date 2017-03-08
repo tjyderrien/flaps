@@ -143,6 +143,9 @@ module Material_m
       real(8),          intent(out)   :: Eg(:,:)
 
       integer :: i,j
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'BAND_GAP')
 
       !TODO: Is seems that these three models have a very similar parametrization.
       !This implies one implementation and coefficients outside
@@ -169,6 +172,8 @@ module Material_m
       case default
         Eg(1:mesh%M,1:mesh%N) = M_ZERO
       end select
+
+      call profiler_stop(prof)
     end subroutine evaluate_bandgap
 
     !------------------------------------------------------------------
