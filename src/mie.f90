@@ -77,7 +77,9 @@ contains
       real(8) :: exp_t_t0_sigmaTau
       type(Profiler), save :: prof
 
+      !$OMP MASTER
       call Profiler_start(prof, 'INTENSITY_BATCH')
+      !$OMP END MASTER
 
       exp_t_t0_sigmaTau = exp(-M_HALF*((t-t0)/sigmaTau)**2)
 
@@ -225,7 +227,9 @@ contains
       end do
       !$OMP END DO
 
+      !$OMP MASTER
       call profiler_stop(prof)
+      !$OMP END MASTER
     end subroutine ComputeIntensity_batch
   !------------------------------------------------------------------
 
