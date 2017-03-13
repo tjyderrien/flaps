@@ -282,7 +282,7 @@ end module Material_m
       implicit none
       real(8), intent(in) :: mDOS, T
 
-      DensityOfState = M_TWO*(mDOS*kb*T/(M_TWO*M_PI*hbar**2))**(1.5d0)
+      DensityOfState = M_TWO*sqrt((mDOS*kb*T/(M_TWO*M_PI*hbar**2))**3)
     end function DensityOfState
 
 !------------------------------------------------------------------
@@ -905,7 +905,7 @@ end module Material_m
                     +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
         SourceUe(i,j)= ((source%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
-                     + M_HALF*(2d0*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
+                     + M_HALF*(M_TWO*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
                      - Egap(i,j)*work*mesh%Ne(i,j) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
                      + Egap(i,j)*(matter%AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2)
