@@ -145,7 +145,7 @@ module Profiler_m
       call StopProgram()
     endif
 
-    write(iunit, '(a,3x,a,3x,a,3x,a,3x,a,3x,a)') '# Name              ', '# of calls', ' % ', 'Self time [s]', &
+    write(iunit, '(a,3x,a,3x,a,3x,a,3x,a,3x,a)') '# Name              ', ' # of calls', '    % ', 'Self time [s]', &
                                              'Cumulative time [s]', &
                                              'Time/call [ms/call]'
 

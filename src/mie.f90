@@ -77,11 +77,19 @@ contains
       real(8) :: exp_t_t0_sigmaTau
       type(Profiler), save :: prof
 
-      !$OMP MASTER
       call Profiler_start(prof, 'INTENSITY_BATCH')
-      !$OMP END MASTER
 
       exp_t_t0_sigmaTau = exp(-M_HALF*((t-t0)/sigmaTau)**2)
+
+      !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
+      !$OMP absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
+      !$OMP t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0,  &
+      !$OMP sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
+      !$OMP sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
+      !$OMP x3, y3, x4, y4, x5, EintFieldR,  exp_t_t0_sigmaTau, DefectThickness, BandBendingInFDTD, &
+      !$OMP y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9) &
+      !$OMP PRIVATE(ConstBLx, ConstBLy)
+
 
       !TODO: It is almost impossible to read, and per se to debug such a code.
       !TODO: @TYJD: Stop doing such coding style vandalism ;)
@@ -227,9 +235,10 @@ contains
       end do
       !$OMP END DO
 
-      !$OMP MASTER
+      !$OMP END PARALLEL
+
       call profiler_stop(prof)
-      !$OMP END MASTER
+
     end subroutine ComputeIntensity_batch
   !------------------------------------------------------------------
 

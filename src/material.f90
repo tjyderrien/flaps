@@ -565,7 +565,7 @@ end module Material_m
     end subroutine UpdateDiffusions_batch
 
    !-------------------------------------------------------------------------------------
-   !> Computes the drif vectors for the entire mesh
+   !> Computes the drift vectors for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine UpdateDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
       use Maths_m
