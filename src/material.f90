@@ -814,8 +814,10 @@ end module Material_m
           return
       end if
       !TODO: why repeating the case on electrons, here? 
+      !TODO: add parallel zone here
       if(Params%HolesOff.eq.0) then
-        !
+        !$OMP PARALLEL DEFAULT(NONE) SHARED (CouplingE, CouplingH)
+        !$OMP FIRSTPRIVATE (Ce, Ch, mesh, nuColleph)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N !(optimized)
           do i=1, mesh%M
@@ -826,9 +828,10 @@ end module Material_m
           end do
         end do
         !$OMP END DO
-        !
+        !$OMP END PARALLEL
       else !In this case no need to update CouplingH
-       !
+       !$OMP PARALLEL DEFAULT(NONE) SHARED (CouplingE)
+       !$OMP FIRSTPRIVATE (Ce, mesh)
        !$OMP DO COLLAPSE(2)
        do j=1, mesh%N !(optimized)
          do i=1, mesh%M
