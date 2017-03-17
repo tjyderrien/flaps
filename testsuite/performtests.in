@@ -1,13 +1,14 @@
-#!@PERL@
-#
+#!/usr/bin/perl
+# ! @PERL@
+# 
 #
 
 use Term::ANSIColor;
 
-$ntests = 10;
+$ntests = 1;
 for ($test=1;$test<=$ntests;$test++)
 {
-        $tol[$test] = 0.0001;
+        $tol[$test] = 0.0001; #relative value
 }
 
 #$args=scalar(@ARGV);
@@ -20,8 +21,8 @@ for ($test=1;$test<=$ntests;$test++)
 
 # Variable d'environnement
 $omp="export OMP_NUM_THREADS=2; ";
-$EXE ="@PACKAGE_NAME@-@PACKAGE_VERSION@";
-
+# $EXE ="@PACKAGE_NAME@-@PACKAGE_VERSION@";
+$EXE="flaps"
 #Initialisation
 for ($i=1 ; $i <= $ntests ; $i++) 
 {
@@ -46,7 +47,8 @@ $message[12]="Test 12:  [Regression] Fermi-Dirac regressive test ............";
 #Commandes pour les tests
 for ($i=1 ; $i <= $ntests ; $i++) 
 {
-	$testscript[$i]="$omp ../".$EXE." Test".$i.".files >log";
+	#TODO: copy test.$i.in flaps.in
+	$testscript[$i]="$omp cp Test".$i.".in flaps.in; ../src/".$EXE." >log";
 }
 
 # clean the directory from previous failed tests
@@ -62,8 +64,8 @@ print color "reset";
 for ($test = 1 ; $test <= $ntests ; $test++) {
         print $message[$test];
         system($testscript[$test]);
-        $ODT="ODT/Test".$test."/Result";
-	$file="Result".$test;
+        $ODT="Test".$test."/TimeMax.dat"; #ODT = reference !
+	$file="output/TimeMax.dat";
         @old = `cat $ODT | grep -v \"#\"`;
         @new = `cat $file | grep -v \"#\"`;
 	#on utilise wc pour avoir accès au nombre de lignes et de colonnes
@@ -98,7 +100,7 @@ for ($test = 1 ; $test <= $ntests ; $test++) {
         }
 
 	#Le test est passé
-        system("rm -f $file");
+        system("rm -rf output");
 	system("rm -f log");
         print color "bold green";
         print "OK";
@@ -111,7 +113,7 @@ for ($test = 1 ; $test <= $ntests ; $test++) {
         print "Failed";
         print color "reset";
         print "\n";
-        $mes="mv $file Result".$test.".failed";
+        $mes="mv output output".$test.".failed";
         system($mes);
         $mes="mv log Test".$test.".failed.log";
         system($mes);
@@ -128,7 +130,7 @@ if ($sum == 0)
 {
         print "\n";
         print "*************** Unit Tests OK  ***************\n";
-        print "***********  You can now use TB_Si  **********\n\n";
+        print "***********  You can now use Flaps  **********\n\n";
 }
 else
 {
