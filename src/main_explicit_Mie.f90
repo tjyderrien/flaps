@@ -126,6 +126,7 @@ program Flaps
                 etae, etah, &        ! reduced chemical Fermi potential
                 work
 
+    real(8), allocatable, dimension(:) :: Egap, Egap_new ! local gap value
     real(8), allocatable, dimension(:,:) :: &
                 Ue, & !electron energy
                 Uh, & !hole energy
@@ -151,7 +152,6 @@ program Flaps
                 CsPrev, CsPrev2, &
                 CouplingE, CouplingH, &
                 mobilityE, mobilityH, &
-                Egap, Egap_new, &                        ! local gap value
                 SourceE, SourceH, & ! heating sources
                 SourceUe, SourceUh, & ! free carrier thermal energy sources
                 x, y, &                 ! needle position indexes
@@ -353,7 +353,7 @@ program Flaps
                 CsPrev(1:Params%M, 1:Params%N), CsPrev2(1:Params%M, 1:Params%N), &
                 CouplingE(1:Params%M, 1:Params%N), CouplingH(1:Params%M, 1:Params%N), &
                 mobilityE(1:Params%M, 1:Params%N), mobilityH(1:Params%M, 1:Params%N), &
-                Egap(1:Params%M, 1:Params%N), Egap_new(1:Params%M, 1:Params%N), &                        ! local gap value
+                Egap(1:Params%M*Params%N), Egap_new(1:Params%M*Params%N), &                        ! local gap value
                 SourceE(1:Params%M, 1:Params%N), SourceH(1:Params%M, 1:Params%N), & ! heating sources
                 SourceUe(1:Params%M, 1:Params%N), SourceUh(1:Params%M, 1:Params%N), & ! free carrier thermal energy sources
                 x(1:Params%M, 1:Params%N), y(1:Params%M, 1:Params%N), &                 ! needle position indexes
@@ -2004,20 +2004,20 @@ if(Params%UseMieScattering.eq.1) then
 !       HoleEnergy=HoleEnergy+Ch(i,j)*Th(i,j)*CellVol(i,j)
 !       LatticeEnergy=LatticeEnergy+Cs(i,j)*Ts(i,j)*CellVol(i,j)
 
-        work = Egap_new(i,j) - Egap(i,j)
+        work = Egap_new(i+(j-1)*mesh%M) - Egap(i+(j-1)*mesh%M)
         ! calculation of the energy contained in the solid
         ElectronEnergy=ElectronEnergy &
             + (Ce(i,j)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
             +(Ce(i,j)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) & !kinetic energy
             + (mesh%Ne(i+(j-1)*mesh%M)*work  &
-            + Egap(i,j)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
+            + Egap(i+(j-1)*mesh%M)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
               
         ElectronKineticEnergy=ElectronKineticEnergy &
                  +(Ce(i,j)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
                  +(Ce(i,j)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) !kinetic energy
         ElectronPotentialEnergy=ElectronPotentialEnergy &
                  +(mesh%Ne(i+(j-1)*mesh%M)*work  &
-                 + Egap(i,j)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
+                 + Egap(i+(j-1)*mesh%M)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
 !       ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
 
         HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i+(j-1)*mesh%M)-mesh%Th(i+(j-1)*mesh%M)) &
@@ -2098,7 +2098,7 @@ if(Params%UseMieScattering.eq.1) then
                         absorptionDrudeE(i,j), absorptionDrudeH(i,j), TotalElectrons(i,j), & !13
                         TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !18
                         SourceE(i,j), SourceH(i,j), GainsE(i,j), GainsH(i,j), LossesE(i,j), & !23
-                        LossesH(i,j), real(DielectricDrudeE(i,j)), aimag(DielectricDrudeE(i,j)), Egap(i,j), real(Dielectric(i,j)), & !28
+            LossesH(i,j), real(DielectricDrudeE(i,j)), aimag(DielectricDrudeE(i,j)), Egap(i+(j-1)*mesh%M), real(Dielectric(i,j)), & !28
                         aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !33
                         Ey(i,j), diffusionE(i,j), diffusionH(i,j), GradNeX(i,j), GradNeY(i,j), &!38
                         real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !43
@@ -2179,7 +2179,8 @@ if(Params%UseMieScattering.eq.1) then
        write(TimeApex%unit,884, advance="YES") t, mesh%Te(1+(Params%N/2-1)*mesh%M), mesh%Th(1+(Params%N/2-1)*mesh%M), &
               mesh%Ts(1+(Params%N/2-1)*mesh%M), mesh%Ne(1+(Params%N/2-1)*mesh%M), &                        !5
               mesh%Nh(1+(Params%N/2-1)*mesh%M), intensity(1,Params%N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
-              SourceE(1,Params%N/2), GainsE(1,Params%N/2), SourceH(1,Params%N/2), GainsH(1,Params%N/2), Egap(1,Params%N/2), &                !14
+              SourceE(1,Params%N/2), GainsE(1,Params%N/2), SourceH(1,Params%N/2), GainsH(1,Params%N/2), &
+              Egap(1+(Params%N/2-1)*mesh%M), &                !14
               real(FermiIndexE(1,Params%N/2)),&
                real(FermiIndexH(1,Params%N/2)), Ce(2,Params%N/2), &                !17
               CeOld(2,Params%N/2), Ch(2,Params%N/2), ChOld(2,Params%N/2), Cs(2,Params%N/2), CsOld(2,Params%N/2)                               !22
@@ -2196,7 +2197,7 @@ if(Params%UseMieScattering.eq.1) then
                           mesh%Ts(Params%M/2+(Params%N-1)*mesh%M), mesh%Ne(Params%M/2+(Params%N-1)*mesh%M), &
               mesh%Nh(Params%M/2+(Params%N-1)*mesh%M), intensity(Params%M/2,Params%N), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,Params%N), GainsE(Params%M/2,Params%N), SourceH(Params%M/2,Params%N),&
-               GainsH(Params%M/2,Params%N), Egap(Params%M/2,Params%N), &
+               GainsH(Params%M/2,Params%N), Egap(Params%M/2+(Params%N-1)*mesh%M), &
               real(FermiIndexE(Params%M/2,Params%N)), real(FermiIndexH(Params%M/2,Params%N))
               
 883 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
@@ -2209,7 +2210,7 @@ if(Params%UseMieScattering.eq.1) then
       call output_open(TimeBottom%unit, 'output/TimeBottom.dat', (nbiter/=1 .or. Params%RestartCalc == 1))         ! format 882
       write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2), mesh%Th(Params%M/2), mesh%Ne(Params%M/2), &
               mesh%Nh(Params%M/2), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
-              SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2,1), &
+              SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2), &
               real(FermiIndexE(Params%M/2,1)), real(FermiIndexH(Params%M/2,1))
               
 882 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!

@@ -141,9 +141,9 @@ module Material_m
       type(Material),   intent(in)    :: this
       type(MeshValues), intent(in)    :: mesh
       real(8),          intent(in)    :: N(:), Ts(:)
-      real(8),          intent(out)   :: Eg(:,:)
+      real(8),          intent(out)   :: Eg(:)
 
-      integer :: i,j
+      integer :: i
       type(Profiler), save :: prof
 
       call Profiler_start(prof, 'BAND_GAP')
@@ -153,25 +153,21 @@ module Material_m
 
       select case(this%Eg_model)
       case(EG_SI_CONSTANT)!TODO: We need a proper reference for this
-        Eg(1:mesh%M,1:mesh%N)=ec*1.16d0
+        Eg(:)=ec*1.16d0
       case(EG_SI_KORFIATIS07) !REF: Korfiatis, D. P., KA Th Thoma, and J. C. Vardaxoglou. "Conditions for femtosecond laser melting of silicon." Journal of Physics D: Applied Physics 40.21 (2007): 6803.
-        !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
-        do j=1,mesh%N
-          do i=1,mesh%M
-            Eg(i,j)=ec*(1.1692d0-4.9d-4*Ts(i+(j-1)*mesh%M)**2/(Ts(i+(j-1)*mesh%M)+655d0)-1.5d-10*N(i+(j-1)*mesh%M)**(1d0/3d0)) !Korfiatis 2007
-          end do
+        !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg)
+        do i=1,mesh%N*mesh%M
+          Eg(i)=ec*(1.1692d0-4.9d-4*Ts(i)**2/(Ts(i)+655d0)-1.5d-10*N(i)**(1d0/3d0)) !Korfiatis 2007
         end do
         !$OMP END PARALLEL DO
       case(EG_SI_VANDRIEL87) !REF: Van Driel, Henry M. "Kinetics of high-density plasmas generated in Si by 1.06-and 0.53-μm picosecond laser pulses." Physical Review B 35.15 (1987): 8166.
-        !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
-        do j=1,mesh%N
-          do i=1,mesh%M
-            Eg(i,j)=ec*(1.1692d0-(7.02d-4*Ts(i+(j-1)*mesh%M)**2)/(Ts(i+(j-1)*mesh%M)+1108d0)-1.5d-10*N(i+(j-1)*mesh%M)**(1d0/3d0)) !Driel 1987
-          end do
+        !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg)
+        do i=1,mesh%N*mesh%M
+            Eg(i)=ec*(1.1692d0-(7.02d-4*Ts(i)**2)/(Ts(i)+1108d0)-1.5d-10*N(i)**(1d0/3d0)) !Driel 1987
         end do
         !$OMP END PARALLEL DO
       case default
-        Eg(1:mesh%M,1:mesh%N) = M_ZERO
+        Eg(:) = M_ZERO
       end select
 
       call profiler_stop(prof)
@@ -870,8 +866,9 @@ end module Material_m
      type(MeshValues),      intent(in)                 :: mesh
      type(Laser),           intent(in)                 :: source
      type(Material),        intent(in)                 :: matter
-     real(8), dimension(mesh%M,mesh%N), intent(inout)  :: Egap, GainsE, GainsH, SourceUe, SourceUh, &
+     real(8), dimension(mesh%M,mesh%N), intent(inout)  :: GainsE, GainsH, SourceUe, SourceUh, &
                                                           SourceE, SourceH, LossesE, LossesH
+     real(8), dimension(mesh%M*mesh%N), intent(inout)  :: Egap
      real(8), dimension(mesh%M,mesh%N), intent(in)     :: intensity, absorptionDrudeE, absorptionDrudeH, &
                                                           Ce, Ch, CeOld, ChOld
      real(8),                           intent(in)     :: dt, me, mh, OnePhotonIonizationRate0, &
@@ -880,7 +877,7 @@ end module Material_m
 
      real(8) :: Int2, ImpactIonizationRate, work
      integer :: i,j
-     real(8), dimension(mesh%M,mesh%N) :: EgapH
+     real(8), dimension(mesh%M*mesh%N) :: EgapH
 
      type(Profiler), save :: prof
 
@@ -903,17 +900,17 @@ end module Material_m
        do i=1,Params%M
 
         Int2 = intensity(i,j)**2
-        work = ImpactIonizationRate(mesh%Te(i+(j-1)*mesh%M),Egap(i,j), ImpactOff)
+        work = ImpactIonizationRate(mesh%Te(i+(j-1)*mesh%M),Egap(i+(j-1)*mesh%M), ImpactOff)
 
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E & 
                     +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Ne(i+(j-1)*mesh%M))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
-        SourceUe(i,j)= ((source%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
-                     + M_HALF*(M_TWO*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
-                     - Egap(i,j)*work*mesh%Ne(i+(j-1)*mesh%M) &
+        SourceUe(i,j)= ((source%E-Egap(i+(j-1)*mesh%M))*OnePhotonIonizationRate0*intensity(i,j) &
+                     + M_HALF*(M_TWO*source%E - Egap(i+(j-1)*mesh%M))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
+                     - Egap(i+(j-1)*mesh%M)*work*mesh%Ne(i+(j-1)*mesh%M) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(matter%AugerRateE*mesh%Nh(i+(j-1)*mesh%M) * mesh%Ne(i+(j-1)*mesh%M)**2)
+                     + Egap(i+(j-1)*mesh%M)*(matter%AugerRateE*mesh%Nh(i+(j-1)*mesh%M) * mesh%Ne(i+(j-1)*mesh%M)**2)
 
         !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
         SourceE(i,j) = SourceUe(i,j) - mesh%Te(i+(j-1)*mesh%M) * (Ce(i,j)-CeOld(i,j))/dt
@@ -922,17 +919,17 @@ end module Material_m
         LossesE(i,j)=mesh%Ne(i+(j-1)*mesh%M) * mesh%Nh(i+(j-1)*mesh%M) * ( matter%AugerRateE * mesh%Ne(i+(j-1)*mesh%M) &
                        + matter%AugerRateH * mesh%Nh(i+(j-1)*mesh%M) ) !This is more perfomant like that
 
-        work = ImpactIonizationRate(mesh%Th(i+(j-1)*mesh%M),EgapH(i,j), ImpactOff)
+        work = ImpactIonizationRate(mesh%Th(i+(j-1)*mesh%M),EgapH(i+(j-1)*mesh%M), ImpactOff)
 
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
                     +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Nh(i+(j-1)*mesh%M)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
 
-        SourceUh(i,j)=((source%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
-                     + M_HALF*(M_TWO*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
-                     - Egap(i,j)*work*mesh%Nh(i+(j-1)*mesh%M) &
+        SourceUh(i,j)=((source%E-Egap(i+(j-1)*mesh%M))* OnePhotonIonizationRate0*intensity(i,j) &
+                + M_HALF*(M_TWO*source%E - Egap(i+(j-1)*mesh%M))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
+                     - Egap(i+(j-1)*mesh%M)*work*mesh%Nh(i+(j-1)*mesh%M) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(matter%AugerRateH*mesh%Ne(i+(j-1)*mesh%M) * mesh%Nh(i+(j-1)*mesh%M)**2)
+                     + Egap(i+(j-1)*mesh%M)*(matter%AugerRateH*mesh%Ne(i+(j-1)*mesh%M) * mesh%Nh(i+(j-1)*mesh%M)**2)
 
         !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
         SourceH(i,j) = SourceUh(i,j) - mesh%Th(i+(j-1)*mesh%M) * (Ch(i,j)-ChOld(i,j))/dt
