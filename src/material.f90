@@ -803,7 +803,7 @@ end module Material_m
       real(8),               intent(in)    :: Ce(mesh%M*mesh%N)
       real(8),               intent(in)    :: Ch(mesh%M*mesh%N)
       !
-      integer :: i, j
+      integer :: i
       real(8) :: nuColleph!        electron-phonon collision frequency
       real(8) :: ephCollisionFrequency
       !
@@ -817,26 +817,22 @@ end module Material_m
       !TODO: why repeating the case on electrons, here? 
       if(Params%HolesOff.eq.0) then
         !
-        !$OMP DO COLLAPSE(2)
-        do j=1, mesh%N !(optimized)
-          do i=1, mesh%M
-            ! optical coefficients
-            nuColleph=ephCollisionFrequency(mesh%Ne(i+(j-1)*mesh%M))
-            CouplingE(i+(j-1)*mesh%M)=Ce(i+(j-1)*mesh%M)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
-            CouplingH(i+(j-1)*mesh%M)=Ch(i+(j-1)*mesh%M)*nuColleph*(mesh%Th(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
-          end do
+        !$OMP DO
+        do i=1, mesh%N*mesh%M
+          ! optical coefficients
+          nuColleph=ephCollisionFrequency(mesh%Ne(i))
+          CouplingE(i)=Ce(i)*nuColleph*(mesh%Te(i)-mesh%Ts(i))
+          CouplingH(i)=Ch(i)*nuColleph*(mesh%Th(i)-mesh%Ts(i))
         end do
         !$OMP END DO
         !
       else !In this case no need to update CouplingH
        !
-       !$OMP DO COLLAPSE(2)
-       do j=1, mesh%N !(optimized)
-         do i=1, mesh%M
-           ! optical coefficients
-           nuColleph=ephCollisionFrequency(mesh%Ne(i+(j-1)*mesh%M))
-           CouplingE(i+(j-1)*mesh%M)=Ce(i+(j-1)*mesh%M)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
-         end do
+       !$OMP DO
+       do i=1, mesh%N*mesh%M
+         ! optical coefficients
+         nuColleph=ephCollisionFrequency(mesh%Ne(i))
+         CouplingE(i)=Ce(i)*nuColleph*(mesh%Te(i)-mesh%Ts(i))
        end do
        !$OMP END DO
        !
