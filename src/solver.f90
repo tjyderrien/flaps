@@ -28,6 +28,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
   use Maths_m
+  use Mesh_m
   use Profiler_m
   use Types_m
   implicit none
@@ -61,7 +62,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                ShapeFactorNormalE(i,j) &
               * ( &
                  ! direct diffusion operator over irregular mesh
-                 ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M) )* NormalE2(i,j) &
+     ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(mesh%Map(EAST,i+(j-1)*mesh%M))-mesh%Ne(i+(j-1)*mesh%M) )* NormalE2(i,j) &
 
                  ! Cross-diffusion from
                  ! [S. Mathur, J. Murthy, A pressure-based method for unstructured
@@ -73,7 +74,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
               + ShapeFactorNormalW(i,j) &
                 *( &
                    ! direct diffusion operator over irregular mesh
-                  -( diffusionE(i-1,j)+diffusionE(i,j) )*( mesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i-1+(j-1)*mesh%M) )* NormalW2(i,j)  &
+     ( diffusionE(i-1,j)+diffusionE(i,j) )*( mesh%Ne(mesh%Map(WEST,i+(j-1)*mesh%M))-mesh%Ne(i+(j-1)*mesh%M) )* NormalW2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentW(i,j) &
                   *(diffusionE(i-1,j)+diffusionE(i,j))*( dual%Ne(i-1+(j-2)*dual%M) - dual%Ne(i-1+(j-1)*dual%M) ) &
@@ -81,7 +82,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
               + ShapeFactorNormalN(i,j) &
                 *( &
                    ! direct diffusion operator over irregular mesh
-                  +( diffusionE(i,j+1)+diffusionE(i,j) )*( mesh%Ne(i+j*mesh%M)-mesh%Ne(i+(j-1)*mesh%M) )* NormalN2(i,j)  &
+     +( diffusionE(i,j+1)+diffusionE(i,j) )*( mesh%Ne(mesh%Map(NORTH,i+(j-1)*mesh%M))-mesh%Ne(i+(j-1)*mesh%M) )* NormalN2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentN(i,j) &
                   *(diffusionE(i,j+1)+diffusionE(i,j))*( dual%Ne(i-1+(j-1)*dual%M) - dual%Ne(i+(j-1)*dual%M) ) &
@@ -89,7 +90,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
               + ShapeFactorNormalS(i,j) &
                 *( &
                    ! direct diffusion operator over irregular mesh
-                  -( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-2)*mesh%M) )* NormalS2(i,j)  &
+   ( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(mesh%Map(SOUTH,i+(j-1)*mesh%M))-mesh%Ne(i+(j-1)*mesh%M) )* NormalS2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentS(i,j) &
                   *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i+(j-2)*dual%M) - dual%Ne(i-1+(j-2)*dual%M) ) ) )
