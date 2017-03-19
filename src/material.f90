@@ -616,9 +616,9 @@ end module Material_m
       implicit none
 
       type(MeshValues),  intent(in)    :: mesh
-      real(8),           intent(inout) :: Ce(mesh%M,mesh%N)
-      real(8),           intent(inout) :: Ch(mesh%M,mesh%N)
-      real(8),           intent(inout) :: Cs(mesh%M,mesh%N)
+      real(8),           intent(inout) :: Ce(mesh%M*mesh%N)
+      real(8),           intent(inout) :: Ch(mesh%M*mesh%N)
+      real(8),           intent(inout) :: Cs(mesh%M*mesh%N)
       real(8),           intent(inout) :: invCe(mesh%M,mesh%N)
       real(8),           intent(inout) :: invCh(mesh%M,mesh%N)
       real(8),           intent(inout) :: invCs(mesh%M,mesh%N)
@@ -641,19 +641,19 @@ end module Material_m
         do i=1, mesh%M
           ind = FermiIndexE(i,j)
           tmp = FermiTableE(FERMI_THREE_HALF, ind)
-          Ce(i,j)=1.5d0*mesh%Ne(i+(j-1)*mesh%M)*kb*(tmp-FermiTableE(FERMI_ETA,ind) &
+          Ce(i+(j-1)*mesh%M)=1.5d0*mesh%Ne(i+(j-1)*mesh%M)*kb*(tmp-FermiTableE(FERMI_ETA,ind) &
                        *(M_ONE-(tmp/FermiTableE(FERMI_HALF,ind))*(FermiTableE(FERMI_MINUS_HALF,ind))))/FermiTableE(FERMI_HALF,ind)
 
           ind = FermiIndexH(i,j)
           tmp = FermiTableH(FERMI_THREE_HALF,ind)
-          Ch(i,j)=1.5d0*mesh%Nh(i+(j-1)*mesh%M)*kb*(tmp-FermiTableH(FERMI_ETA,ind) &
+          Ch(i+(j-1)*mesh%M)=1.5d0*mesh%Nh(i+(j-1)*mesh%M)*kb*(tmp-FermiTableH(FERMI_ETA,ind) &
                        *(M_ONE-(tmp/FermiTableH(FERMI_HALF,ind))*(FermiTableH(FERMI_MINUS_HALF,ind))))/FermiTableH(FERMI_HALF,ind)
 
-          Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i+(j-1)*mesh%M))
+          Cs(i+(j-1)*mesh%M)=LatticeHeatCapacity(mesh%Ts(i+(j-1)*mesh%M))
 
-          invCe(i,j) = M_ONE/Ce(i,j)
-          invCh(i,j) = M_ONE/Ch(i,j)
-          invCs(i,j) = M_ONE/Cs(i,j)
+          invCe(i,j) = M_ONE/Ce(i+(j-1)*mesh%M)
+          invCh(i,j) = M_ONE/Ch(i+(j-1)*mesh%M)
+          invCs(i,j) = M_ONE/Cs(i+(j-1)*mesh%M)
         end do
       end do
       !$OMP END DO
@@ -798,10 +798,10 @@ end module Material_m
 
       type(InputParameters), intent(in)    :: Params
       type(MeshValues),      intent(in)    :: mesh
-      real(8),               intent(inout) :: CouplingE(mesh%M,mesh%N)
-      real(8),               intent(inout) :: CouplingH(mesh%M,mesh%N)
-      real(8),               intent(in)    :: Ce(mesh%M,mesh%N)
-      real(8),               intent(in)    :: Ch(mesh%M,mesh%N)
+      real(8),               intent(inout) :: CouplingE(mesh%M*mesh%N)
+      real(8),               intent(inout) :: CouplingH(mesh%M*mesh%N)
+      real(8),               intent(in)    :: Ce(mesh%M*mesh%N)
+      real(8),               intent(in)    :: Ch(mesh%M*mesh%N)
       !
       integer :: i, j
       real(8) :: nuColleph!        electron-phonon collision frequency
@@ -822,8 +822,8 @@ end module Material_m
           do i=1, mesh%M
             ! optical coefficients
             nuColleph=ephCollisionFrequency(mesh%Ne(i+(j-1)*mesh%M))
-            CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
-            CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
+            CouplingE(i+(j-1)*mesh%M)=Ce(i+(j-1)*mesh%M)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
+            CouplingH(i+(j-1)*mesh%M)=Ch(i+(j-1)*mesh%M)*nuColleph*(mesh%Th(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
           end do
         end do
         !$OMP END DO
@@ -835,7 +835,7 @@ end module Material_m
          do i=1, mesh%M
            ! optical coefficients
            nuColleph=ephCollisionFrequency(mesh%Ne(i+(j-1)*mesh%M))
-           CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
+           CouplingE(i+(j-1)*mesh%M)=Ce(i+(j-1)*mesh%M)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
          end do
        end do
        !$OMP END DO
@@ -868,9 +868,9 @@ end module Material_m
      type(Material),        intent(in)                 :: matter
      real(8), dimension(mesh%M,mesh%N), intent(inout)  :: GainsE, GainsH, SourceUe, SourceUh, &
                                                           SourceE, SourceH, LossesE, LossesH
-     real(8), dimension(mesh%M*mesh%N), intent(inout)  :: Egap
+     real(8), dimension(mesh%M*mesh%N), intent(inout)  :: Egap, Ce, Ch
      real(8), dimension(mesh%M,mesh%N), intent(in)     :: intensity, absorptionDrudeE, absorptionDrudeH, &
-                                                          Ce, Ch, CeOld, ChOld
+                                                          CeOld, ChOld
      real(8),                           intent(in)     :: dt, me, mh, OnePhotonIonizationRate0, &
                                                           TwoPhotonIonizationRate0
      integer,                           intent(in)     :: ImpactOff
@@ -913,7 +913,7 @@ end module Material_m
                      + Egap(i+(j-1)*mesh%M)*(matter%AugerRateE*mesh%Nh(i+(j-1)*mesh%M) * mesh%Ne(i+(j-1)*mesh%M)**2)
 
         !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
-        SourceE(i,j) = SourceUe(i,j) - mesh%Te(i+(j-1)*mesh%M) * (Ce(i,j)-CeOld(i,j))/dt
+        SourceE(i,j) = SourceUe(i,j) - mesh%Te(i+(j-1)*mesh%M) * (Ce(i+(j-1)*mesh%M)-CeOld(i,j))/dt
 
         !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
         LossesE(i,j)=mesh%Ne(i+(j-1)*mesh%M) * mesh%Nh(i+(j-1)*mesh%M) * ( matter%AugerRateE * mesh%Ne(i+(j-1)*mesh%M) &
@@ -932,7 +932,7 @@ end module Material_m
                      + Egap(i+(j-1)*mesh%M)*(matter%AugerRateH*mesh%Ne(i+(j-1)*mesh%M) * mesh%Nh(i+(j-1)*mesh%M)**2)
 
         !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-        SourceH(i,j) = SourceUh(i,j) - mesh%Th(i+(j-1)*mesh%M) * (Ch(i,j)-ChOld(i,j))/dt
+        SourceH(i,j) = SourceUh(i,j) - mesh%Th(i+(j-1)*mesh%M) * (Ch(i+(j-1)*mesh%M)-ChOld(i,j))/dt
 
         LossesH(i,j)=LossesE(i,j)
 

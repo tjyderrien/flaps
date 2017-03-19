@@ -126,7 +126,9 @@ program Flaps
                 etae, etah, &        ! reduced chemical Fermi potential
                 work
 
-    real(8), allocatable, dimension(:) :: Egap, Egap_new ! local gap value
+    real(8), allocatable, dimension(:) :: Egap, Egap_new, & ! local gap value
+                                          CouplingE, CouplingH, &
+                                          Ch, Ce, Cs
     real(8), allocatable, dimension(:,:) :: &
                 Ue, & !electron energy
                 Uh, & !hole energy
@@ -146,11 +148,9 @@ program Flaps
                 GainsE, GainsH, &
                 LossesE, LossesH, &
                 kappae, kappah, kappas, &
-                Ce, Ch, Cs, &
                 invCe, invCh, invCs, &
                 CeOld, ChOld, CsOld, &
                 CsPrev, CsPrev2, &
-                CouplingE, CouplingH, &
                 mobilityE, mobilityH, &
                 SourceE, SourceH, & ! heating sources
                 SourceUe, SourceUh, & ! free carrier thermal energy sources
@@ -347,11 +347,11 @@ program Flaps
                 GainsE(1:Params%M, 1:Params%N), GainsH(1:Params%M, 1:Params%N), &
                 LossesE(1:Params%M, 1:Params%N), LossesH(1:Params%M, 1:Params%N), &
                 kappae(1:Params%M, 1:Params%N), kappah(1:Params%M, 1:Params%N), kappas(1:Params%M,1:Params%N), &
-                Ce(1:Params%M, 1:Params%N), Ch(1:Params%M, 1:Params%N), Cs(1:Params%M, 1:Params%N), &
+                Ce(1:Params%M*Params%N), Ch(1:Params%M*Params%N), Cs(1:Params%M*Params%N), &
                 invCe(1:Params%M, 1:Params%N), invCh(1:Params%M, 1:Params%N), invCs(1:Params%M, 1:Params%N), &
                 CeOld(1:Params%M, 1:Params%N), ChOld(1:Params%M,1:Params%N), CsOld(1:Params%M, 1:Params%N), &
                 CsPrev(1:Params%M, 1:Params%N), CsPrev2(1:Params%M, 1:Params%N), &
-                CouplingE(1:Params%M, 1:Params%N), CouplingH(1:Params%M, 1:Params%N), &
+                CouplingE(1:Params%M*Params%N), CouplingH(1:Params%M*Params%N), &
                 mobilityE(1:Params%M, 1:Params%N), mobilityH(1:Params%M, 1:Params%N), &
                 Egap(1:Params%M*Params%N), Egap_new(1:Params%M*Params%N), &                        ! local gap value
                 SourceE(1:Params%M, 1:Params%N), SourceH(1:Params%M, 1:Params%N), & ! heating sources
@@ -403,8 +403,8 @@ program Flaps
                 EintField(1:Params%M,1:Params%N), EintField2(1:Params%M,1:Params%N))
 
  !Initialisation of data
- CouplingE(:,:)=M_ZERO
- CouplingH(:,:)=M_ZERO
+ CouplingE(:)=M_ZERO
+ CouplingH(:)=M_ZERO
  kappae(:,:) = M_ZERO
  kappah(:,:) = M_ZERO
  kappas(:,:) = M_ZERO
@@ -1176,9 +1176,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                   FermiTableH(FERMI_MINUS_HALF,FermiIndexH(i,j)) &
                               /FermiTableH(FERMI_HALF,FermiIndexH(i,j))))
 
-        Ce(i,j)=CeOld(i,j)
-        Ch(i,j)=ChOld(i,j)
-        Cs(i,j)=CsPrev(i,j)
+        Ce(i+(j-1)*mesh%M)=CeOld(i,j)
+        Ch(i+(j-1)*mesh%M)=ChOld(i,j)
+        Cs(i+(j-1)*mesh%M)=CsPrev(i,j)
 
         
         UeNew(i,j)=newmesh%Te(i+(j-1)*mesh%M)*CeOld(i,j)
@@ -1604,12 +1604,12 @@ if(Params%UseMieScattering.eq.1) then
        Uh(i,j)     = UhNew(i,j)
        TsPrev(i,j) = TsOld(i,j)
        TsOld(i,j)  = mesh%Ts(i+(j-1)*mesh%M)
-       CeOld(i,j)  = Ce(i,j)
-       ChOld(i,j)  = Ch(i,j)
+       CeOld(i,j)  = Ce(i+(j-1)*mesh%M)
+       ChOld(i,j)  = Ch(i+(j-1)*mesh%M)
 
        CsPrev2(i,j)= CsPrev(i,j)
        CsPrev(i,j) = CsOld(i,j)
-       CsOld(i,j)  = Cs(i,j)
+       CsOld(i,j)  = Cs(i+(j-1)*mesh%M)
      end do
    end do
    !$OMP END DO
@@ -1919,8 +1919,8 @@ if(Params%UseMieScattering.eq.1) then
                             -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
          !
          !
-         TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i+(j-1)*mesh%M) &
-                                     +Ch(i,j)*mesh%Th(i+(j-1)*mesh%M)+Cs(i,j)*mesh%Ts(i+(j-1)*mesh%M)
+         TotalThermalEnergy= TotalThermalEnergy + Ce(i+(j-1)*mesh%M)*mesh%Te(i+(j-1)*mesh%M) &
+                            +Ch(i+(j-1)*mesh%M)*mesh%Th(i+(j-1)*mesh%M)+Cs(i+(j-1)*mesh%M)*mesh%Ts(i+(j-1)*mesh%M)
          !
          !
          work = intensity(i,j)*(1d0-reflectivity(i,j))
@@ -2007,24 +2007,24 @@ if(Params%UseMieScattering.eq.1) then
         work = Egap_new(i+(j-1)*mesh%M) - Egap(i+(j-1)*mesh%M)
         ! calculation of the energy contained in the solid
         ElectronEnergy=ElectronEnergy &
-            + (Ce(i,j)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
-            +(Ce(i,j)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) & !kinetic energy
+            + (Ce(i+(j-1)*mesh%M)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
+            +(Ce(i+(j-1)*mesh%M)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) & !kinetic energy
             + (mesh%Ne(i+(j-1)*mesh%M)*work  &
             + Egap(i+(j-1)*mesh%M)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
               
         ElectronKineticEnergy=ElectronKineticEnergy &
-                 +(Ce(i,j)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
-                 +(Ce(i,j)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) !kinetic energy
+                 +(Ce(i+(j-1)*mesh%M)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
+                 +(Ce(i+(j-1)*mesh%M)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) !kinetic energy
         ElectronPotentialEnergy=ElectronPotentialEnergy &
                  +(mesh%Ne(i+(j-1)*mesh%M)*work  &
                  + Egap(i+(j-1)*mesh%M)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
 !       ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
 
-        HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i+(j-1)*mesh%M)-mesh%Th(i+(j-1)*mesh%M)) &
-                                        +(Ch(i,j)-ChOld(i,j))*mesh%Th(i+(j-1)*mesh%M)) * CellVol(i,j) !kinetic energy
+        HoleEnergy=HoleEnergy+(Ch(i+(j-1)*mesh%M)*(newmesh%Th(i+(j-1)*mesh%M)-mesh%Th(i+(j-1)*mesh%M)) &
+                       +(Ch(i+(j-1)*mesh%M)-ChOld(i,j))*mesh%Th(i+(j-1)*mesh%M)) * CellVol(i,j) !kinetic energy
         
-        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))) &
-                                    +0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i+(j-1)*mesh%M))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
+        LatticeEnergy=LatticeEnergy+((Cs(i+(j-1)*mesh%M)*(newmesh%Ts(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))) &
+                            +0d0*(Cs(i+(j-1)*mesh%M)-CsOld(i,j))*mesh%Ts(i+(j-1)*mesh%M))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
 
      end do
    end do
@@ -2182,8 +2182,9 @@ if(Params%UseMieScattering.eq.1) then
               SourceE(1,Params%N/2), GainsE(1,Params%N/2), SourceH(1,Params%N/2), GainsH(1,Params%N/2), &
               Egap(1+(Params%N/2-1)*mesh%M), &                !14
               real(FermiIndexE(1,Params%N/2)),&
-               real(FermiIndexH(1,Params%N/2)), Ce(2,Params%N/2), &                !17
-              CeOld(2,Params%N/2), Ch(2,Params%N/2), ChOld(2,Params%N/2), Cs(2,Params%N/2), CsOld(2,Params%N/2)                               !22
+              real(FermiIndexH(1,Params%N/2)), Ce(2+(Params%N/2-1)*mesh%M), &                !17
+              CeOld(2,Params%N/2), Ch(2+(Params%N/2-1)*mesh%M), ChOld(2,Params%N/2), &
+              Cs(2+(Params%N/2-1)*mesh%M), CsOld(2,Params%N/2)                               !22
               
 884 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, & !TODO: Please use short notation with prenthesis !!
 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &

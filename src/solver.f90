@@ -226,7 +226,8 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, kappae, CouplingE, SourceE, invCe, &
+  real(8), dimension(mesh%M*mesh%N),  intent(in)    :: CouplingE
+  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, kappae,  SourceE, invCe, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -245,7 +246,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
     do i=2, mesh%M-1
 
       !TODO: This can be further optimised
-      newmesh%Te(i+(j-1)*mesh%M) = mesh%Te(i+(j-1)*mesh%M) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j)
+      newmesh%Te(i+(j-1)*mesh%M) = mesh%Te(i+(j-1)*mesh%M) + dt * (-CouplingE(i+(j-1)*mesh%M)+SourceE(i,j))*invCe(i,j)
       newmesh%Te(i+(j-1)*mesh%M) = newmesh%Te(i+(j-1)*mesh%M) + M_HALF *invCe(i,j) * dt * InvCellVol(i,j)*( &
       + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
       - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i+(j-1)*mesh%M)-mesh%Te(i-1+(j-1)*mesh%M)) &
@@ -284,7 +285,8 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, kappah, CouplingH, SourceH, invCh, &
+  real(8), dimension(mesh%M*mesh%N),  intent(in)    :: CouplingH
+  real(8), dimension(mesh%M, mesh%n), intent(in) :: InvCellVol, kappah, SourceH, invCh, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -303,7 +305,7 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
     do i=2, mesh%M-1
 
   !TODO: This can be further optimised
-        newmesh%Th(i+(j-1)*mesh%M) = mesh%Th(i+(j-1)*mesh%M) + (-CouplingH(i,j)+SourceH(i,j))*invCh(i,j)*dt
+        newmesh%Th(i+(j-1)*mesh%M) = mesh%Th(i+(j-1)*mesh%M) + (-CouplingH(i+(j-1)*mesh%M)+SourceH(i,j))*invCh(i,j)*dt
         newmesh%Th(i+(j-1)*mesh%M) = newmesh%Th(i+(j-1)*mesh%M)+ M_HALF*( &
               + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j)) &
                           *(mesh%Th(i+1+(j-1)*mesh%M)-mesh%Th(i+(j-1)*mesh%M))  &
@@ -354,7 +356,8 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
   type(MeshValues),                   intent(inout) :: newmesh
   type(MeshValues),                   intent(in)    :: mesh, dual
   real(8),                            intent(in)    :: dt, h1, h2, h3
-  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, CellVol, kappas, CouplingH, CouplingE, invCs, TsPrev, TsOld, &
+  real(8), dimension(mesh%M*mesh%N),  intent(in)    :: CouplingH, CouplingE
+  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, CellVol, kappas, invCs, TsPrev, TsOld, &
                                                     NormalW2, NormalE2, NormalN2, NormalS2, &
                                                     ShapeFactorNormalE, ShapeFactorNormalW, &
                                                     ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -464,7 +467,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
                *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i+(j-2)*dual%M) - dual%Ts(i-1+(j-2)*dual%M) ) &
                 ) &
-                    + M_TWO*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) & !TODO: Remove InvCellVol *CellVol
+                    + M_TWO*(CouplingE(i+(j-1)*mesh%M)+CouplingH(i+(j-1)*mesh%M)) * CellVol(i,j) & !TODO: Remove InvCellVol *CellVol
                 ) * InvCellVol(i,j) &
 !                     - ((h1 * h2 + h1 * h3 &
 !                     + h2 * h3) / h2 / h1 / h3 * Cs(i,j) - h2 * h3 / h1 &
@@ -506,7 +509,8 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
   type(MeshValues),                   intent(in)    :: mesh
   real(8), dimension(mesh%M, mesh%N), intent(inout) :: UeNew
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%N), intent(in)    :: InvCellVol, CellVol, kappae, CouplingE, SourceUe, &
+  real(8), dimension(mesh%M*mesh%N) , intent(in)    :: CouplingE
+  real(8), dimension(mesh%M, mesh%N), intent(in)    :: InvCellVol, CellVol, kappae, SourceUe, &
                                                        invCe, Ue, VeX, VeY, &
                                                        ShapeFactorNormalE, ShapeFactorNormalW, &
                                                        ShapeFactorNormalS, ShapeFactorNormalN, &
@@ -526,7 +530,7 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
 
 ! form with bug corrected in derivatives and (OmegaX, OmegaY) drift transport included in finite volumes
 !     if(TransportModel < 2) then
-         UeNew(i,j) = Ue(i,j) + ((SourceUe(i,j)-CouplingE(i,j))*CellVol(i,j) &
+         UeNew(i,j) = Ue(i,j) + ((SourceUe(i,j)-CouplingE(i+(j-1)*mesh%M))*CellVol(i,j) &
                 ! convective term for transport of the energy by the field
                 -M_HALF*(((VeX(i+1,j)+VeX(i,j))*NormalE%x(i,j)                   &
                         +(VeY(i+1,j)+VeY(i,j))*NormalE%y(i,j)) * CellAreaE(i,j) &
@@ -604,7 +608,8 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   type(MeshValues),                   intent(in)    :: mesh
   real(8), dimension(mesh%M, mesh%N), intent(inout) :: UhNew
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%N), intent(in)    :: InvCellVol, CellVol, kappah, CouplingH, SourceUh, &
+  real(8), dimension(mesh%M*mesh%N),  intent(in)    :: CouplingH
+  real(8), dimension(mesh%M, mesh%N), intent(in)    :: InvCellVol, CellVol, kappah, SourceUh, &
                                                        invCh, Uh, VhX, VhY,                                 &
                                                        ShapeFactorNormalE, ShapeFactorNormalW,           &
                                                        ShapeFactorNormalS, ShapeFactorNormalN,           &
@@ -623,7 +628,7 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   do j=2, mesh%N-1
     do i=2, mesh%M-1
 
-      UhNew(i,j) = Uh(i,j) + ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j) &
+      UhNew(i,j) = Uh(i,j) + ((SourceUh(i,j)-CouplingH(i+(j-1)*mesh%M))*CellVol(i,j) &
                 ! convective term for transport of the energy by the field
                 -M_HALF*(((VhX(i+1,j)+VhX(i,j))*NormalE%x(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalE%y(i,j)) * CellAreaE(i,j) &
                 +( (VhX(i,j)+VhX(i-1,j))*NormalW%x(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalW%y(i,j)) * CellAreaW(i,j) &
@@ -694,8 +699,9 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   type(MeshValues),                   intent(in)    :: mesh
   real(8), dimension(mesh%M, mesh%N), intent(inout) :: UhNew
   real(8),                            intent(in)    :: dt
-  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, CellVol, kappah, CouplingH, SourceUh, &
-                                                    Ch, Uh, VhX, VhY, x, y, &
+  real(8), dimension(mesh%M*mesh%N),  intent(in) :: Ch, CouplingH
+  real(8), dimension(mesh%M, mesh%N), intent(in) :: InvCellVol, CellVol, kappah, SourceUh, &
+                                                    Uh, VhX, VhY, x, y, &
                                                     CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
                                                     CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy
 
@@ -710,21 +716,21 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
     do i=2, mesh%M-1
 
      !TODO: This must be optmised !
-        UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i,j))*CellVol(i,j)-M_HALF*( &
+        UhNew(i,j) = ((SourceUh(i,j)-CouplingH(i+(j-1)*mesh%M))*CellVol(i,j)-M_HALF*( &
                ((VhX(i+1,j)+VhX(i,j))*NormalEx(i,j)+(VhY(i+1,j)+VhY(i,j))*NormalEy(i,j)) * CellAreaE(i,j) &
               +((VhX(i,j)+VhX(i-1,j))*NormalWx(i,j)+(VhY(i,j)+VhY(i-1,j))*NormalWy(i,j)) * CellAreaW(i,j) &
               +((VhX(i,j)+VhX(i,j+1))*NormalNx(i,j)+(VhY(i,j)+VhY(i,j+1))*NormalNy(i,j)) * CellAreaN(i,j) &
               +((VhX(i,j)+VhX(i,j-1))*NormalSx(i,j)+(VhY(i,j)+VhY(i,j-1))*NormalSy(i,j)) * CellAreaS(i,j)) &
-              + ( ((kappah(i+1,j)+kappah(i,j))/(Ch(i+1,j)+Ch(i,j))) * (Uh(i+1,j)-Uh(i,j)) &
+              + ( ((kappah(i+1,j)+kappah(i,j))/(Ch(i+1*(j-1)*mesh%M)+Ch(i*(j-1)*mesh%M))) * (Uh(i+1,j)-Uh(i,j)) &
               /(x(i+1,j)**2-M_TWO*x(i+1,j)*x(i,j)+x(i,j)**2 + y(i+1,j)**2-M_TWO*y(i+1,j)*y(i,j)+y(i,j)**2)**M_HALF &
               *CellAreaE(i,j) &
-              - ((kappah(i-1,j)+kappah(i,j))/(Ch(i-1,j)+Ch(i,j))) * (Uh(i,j)-Uh(i-1,j)) &
+              - ((kappah(i-1,j)+kappah(i,j))/(Ch(i-1*(j-1)*mesh%M)+Ch(i*(j-1)*mesh%M))) * (Uh(i,j)-Uh(i-1,j)) &
               /(x(i,j)**2-M_TWO*x(i,j)*x(i-1,j)+x(i-1,j)**2+y(i,j)**2-M_TWO*y(i,j)*y(i-1,j) + y(i-1,j)**2)**M_HALF &
               *CellAreaW(i,j) &
-              + ((kappah(i,j+1)+kappah(i,j))/(Ch(i,j+1)+Ch(i,j)))*(Uh(i,j+1)-Uh(i,j)) &
+              + ((kappah(i,j+1)+kappah(i,j))/(Ch(i*j*mesh%M)+Ch(i*(j-1)*mesh%M)))*(Uh(i,j+1)-Uh(i,j)) &
               /(x(i,j+1)**2-M_TWO*x(i,j+1)*x(i,j) + x(i,j)**2+y(i,j+1)**2-M_TWO*y(i,j+1)*y(i,j)+y(i,j)**2)**M_HALF &
               *CellAreaN(i,j) &
-              -((kappah(i,j)+kappah(i,j-1))/(Ch(i,j)+Ch(i,j-1)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 &
+              -((kappah(i,j)+kappah(i,j-1))/(Ch(i*(j-2)*mesh%M)+Ch(i*(j-1)*mesh%M)))*(Uh(i,j)-Uh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 &
               -M_TWO*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-M_TWO*y(i,j)*y(i,j-1)+y(i,j-1)**2)**M_HALF) &
               )*dt*InvCellVol(i,j)+Uh(i,j)
 
