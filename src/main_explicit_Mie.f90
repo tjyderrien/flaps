@@ -191,15 +191,11 @@ program Flaps
 
     type(VectorField) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
                 
-                 !TODO: Use dimension. TJYD: What do you have in mind? Example? 
-    real(8), allocatable :: CurviWx(:,:), CurviWy(:,:), &                 ! Unit vector between cell centers
-                            CurviEx(:,:), CurviEy(:,:), &
-                            CurviNx(:,:), CurviNy(:,:), &
-                            CurviSx(:,:), CurviSy(:,:),  &
-                            TangentWx(:,:), TangentWy(:,:), &                ! Tangent to quadrangle elements
-                            TangentEx(:,:), TangentEy(:,:), &
-                            TangentNx(:,:), TangentNy(:,:), &
-                            TangentSx(:,:), TangentSy(:,:)
+
+    real(8), allocatable, dimension(:,:) :: CurviWx, CurviWy, &                 ! Unit vector between cell centers
+                            CurviEx, CurviEy, CurviNx, CurviNy, CurviSx, CurviSy,  &
+                            TangentWx, TangentWy, &                ! Tangent to quadrangle elements
+                            TangentEx, TangentEy, TangentNx, TangentNy, TangentSx, TangentSy
 
     integer(8), allocatable, dimension(:,:) :: &
                 FermiIndexE, FermiIndexH, &
