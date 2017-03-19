@@ -68,7 +68,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                  ! meshes, Numerical Heat Transfert, Part B 31 (1997) 195–215]
 
                  + ShapeFactorTangentE(i,j) &
-                 *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i+(j-1)*mesh%M) - dual%Ne(i+(j-2)*mesh%M))  &
+                 *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i+(j-1)*dual%M) - dual%Ne(i+(j-2)*dual%M))  &
                                                                                                     ) &
               + ShapeFactorNormalW(i,j) &
                 *( &
@@ -76,7 +76,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                   -( diffusionE(i-1,j)+diffusionE(i,j) )*( mesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i-1+(j-1)*mesh%M) )* NormalW2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentW(i,j) &
-                  *(diffusionE(i-1,j)+diffusionE(i,j))*( dual%Ne(i-1+(j-2)*mesh%M) - dual%Ne(i-1+(j-1)*mesh%M) ) &
+                  *(diffusionE(i-1,j)+diffusionE(i,j))*( dual%Ne(i-1+(j-2)*dual%M) - dual%Ne(i-1+(j-1)*dual%M) ) &
                                                                                                          ) &
               + ShapeFactorNormalN(i,j) &
                 *( &
@@ -84,7 +84,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                   +( diffusionE(i,j+1)+diffusionE(i,j) )*( mesh%Ne(i+j*mesh%M)-mesh%Ne(i+(j-1)*mesh%M) )* NormalN2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentN(i,j) &
-                  *(diffusionE(i,j+1)+diffusionE(i,j))*( dual%Ne(i-1+(j-1)*mesh%M) - dual%Ne(i+(j-1)*mesh%M) ) &
+                  *(diffusionE(i,j+1)+diffusionE(i,j))*( dual%Ne(i-1+(j-1)*dual%M) - dual%Ne(i+(j-1)*dual%M) ) &
                                                                                                      ) &
               + ShapeFactorNormalS(i,j) &
                 *( &
@@ -92,7 +92,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                   -( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-2)*mesh%M) )* NormalS2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentS(i,j) &
-                  *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i+(j-2)*mesh%M) - dual%Ne(i-1+(j-2)*mesh%M) ) ) )
+                  *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i+(j-2)*dual%M) - dual%Ne(i-1+(j-2)*dual%M) ) ) )
 
 
             ! convection
@@ -192,13 +192,13 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
 !               - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
 !                   ! Cross-diffusion from [Mathur and Murthy (1997)]
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j)) &
-                    *( dual%Nh(i+(j-1)*mesh%M) - dual%Nh(i+(j-2)*mesh%M) ) &
+                    *( dual%Nh(i+(j-1)*dual%M) - dual%Nh(i+(j-2)*dual%M) ) &
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j)) &
-                    *( dual%Nh(i-1+(j-2)*mesh%M) - dual%Nh(i-1+(j-1)*mesh%M) ) &
+                    *( dual%Nh(i-1+(j-2)*dual%M) - dual%Nh(i-1+(j-1)*dual%M) ) &
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j)) &
-                    *( dual%Nh(i-1+(j-1)*mesh%M) - dual%Nh(i+(j-1)*mesh%M) ) &
+                    *( dual%Nh(i-1+(j-1)*dual%M) - dual%Nh(i+(j-1)*dual%M) ) &
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) &
-                    *( dual%Nh(i+(j-2)*mesh%M) - dual%Nh(i-1+(j-2)*mesh%M) ) &
+                    *( dual%Nh(i+(j-2)*dual%M) - dual%Nh(i-1+(j-2)*dual%M) ) &
               )
     end do
   end do
@@ -251,13 +251,13 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
       + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i+j*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
       - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j))*(mesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-2)*mesh%M)) &
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j)) &
-                    *( dual%Te(i+(j-1)*mesh%M) - dual%Te(i+(j-2)*mesh%M) ) &
+                    *( dual%Te(i+(j-1)*dual%M) - dual%Te(i+(j-2)*dual%M) ) &
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j)) &
-                    *( dual%Te(i-1+(j-2)*mesh%M) - dual%Te(i-1+(j-1)*mesh%M) ) &
+                    *( dual%Te(i-1+(j-2)*dual%M) - dual%Te(i-1+(j-1)*dual%M) ) &
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j)) &
-                    *( dual%Te(i-1+(j-1)*mesh%M) - dual%Te(i+(j-1)*mesh%M) ) &
+                    *( dual%Te(i-1+(j-1)*dual%M) - dual%Te(i+(j-1)*dual%M) ) &
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j)) &
-                    *( dual%Te(i+(j-2)*mesh%M) - dual%Te(i-2+(j-2)*mesh%M) ) ) !source
+                    *( dual%Te(i+(j-2)*dual%M) - dual%Te(i-2+(j-2)*dual%M) ) ) !source
     end do
   end do
   !$OMP END DO
@@ -317,13 +317,13 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
                           *(mesh%Th(i+(j-1)*mesh%M)-mesh%Th(i+(j-2)*mesh%M))  &
 !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(0.25d0*Th(i+1,j)+0.25d0*Th(i+1,j-1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j)) &
-                             *( dual%Th(i+(j-1)*mesh%M) - dual%Th(i+(j-2)*mesh%M) ) &
+                             *( dual%Th(i+(j-1)*dual%M) - dual%Th(i+(j-2)*dual%M) ) &
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j)) &
-                             *( dual%Th(i-1+(j-2)*mesh%M) - dual%Th(i-1+(j-1)*mesh%M) ) &
+                             *( dual%Th(i-1+(j-2)*dual%M) - dual%Th(i-1+(j-1)*dual%M) ) &
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j)) &
-                             *( dual%Th(i-1+(j-1)*mesh%M) - dual%Th(i+(j-1)*mesh%M) ) &
+                             *( dual%Th(i-1+(j-1)*dual%M) - dual%Th(i+(j-1)*dual%M) ) &
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j)) &
-                             *( dual%Th(i+(j-2)*mesh%M) - dual%Th(i-1+(j-2)*mesh%M) ) &
+                             *( dual%Th(i+(j-2)*dual%M) - dual%Th(i-1+(j-2)*dual%M) ) &
                                         )*invCh(i,j)*dt*InvCellVol(i,j)
 
     end do
@@ -452,16 +452,16 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
                                 *(mesh%Ts(i+(j-1)*mesh%M)-mesh%Ts(i+(j-2)*mesh%M)) &
                 !
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
-                *( kappas(i,j) + kappas(i+1,j))*( dual%Ts(i+(j-1)*mesh%M) - dual%Ts(i+(j-2)*mesh%M) ) &
+                *( kappas(i,j) + kappas(i+1,j))*( dual%Ts(i+(j-1)*dual%M) - dual%Ts(i+(j-2)*dual%M) ) &
                 !
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
-                *( kappas(i-1,j) + kappas(i,j))*( dual%Ts(i-1+(j-2)*mesh%M) - dual%Ts(i-1+(j-1)*mesh%M) ) &
+                *( kappas(i-1,j) + kappas(i,j))*( dual%Ts(i-1+(j-2)*dual%M) - dual%Ts(i-1+(j-1)*dual%M) ) &
                 !
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j) &
-                *( kappas(i,j+1) + kappas(i,j))*( dual%Ts(i-1+(j-1)*mesh%M) - dual%Ts(i+(j-1)*mesh%M) ) &
+                *( kappas(i,j+1) + kappas(i,j))*( dual%Ts(i-1+(j-1)*dual%M) - dual%Ts(i+(j-1)*dual%M) ) &
                 !
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
-               *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i+(j-2)*mesh%M) - dual%Ts(i-1+(j-2)*mesh%M) ) &
+               *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i+(j-2)*dual%M) - dual%Ts(i-1+(j-2)*dual%M) ) &
                 ) &
                     + M_TWO*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) & !TODO: Remove InvCellVol *CellVol
                 ) * InvCellVol(i,j) &

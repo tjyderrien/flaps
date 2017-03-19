@@ -1110,8 +1110,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   ! $ OMP END DO
 
   ! $ OMP DO
-  do j=1,Params%N
-    do i=1,Params%M
+  do j=1,mesh%N
+    do i=1,mesh%M
         
         VeX(i,j)=M_ZERO
         VeY(i,j)=M_ZERO
@@ -1147,8 +1147,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   call copy_mesh(mesh, newmesh)
 
   ! $ OMP DO
-  do j=1,Params%N
-    do i=1,Params%M
+  do j=1,mesh%N
+    do i=1,mesh%M
         
         ! initialise variables to calculate Ce, Ch
         DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i+(j-1)*mesh%M))
@@ -1603,7 +1603,7 @@ if(Params%UseMieScattering.eq.1) then
        Ue(i,j)     = UeNew(i,j)
        Uh(i,j)     = UhNew(i,j)
        TsPrev(i,j) = TsOld(i,j)
-       TsOld(i,j)  = mesh%Ts(i+(j-1)*newmesh%M)
+       TsOld(i,j)  = mesh%Ts(i+(j-1)*mesh%M)
        CeOld(i,j)  = Ce(i,j)
        ChOld(i,j)  = Ch(i,j)
 
@@ -1656,12 +1656,12 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, DOSe, DOSh, FermiRatioH, FermiRatioE, &
    !$OMP FermiIndexE, FermiIndexH )
    !$OMP DO  COLLAPSE(2)
-    do j=1,Params%N
-        do i=1,Params%M
+    do j=1,mesh%N
+        do i=1,mesh%M
 
         !         write(*,*) "Esprit es-tu la ?"
-        FermiRatioE(i,j)=mesh%Ne(i+(j-1)*Params%M)/DOSe(i,j)
-        FermiRatioH(i,j)=mesh%Nh(i+(j-1)*Params%M)/DOSh(i,j)
+        FermiRatioE(i,j)=mesh%Ne(i+(j-1)*mesh%M)/DOSe(i,j)
+        FermiRatioH(i,j)=mesh%Nh(i+(j-1)*mesh%M)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
@@ -1913,14 +1913,14 @@ if(Params%UseMieScattering.eq.1) then
        do i=2, Params%M-1 !(optimized)
          !
          !TODO:This is only needed for a reduction, so lets do the reduction directly here
-         TotalElectrons(i,j)= newmesh%Ne(i+(j-1)*Params%M)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+         TotalElectrons(i,j)= newmesh%Ne(i+(j-1)*mesh%M)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
                             -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-         TotalHoles(i,j)    =newmesh%Nh(i+(j-1)*Params%M)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+         TotalHoles(i,j)    =newmesh%Nh(i+(j-1)*mesh%M)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
                             -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
          !
          !
-         TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i+(j-1)*Params%M) &
-                                     +Ch(i,j)*mesh%Th(i+(j-1)*Params%M)+Cs(i,j)*mesh%Ts(i+(j-1)*Params%M)
+         TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i+(j-1)*mesh%M) &
+                                     +Ch(i,j)*mesh%Th(i+(j-1)*mesh%M)+Cs(i,j)*mesh%Ts(i+(j-1)*mesh%M)
          !
          !
          work = intensity(i,j)*(1d0-reflectivity(i,j))
@@ -2129,9 +2129,9 @@ if(Params%UseMieScattering.eq.1) then
         do j=1,Params%N-1
           !
           write(DualDepth%unit, '(9(1E12.5, 3x))', advance="YES") t, xDual(i,j), yDual(i,j), &
-                                                   dual%Te(i+(j-1)*dual%M), dual%Th(i+(j-1)*dual%M), & !5
-                                          dual%Ts(i+(j-1)*dual%M), dual%Ne(i+(j-1)*dual%M), &
-                                                   dual%Nh(i+(j-1)*dual%M), intensityDual(i,j) !9
+                                                   dual%Te(i+(j-1)*mesh%M), dual%Th(i+(j-1)*mesh%M), & !5
+                                          dual%Ts(i+(j-1)*mesh%M), dual%Ne(i+(j-1)*mesh%M), &
+                                                   dual%Nh(i+(j-1)*mesh%M), intensityDual(i,j) !9
           !
         end do
       end do
