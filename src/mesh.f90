@@ -29,11 +29,11 @@ subroutine initmesh( mesh, M, N )
     type(MeshValues), intent(INOUT) :: mesh
     integer, intent(IN) :: M, N
 
-    allocate(mesh%Te(M,N))
-    allocate(mesh%Th(M,N))
-    allocate(mesh%Ts(M,N))
-    allocate(mesh%Ne(M,N))
-    allocate(mesh%Nh(M,N))
+    allocate(mesh%Te(M*N))
+    allocate(mesh%Th(M*N))
+    allocate(mesh%Ts(M*N))
+    allocate(mesh%Ne(M*N))
+    allocate(mesh%Nh(M*N))
 
     mesh%M = M
     mesh%N = N
@@ -60,21 +60,19 @@ subroutine copy_mesh(newmesh, oldmesh)
   type(MeshValues), intent(IN)  :: oldmesh
   type(MeshValues), intent(INOUT) :: newmesh
 
-  integer :: i,j
+  integer :: i
 
  !TODO: Print something to error.dat
   if(newmesh%M /= oldmesh%M .or. newmesh%N /= oldmesh%N ) &
     stop 'Invalid meshes used in copy_mesh'
 
-  !$OMP DO COLLAPSE(2)
-  do j=1, newmesh%N
-    do i=1, newmesh%M
-      newmesh%Te(i,j) = oldmesh%Te(i,j)
-      newmesh%Th(i,j) = oldmesh%Th(i,j)
-      newmesh%Ts(i,j) = oldmesh%Ts(i,j)
-      newmesh%Ne(i,j) = oldmesh%Ne(i,j)
-      newmesh%Nh(i,j) = oldmesh%Nh(i,j)
-    end do
+  !$OMP DO
+  do i=1, newmesh%N*newmesh%M
+      newmesh%Te(i) = oldmesh%Te(i)
+      newmesh%Th(i) = oldmesh%Th(i)
+      newmesh%Ts(i) = oldmesh%Ts(i)
+      newmesh%Ne(i) = oldmesh%Ne(i)
+      newmesh%Nh(i) = oldmesh%Nh(i)
   end do
   !$OMP END DO
 
@@ -131,21 +129,30 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
        weight = M_ONE/ ( InvCellVol(i,j) + InvCellVol(i+1,j) + InvCellVol(i,j+1) + InvCellVol(i+1,j+1) )
 
        ! interpolation bilineaire ponderee par les aires
-       dual%Ne(i,j) = ( mesh%Ne(i,j)* InvCellVol(i,j) + mesh%Ne(i+1,j)*InvCellVol(i+1,j)&
-                      + mesh%Ne(i,j+1)*InvCellVol(i,j+1) + mesh%Ne(i+1,j+1) &
-               *InvCellVol(i+1,j+1) ) * weight
-       dual%Nh(i,j) = ( mesh%Nh(i,j)*InvCellVol(i,j) + mesh%Nh(i+1,j)*InvCellVol(i+1,j) &
-                      + mesh%Nh(i,j+1)*InvCellVol(i,j+1) + mesh%Nh(i+1,j+1) &
-               *InvCellVol(i+1,j+1) ) * weight
-       dual%Te(i,j) = ( mesh%Te(i,j)*InvCellVol(i,j) + mesh%Te(i+1,j)*InvCellVol(i+1,j) &
-                      + mesh%Te(i,j+1)*InvCellVol(i,j+1) + mesh%Te(i+1,j+1) &
-               *InvCellVol(i+1,j+1) ) * weight
-       dual%Th(i,j) = ( mesh%Th(i,j)*InvCellVol(i,j) + mesh%Th(i+1,j)*InvCellVol(i+1,j) &
-                      + mesh%Th(i,j+1)*InvCellVol(i,j+1) + mesh%Th(i+1,j+1) &
-               *InvCellVol(i+1,j+1) ) * weight
-       dual%Ts(i,j) = ( mesh%Ts(i,j)*InvCellVol(i,j) + mesh%Ts(i+1,j)*InvCellVol(i+1,j) &
-                      + mesh%Ts(i,j+1)*InvCellVol(i,j+1) + mesh%Ts(i+1,j+1) &
-               *InvCellVol(i+1,j+1) ) * weight
+       dual%Ne(i+(j-1)*dual%M) = ( mesh%Ne(i  +(j-1)*dual%M)* InvCellVol(i,j)           &
+                                 + mesh%Ne(i+1+(j-1)*dual%M)*InvCellVol(i+1,j)          &
+                                 + mesh%Ne(i  +    j*dual%M)*InvCellVol(i,j+1)          &
+                                 + mesh%Ne(i+1+    j*dual%M)*InvCellVol(i+1,j+1) ) * weight
+
+       dual%Nh(i+(j-1)*dual%M) = ( mesh%Nh(i  +(j-1)*dual%M)*InvCellVol(i,j)            &
+                                 + mesh%Nh(i+1+(j-1)*dual%M)*InvCellVol(i+1,j)          &
+                                 + mesh%Nh(i  +    j*dual%M)*InvCellVol(i,j+1)          &
+                                 + mesh%Nh(i+1+    j*dual%M)*InvCellVol(i+1,j+1) ) * weight
+
+       dual%Te(i+(j-1)*dual%M) = ( mesh%Te(i  +(j-1)*dual%M)*InvCellVol(i,j)            &
+                                 + mesh%Te(i+1+(j-1)*dual%M)*InvCellVol(i+1,j)          &
+                                 + mesh%Te(i  +    j*dual%M)*InvCellVol(i,j+1)          &
+                                 + mesh%Te(i+1+    j*dual%M)*InvCellVol(i+1,j+1) ) * weight
+
+       dual%Th(i+(j-1)*dual%M) = ( mesh%Th(i  +(j-1)*dual%M)*InvCellVol(i,j)            &
+                                 + mesh%Th(i+1+(j-1)*dual%M)*InvCellVol(i+1,j)          &
+                                 + mesh%Th(i  +    j*dual%M)*InvCellVol(i,j+1)          &
+                                 + mesh%Th(i+1+    j*dual%M)*InvCellVol(i+1,j+1) ) * weight
+
+       dual%Ts(i+(j-1)*dual%M) = ( mesh%Ts(i  +(j-1)*dual%M)*InvCellVol(i,j)            &
+                                 + mesh%Ts(i+1+(j-1)*dual%M)*InvCellVol(i+1,j)          &
+                                 + mesh%Ts(i  +    j*dual%M)*InvCellVol(i,j+1)          &
+                                 + mesh%Ts(i+1+    j*dual%M)*InvCellVol(i+1,j+1) ) * weight
        end do
      end do
      !$OMP END DO
@@ -172,36 +179,33 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    Diverged = .false.
     call output_open(ErrorFile%unit, 'output/error.log', (nbiter/=nmin .or. Params%RestartCalc == 1))
     !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t, ErrorFile)
-    !$OMP DO COLLAPSE(2)
+    !$OMP DO
+    do i=1,mesh%M*mesh%N
+      if(isnan(mesh%Te(i))) then
+        write(ErrorFile%unit,*) "Divergence of Te at t=", t, " ind=", i
+        Diverged=.true.
+      end if
+      if(isnan(mesh%Th(i))) then
+        write(ErrorFile%unit,*) "Divergence of Th at t=", t, " ind=", i
+        Diverged=.true.
+      end if
+      if(isnan(mesh%Ts(i))) then
+        write(ErrorFile%unit,*) "Divergence of Ts at t=", t, " ind=", i
+        Diverged=.true.
+      end if
+      if(isnan(mesh%Ne(i))) then
+        write(ErrorFile%unit,*) "Divergence of Ne at t=", t, " ind=", i
+        Diverged=.true.
+      end if
+      if(isnan(mesh%Nh(i))) then
+        write(ErrorFile%unit,*) "Divergence of Nh at t=", t, " ind=", i
+        Diverged=.true.
+      end if
 
-    do i=1,mesh%M
-      do j=1,mesh%N
-        if(isnan(mesh%Te(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-          Diverged=.true.
-        end if
-        if(isnan(mesh%Th(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-          Diverged=.true.
-        end if
-        if(isnan(mesh%Ts(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-          Diverged=.true.
-        end if
-        if(isnan(mesh%Ne(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-          Diverged=.true.
-        end if
-        if(isnan(mesh%Nh(i,j))) then
-          write(ErrorFile%unit,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
-          Diverged=.true.
-        end if
-
-        if(Diverged .eqv. .true.) then
-          write(*,*) "Divergence detected. Please check error.dat for more information."
-          stop
-        end if
-      end do
+      if(Diverged .eqv. .true.) then
+        write(*,*) "Divergence detected. Please check error.dat for more information."
+        call StopProgram ()
+      end if
     end do
     !$OMP END DO
     !$OMP END PARALLEL

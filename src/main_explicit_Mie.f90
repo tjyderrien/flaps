@@ -1094,17 +1094,17 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   
   work = LatticeHeatCapacity(Params%Text)
    ! $ OMP DO
+  newmesh%Te(:)=Params%Text
+  newmesh%Th(:)=Params%Text
+  newmesh%Ts(:)=Params%Text
   do j=1,Params%N
     do i=1,Params%M
-        newmesh%Te(i,j)=Params%Text
-        newmesh%Th(i,j)=Params%Text
-        newmesh%Ts(i,j)=Params%Text
-        TsOld(i,j)=Params%Text
-        TsPrev(i,j)=Params%Text
+      TsOld(i,j)=Params%Text
+      TsPrev(i,j)=Params%Text
 
-        CsOld(i,j)=work
-        CsPrev(i,j)=work
-        CsPrev2(i,j)=work
+      CsOld(i,j)=work
+      CsPrev(i,j)=work
+      CsPrev2(i,j)=work
     end do
   end do
   ! $ OMP END DO
@@ -1119,14 +1119,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         VhY(i,j)=M_ZERO
 
         if(BandBendingInFDTD.eq.1) then
-           newmesh%Ne(i,j)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
+           newmesh%Ne(i+(j-1)*mesh%M)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
                     /(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) &
                     /(M_TWO*M_SQRT2LN2))**2)) &
                   )
-          newmesh%Nh(i,j)=Nh0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
+          newmesh%Nh(i+(j-1)*mesh%M)=Nh0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
                     /((DefectThickness)/(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
                     /(M_TWO*M_SQRT2LN2))**2)) &
@@ -1134,8 +1134,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                     /(M_TWO*M_SQRT2LN2))**2)) &
                   )
         else
-          newmesh%Ne(i,j)=Ne0
-          newmesh%Nh(i,j)=Nh0
+          newmesh%Ne(i+(j-1)*mesh%M)=Ne0
+          newmesh%Nh(i+(j-1)*mesh%M)=Nh0
 !           Ne(i,j)=Ne0 !NeNew(i,j)
 !           Nh(i,j)=Nh0 !NhNew(i,j)
         end if
@@ -1151,10 +1151,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     do i=1,Params%M
         
         ! initialise variables to calculate Ce, Ch
-        DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i,j))
-        DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
-        FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
-        FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
+        DOSe(i,j)=DensityOfState(meDOS, mesh%Te(i+(j-1)*mesh%M))
+        DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i+(j-1)*mesh%M))
+        FermiRatioE(i,j)=mesh%Ne(i+(j-1)*mesh%M)/DOSe(i,j)
+        FermiRatioH(i,j)=mesh%Nh(i+(j-1)*mesh%M)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
@@ -1163,13 +1163,13 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         etah=FermiTableH(FERMI_ETA,FermiIndexH(i,j))
 
         ! calculate semi-classical heat capacity
-        CeOld(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j)) &
+        CeOld(i,j)=1.5d0*mesh%Ne(i+(j-1)*mesh%M)*kb*(FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j)) &
                               /FermiTableE(FERMI_HALF,FermiIndexE(i,j)) &
                   -etae*(M_ONE-(FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j)) &
                               /FermiTableE(FERMI_HALF,FermiIndexE(i,j)))* &
                   (FermiTableE(FERMI_MINUS_HALF,FermiIndexE(i,j)) &
                               /FermiTableE(FERMI_HALF,FermiIndexE(i,j)))))
-        ChOld(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j)) &
+        ChOld(i,j)=1.5d0*mesh%Nh(i+(j-1)*mesh%M)*kb*(FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j)) &
                               /FermiTableH(FERMI_HALF,FermiIndexH(i,j)) &
                   -etah*(M_ONE-(FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j)) &
                               /FermiTableH(FERMI_HALF,FermiIndexH(i,j)))* &
@@ -1181,8 +1181,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         Cs(i,j)=CsPrev(i,j)
 
         
-        UeNew(i,j)=newmesh%Te(i,j)*CeOld(i,j)
-        UhNew(i,j)=newmesh%Th(i,j)*ChOld(i,j)
+        UeNew(i,j)=newmesh%Te(i+(j-1)*mesh%M)*CeOld(i,j)
+        UhNew(i,j)=newmesh%Th(i+(j-1)*mesh%M)*ChOld(i,j)
         
         intensity(i,j)=M_ZERO
         MaxHeating(i,j)=M_ZERO
@@ -1492,15 +1492,15 @@ if(Params%UseMieScattering.eq.1) then
         ! Calcul de Grad(Ne) sur le maillage direct
         ! Première estimation peu stable
         GradNeX(i,j) = M_HALF * InvCellVol(i,j) * &
-                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalN%x(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalS%x(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalW%x(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalE%x(i,j) )
+                      ( (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i  +    j*mesh%M)) * CellAreaN(i,j) * NormalN%x(i,j) &
+                      + (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i  +(j-2)*mesh%M)) * CellAreaS(i,j) * NormalS%x(i,j) &
+                      + (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i-1+(j-1)*mesh%M)) * CellAreaW(i,j) * NormalW%x(i,j) &
+                      + (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i+1+(j-1)*mesh%M)) * CellAreaE(i,j) * NormalE%x(i,j) )
         GradNeY(i,j) = M_HALF * InvCellVol(i,j) * &
-                      ( (mesh%Ne(i,j) + mesh%Ne(i,j+1)) * CellAreaN(i,j) * NormalN%y(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i,j-1)) * CellAreaS(i,j) * NormalS%y(i,j) &
-                      + (mesh%Ne(i,j) + mesh%Ne(i-1,j)) * CellAreaW(i,j) * NormalW%y(i,j) &
-                      * (mesh%Ne(i,j) + mesh%Ne(i+1,j)) * CellAreaE(i,j) * NormalE%y(i,j) )
+                      ( (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i  +    j*mesh%M)) * CellAreaN(i,j) * NormalN%y(i,j) &
+                      + (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i  +(j-2)*mesh%M)) * CellAreaS(i,j) * NormalS%y(i,j) &
+                      + (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i-1+(j-1)*mesh%M)) * CellAreaW(i,j) * NormalW%y(i,j) &
+                      * (mesh%Ne(i+(j-1)*mesh%M) + mesh%Ne(i+1+(j-1)*mesh%M)) * CellAreaE(i,j) * NormalE%y(i,j) )
                       
         ! interpolation lineaire des valeurs de phi sur les bords de cellules
 !         phiN=Ne(i,j)+GradNeX(i,j)*(M_HALF*(xDual(i,j)+xDual(i-1,j)))+GradNeY(i,j)*(M_HALF*(yDual(i,j)+yDual(i-1,j)))
@@ -1603,7 +1603,7 @@ if(Params%UseMieScattering.eq.1) then
        Ue(i,j)     = UeNew(i,j)
        Uh(i,j)     = UhNew(i,j)
        TsPrev(i,j) = TsOld(i,j)
-       TsOld(i,j)  = mesh%Ts(i,j)
+       TsOld(i,j)  = mesh%Ts(i+(j-1)*newmesh%M)
        CeOld(i,j)  = Ce(i,j)
        ChOld(i,j)  = Ch(i,j)
 
@@ -1660,8 +1660,8 @@ if(Params%UseMieScattering.eq.1) then
         do i=1,Params%M
 
         !         write(*,*) "Esprit es-tu la ?"
-        FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
-        FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
+        FermiRatioE(i,j)=mesh%Ne(i+(j-1)*Params%M)/DOSe(i,j)
+        FermiRatioH(i,j)=mesh%Nh(i+(j-1)*Params%M)/DOSh(i,j)
         FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
@@ -1725,7 +1725,7 @@ if(Params%UseMieScattering.eq.1) then
                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
    else !TODO: This is redondant with copy_mesh operation at the begining of the temporal loop !TJYD: True...
-     newmesh%Ne(:,:)=mesh%Ne(:,:)
+     newmesh%Ne(:)=mesh%Ne(:)
    end if
    !
    !
@@ -1736,7 +1736,7 @@ if(Params%UseMieScattering.eq.1) then
                      ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N, &
                      ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
    else !So for this one? 
-     newmesh%Nh(:,:)=mesh%Nh(:,:)
+     newmesh%Nh(:)=mesh%Nh(:)
    endif
    !
    !
@@ -1913,13 +1913,14 @@ if(Params%UseMieScattering.eq.1) then
        do i=2, Params%M-1 !(optimized)
          !
          !TODO:This is only needed for a reduction, so lets do the reduction directly here
-         TotalElectrons(i,j)= newmesh%Ne(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+         TotalElectrons(i,j)= newmesh%Ne(i+(j-1)*Params%M)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
                             -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
-         TotalHoles(i,j)    =newmesh%Nh(i,j)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
+         TotalHoles(i,j)    =newmesh%Nh(i+(j-1)*Params%M)*(0.125d0*(x(i+1,j+1)-x(i-1,j-1))*(y(i-1,j+1)-y(i+1,j-1)) &
                             -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
          !
          !
-         TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
+         TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i+(j-1)*Params%M) &
+                                     +Ch(i,j)*mesh%Th(i+(j-1)*Params%M)+Cs(i,j)*mesh%Ts(i+(j-1)*Params%M)
          !
          !
          work = intensity(i,j)*(1d0-reflectivity(i,j))
@@ -1940,8 +1941,8 @@ if(Params%UseMieScattering.eq.1) then
      !$OMP TotalMeshVolume)
      do j=1,mesh%N
        do i=1,mesh%M
-         NeTotal=NeTotal + mesh%Ne(i,j) * CellVol(i,j)
-         NhTotal=NhTotal + mesh%Nh(i,j) * CellVol(i,j)
+         NeTotal=NeTotal + mesh%Ne(i+(j-1)*mesh%M) * CellVol(i,j)
+         NhTotal=NhTotal + mesh%Nh(i+(j-1)*mesh%M) * CellVol(i,j)
          TotalNumOfE=TotalNumOfE + TotalElectrons(i,j)
          TotalNumOfH=TotalNumOfH + TotalHoles(i,j)
          TotalMeshVolume=TotalMeshVolume+CellVol(i,j)
@@ -1969,8 +1970,8 @@ if(Params%UseMieScattering.eq.1) then
       !$OMP COLLAPSE(2)
       do j=1,Params%N
         do i=1,Params%M
-          if(MaxHeating(i,j) < mesh%Ts(i,j)) then
-            MaxHeating(i,j)=mesh%Ts(i,j)
+          if(MaxHeating(i,j) < mesh%Ts(i+(j-1)*mesh%M)) then
+            MaxHeating(i,j)=mesh%Ts(i+(j-1)*mesh%M)
             MaxHeatingTime(i,j)=t
           end if
         end do
@@ -2006,20 +2007,24 @@ if(Params%UseMieScattering.eq.1) then
         work = Egap_new(i,j) - Egap(i,j)
         ! calculation of the energy contained in the solid
         ElectronEnergy=ElectronEnergy &
-            + (Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) & !kinetic energy
-            + (mesh%Ne(i,j)*work  &
-            + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
+            + (Ce(i,j)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
+            +(Ce(i,j)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) & !kinetic energy
+            + (mesh%Ne(i+(j-1)*mesh%M)*work  &
+            + Egap(i,j)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
               
         ElectronKineticEnergy=ElectronKineticEnergy &
-                 +(Ce(i,j)*(newmesh%Te(i,j)-mesh%Te(i,j))+(Ce(i,j)-CeOld(i,j))*mesh%Te(i,j)) * CellVol(i,j) !kinetic energy
+                 +(Ce(i,j)*(newmesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
+                 +(Ce(i,j)-CeOld(i,j))*mesh%Te(i+(j-1)*mesh%M)) * CellVol(i,j) !kinetic energy
         ElectronPotentialEnergy=ElectronPotentialEnergy &
-                 +(mesh%Ne(i,j)*work  &
-                 + Egap(i,j)*(newmesh%Ne(i,j)-mesh%Ne(i,j))) * CellVol(i,j) !potential energy
+                 +(mesh%Ne(i+(j-1)*mesh%M)*work  &
+                 + Egap(i,j)*(newmesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M))) * CellVol(i,j) !potential energy
 !       ElectronEnergy=ElectronKineticEnergy+ElectronPotentialEnergy !already summed over time
 
-        HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i,j)-mesh%Th(i,j))+(Ch(i,j)-ChOld(i,j))*mesh%Th(i,j)) * CellVol(i,j) !kinetic energy
+        HoleEnergy=HoleEnergy+(Ch(i,j)*(newmesh%Th(i+(j-1)*mesh%M)-mesh%Th(i+(j-1)*mesh%M)) &
+                                        +(Ch(i,j)-ChOld(i,j))*mesh%Th(i+(j-1)*mesh%M)) * CellVol(i,j) !kinetic energy
         
-        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i,j)-mesh%Ts(i,j)))+0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i,j))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
+        LatticeEnergy=LatticeEnergy+((Cs(i,j)*(newmesh%Ts(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))) &
+                                    +0d0*(Cs(i,j)-CsOld(i,j))*mesh%Ts(i+(j-1)*mesh%M))*CellVol(i,j) !dCs/dt=0, 20150426, TJYD.
 
      end do
    end do
@@ -2043,7 +2048,8 @@ if(Params%UseMieScattering.eq.1) then
          write(*,*) "t,i,j,FermiIndexH(i,j)=", t,i,j,FermiIndexH(i,j)
        end if
        if(real(FermiRatioE(i,j)) < M_ZERO .OR. real(FermiRatioH(i,j)) < M_ZERO) then
-         write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j), "Ne,h(i,j)=", mesh%Ne(i,j), mesh%Nh(i,j)
+         write(*,*) "Problem in DOS or Ne. DOS(i,j)=", i,j,DOSe(i,j), DOSh(i,j),  &
+                           "Ne,h(i,j)=", mesh%Ne(i+(j-1)*mesh%M), mesh%Nh(i+(j-1)*mesh%M)
        end if
      end do
    end do
@@ -2087,8 +2093,8 @@ if(Params%UseMieScattering.eq.1) then
      do i=1,Params%M
        do j=1,Params%N
          !
-         write(Depth%unit,'(46(1E12.5,3x))', advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
-                        mesh%Th(i,j), mesh%Ts(i,j), mesh%Ne(i,j), mesh%Nh(i,j), reflectivity(i,j), & !10
+         write(Depth%unit,'(46(1E12.5,3x))', advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i+(j-1)*mesh%M), & !5
+         mesh%Th(i+(j-1)*mesh%M), mesh%Ts(i+(j-1)*mesh%M), mesh%Ne(i+(j-1)*mesh%M), mesh%Nh(i+(j-1)*mesh%M), reflectivity(i,j), & !10
                         absorptionDrudeE(i,j), absorptionDrudeH(i,j), TotalElectrons(i,j), & !13
                         TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !18
                         SourceE(i,j), SourceH(i,j), GainsE(i,j), GainsH(i,j), LossesE(i,j), & !23
@@ -2122,8 +2128,10 @@ if(Params%UseMieScattering.eq.1) then
       do i=1,Params%M-1
         do j=1,Params%N-1
           !
-          write(DualDepth%unit, '(9(1E12.5, 3x))', advance="YES") t, xDual(i,j), yDual(i,j), dual%Te(i,j), dual%Th(i,j), & !5
-                                          dual%Ts(i,j), dual%Ne(i,j), dual%Nh(i,j), intensityDual(i,j) !9
+          write(DualDepth%unit, '(9(1E12.5, 3x))', advance="YES") t, xDual(i,j), yDual(i,j), &
+                                                   dual%Te(i+(j-1)*dual%M), dual%Th(i+(j-1)*dual%M), & !5
+                                          dual%Ts(i+(j-1)*dual%M), dual%Ne(i+(j-1)*dual%M), &
+                                                   dual%Nh(i+(j-1)*dual%M), intensityDual(i,j) !9
           !
         end do
       end do
@@ -2168,9 +2176,9 @@ if(Params%UseMieScattering.eq.1) then
        close(TimeMax%unit)
 
        call output_open(TimeApex%unit, 'output/TimeApex.dat', (nbiter/=1 .or. Params%RestartCalc == 1))         ! format 884
-       write(TimeApex%unit,884, advance="YES") t, mesh%Te(1,Params%N/2), mesh%Th(1,Params%N/2), &
-              mesh%Ts(1,Params%N/2), mesh%Ne(1,Params%N/2), &                        !5
-              mesh%Nh(1,Params%N/2), intensity(1,Params%N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
+       write(TimeApex%unit,884, advance="YES") t, mesh%Te(1+(Params%N/2-1)*mesh%M), mesh%Th(1+(Params%N/2-1)*mesh%M), &
+              mesh%Ts(1+(Params%N/2-1)*mesh%M), mesh%Ne(1+(Params%N/2-1)*mesh%M), &                        !5
+              mesh%Nh(1+(Params%N/2-1)*mesh%M), intensity(1,Params%N/2), TotalLaserEnergy, TotalThermalEnergy, &        !9
               SourceE(1,Params%N/2), GainsE(1,Params%N/2), SourceH(1,Params%N/2), GainsH(1,Params%N/2), Egap(1,Params%N/2), &                !14
               real(FermiIndexE(1,Params%N/2)),&
                real(FermiIndexH(1,Params%N/2)), Ce(2,Params%N/2), &                !17
@@ -2184,9 +2192,9 @@ if(Params%UseMieScattering.eq.1) then
        close(TimeApex%unit)
 
        call output_open(TimeUp%unit, 'output/TimeUp.dat', (nbiter/=1 .or. Params%RestartCalc == 1))          ! format 883
-       write(TimeUp%unit,883, advance="YES") t, mesh%Te(Params%M/2,Params%N), mesh%Th(Params%M/2,Params%N),&
-                          mesh%Ts(Params%M/2,Params%N), mesh%Ne(Params%M/2,Params%N), &
-              mesh%Nh(Params%M/2,Params%N), intensity(Params%M/2,Params%N), TotalLaserEnergy, TotalThermalEnergy, &
+       write(TimeUp%unit,883, advance="YES") t, mesh%Te(Params%M/2+(Params%N-1)*mesh%M), mesh%Th(Params%M/2+(Params%N-1)*mesh%M),&
+                          mesh%Ts(Params%M/2+(Params%N-1)*mesh%M), mesh%Ne(Params%M/2+(Params%N-1)*mesh%M), &
+              mesh%Nh(Params%M/2+(Params%N-1)*mesh%M), intensity(Params%M/2,Params%N), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,Params%N), GainsE(Params%M/2,Params%N), SourceH(Params%M/2,Params%N),&
                GainsH(Params%M/2,Params%N), Egap(Params%M/2,Params%N), &
               real(FermiIndexE(Params%M/2,Params%N)), real(FermiIndexH(Params%M/2,Params%N))
@@ -2199,8 +2207,8 @@ if(Params%UseMieScattering.eq.1) then
 
 
       call output_open(TimeBottom%unit, 'output/TimeBottom.dat', (nbiter/=1 .or. Params%RestartCalc == 1))         ! format 882
-      write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2,1), mesh%Th(Params%M/2,1), mesh%Ne(Params%M/2,1), &
-              mesh%Nh(Params%M/2,1), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
+      write(TimeBottom%unit,882, advance="YES") t, mesh%Te(Params%M/2), mesh%Th(Params%M/2), mesh%Ne(Params%M/2), &
+              mesh%Nh(Params%M/2), intensity(Params%M/2,1), TotalLaserEnergy, TotalThermalEnergy, &
               SourceE(Params%M/2,1), GainsE(Params%M/2,1), SourceH(Params%M/2,1), GainsH(Params%M/2,1), Egap(Params%M/2,1), &
               real(FermiIndexE(Params%M/2,1)), real(FermiIndexH(Params%M/2,1))
               

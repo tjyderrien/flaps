@@ -56,43 +56,43 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
     do i=2, mesh%M-1
 
      ! diffusion is separated from drift
-     newmesh%Ne(i,j) = mesh%Ne(i,j) + dt*( GainsE(i,j)-LossesE(i,j) )
-     newmesh%Ne(i,j) = newmesh%Ne(i,j) + M_HALF*dt*InvCellVol(i,j)*( &
+     newmesh%Ne(i+(j-1)*mesh%M) = mesh%Ne(i+(j-1)*mesh%M) + dt*( GainsE(i,j)-LossesE(i,j) )
+     newmesh%Ne(i+(j-1)*mesh%M) = newmesh%Ne(i+(j-1)*mesh%M) + M_HALF*dt*InvCellVol(i,j)*( &
                ShapeFactorNormalE(i,j) &
               * ( &
                  ! direct diffusion operator over irregular mesh
-                 ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1,j)-mesh%Ne(i,j) )* NormalE2(i,j) &
+                 ( diffusionE(i,j)+diffusionE(i+1,j) )*( mesh%Ne(i+1+(j-1)*mesh%M)-mesh%Ne(i+(j-1)*mesh%M) )* NormalE2(i,j) &
 
                  ! Cross-diffusion from
                  ! [S. Mathur, J. Murthy, A pressure-based method for unstructured
                  ! meshes, Numerical Heat Transfert, Part B 31 (1997) 195–215]
 
                  + ShapeFactorTangentE(i,j) &
-                 *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i,j) - dual%Ne(i,j-1))  &
+                 *(diffusionE(i,j)+diffusionE(i+1,j))*(dual%Ne(i+(j-1)*mesh%M) - dual%Ne(i+(j-2)*mesh%M))  &
                                                                                                     ) &
               + ShapeFactorNormalW(i,j) &
                 *( &
                    ! direct diffusion operator over irregular mesh
-                  -( diffusionE(i-1,j)+diffusionE(i,j) )*( mesh%Ne(i,j)-mesh%Ne(i-1,j) )* NormalW2(i,j)  &
+                  -( diffusionE(i-1,j)+diffusionE(i,j) )*( mesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i-1+(j-1)*mesh%M) )* NormalW2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentW(i,j) &
-                  *(diffusionE(i-1,j)+diffusionE(i,j))*( dual%Ne(i-1,j-1) - dual%Ne(i-1,j) ) &
+                  *(diffusionE(i-1,j)+diffusionE(i,j))*( dual%Ne(i-1+(j-2)*mesh%M) - dual%Ne(i-1+(j-1)*mesh%M) ) &
                                                                                                          ) &
               + ShapeFactorNormalN(i,j) &
                 *( &
                    ! direct diffusion operator over irregular mesh
-                  +( diffusionE(i,j+1)+diffusionE(i,j) )*( mesh%Ne(i,j+1)-mesh%Ne(i,j) )* NormalN2(i,j)  &
+                  +( diffusionE(i,j+1)+diffusionE(i,j) )*( mesh%Ne(i+j*mesh%M)-mesh%Ne(i+(j-1)*mesh%M) )* NormalN2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentN(i,j) &
-                  *(diffusionE(i,j+1)+diffusionE(i,j))*( dual%Ne(i-1,j) - dual%Ne(i,j) ) &
+                  *(diffusionE(i,j+1)+diffusionE(i,j))*( dual%Ne(i-1+(j-1)*mesh%M) - dual%Ne(i+(j-1)*mesh%M) ) &
                                                                                                      ) &
               + ShapeFactorNormalS(i,j) &
                 *( &
                    ! direct diffusion operator over irregular mesh
-                  -( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(i,j)-mesh%Ne(i,j-1) )* NormalS2(i,j)  &
+                  -( diffusionE(i,j-1)+diffusionE(i,j) )*( mesh%Ne(i+(j-1)*mesh%M)-mesh%Ne(i+(j-2)*mesh%M) )* NormalS2(i,j)  &
                    ! Cross-diffusion from [Mathur and Murthy (1997)]
                   +ShapeFactorTangentS(i,j) &
-                  *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i,j-1) - dual%Ne(i-1,j-1) ) ) )
+                  *(diffusionE(i,j-1)+diffusionE(i,j))*( dual%Ne(i+(j-2)*mesh%M) - dual%Ne(i-1+(j-2)*mesh%M) ) ) )
 
 
             ! convection
@@ -157,8 +157,8 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
 
       !TODO: This can be further optimised
 
-      newmesh%Nh(i,j) = mesh%Nh(i,j) + dt*( GainsH(i,j)-LossesH(i,j) )
-      newmesh%Nh(i,j) = newmesh%Nh(i,j) + M_HALF*dt*InvCellVol(i,j)*( &
+      newmesh%Nh(i+(j-1)*mesh%M) = mesh%Nh(i+(j-1)*mesh%M) + dt*( GainsH(i,j)-LossesH(i,j) )
+      newmesh%Nh(i+(j-1)*mesh%M) = newmesh%Nh(i+(j-1)*mesh%M) + M_HALF*dt*InvCellVol(i,j)*( &
               ! drift
               !TODO: Warning, the commented code will have a problem of a factror ofd 0.5
 !               -((0.5d0*(JhX(i+1,j)+JhX(i,j))*NormalEx(i,j)+0.5d0*(JhY(i+1,j) &
@@ -178,23 +178,27 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
 !               -0.5d0*(diffusionH(i,j)+diffusionH(i,j-1))*(Nh(i,j)-Nh(i,j-1))*CellAreaS(i,j)/(x(i,j)**2 &
 !               -2d0*x(i,j)*x(i,j-1)+x(i,j-1)**2+y(i,j)**2-2d0*y(i,j)*y(i,j-1)+y(i,j-1)**2)**(0.5d0)) &
               ! diffusion on irregular mesh
-                NormalE2(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(mesh%Nh(i+1,j)-mesh%Nh(i,j)) &
+                NormalE2(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j)) &
+                           *(mesh%Nh(i+1+(j-1)*mesh%M)-mesh%Nh(i+(j-1)*mesh%M)) &
 !               - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i,j+1)-0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i-1,j)) &
+              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j)) &
+                           *(mesh%Nh(i+(j-1)*mesh%M)-mesh%Nh(i-1+(j-1)*mesh%M)) &
 !               - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j))*(0.25d0*Nh(i,j+1)+0.25d0*Nh(i-1,j+1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(mesh%Nh(i,j+1)-mesh%Nh(i,j)) &
+              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j)) &
+                           *(mesh%Nh(i+j*mesh%M)-mesh%Nh(i+(j-1)*mesh%M)) &
 !               - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j+1)+0.25d0*Nh(i+1,j)-0.25d0*Nh(i-1,j)-0.25d0*Nh(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(mesh%Nh(i,j)-mesh%Nh(i,j-1)) &
+              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) &
+                           *(mesh%Nh(i+(j-1)*mesh%M)-mesh%Nh(i+(j-2)*mesh%M)) &
 !               - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j))*(0.25d0*Nh(i+1,j)+0.25d0*Nh(i+1,j-1)-0.25d0*Nh(i-1,j-1)-0.25d0*Nh(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
 !                   ! Cross-diffusion from [Mathur and Murthy (1997)]
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(diffusionH(i,j)+diffusionH(i+1,j)) &
-                    *( dual%Nh(i,j) - dual%Nh(i,j-1) ) &
+                    *( dual%Nh(i+(j-1)*mesh%M) - dual%Nh(i+(j-2)*mesh%M) ) &
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(diffusionH(i-1,j)+diffusionH(i,j)) &
-                    *( dual%Nh(i-1,j-1) - dual%Nh(i-1,j) ) &
+                    *( dual%Nh(i-1+(j-2)*mesh%M) - dual%Nh(i-1+(j-1)*mesh%M) ) &
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(diffusionH(i,j+1)+diffusionH(i,j)) &
-                    *( dual%Nh(i-1,j) - dual%Nh(i,j) ) &
+                    *( dual%Nh(i-1+(j-1)*mesh%M) - dual%Nh(i+(j-1)*mesh%M) ) &
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(diffusionH(i,j-1)+diffusionH(i,j)) &
-                    *( dual%Nh(i,j-1) - dual%Nh(i-1,j-1) ) &
+                    *( dual%Nh(i+(j-2)*mesh%M) - dual%Nh(i-1+(j-2)*mesh%M) ) &
               )
     end do
   end do
@@ -240,20 +244,20 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
     do i=2, mesh%M-1
 
       !TODO: This can be further optimised
-      newmesh%Te(i,j) = mesh%Te(i,j) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j)
-      newmesh%Te(i,j) = newmesh%Te(i,j) + M_HALF *invCe(i,j) * dt * InvCellVol(i,j)*( &
-              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1,j)-mesh%Te(i,j)) &
-              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i-1,j)) &
-              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i,j+1)-mesh%Te(i,j)) &
-              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j))*(mesh%Te(i,j)-mesh%Te(i,j-1)) &
+      newmesh%Te(i+(j-1)*mesh%M) = mesh%Te(i+(j-1)*mesh%M) + dt * (-CouplingE(i,j)+SourceE(i,j))*invCe(i,j)
+      newmesh%Te(i+(j-1)*mesh%M) = newmesh%Te(i+(j-1)*mesh%M) + M_HALF *invCe(i,j) * dt * InvCellVol(i,j)*( &
+      + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j))*(mesh%Te(i+1+(j-1)*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
+      - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j))*(mesh%Te(i+(j-1)*mesh%M)-mesh%Te(i-1+(j-1)*mesh%M)) &
+      + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j))*(mesh%Te(i+j*mesh%M)-mesh%Te(i+(j-1)*mesh%M)) &
+      - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j))*(mesh%Te(i+(j-1)*mesh%M)-mesh%Te(i+(j-2)*mesh%M)) &
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappae(i,j)+kappae(i+1,j)) &
-                    *( dual%Te(i,j) - dual%Te(i,j-1) ) &
+                    *( dual%Te(i+(j-1)*mesh%M) - dual%Te(i+(j-2)*mesh%M) ) &
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappae(i-1,j)+kappae(i,j)) &
-                    *( dual%Te(i-1,j-1) - dual%Te(i-1,j) ) &
+                    *( dual%Te(i-1+(j-2)*mesh%M) - dual%Te(i-1+(j-1)*mesh%M) ) &
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappae(i,j+1)+kappae(i,j)) &
-                    *( dual%Te(i-1,j) - dual%Te(i,j) ) &
+                    *( dual%Te(i-1+(j-1)*mesh%M) - dual%Te(i+(j-1)*mesh%M) ) &
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappae(i,j-1)+kappae(i,j)) &
-                    *( dual%Te(i,j-1) - dual%Te(i-1,j-1) ) ) !source
+                    *( dual%Te(i+(j-2)*mesh%M) - dual%Te(i-2+(j-2)*mesh%M) ) ) !source
     end do
   end do
   !$OMP END DO
@@ -298,21 +302,29 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
     do i=2, mesh%M-1
 
   !TODO: This can be further optimised
-        newmesh%Th(i,j) = mesh%Th(i,j) + (-CouplingH(i,j)+SourceH(i,j))*invCh(i,j)*dt
-        newmesh%Th(i,j) = newmesh%Th(i,j)+ M_HALF*( &
-              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j))*(mesh%Th(i+1,j)-mesh%Th(i,j))  &
+        newmesh%Th(i+(j-1)*mesh%M) = mesh%Th(i+(j-1)*mesh%M) + (-CouplingH(i,j)+SourceH(i,j))*invCh(i,j)*dt
+        newmesh%Th(i+(j-1)*mesh%M) = newmesh%Th(i+(j-1)*mesh%M)+ M_HALF*( &
+              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j)) &
+                          *(mesh%Th(i+1+(j-1)*mesh%M)-mesh%Th(i+(j-1)*mesh%M))  &
 !                   - 0.5d0*(CurviEx(i,j)*TangentEx(i,j)+CurviEy(i,j)*TangentEy(i,j))*CellAreaE(i,j)*(kappah(i,j)+kappah(i+1,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i,j+1)-0.25d0*Th(i+1,j-1)-0.25d0*Th(i,j-1))/(CurviEx(i,j)*NormalEx(i,j)+CurviEy(i,j)*NormalEy(i,j))/DistDualE(i,j) &
-              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i-1,j))  &
+              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j)) &
+                          *(mesh%Th(i+(j-1)*mesh%M)-mesh%Th(i-1+(j-1)*mesh%M))  &
 !                   - 0.5d0*(CurviWx(i,j)*TangentWx(i,j)+CurviWy(i,j)*TangentWy(i,j))*CellAreaW(i,j)*(kappah(i-1,j)+kappah(i,j))*(0.25d0*Th(i,j+1)+0.25d0*Th(i-1,j+1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i,j-1))/(CurviWx(i,j)*NormalWx(i,j)+CurviWy(i,j)*NormalWy(i,j))/DistDualW(i,j) &
-              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j))*(mesh%Th(i,j+1)-mesh%Th(i,j))  &
+              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j)) &
+                          *(mesh%Th(i+j*mesh%M)-mesh%Th(i+(j-1)*mesh%M))  &
 !                   - 0.5d0*(CurviNx(i,j)*TangentNx(i,j)+CurviNy(i,j)*TangentNy(i,j))*CellAreaN(i,j)*(kappah(i,j+1)+kappah(i,j))*(0.25d0*Th(i+1,j+1)+0.25d0*Th(i+1,j)-0.25d0*Th(i-1,j)-0.25d0*Th(i-1,j+1))/(CurviNx(i,j)*NormalNx(i,j)+CurviNy(i,j)*NormalNy(i,j))/DistDualN(i,j) &
-              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j))*(mesh%Th(i,j)-mesh%Th(i,j-1))  &
+              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j)) &
+                          *(mesh%Th(i+(j-1)*mesh%M)-mesh%Th(i+(j-2)*mesh%M))  &
 !                   - 0.5d0*(CurviSx(i,j)*TangentSx(i,j)+CurviSy(i,j)*TangentSy(i,j))*CellAreaS(i,j)*(kappah(i,j-1)+kappah(i,j))*(0.25d0*Th(i+1,j)+0.25d0*Th(i+1,j-1)-0.25d0*Th(i-1,j-1)-0.25d0*Th(i-1,j))/(CurviSx(i,j)*NormalSx(i,j)+CurviSy(i,j)*NormalSy(i,j))/DistDualS(i,j) &
-              + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j))*( dual%Th(i,j) - dual%Th(i,j-1) ) &
-              + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j))*( dual%Th(i-1,j-1) - dual%Th(i-1,j) ) &
-              + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j))*( dual%Th(i-1,j) - dual%Th(i,j) ) &
-              + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j))*( dual%Th(i,j-1) - dual%Th(i-1,j-1) ) &
-              )*invCh(i,j)*dt*InvCellVol(i,j)
+              + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j)*(kappah(i,j)+kappah(i+1,j)) &
+                             *( dual%Th(i+(j-1)*mesh%M) - dual%Th(i+(j-2)*mesh%M) ) &
+              + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j)*(kappah(i-1,j)+kappah(i,j)) &
+                             *( dual%Th(i-1+(j-2)*mesh%M) - dual%Th(i-1+(j-1)*mesh%M) ) &
+              + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j)*(kappah(i,j+1)+kappah(i,j)) &
+                             *( dual%Th(i-1+(j-1)*mesh%M) - dual%Th(i+(j-1)*mesh%M) ) &
+              + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j)*(kappah(i,j-1)+kappah(i,j)) &
+                             *( dual%Th(i+(j-2)*mesh%M) - dual%Th(i-1+(j-2)*mesh%M) ) &
+                                        )*invCh(i,j)*dt*InvCellVol(i,j)
 
     end do
   end do
@@ -426,26 +438,30 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 
 !         ! third order precision in time, with variable timesteps
 
-        newmesh%Ts(i,j) = ((M_HALF*( (&
-              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*( kappas(i,j)+kappas(i+1,j))*(mesh%Ts(i+1,j)-mesh%Ts(i,j)) &
+        newmesh%Ts(i+(j-1)*mesh%M) = ((M_HALF*( (&
+              + NormalE2(i,j)*ShapeFactorNormalE(i,j)*( kappas(i,j)+kappas(i+1,j)) &
+                              *(mesh%Ts(i+1+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M)) &
                 !
-              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*( kappas(i-1,j)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i-1,j)) &
+              - NormalW2(i,j)*ShapeFactorNormalW(i,j)*( kappas(i-1,j)+kappas(i,j)) &
+                              *(mesh%Ts(i+(j-1)*mesh%M)-mesh%Ts(i-1+(j-1)*mesh%M)) &
                 !
-              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*( kappas(i,j+1)+kappas(i,j))*(mesh%Ts(i,j+1)-mesh%Ts(i,j)) &
+              + NormalN2(i,j)*ShapeFactorNormalN(i,j)*( kappas(i,j+1)+kappas(i,j)) &
+                                    *(mesh%Ts(i+j*mesh%M)-mesh%Ts(i+(j-1)*mesh%M)) &
                 !
-              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*( kappas(i,j-1)+kappas(i,j))*(mesh%Ts(i,j)-mesh%Ts(i,j-1)) &
+              - NormalS2(i,j)*ShapeFactorNormalS(i,j)*( kappas(i,j-1)+kappas(i,j)) &
+                                *(mesh%Ts(i+(j-1)*mesh%M)-mesh%Ts(i+(j-2)*mesh%M)) &
                 !
               + ShapeFactorTangentE(i,j)*ShapeFactorNormalE(i,j) &
-                *( kappas(i,j) + kappas(i+1,j))*( dual%Ts(i,j) - dual%Ts(i,j-1) ) &
+                *( kappas(i,j) + kappas(i+1,j))*( dual%Ts(i+(j-1)*mesh%M) - dual%Ts(i+(j-2)*mesh%M) ) &
                 !
               + ShapeFactorTangentW(i,j)*ShapeFactorNormalW(i,j) &
-                *( kappas(i-1,j) + kappas(i,j))*( dual%Ts(i-1,j-1) - dual%Ts(i-1,j) ) &
+                *( kappas(i-1,j) + kappas(i,j))*( dual%Ts(i-1+(j-2)*mesh%M) - dual%Ts(i-1+(j-1)*mesh%M) ) &
                 !
               + ShapeFactorTangentN(i,j)*ShapeFactorNormalN(i,j) &
-                *( kappas(i,j+1) + kappas(i,j))*( dual%Ts(i-1,j) - dual%Ts(i,j) ) &
+                *( kappas(i,j+1) + kappas(i,j))*( dual%Ts(i-1+(j-1)*mesh%M) - dual%Ts(i+(j-1)*mesh%M) ) &
                 !
               + ShapeFactorTangentS(i,j)*ShapeFactorNormalS(i,j) &
-               *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i,j-1) - dual%Ts(i-1,j-1) ) &
+               *( kappas(i,j-1) + kappas(i,j))*( dual%Ts(i+(j-2)*mesh%M) - dual%Ts(i-1+(j-2)*mesh%M) ) &
                 ) &
                     + M_TWO*(CouplingE(i,j)+CouplingH(i,j)) * CellVol(i,j) & !TODO: Remove InvCellVol *CellVol
                 ) * InvCellVol(i,j) &
@@ -456,7 +472,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 !                     / (h3 ** 2 - h1 * h3 - h2 * h3 + h1 * h2) * CsPrev2(i,j))*0d0 & !20150426-Temporal variation of Cs is killed here.
 !                     * Ts(i,j)
                     ) *invCs(i,j) &
-                    + w1 * mesh%Ts(i,j) - w2 * TsOld(i,j) + w3 * TsPrev(i,j)) * w4
+                    + w1 * mesh%Ts(i+(j-1)*mesh%M) - w2 * TsOld(i,j) + w3 * TsPrev(i,j)) * w4
 !                    ) / Cs(i,j) - h2 * h3 / h1 / (-h3 + h1) / dt2 * Ts(i,j) &
 !                    - h1 * h3 / h2 / dt2 / dt3 * TsOld(i,j) &
 !                    + h1 * h2 / (h3 * ( h3 - h1 - h2 ) + h1 * h2) * TsPrev(i,j)) &
@@ -723,8 +739,8 @@ end subroutine computeUh_alt
 ! This routine computes Ue for the entire mesh
 ! We assume that we are in a OMP parallel environement
 subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
-                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
+                              FermiTableE, FermiTableH, FermiIndexE, FermiIndexH )
+  use Fermi_m
   use Maths_m
   use Profiler_m
   use Types_m
@@ -738,22 +754,25 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
   real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
   integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
   integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-  integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
 
   integer :: i, j
   type(Profiler), save :: prof
 
   call Profiler_start(prof, 'COMPUTE_CONV')
 
-  !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh,UeNew, Ue, FermiTableE, ColFermiThreeHalf, FermiIndexE, ColFermiHalf, &
+  !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh,UeNew, Ue, FermiTableE, FermiIndexE, &
   !$OMP invCe, UhNew, Uh, FermiTableH, FermiIndexH, invCh)
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
     do i=2, mesh%M-1
-    newmesh%Te(i,j) = mesh%Te(i,j) + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i,j)*(newmesh%Ne(i,j) - mesh%Ne(i,j)) &
-            *FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)) ) * invCe(i,j)
-    newmesh%Th(i,j) = mesh%Th(i,j) + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i,j)*(newmesh%Nh(i,j) - mesh%Nh(i,j)) &
-            *FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j)) ) * invCh(i,j)
+    newmesh%Te(i+(j-1)*mesh%M) = mesh%Te(i+(j-1)*mesh%M)  &
+                            + ((UeNew(i,j) -  Ue(i,j))-1.5d0*kb*mesh%Te(i+(j-1)*mesh%M) &
+                                                  *(newmesh%Ne(i+(j-1)*mesh%M) - mesh%Ne(i+(j-1)*mesh%M)) &
+            *FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j))/FermiTableE(FERMI_HALF,FermiIndexE(i,j)) ) * invCe(i,j)
+    newmesh%Th(i+(j-1)*mesh%M) = mesh%Th(i+(j-1)*mesh%M) &
+                           + ((UhNew(i,j) -  Uh(i,j))-1.5d0*kb*mesh%Th(i+(j-1)*mesh%M) &
+                                                  *(newmesh%Nh(i+(j-1)*mesh%M) - mesh%Nh(i+(j-1)*mesh%M)) &
+            *FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j))/FermiTableH(FERMI_HALF,FermiIndexH(i,j)) ) * invCh(i,j)
     end do
   end do
   !$OMP END DO
@@ -790,23 +809,23 @@ subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, Dri
     do i=1, newmesh%M !North and South boundaries
       ! finite differences finite difference fashion
       if(DriftOn.eq.0) then
-        newmesh%Ne(i,1)=newmesh%Ne(i,2)
-        newmesh%Nh(i,1)=newmesh%Nh(i,2)
-        newmesh%Ne(i,newmesh%N)=newmesh%Ne(i,newmesh%N-1)
-        newmesh%Nh(i,newmesh%N)=newmesh%Nh(i,newmesh%N-1)
+        newmesh%Ne(i)=newmesh%Ne(i+newmesh%M)
+        newmesh%Nh(i)=newmesh%Nh(i+newmesh%M)
+        newmesh%Ne(i+(newmesh%N-1)*newmesh%M)=newmesh%Ne(i+(newmesh%N-2)*newmesh%M)
+        newmesh%Nh(i+(newmesh%N-1)*newmesh%M)=newmesh%Nh(i+(newmesh%N-2)*newmesh%M)
       end if
 
       UeNew(i,1)=UeNew(i,2)
       UhNew(i,1)=UhNew(i,2)
-      newmesh%Te(i,1)=newmesh%Te(i,2)
-      newmesh%Th(i,1)=newmesh%Th(i,2)
-      newmesh%Ts(i,1)=newmesh%Ts(i,2)
+      newmesh%Te(i)=newmesh%Te(i+newmesh%M)
+      newmesh%Th(i)=newmesh%Th(i+newmesh%M)
+      newmesh%Ts(i)=newmesh%Ts(i+newmesh%M)
 
       UeNew(i,newmesh%N)=UeNew(i,newmesh%N-1)
       UhNew(i,newmesh%N)=UhNew(i,newmesh%N-1)
-      newmesh%Te(i,newmesh%N)=newmesh%Te(i,newmesh%N-1)
-      newmesh%Th(i,newmesh%N)=newmesh%Th(i,newmesh%N-1)
-      newmesh%Ts(i,newmesh%N)=newmesh%Ts(i,newmesh%N-1)
+      newmesh%Te(i+(newmesh%N-1)*newmesh%M)=newmesh%Te(i+(newmesh%N-2)*newmesh%M)
+      newmesh%Th(i+(newmesh%N-1)*newmesh%M)=newmesh%Th(i+(newmesh%N-2)*newmesh%M)
+      newmesh%Ts(i+(newmesh%N-1)*newmesh%M)=newmesh%Ts(i+(newmesh%N-2)*newmesh%M)
         ! includes also the corners... WHy are not they written?
 
     !         potential(i,1)=0d0 !(0d0,0d0)
@@ -833,23 +852,23 @@ subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, Dri
 
       UeNew(1,j)=UeNew(2,j)
       UhNew(1,j)=UhNew(2,j)
-      newmesh%Te(1,j)=newmesh%Te(2,j)
-      newmesh%Th(1,j)=newmesh%Th(2,j)
-      newmesh%Ts(1,j)=newmesh%Ts(2,j)
+      newmesh%Te(1+(j-1)*newmesh%M)=newmesh%Te(2+(j-1)*newmesh%M)
+      newmesh%Th(1+(j-1)*newmesh%M)=newmesh%Th(2+(j-1)*newmesh%M)
+      newmesh%Ts(1+(j-1)*newmesh%M)=newmesh%Ts(2+(j-1)*newmesh%M)
 
-      newmesh%Te(newmesh%M,j)=newmesh%Te(newmesh%M-1,j)
-      newmesh%Th(newmesh%M,j)=newmesh%Th(newmesh%M-1,j)
-      newmesh%Ts(newmesh%M,j)=newmesh%Ts(newmesh%M-1,j) !cooling by diffusion from outside, TsNew(M-1,j)
+      newmesh%Te(j*newmesh%M)=newmesh%Te(j*newmesh%M-1)
+      newmesh%Th(j*newmesh%M)=newmesh%Th(j*newmesh%M-1)
+      newmesh%Ts(j*newmesh%M)=newmesh%Ts(j*newmesh%M-1) !cooling by diffusion from outside, TsNew(M-1,j)
 
     !       potential(1,j)=0d0 !(0d0, 0d0)
     !       potential(M,j)=potential0 !(potential0, 0d0)
 
       if(DriftOn.eq.0) then
-        newmesh%Ne(1,j)=newmesh%Ne(2,j)
-        newmesh%Nh(1,j)=newmesh%Nh(2,j)
+        newmesh%Ne(1+(j-1)*newmesh%M)=newmesh%Ne(2+(j-1)*newmesh%M)
+        newmesh%Nh(1+(j-1)*newmesh%M)=newmesh%Nh(2+(j-1)*newmesh%M)
         ! conditions on the cone base - most important
-        newmesh%Ne(newmesh%M,j)=newmesh%Ne(newmesh%M-1,j) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
-        newmesh%Nh(newmesh%M,j)=newmesh%Nh(newmesh%M-1,j) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+        newmesh%Ne(j*newmesh%M)=newmesh%Ne(j*newmesh%M-1) !Ne0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
+        newmesh%Nh(j*newmesh%M)=newmesh%Nh(j*newmesh%M-1) !Nh0 replace by dynamic bnd condition with flux equal to the one of cell(M-1,j)
       end if
 
       !TODO: Could we clean up these comments? TJYD (Oct 2, 2016): Were they already commented? 

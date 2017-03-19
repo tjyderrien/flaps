@@ -69,33 +69,23 @@ module Restart_m
 
       read(unit,*, end=999) t, iter
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          read(unit,*, end=999) mesh%Te(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        read(unit,*, end=999) mesh%Te(i)
       end do
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          read(unit,*, end=999) mesh%Th(i,j)
-        end do
+      do j=1, mesh%n*M*mesh%M
+        read(unit,*, end=999) mesh%Th(i)
       end do
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          read(unit,*, end=999) mesh%Ts(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        read(unit,*, end=999) mesh%Ts(i)
       end do
-      do j=1, mesh%N
-        do i=1, mesh%M
-          read(unit,*, end=999) mesh%Ne(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        read(unit,*, end=999) mesh%Ne(i)
       end do
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          read(unit,*, end=999) mesh%Nh(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        read(unit,*, end=999) mesh%Nh(i)
       end do
 
       do j=1, mesh%N
@@ -187,34 +177,24 @@ module Restart_m
       write(unit,*) mesh%N, mesh%M
       write(unit,*) t, iter
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          write(unit,*) mesh%Te(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        write(unit,*) mesh%Te(i)
       end do
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          write(unit,*) mesh%Th(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        write(unit,*) mesh%Th(i)
       end do
 
-       do j=1, mesh%N
-        do i=1, mesh%M
-          write(unit,*) mesh%Ts(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        write(unit,*) mesh%Ts(i)
       end do
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          write(unit,*) mesh%Ne(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        write(unit,*) mesh%Ne(i)
       end do
 
-      do j=1, mesh%N
-        do i=1, mesh%M
-          write(unit,*) mesh%Nh(i,j)
-        end do
+      do j=1, mesh%N*mesh%M
+        write(unit,*) mesh%Nh(i)
       end do
 
       do j=1, mesh%N

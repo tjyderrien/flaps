@@ -140,7 +140,7 @@ module Material_m
     subroutine evaluate_bandgap(this, mesh, N, Ts, Eg)
       type(Material),   intent(in)    :: this
       type(MeshValues), intent(in)    :: mesh
-      real(8),          intent(in)    :: N(:,:), Ts(:,:)
+      real(8),          intent(in)    :: N(:), Ts(:)
       real(8),          intent(out)   :: Eg(:,:)
 
       integer :: i,j
@@ -158,7 +158,7 @@ module Material_m
         !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
         do j=1,mesh%N
           do i=1,mesh%M
-            Eg(i,j)=ec*(1.1692d0-4.9d-4*Ts(i,j)**2/(Ts(i,j)+655d0)-1.5d-10*N(i,j)**(1d0/3d0)) !Korfiatis 2007
+            Eg(i,j)=ec*(1.1692d0-4.9d-4*Ts(i+(j-1)*mesh%M)**2/(Ts(i+(j-1)*mesh%M)+655d0)-1.5d-10*N(i+(j-1)*mesh%M)**(1d0/3d0)) !Korfiatis 2007
           end do
         end do
         !$OMP END PARALLEL DO
@@ -166,7 +166,7 @@ module Material_m
         !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
         do j=1,mesh%N
           do i=1,mesh%M
-            Eg(i,j)=ec*(1.1692d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(1d0/3d0)) !Driel 1987
+            Eg(i,j)=ec*(1.1692d0-(7.02d-4*Ts(i+(j-1)*mesh%M)**2)/(Ts(i+(j-1)*mesh%M)+1108d0)-1.5d-10*N(i+(j-1)*mesh%M)**(1d0/3d0)) !Driel 1987
           end do
         end do
         !$OMP END PARALLEL DO
@@ -314,8 +314,8 @@ end module Material_m
     !$OMP DO COLLAPSE(2)
     do j=1, mesh%N !(optimized)
       do i=1, mesh%M
-        DOSe(i,j) = M_TWO*sqrt((coefE*mesh%Te(i,j))**3)
-        DOSh(i,j) = M_TWO*sqrt((coefH*mesh%Th(i,j))**3)
+        DOSe(i,j) = M_TWO*sqrt((coefE*mesh%Te(i+(j-1)*mesh%M))**3)
+        DOSh(i,j) = M_TWO*sqrt((coefH*mesh%Th(i+(j-1)*mesh%M))**3)
       end do
     end do
     !$OMP END DO
@@ -359,7 +359,7 @@ end module Material_m
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          Dielectric(i,j) =epsilonInf-mesh%Ne(i,j)*coef
+          Dielectric(i,j) =epsilonInf-mesh%Ne(i+(j-1)*mesh%M)*coef
           sqrtEps = sqrt(Dielectric(i,j))
           OpticalIndex(i,j)   = real(sqrtEps)
           OpticalDamping(i,j) = aimag(sqrtEps)
@@ -551,9 +551,9 @@ end module Material_m
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N
         do i=1, mesh%M
-          diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)*inv_ec &
+          diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i+(j-1)*mesh%M)*inv_ec &
                 *FermiTableE(FERMI_HALF,FermiIndexE(i,j))/FermiTableE(FERMI_MINUS_HALF,FermiIndexE(i,j))
-          diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i,j)*inv_ec &
+          diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i+(j-1)*mesh%M)*inv_ec &
                 *FermiTableH(FERMI_HALF,FermiIndexH(i,j))/FermiTableH(FERMI_MINUS_HALF,FermiIndexH(i,j))
         end do
       end do
@@ -596,10 +596,10 @@ end module Material_m
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          JeX(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ex(i,j)
-          JeY(i,j)=-mobilityE(i,j)*mesh%Ne(i,j)*Ey(i,j)
-          JhX(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ex(i,j)
-          JhY(i,j)= mobilityH(i,j)*mesh%Nh(i,j)*Ey(i,j)
+          JeX(i,j)=-mobilityE(i,j)*mesh%Ne(i+(j-1)*mesh%M)*Ex(i,j)
+          JeY(i,j)=-mobilityE(i,j)*mesh%Ne(i+(j-1)*mesh%M)*Ey(i,j)
+          JhX(i,j)= mobilityH(i,j)*mesh%Nh(i+(j-1)*mesh%M)*Ex(i,j)
+          JhY(i,j)= mobilityH(i,j)*mesh%Nh(i+(j-1)*mesh%M)*Ey(i,j)
         end do
       end do
       !$OMP END DO
@@ -645,15 +645,15 @@ end module Material_m
         do i=1, mesh%M
           ind = FermiIndexE(i,j)
           tmp = FermiTableE(FERMI_THREE_HALF, ind)
-          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(FERMI_ETA,ind) &
+          Ce(i,j)=1.5d0*mesh%Ne(i+(j-1)*mesh%M)*kb*(tmp-FermiTableE(FERMI_ETA,ind) &
                        *(M_ONE-(tmp/FermiTableE(FERMI_HALF,ind))*(FermiTableE(FERMI_MINUS_HALF,ind))))/FermiTableE(FERMI_HALF,ind)
 
           ind = FermiIndexH(i,j)
           tmp = FermiTableH(FERMI_THREE_HALF,ind)
-          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(FERMI_ETA,ind) &
+          Ch(i,j)=1.5d0*mesh%Nh(i+(j-1)*mesh%M)*kb*(tmp-FermiTableH(FERMI_ETA,ind) &
                        *(M_ONE-(tmp/FermiTableH(FERMI_HALF,ind))*(FermiTableH(FERMI_MINUS_HALF,ind))))/FermiTableH(FERMI_HALF,ind)
 
-          Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
+          Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i+(j-1)*mesh%M))
 
           invCe(i,j) = M_ONE/Ce(i,j)
           invCh(i,j) = M_ONE/Ch(i,j)
@@ -735,12 +735,12 @@ end module Material_m
             !TODO: These FermiTable etc, can we precompute them?
             ! thermal coefficients
             ind = FermiIndexE(i,j)
-            kappae(i,j)=kb2*inv_ec*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)* &
+            kappae(i,j)=kb2*inv_ec*mesh%Ne(i+(j-1)*mesh%M)*mobilityE(i,j)*mesh%Te(i+(j-1)*mesh%M)* &
                ( 6d0*  FermiTableE(FERMI_2,ind)/FermiTableE(FERMI_0,ind) &
                 -4d0*( FermiTableE(FERMI_1,ind)/FermiTableE(FERMI_0,ind))**2 )
 
             ind = FermiIndexH(i,j)
-            kappah(i,j)=kb2*inv_ec*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)* &
+            kappah(i,j)=kb2*inv_ec*mesh%Nh(i+(j-1)*mesh%M)*mobilityH(i,j)*mesh%Th(i+(j-1)*mesh%M)* &
               (  6d0*  FermiTableH(FERMI_2,ind)/FermiTableH(FERMI_0,ind) &
                 -4d0*( FermiTableH(FERMI_1,ind)/FermiTableH(FERMI_0,ind))**2)
 !           kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
@@ -748,8 +748,8 @@ end module Material_m
             !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
             !TODO: Check this formula. Written as such, it makes no sens to have cc and dd parameters. Probably a type here....
             !TODO: The same for ee and ff
-            kappas(i,j)=max(M_ZERO, &
-                      (aa + bb/(M_ONE+exp(cc-mesh%Ts(i,j)+dd))*(M_ONE-M_ONE/(M_ONE+exp(ee-M_TWO*mesh%Ts(i,j)+ff)))))
+            kappas(i,j)=max(M_ZERO, aa  &
+             + bb/(M_ONE+exp(cc-mesh%Ts(i+(j-1)*mesh%M)+dd))*(M_ONE-M_ONE/(M_ONE+exp(ee-M_TWO*mesh%Ts(i+(j-1)*mesh%M)+ff))))
           end do
         end do
         !$OMP END DO
@@ -825,9 +825,9 @@ end module Material_m
         do j=1, mesh%N !(optimized)
           do i=1, mesh%M
             ! optical coefficients
-            nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-            CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
-            CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i,j)-mesh%Ts(i,j))
+            nuColleph=ephCollisionFrequency(mesh%Ne(i+(j-1)*mesh%M))
+            CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
+            CouplingH(i,j)=Ch(i,j)*nuColleph*(mesh%Th(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
           end do
         end do
         !$OMP END DO
@@ -838,8 +838,8 @@ end module Material_m
        do j=1, mesh%N !(optimized)
          do i=1, mesh%M
            ! optical coefficients
-           nuColleph=ephCollisionFrequency(mesh%Ne(i,j))
-           CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i,j)-mesh%Ts(i,j))
+           nuColleph=ephCollisionFrequency(mesh%Ne(i+(j-1)*mesh%M))
+           CouplingE(i,j)=Ce(i,j)*nuColleph*(mesh%Te(i+(j-1)*mesh%M)-mesh%Ts(i+(j-1)*mesh%M))
          end do
        end do
        !$OMP END DO
@@ -903,38 +903,39 @@ end module Material_m
        do i=1,Params%M
 
         Int2 = intensity(i,j)**2
-        work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
+        work = ImpactIonizationRate(mesh%Te(i+(j-1)*mesh%M),Egap(i,j), ImpactOff)
 
         GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E & 
                     +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
-                    +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
+                    +work*mesh%Ne(i+(j-1)*mesh%M))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
         SourceUe(i,j)= ((source%E-Egap(i,j))*OnePhotonIonizationRate0*intensity(i,j) &
                      + M_HALF*(M_TWO*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2 )*source%inv_E*((me)/(me+mh))&
-                     - Egap(i,j)*work*mesh%Ne(i,j) &
+                     - Egap(i,j)*work*mesh%Ne(i+(j-1)*mesh%M) &
                      + absorptionDrudeE(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(matter%AugerRateE*mesh%Nh(i,j) * mesh%Ne(i,j)**2)
+                     + Egap(i,j)*(matter%AugerRateE*mesh%Nh(i+(j-1)*mesh%M) * mesh%Ne(i+(j-1)*mesh%M)**2)
 
         !SourceE(i,j) = SourceE(i,j) - diffNe(i,j)*(1.5d0*kb*Te(i,j))*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))
-        SourceE(i,j) = SourceUe(i,j) - mesh%Te(i,j) * (Ce(i,j)-CeOld(i,j))/dt
+        SourceE(i,j) = SourceUe(i,j) - mesh%Te(i+(j-1)*mesh%M) * (Ce(i,j)-CeOld(i,j))/dt
 
         !LossesE(i,j)=AugerRateE * (mesh%Ne(i,j))**2d0 * mesh%Nh(i,j) + AugerRateH * (mesh%Nh(i,j))**2d0 * mesh%Ne(i,j) !use Old Ne, Nh here!
-        LossesE(i,j)=mesh%Ne(i,j) * mesh%Nh(i,j) * ( matter%AugerRateE * mesh%Ne(i,j) + matter%AugerRateH * mesh%Nh(i,j) ) !This is more perfomant like that
+        LossesE(i,j)=mesh%Ne(i+(j-1)*mesh%M) * mesh%Nh(i+(j-1)*mesh%M) * ( matter%AugerRateE * mesh%Ne(i+(j-1)*mesh%M) &
+                       + matter%AugerRateH * mesh%Nh(i+(j-1)*mesh%M) ) !This is more perfomant like that
 
-        work = ImpactIonizationRate(mesh%Th(i,j),EgapH(i,j), ImpactOff)
+        work = ImpactIonizationRate(mesh%Th(i+(j-1)*mesh%M),EgapH(i,j), ImpactOff)
 
         GainsH(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
                     +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
-                    +work*mesh%Nh(i,j)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
+                    +work*mesh%Nh(i+(j-1)*mesh%M)) !*(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Nh here
 
         SourceUh(i,j)=((source%E-Egap(i,j))* OnePhotonIonizationRate0*intensity(i,j) &
                      + M_HALF*(M_TWO*source%E - Egap(i,j))*TwoPhotonIonizationRate0*Int2)*source%inv_E * ((me)/(me+mh))  &
-                     - Egap(i,j)*work*mesh%Nh(i,j) &
+                     - Egap(i,j)*work*mesh%Nh(i+(j-1)*mesh%M) &
                      + absorptionDrudeH(i,j)*intensity(i,j) &
-                     + Egap(i,j)*(matter%AugerRateH*mesh%Ne(i,j) * mesh%Nh(i,j)**2)
+                     + Egap(i,j)*(matter%AugerRateH*mesh%Ne(i+(j-1)*mesh%M) * mesh%Nh(i+(j-1)*mesh%M)**2)
 
         !SourceH(i,j) = SourceH(i,j) - diffNh(i,j)*(1.5d0*kb*Th(i,j)*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
-        SourceH(i,j) = SourceUh(i,j) - mesh%Th(i,j) * (Ch(i,j)-ChOld(i,j))/dt
+        SourceH(i,j) = SourceUh(i,j) - mesh%Th(i+(j-1)*mesh%M) * (Ch(i,j)-ChOld(i,j))/dt
 
         LossesH(i,j)=LossesE(i,j)
 
