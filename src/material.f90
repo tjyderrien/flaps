@@ -747,6 +747,7 @@ end module Material_m
 
             !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
             !TODO: Check this formula. Written as such, it makes no sens to have cc and dd parameters. Probably a type here....
+            !TODO: The same for ee and ff
             kappas(i,j)=max(M_ZERO, &
                       (aa + bb/(M_ONE+exp(cc-mesh%Ts(i,j)+dd))*(M_ONE-M_ONE/(M_ONE+exp(ee-M_TWO*mesh%Ts(i,j)+ff)))))
           end do
