@@ -207,37 +207,41 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 
    Diverged = .false.
     call output_open(ErrorFile%unit, 'output/error.log', (nbiter/=nmin .or. Params%RestartCalc == 1))
-    !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t, ErrorFile)
-    !$OMP DO
-    do i=1,mesh%M*mesh%N
-      if(isnan(mesh%Te(i))) then
-        write(ErrorFile%unit,*) "Divergence of Te at t=", t, " ind=", i
-        Diverged=.true.
-      end if
-      if(isnan(mesh%Th(i))) then
-        write(ErrorFile%unit,*) "Divergence of Th at t=", t, " ind=", i
-        Diverged=.true.
-      end if
-      if(isnan(mesh%Ts(i))) then
-        write(ErrorFile%unit,*) "Divergence of Ts at t=", t, " ind=", i
-        Diverged=.true.
-      end if
-      if(isnan(mesh%Ne(i))) then
-        write(ErrorFile%unit,*) "Divergence of Ne at t=", t, " ind=", i
-        Diverged=.true.
-      end if
-      if(isnan(mesh%Nh(i))) then
-        write(ErrorFile%unit,*) "Divergence of Nh at t=", t, " ind=", i
-        Diverged=.true.
-      end if
 
-      if(Diverged .eqv. .true.) then
-        write(*,*) "Divergence detected. Please check error.dat for more information."
-        call StopProgram ()
-      end if
-    end do
-    !$OMP END DO
-    !$OMP END PARALLEL
+    if(isnan(sum(mesh%Te)) .or. isnan(sum(mesh%Th)) .or. isnan(sum(mesh%Ts)) &
+       .or. isnan(sum(mesh%Ne)) .or. isnan(sum(mesh%Nh))) then
+
+      !$OMP PARALLEL DO DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t, ErrorFile)
+      do i=1,mesh%M*mesh%N
+        if(isnan(mesh%Te(i))) then
+          write(ErrorFile%unit,*) "Divergence of Te at t=", t, " ind=", i
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Th(i))) then
+          write(ErrorFile%unit,*) "Divergence of Th at t=", t, " ind=", i
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Ts(i))) then
+          write(ErrorFile%unit,*) "Divergence of Ts at t=", t, " ind=", i
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Ne(i))) then
+          write(ErrorFile%unit,*) "Divergence of Ne at t=", t, " ind=", i
+          Diverged=.true.
+        end if
+        if(isnan(mesh%Nh(i))) then
+          write(ErrorFile%unit,*) "Divergence of Nh at t=", t, " ind=", i
+          Diverged=.true.
+        end if
+
+        if(Diverged .eqv. .true.) then
+          write(*,*) "Divergence detected. Please check error.dat for more information."
+          call StopProgram ()
+        end if
+      end do
+      !$OMP END PARALLEL DO
+
+    end if
 
     if(maxCFLxT.gt.M_ONE .OR. maxCFLyT.gt.M_ONE) then
       write(ErrorFile%unit,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
