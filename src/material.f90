@@ -21,6 +21,7 @@
 !------------------------------------------------------------------------------
 
 module Material_m
+  use Fermi_m
   use Maths_m
   use Profiler_m
   use Types_m
@@ -472,7 +473,8 @@ end module Material_m
    !-------------------------------------------------------------------------------------
     subroutine ComputeMobilities_batch(mesh, mobilityE, mobilityH, &
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                       ColFermi0, ColFermiHalf, nuColl, me)
+                                       nuColl, me)
+      use Fermi_m
       use Maths_m
       use Profiler_m
       use Types_m
@@ -485,7 +487,6 @@ end module Material_m
       real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: ColFermi0, ColFermiHalf
       real(8),           intent(in)    :: nuColl, me
 
       integer :: i, j
@@ -497,12 +498,12 @@ end module Material_m
       coef = ec/(me*nuColl)
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (coef, mesh, mobilityE, mobilityH, FermiTableE, &
-      !$OMP FermiTableH, ColFermi0, ColFermiHalf, FermiIndexE, FermiIndexH )
+      !$OMP FermiTableH, FermiIndexE, FermiIndexH )
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          mobilityE(i,j)=coef*FermiTableE(ColFermi0, FermiIndexE(i,j))/FermiTableE(ColFermiHalf, FermiIndexE(i,j))
-          mobilityH(i,j)=coef*FermiTableH(ColFermi0, FermiIndexH(i,j))/FermiTableH(ColFermiHalf, FermiIndexH(i,j))
+          mobilityE(i,j)=coef*FermiTableE(FERMI_0, FermiIndexE(i,j))/FermiTableE(FERMI_HALF, FermiIndexE(i,j))
+          mobilityH(i,j)=coef*FermiTableH(FERMI_0, FermiIndexH(i,j))/FermiTableH(FERMI_HALF, FermiIndexH(i,j))
         end do
       end do
       !$OMP END DO
@@ -516,8 +517,8 @@ end module Material_m
    !> Computes the diffusion terms for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine UpdateDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
-                                       FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                       ColFermiHalf, ColFermiMenusHalf)
+                                       FermiTableE, FermiTableH, FermiIndexE, FermiIndexH )
+      use Fermi_m
       use Maths_m
       use Profiler_m
       use Types_m
@@ -533,7 +534,6 @@ end module Material_m
       real(8),               intent(in)    :: FermiTableH(mesh%M,mesh%N)
       integer(8),            intent(in)    :: FermiIndexE(mesh%M,mesh%N)
       integer(8),            intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),            intent(in)    :: ColFermiMenusHalf, ColFermiHalf
 
       integer :: i, j
       type(Profiler), save :: prof
@@ -546,15 +546,15 @@ end module Material_m
 
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, diffusionE, diffusionH, &
-      !$OMP mobilityE, mobilityH, FermiTableE, FermiTableH, ColFermiHalf, &
-      !$OMP FermiIndexE, FermiIndexH, ColFermiMenusHalf)
+      !$OMP mobilityE, mobilityH, FermiTableE, FermiTableH, &
+      !$OMP FermiIndexE, FermiIndexH)
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N
         do i=1, mesh%M
           diffusionE(i,j)=mobilityE(i,j)*kb*mesh%Te(i,j)*inv_ec &
-                *FermiTableE(ColFermiHalf,FermiIndexE(i,j))/FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j))
+                *FermiTableE(FERMI_HALF,FermiIndexE(i,j))/FermiTableE(FERMI_MINUS_HALF,FermiIndexE(i,j))
           diffusionH(i,j)=mobilityH(i,j)*kb*mesh%Th(i,j)*inv_ec &
-                *FermiTableH(ColFermiHalf,FermiIndexH(i,j))/FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j))
+                *FermiTableH(FERMI_HALF,FermiIndexH(i,j))/FermiTableH(FERMI_MINUS_HALF,FermiIndexH(i,j))
         end do
       end do
       !$OMP END DO
@@ -612,8 +612,8 @@ end module Material_m
    !> Computes the electron, hole and lattice heat capacities for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, invCe,invCh, invCs, &
-                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                           ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta  )
+                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH  )
+      use Fermi_m
       use Maths_m
       use Profiler_m
       use Types_m
@@ -630,7 +630,6 @@ end module Material_m
       real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
 
       real(8) :: tmp, LatticeHeatCapacity
       integer :: i, j
@@ -638,21 +637,21 @@ end module Material_m
 
       call Profiler_start(prof, 'HEAT_CAPACITIES')
 
-      !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, Ce, Ch, Cs, ColFermiThreeHalf, FermiIndexE, FermiIndexH, &
-      !$OMP FermiTableE, FermiTableH, ColFermiEta, ColFermiHalf, ColFermiMenusHalf, invCe, invCh, invCs) &
+      !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, Ce, Ch, Cs, FermiIndexE, FermiIndexH, &
+      !$OMP FermiTableE, FermiTableH, invCe, invCh, invCs) &
       !$OMP PRIVATE(tmp)
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          tmp = FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j))
-          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(ColFermiEta,FermiIndexE(i,j)) &
-                             *(M_ONE-(tmp/FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
-                                     (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)))))/FermiTableE(ColFermiHalf,FermiIndexE(i,j))
+          tmp = FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j))
+          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(FERMI_ETA,FermiIndexE(i,j)) &
+                             *(M_ONE-(tmp/FermiTableE(FERMI_HALF,FermiIndexE(i,j)))* &
+                                     (FermiTableE(FERMI_MINUS_HALF,FermiIndexE(i,j)))))/FermiTableE(FERMI_HALF,FermiIndexE(i,j))
 
-          tmp = FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j))
-          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(ColFermiEta,FermiIndexH(i,j)) &
-                               *(M_ONE-(tmp/FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
-                                    (FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)))))/FermiTableH(ColFermiHalf,FermiIndexH(i,j))
+          tmp = FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j))
+          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(FERMI_ETA,FermiIndexH(i,j)) &
+                               *(M_ONE-(tmp/FermiTableH(FERMI_HALF,FermiIndexH(i,j)))* &
+                                    (FermiTableH(FERMI_MINUS_HALF,FermiIndexH(i,j)))))/FermiTableH(FERMI_HALF,FermiIndexH(i,j))
 
           Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
 
@@ -687,8 +686,8 @@ end module Material_m
    !> Updates the conductivities for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine UpdateConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                           ColFermi0, ColFermi1, ColFermi2, TransportModel)
+                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, TransportModel)
+      use Fermi_m
       use Maths_m
       use Profiler_m
       use Types_m
@@ -704,7 +703,7 @@ end module Material_m
       real(8),           intent(in)    :: FermiTableH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexE(mesh%M,mesh%N)
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
-      integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, TransportModel
+      integer(8),        intent(in)    :: TransportModel
 
       integer :: i, j
       !TODO: We have to find a nomeclature and a name for this model
@@ -726,7 +725,7 @@ end module Material_m
         return
       else if (TransportModel .eq. 0 ) then
         !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-        !$OMP FermiTableE, FermiIndexE, FermiTableH, FermiIndexH, ColFermi1, ColFermi2, ColFermi0)
+        !$OMP FermiTableE, FermiIndexE, FermiTableH, FermiIndexH)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
@@ -734,12 +733,12 @@ end module Material_m
             !TODO: These FermiTable etc, can we precompute them?
             ! thermal coefficients
             kappae(i,j)=kb2*inv_ec*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)* &
-               ( 6d0*  FermiTableE(ColFermi2,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)) &
-                -4d0*( FermiTableE(ColFermi1,FermiIndexE(i,j))/FermiTableE(ColFermi0,FermiIndexE(i,j)))**2 )
+               ( 6d0*  FermiTableE(FERMI_2,FermiIndexE(i,j))/FermiTableE(FERMI_0,FermiIndexE(i,j)) &
+                -4d0*( FermiTableE(FERMI_1,FermiIndexE(i,j))/FermiTableE(FERMI_0,FermiIndexE(i,j)))**2 )
 
             kappah(i,j)=kb2*inv_ec*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)* &
-              (  6d0*  FermiTableH(ColFermi2,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)) &
-                -4d0*( FermiTableH(ColFermi1,FermiIndexH(i,j))/FermiTableH(ColFermi0,FermiIndexH(i,j)))**2)
+              (  6d0*  FermiTableH(FERMI_2,FermiIndexH(i,j))/FermiTableH(FERMI_0,FermiIndexH(i,j)) &
+                -4d0*( FermiTableH(FERMI_1,FermiIndexH(i,j))/FermiTableH(FERMI_0,FermiIndexH(i,j)))**2)
 !           kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
 
             !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503

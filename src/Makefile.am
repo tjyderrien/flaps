@@ -20,6 +20,7 @@ include $(srcdir)/../common-rules.make
 bin_PROGRAMS = flaps
 
 flaps_SOURCES =        \
+          fermi.f90    \
           grid.f90     \
           input.f90    \
           material.f90 \
@@ -46,8 +47,8 @@ depend:
 	@makedepf90 (flaps_SOURCES) 
 
 main_explicit_Mie.o: main_explicit_Mie.f90 input.o material.o mesh.o mie.o output.o source.o \
-                     solver.o grid.o timer.o restart.o
-material.o: material.f90 types.o maths.o source.o profiler.o
+                     solver.o grid.o timer.o restart.o fermi.o
+material.o: material.f90 types.o maths.o source.o profiler.o fermi.o
 mesh.o: mesh.f90 types.o output.o
 mie.o: mie.f90 maths.o profiler.o
 output.o: output.f90 types.o
@@ -60,3 +61,4 @@ timer.o: timer.f90
 utils.o: utils.f90
 profiler.o : profiler.f90 timer.o
 restart.o : restart.f90 types.o
+fermi.o : fermi.f90

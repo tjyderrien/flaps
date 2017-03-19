@@ -31,6 +31,7 @@ program Flaps
   ! USE Bivariate
   USE libmsh2vf !Script provided by A. Mouton, Univ Lille1, France for GMSH interfacing
 
+  use Fermi_m
   use Laser_m
   use Material_m
   use Maths_m
@@ -269,10 +270,6 @@ program Flaps
             TotalMeshVolume, &
             OnePhotonIonizationRate0, TwoPhotonIonizationRate0
             
-
-!    integer(4) unit1, unit2
-    integer(8) ColFermiNeNc, ColFermiEta, ColFermi0, ColFermi1, ColFermi2, &
-               ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf
 
     !! FUNCTIONS CALLS
      real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
@@ -518,9 +515,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   dt2=Params%TimeStep
   dt3=Params%TimeStep
   dt4=Params%TimeStep
-
-  ColFermiNeNc=2; ColFermiEta=3; ColFermi0=4; ColFermi1=5; ColFermi2=6; ColFermiHalf=7; 
-  ColFermiThreeHalf=8; ColFermiMenusHalf=9;
 
 
     !TODO: Move to LaserParams
@@ -1165,22 +1159,22 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 
-        etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
-        etah=FermiTableH(ColFermiEta,FermiIndexH(i,j))
+        etae=FermiTableE(FERMI_ETA,FermiIndexE(i,j))
+        etah=FermiTableH(FERMI_ETA,FermiIndexH(i,j))
 
         ! calculate semi-classical heat capacity
-        CeOld(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
-                              /FermiTableE(ColFermiHalf,FermiIndexE(i,j)) &
-                  -etae*(M_ONE-(FermiTableE(ColFermiThreeHalf,FermiIndexE(i,j)) &
-                              /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))* &
-                  (FermiTableE(ColFermiMenusHalf,FermiIndexE(i,j)) &
-                              /FermiTableE(ColFermiHalf,FermiIndexE(i,j)))))
-        ChOld(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
-                              /FermiTableH(ColFermiHalf,FermiIndexH(i,j)) &
-                  -etah*(M_ONE-(FermiTableH(ColFermiThreeHalf,FermiIndexH(i,j)) &
-                              /FermiTableH(ColFermiHalf,FermiIndexH(i,j)))* &
-                  FermiTableH(ColFermiMenusHalf,FermiIndexH(i,j)) &
-                              /FermiTableH(ColFermiHalf,FermiIndexH(i,j))))
+        CeOld(i,j)=1.5d0*mesh%Ne(i,j)*kb*(FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j)) &
+                              /FermiTableE(FERMI_HALF,FermiIndexE(i,j)) &
+                  -etae*(M_ONE-(FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j)) &
+                              /FermiTableE(FERMI_HALF,FermiIndexE(i,j)))* &
+                  (FermiTableE(FERMI_MINUS_HALF,FermiIndexE(i,j)) &
+                              /FermiTableE(FERMI_HALF,FermiIndexE(i,j)))))
+        ChOld(i,j)=1.5d0*mesh%Nh(i,j)*kb*(FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j)) &
+                              /FermiTableH(FERMI_HALF,FermiIndexH(i,j)) &
+                  -etah*(M_ONE-(FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j)) &
+                              /FermiTableH(FERMI_HALF,FermiIndexH(i,j)))* &
+                  FermiTableH(FERMI_MINUS_HALF,FermiIndexH(i,j)) &
+                              /FermiTableH(FERMI_HALF,FermiIndexH(i,j))))
 
         Ce(i,j)=CeOld(i,j)
         Ch(i,j)=ChOld(i,j)
@@ -1686,14 +1680,12 @@ if(Params%UseMieScattering.eq.1) then
    !
    !Computes the electron and mobilities for the entire mesh
    call ComputeMobilities_batch(mesh, mobilityE, mobilityH, &
-                                FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                ColFermi0, ColFermiHalf, nuColl, me)
+                                FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, nuColl, me)
    !
    !
    !Computes the diffusion terms for the entire mesh
    call UpdateDiffusions_batch(Params, mesh, diffusionE, diffusionH, mobilityE, mobilityH, &
-                                FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                ColFermiHalf, ColFermiMenusHalf)
+                                FermiTableE, FermiTableH, FermiIndexE, FermiIndexH)
    !
    !
    !Computes the drif vectors for the entire mesh
@@ -1702,8 +1694,7 @@ if(Params%UseMieScattering.eq.1) then
    !
    ! Computes the electron, hole and lattice heat capacities for the entire mesh
    call ComputeHeatCapacities_batch(mesh, Ce, Ch, Cs, invCe, invCh, invCs, &
-                                    FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                    ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta)
+                                    FermiTableE, FermiTableH, FermiIndexE, FermiIndexH)
    !
    !Updates the couplings for the entire mesh
    call UpdateCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
@@ -1717,8 +1708,7 @@ if(Params%UseMieScattering.eq.1) then
    !
    !Compute the new conductivites, based on the knowledge of densities and mobilities
    call UpdateConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                           ColFermi0, ColFermi1, ColFermi2, Params%TransportModel)
+                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, Params%TransportModel)
    !
    ! interpolation bilineaire ponderee par les aires
    call bilinear_interpol_dual(mesh, dual, InvCellVol)
@@ -1831,8 +1821,7 @@ if(Params%UseMieScattering.eq.1) then
    !
    if(Params%ConvectionEnergy.eq.1) then
      call computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh, &
-                             FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                             ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
+                             FermiTableE, FermiTableH, FermiIndexE, FermiIndexH )
    end if
    !
    !
