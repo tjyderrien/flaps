@@ -705,7 +705,7 @@ end module Material_m
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
       integer(8),        intent(in)    :: TransportModel
 
-      integer :: i, j
+      integer :: i, j, ind
       !TODO: We have to find a nomeclature and a name for this model
       !TODO: Is there other models?
       !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
@@ -718,32 +718,37 @@ end module Material_m
 
       type(Profiler), save :: prof
 
+      if(TransportModel.eq.-1) & !No need to update the conductivity
+        return
+
       call Profiler_start(prof, 'CONDUCTIVITIES')
 
 
-      if(TransportModel.eq.-1) then !No need to update the conductivity
-        return
-      else if (TransportModel .eq. 0 ) then
+      if (TransportModel .eq. 0 ) then
         !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-        !$OMP FermiTableE, FermiIndexE, FermiTableH, FermiIndexH)
+        !$OMP FermiTableE, FermiIndexE, FermiTableH, FermiIndexH) &
+        !$OMP PRIVATE(ind)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
           do i=1, mesh%M
 
             !TODO: These FermiTable etc, can we precompute them?
             ! thermal coefficients
+            ind = FermiIndexE(i,j)
             kappae(i,j)=kb2*inv_ec*mesh%Ne(i,j)*mobilityE(i,j)*mesh%Te(i,j)* &
-               ( 6d0*  FermiTableE(FERMI_2,FermiIndexE(i,j))/FermiTableE(FERMI_0,FermiIndexE(i,j)) &
-                -4d0*( FermiTableE(FERMI_1,FermiIndexE(i,j))/FermiTableE(FERMI_0,FermiIndexE(i,j)))**2 )
+               ( 6d0*  FermiTableE(FERMI_2,ind)/FermiTableE(FERMI_0,ind) &
+                -4d0*( FermiTableE(FERMI_1,ind)/FermiTableE(FERMI_0,ind))**2 )
 
+            ind = FermiIndexH(i,j)
             kappah(i,j)=kb2*inv_ec*mesh%Nh(i,j)*mobilityH(i,j)*mesh%Th(i,j)* &
-              (  6d0*  FermiTableH(FERMI_2,FermiIndexH(i,j))/FermiTableH(FERMI_0,FermiIndexH(i,j)) &
-                -4d0*( FermiTableH(FERMI_1,FermiIndexH(i,j))/FermiTableH(FERMI_0,FermiIndexH(i,j)))**2)
+              (  6d0*  FermiTableH(FERMI_2,ind)/FermiTableH(FERMI_0,ind) &
+                -4d0*( FermiTableH(FERMI_1,ind)/FermiTableH(FERMI_0,ind))**2)
 !           kappas(i,j)=-.1412d0*Ts(i,j)**(1.38961d0)+0.638157d0*Ts(i,j)**(1.14013d0) !mingo till 300 K, Nano Letters, 2003, 3, 1713-1716
 
             !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
+            !TODO: Check this formula. Written as such, it makes no sens to have cc and dd parameters. Probably a type here....
             kappas(i,j)=max(M_ZERO, &
-                      (aa + bb/(1d0+exp(cc-M_ONE*mesh%Ts(i,j)+dd))*(M_ONE-M_ONE/(M_ONE+exp(ee-M_TWO*mesh%Ts(i,j)+ff)))))
+                      (aa + bb/(M_ONE+exp(cc-mesh%Ts(i,j)+dd))*(M_ONE-M_ONE/(M_ONE+exp(ee-M_TWO*mesh%Ts(i,j)+ff)))))
           end do
         end do
         !$OMP END DO
