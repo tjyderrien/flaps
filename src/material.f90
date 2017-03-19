@@ -632,26 +632,26 @@ end module Material_m
       integer(8),        intent(in)    :: FermiIndexH(mesh%M,mesh%N)
 
       real(8) :: tmp, LatticeHeatCapacity
-      integer :: i, j
+      integer :: i, j, ind
       type(Profiler), save :: prof
 
       call Profiler_start(prof, 'HEAT_CAPACITIES')
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, Ce, Ch, Cs, FermiIndexE, FermiIndexH, &
       !$OMP FermiTableE, FermiTableH, invCe, invCh, invCs) &
-      !$OMP PRIVATE(tmp)
+      !$OMP PRIVATE(tmp, ind)
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
-          tmp = FermiTableE(FERMI_THREE_HALF,FermiIndexE(i,j))
-          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(FERMI_ETA,FermiIndexE(i,j)) &
-                             *(M_ONE-(tmp/FermiTableE(FERMI_HALF,FermiIndexE(i,j)))* &
-                                     (FermiTableE(FERMI_MINUS_HALF,FermiIndexE(i,j)))))/FermiTableE(FERMI_HALF,FermiIndexE(i,j))
+          ind = FermiIndexE(i,j)
+          tmp = FermiTableE(FERMI_THREE_HALF, ind)
+          Ce(i,j)=1.5d0*mesh%Ne(i,j)*kb*(tmp-FermiTableE(FERMI_ETA,ind) &
+                       *(M_ONE-(tmp/FermiTableE(FERMI_HALF,ind))*(FermiTableE(FERMI_MINUS_HALF,ind))))/FermiTableE(FERMI_HALF,ind)
 
-          tmp = FermiTableH(FERMI_THREE_HALF,FermiIndexH(i,j))
-          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(FERMI_ETA,FermiIndexH(i,j)) &
-                               *(M_ONE-(tmp/FermiTableH(FERMI_HALF,FermiIndexH(i,j)))* &
-                                    (FermiTableH(FERMI_MINUS_HALF,FermiIndexH(i,j)))))/FermiTableH(FERMI_HALF,FermiIndexH(i,j))
+          ind = FermiIndexH(i,j)
+          tmp = FermiTableH(FERMI_THREE_HALF,ind)
+          Ch(i,j)=1.5d0*mesh%Nh(i,j)*kb*(tmp-FermiTableH(FERMI_ETA,ind) &
+                       *(M_ONE-(tmp/FermiTableH(FERMI_HALF,ind))*(FermiTableH(FERMI_MINUS_HALF,ind))))/FermiTableH(FERMI_HALF,ind)
 
           Cs(i,j)=LatticeHeatCapacity(mesh%Ts(i,j))
 
