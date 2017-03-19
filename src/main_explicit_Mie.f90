@@ -1130,14 +1130,14 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
         if(BandBendingInFDTD.eq.1) then
            newmesh%Ne(i,j)=Ne0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
-                    /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
+                    /((DefectThickness)/(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
                     /(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) &
                     /(M_TWO*M_SQRT2LN2))**2)) &
                   )
           newmesh%Nh(i,j)=Nh0+Nborder*(exp(-M_HALF*(((x(i,j)-x(i,Params%N))**2+(y(i,j)-y(i,Params%N))**2) &
-                    /((DefectThickness)/(2d0*M_SQRT2LN2))**2)) &
+                    /((DefectThickness)/(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(1,j))**2+(y(i,j)-y(1,j))**2)/((DefectThickness) &
                     /(M_TWO*M_SQRT2LN2))**2)) &
                   +exp(-M_HALF*(((x(i,j)-x(i,1))**2+(y(i,j)-y(i,1))**2)/((DefectThickness) &
