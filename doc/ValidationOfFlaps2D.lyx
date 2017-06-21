@@ -1,7 +1,9 @@
-#LyX 2.0 created this file. For more info see http://www.lyx.org/
-\lyxformat 413
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
 \begin_document
 \begin_header
+\save_transient_properties true
+\origin unavailable
 \textclass revtex4-1
 \options aps, print
 \use_default_options false
@@ -10,16 +12,16 @@
 \language_package default
 \inputencoding auto
 \fontencoding global
-\font_roman charter
-\font_sans default
-\font_typewriter default
+\font_roman "charter" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
 \font_default_family default
 \use_non_tex_fonts false
 \font_sc false
 \font_osf false
-\font_sf_scale 100
-\font_tt_scale 100
-
+\font_sf_scale 100 100
+\font_tt_scale 100 100
 \graphics default
 \default_output_format default
 \output_sync 0
@@ -43,15 +45,24 @@
 \pdf_quoted_options "citecolor=blue, urlcolor=blue, linkcolor=blue"
 \papersize default
 \use_geometry false
-\use_amsmath 1
-\use_esint 1
-\use_mhchem 1
-\use_mathdots 1
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
 \cite_engine basic
+\cite_engine_type default
+\biblio_style plain
 \use_bibtopic false
 \use_indices false
 \paperorientation portrait
 \suppress_date false
+\justification true
 \use_refstyle 1
 \index Index
 \shortcut idx
@@ -459,7 +470,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -621,7 +632,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -712,7 +723,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -837,7 +848,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -1202,7 +1213,7 @@ status open
 \end_inset
 
 
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 Heat capacity of Si and various adjustments.
@@ -1416,7 +1427,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -1544,7 +1555,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -1694,8 +1705,8 @@ Integrating over the two dimensions of the problem leads to write the total
  at a given instant in the whole sample volume by 
 \begin_inset Formula 
 \begin{alignat*}{1}
-\xi_{e}\,[J.m^{-1}] & =\iint dE_{e}\, d\mbox{\mathcal{V}}\\
- & =\iint\left(T_{e}dC_{e}+C_{e}dT_{e}+dE_{g}n_{e}+E_{g}dn_{e}\right)\, d\mathcal{V}
+\xi_{e}\,[J.m^{-1}] & =\iint dE_{e}\,d\mbox{\mathcal{V}}\\
+ & =\iint\left(T_{e}dC_{e}+C_{e}dT_{e}+dE_{g}n_{e}+E_{g}dn_{e}\right)\,d\mathcal{V}
 \end{alignat*}
 
 \end_inset
@@ -1703,8 +1714,8 @@ Integrating over the two dimensions of the problem leads to write the total
  
 \begin_inset Formula 
 \begin{alignat*}{1}
-\xi_{h}\,[J.m^{-1}] & =\iint dE_{h}\, d\mbox{\mathcal{V}}\\
- & =\iint\left(T_{h}dC_{h}+C_{h}dT_{h}\right)\, d\mathcal{V}
+\xi_{h}\,[J.m^{-1}] & =\iint dE_{h}\,d\mbox{\mathcal{V}}\\
+ & =\iint\left(T_{h}dC_{h}+C_{h}dT_{h}\right)\,d\mathcal{V}
 \end{alignat*}
 
 \end_inset
@@ -1744,7 +1755,7 @@ Now we have chosen the unity to express the energy in the problem, we express
  now the total laser energy is by the expression
 \begin_inset Formula 
 \[
-\xi_{sample}[J.m^{-1}](y)=\iint I(t,x,y)\, dt\, dx
+\xi_{sample}[J.m^{-1}](y)=\iint I(t,x,y)\,dt\,dx
 \]
 
 \end_inset
@@ -1772,7 +1783,7 @@ We try to solve this problem by studying the energy absorbed by the nanometric
  sized sample via 
 \begin_inset Formula 
 \[
-\xi_{absorbed}[J.m^{-1}]=\iiint\alpha I(t,x,y)\, dt\, dx\, dy
+\xi_{absorbed}[J.m^{-1}]=\iiint\alpha I(t,x,y)\,dt\,dx\,dy
 \]
 
 \end_inset
@@ -1836,13 +1847,13 @@ status collapsed
 \begin_inset Tabular
 <lyxtabular version="3" rows="11" columns="7">
 <features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" bottomline="true" usebox="none">
 \begin_inset Text
@@ -2806,7 +2817,7 @@ MeshShift
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -2853,7 +2864,7 @@ reference "tab:Optical-energy"
  presents the total optical energy deposited in the sample as a function
  of the mesh properties in case of an homogeneous distribution of laser
  energy.
- This allows to calculate the minimal mesh and timestep parameters required
+ This allows to calculate the minimal mesh and time-step parameters required
  to reach convergence in the numerical sample volume and the convergence
  of the intensity calculation.
  
@@ -2867,7 +2878,7 @@ Calculation of the incident laser energy
 The intensity at the tip apex interface is defined by the following formula
 \begin_inset Formula 
 \[
-E_{laser}\left[J\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\, d\mathcal{A}\, dt
+E_{laser}\left[J\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\,d\mathcal{A}\,dt
 \]
 
 \end_inset
@@ -2919,7 +2930,7 @@ Since we consider only two dimensions with an invariance by translation
 , we can build the quantity
 \begin_inset Formula 
 \[
-\xi_{laser}\left[J.m^{-1}\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\, d\mathcal{L}\, dt
+\xi_{laser}\left[J.m^{-1}\right]=\iint\overrightarrow{S}\cdot\overrightarrow{n}\,d\mathcal{L}\,dt
 \]
 
 \end_inset
@@ -2940,7 +2951,7 @@ The arc length along the curve
  is given by 
 \begin_inset Formula 
 \[
-\mathcal{L}=\int\left|\frac{\partial x}{\partial y}\right|\, dy
+\mathcal{L}=\int\left|\frac{\partial x}{\partial y}\right|\,dy
 \]
 
 \end_inset
@@ -2948,7 +2959,7 @@ The arc length along the curve
 Therefore, we can write
 \begin_inset Formula 
 \[
-\xi_{laser}\left[J.m^{-1}\right]=\iint I\left[x_{\partial\Omega}\left(y\right),y,t\right]\cos\left(\arctan\frac{\partial x}{\partial y}\right)\left|\frac{\partial x}{\partial y}\right|\, dy\, dt.
+\xi_{laser}\left[J.m^{-1}\right]=\iint I\left[x_{\partial\Omega}\left(y\right),y,t\right]\cos\left(\arctan\frac{\partial x}{\partial y}\right)\left|\frac{\partial x}{\partial y}\right|\,dy\,dt.
 \]
 
 \end_inset
@@ -2987,7 +2998,7 @@ Verification of the calculated intensity
 \begin_layout Standard
 \begin_inset Formula 
 \[
-\xi_{laser}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I_{0}(t,x,y)\, d\Omega\, dt
+\xi_{laser}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I_{0}(t,x,y)\,d\Omega\,dt
 \]
 
 \end_inset
@@ -2995,7 +3006,7 @@ Verification of the calculated intensity
 
 \begin_inset Formula 
 \[
-\xi_{opt}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I(t,x,y)\, d\Omega\, dt
+\xi_{opt}=\iint\left(\sigma_{1}+\alpha_{fcr,e}+\alpha_{fcr,h}\right)I(t,x,y)\,d\Omega\,dt
 \]
 
 \end_inset
@@ -3093,19 +3104,19 @@ status open
 \begin_inset Tabular
 <lyxtabular version="3" rows="9" columns="13">
 <features tabularvalignment="middle">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
-<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
 <row>
 <cell alignment="center" valignment="top" bottomline="true" usebox="none">
 \begin_inset Text
@@ -4501,7 +4512,7 @@ TM
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -4553,6 +4564,13 @@ Trust
 
 \end_layout
 
+\begin_layout Standard
+\begin_inset Formula $\left\lceil \right\rceil $
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 Generation and control of the mesh
 \end_layout
@@ -4575,6 +4593,10 @@ y
 \end{array}\right)=0
 \]
 
+\end_inset
+
+
+\begin_inset Formula $ $
 \end_inset
 
  by a simple iterative method
@@ -4715,7 +4737,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 CPU efficiency as a function of core number.
@@ -4800,7 +4822,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -4858,7 +4880,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -4937,7 +4959,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
@@ -4993,7 +5015,7 @@ status open
 \end_layout
 
 \begin_layout Plain Layout
-\begin_inset Caption
+\begin_inset Caption Standard
 
 \begin_layout Plain Layout
 \begin_inset CommandInset label
