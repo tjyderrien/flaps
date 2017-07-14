@@ -28,10 +28,10 @@ module Output_m
   !TODO: Add a description for each of these files
   type(OutputData) :: LaplaceConvergence ! Useful for debugging
   type(OutputData) :: LaplaceMatrix      ! Useful for debugging
-  type(OutputData) :: TimeBottom         
-  type(OutputData) :: TimeUp
-  type(OutputData) :: TimeApex
-  type(OutputData) :: Error
+  type(OutputData) :: TimeBottom         ! Probing the variables at one given point. 
+  type(OutputData) :: TimeUp             ! Probing the variables at one given point. 
+  type(OutputData) :: TimeApex		 ! Probing the variables at one given point. 
+  type(OutputData) :: ErrorFile
   type(OutputData) :: Parameters
   type(OutputData) :: Depth !TODO: This name is not self-documenting
   type(OutputData) :: TimeMax
@@ -59,7 +59,7 @@ module Output_m
     TimeBottom%unit = 92
     TimeUp%unit = 93
     TimeApex%unit = 94
-    Error%unit = 95
+    ErrorFile%unit = 95
     Parameters%unit = 96
     Depth%unit = 97
     TimeMax%unit = 98
@@ -80,7 +80,7 @@ module Output_m
     close(TimeBottom%unit)
     close(TimeUp%unit)
     close(TimeApex%unit)
-    close(Error%unit)
+    close(ErrorFile%unit)
     close(Parameters%unit)
     close(Depth%unit)
     close(TimeMax%unit)

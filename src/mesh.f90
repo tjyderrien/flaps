@@ -83,6 +83,7 @@ end subroutine copy_mesh
 ! interpolation bilineaire ponderee par les aires
 subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
    use Maths_m
+   use Profiler_m
    use Types_m
    implicit none
    type(MeshValues), intent(INOUT) :: mesh, dual
@@ -90,6 +91,10 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
 
    integer :: i,j
    real(8) :: weight
+
+   type(Profiler), save :: prof
+
+   call Profiler_start(prof, 'BILINEAR_INTERP')
 
     ! interpolation on dual mesh
     ! InterpolateBiCubic(phi_source, x_s, y_s, x_t, y_t, SizeXs, SizeYs, SizeXt, SizeYt, phi_target, Grad(phi)_targetX, Grad(phi)_targetY)
@@ -146,45 +151,55 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
      !$OMP END DO
      !$OMP END PARALLEL
 
+   call profiler_stop(prof)
  end subroutine
 
- subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t)
+ subroutine check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t, nbiter, nmin, Params)
    use Maths_m
+   use Output_m
    use Types_m
    implicit none
 
    type(MeshValues), intent(in) :: mesh
    real(8), intent(in)          :: t, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN
    real(8), intent(in)          :: x(mesh%M, mesh%N), y(mesh%M, mesh%N)
+   integer, intent(in)          :: nbiter, nmin
+   type(InputParameters), intent(in) :: Params
 
    integer(8)          :: i, j
    logical Diverged
 
    Diverged = .false.
-
-    !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t)
+    call output_open(ErrorFile%unit, 'output/error.log', (nbiter/=nmin .or. Params%RestartCalc == 1))
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(Diverged, x, y, mesh, t, ErrorFile)
     !$OMP DO COLLAPSE(2)
+
     do i=1,mesh%M
       do j=1,mesh%N
         if(isnan(mesh%Te(i,j))) then
-          write(95,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(ErrorFile%unit,*) "Divergence of Te at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Th(i,j))) then
-          write(95,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(ErrorFile%unit,*) "Divergence of Th at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Ts(i,j))) then
-          write(95,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(ErrorFile%unit,*) "Divergence of Ts at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Ne(i,j))) then
-          write(95,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(ErrorFile%unit,*) "Divergence of Ne at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
         end if
         if(isnan(mesh%Nh(i,j))) then
-          write(95,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
+          write(ErrorFile%unit,*) "Divergence of Nh at t=", t, "x(",i,j,")=", x, "y(",i,j,")=",y
           Diverged=.true.
+        end if
+
+        if(Diverged .eqv. .true.) then
+          write(*,*) "Divergence detected. Please check error.dat for more information."
+          stop
         end if
       end do
     end do
@@ -192,17 +207,12 @@ subroutine bilinear_interpol_dual(mesh, dual, InvCellVol )
     !$OMP END PARALLEL
 
     if(maxCFLxT.gt.M_ONE .OR. maxCFLyT.gt.M_ONE) then
-      write(95,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
+      write(ErrorFile%unit,*) "Bad convergence for Te,Th. t=", t, "(CFLx,CFLy)=", maxCFLxT, maxCFLyT
       Diverged=.true.
     end if
     if(maxCFLxN.gt.M_ONE .OR. maxCFLyN.gt.M_ONE) then
-      write(95,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
+      write(ErrorFile%unit,*) "Bad convergence for Ne,Nh. t=", t, "(CFLx,CFLy)=", maxCFLxN, maxCFLyN
       Diverged=.true.
-    end if
-
-    if(Diverged .eqv. .true.) then
-          write(*,*) "Divergence detected. Please check error.dat for more information."
-          stop
     end if
 
  end subroutine check_divergences

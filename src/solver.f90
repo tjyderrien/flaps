@@ -28,6 +28,7 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -43,6 +44,9 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
 
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'COMPUTE_NE')
 
   !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh, dt, GainsE, LossesE, InvCellVol, ShapeFactorNormalE, &
   !$OMP diffusionE, NormalE2, ShapeFactorTangentE, dual, ShapeFactorNormalW, NormalW2, ShapeFactorTangentW, &
@@ -111,6 +115,8 @@ subroutine computeNe( newmesh, mesh, dual, dt, InvCellVol, GainsE, LossesE, diff
   !$OMP END DO
   !$OMP END PARALLEL
 
+  call Profiler_stop(prof)
+
 end subroutine computeNe
 
 
@@ -123,6 +129,7 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -137,6 +144,9 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
                                                     ShapeFactorTangentS, ShapeFactorTangentN
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'COMPUTE_NH')
 
   !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh, dt, GainsH, LossesH, InvCellVol, ShapeFactorNormalE, &
   !$OMP diffusionH, NormalE2, ShapeFactorTangentE, dual, ShapeFactorNormalW, NormalW2, ShapeFactorTangentW, &
@@ -191,6 +201,7 @@ subroutine computeNh( newmesh, mesh, dual, dt, InvCellVol, GainsH, LossesH, diff
   !$OMP END DO
   !$OMP END PARALLEL
 
+  call Profiler_stop(prof)
 end subroutine computeNh
 
 
@@ -203,6 +214,7 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -217,6 +229,11 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
                                                     ShapeFactorTangentS, ShapeFactorTangentN
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  !$OMP MASTER
+  call Profiler_start(prof, 'COMPUTE_TE')
+  !$OMP END MASTER
 
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
@@ -241,6 +258,9 @@ subroutine computeTe( newmesh, mesh, dual, dt, InvCellVol, kappae,  CouplingE, S
   end do
   !$OMP END DO
 
+  !$OMP MASTER
+  call Profiler_stop(prof)
+  !$OMP END MASTER
 end subroutine computeTe
 
 
@@ -252,6 +272,7 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -266,6 +287,11 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
                                                     ShapeFactorTangentS, ShapeFactorTangentN
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  !$OMP MASTER
+  call Profiler_start(prof, 'COMPUTE_TH')
+  !$OMP END MASTER
 
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
@@ -292,6 +318,10 @@ subroutine computeTh( newmesh, mesh, dual, dt, InvCellVol, kappah,  CouplingH, S
   end do
   !$OMP END DO
 
+  !$OMP MASTER
+  call profiler_stop(prof)
+  !$OMP END MASTER
+
 end subroutine computeTh
 
 
@@ -304,6 +334,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
                       ShapeFactorNormalN, ShapeFactorTangentN, NormalN2, &
                       ShapeFactorNormalS, ShapeFactorTangentS, NormalS2 )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -319,6 +350,9 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
 
   integer :: i, j
   real(8) :: w1, w2, w3, w4
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'COMPUTE_TS')
 
   w1 = h2 * h3 / h1 / (-h3 + h1) / (-h2 + h1)
   w2 = h1 * h3 / (-h2 + h1) / h2 / (-h3 + h2)
@@ -436,6 +470,7 @@ subroutine computeTs( newmesh, mesh, dual, dt, InvCellVol, kappas,  CouplingH, C
   !$OMP END DO
   !$OMP END PARALLEL
 
+  call profiler_stop(prof)
 end subroutine computeTs
 
 ! This routine computes Ue for the entire mesh
@@ -447,6 +482,7 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
                       CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
                       NormalN, NormalS, NormalE, NormalW  )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -463,6 +499,9 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
   type(VectorField)                 , intent(in)    :: NormalN, NormalS, NormalE, NormalW
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'COMPUTE_UE')
 
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
@@ -526,6 +565,8 @@ subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
   end do
   !$OMP END DO
 
+  call profiler_stop(prof)
+
 end subroutine computeUe
 
 
@@ -538,6 +579,7 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
                       NormalN, NormalS, NormalE, NormalW )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -556,6 +598,9 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
 
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'COMPUTE_UH')
 
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
@@ -613,6 +658,7 @@ subroutine computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   end do
   !$OMP END DO
 
+  call profiler_stop(prof)
 end subroutine computeUh
 
 
@@ -623,6 +669,7 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                       CellAreaE, NormalEx, NormalEy, CellAreaW, NormalWx, NormalWy, &
                       CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy  )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -636,6 +683,10 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
                                                     CellAreaN, NormalNx, NormalNy, CellAreaS, NormalSx, NormalSy
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'COMPUTE_UH_ALT')
+
 
   !$OMP DO COLLAPSE(2)
   do j=2, mesh%N-1
@@ -664,6 +715,7 @@ subroutine computeUh_alt( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh, &
   end do
   !$OMP END DO
 
+  call Profiler_stop(prof)
 end subroutine computeUh_alt
 
 
@@ -674,6 +726,7 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
                               FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                               ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -688,6 +741,10 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
   integer(8),        intent(in)    :: ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'COMPUTE_CONV')
+
   !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, newmesh,UeNew, Ue, FermiTableE, ColFermiThreeHalf, FermiIndexE, ColFermiHalf, &
   !$OMP invCe, UhNew, Uh, FermiTableH, FermiIndexH, invCh)
   !$OMP DO COLLAPSE(2)
@@ -702,6 +759,8 @@ subroutine computeConvection( mesh, newmesh, UeNew, UhNew, Ue, Uh, invCe, invCh,
   !$OMP END DO
   !$OMP END PARALLEL
 
+  call profiler_stop(prof)
+
 end subroutine computeConvection
 
 
@@ -710,6 +769,7 @@ end subroutine computeConvection
 ! We assume that we are in a OMP parallel environement
 subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn )
   use Maths_m
+  use Profiler_m
   use Types_m
   implicit none
 
@@ -719,6 +779,10 @@ subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, Dri
   integer(8),                         intent(in)          :: DriftOn
 
   integer :: i, j
+  type(Profiler), save :: prof
+
+  call Profiler_start(prof, 'APPLY_BC')
+
 
     !BOUNDARY CONDITIONS
     !$OMP PARALLEL  DEFAULT(NONE) SHARED(newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn)
@@ -813,5 +877,7 @@ subroutine applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, Dri
     !$OMP END DO
 
     !$OMP END PARALLEL
+
+    call profiler_stop(prof)
 
 end subroutine applyBoundaryConditions

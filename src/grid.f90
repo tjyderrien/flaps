@@ -20,24 +20,13 @@
 !> @brief Everything related to the grid
 !------------------------------------------------------------------------------
 
-subroutine allocate_NormCurviTangent(M, N, NormalN, NormalS, NormalE, &
-                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
-                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
-                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+subroutine allocate_NormCurviTangent(M, N, NormalN, NormalS, NormalE, NormalW )
   use Types_m
   implicit none
 
   integer, intent(in)    :: M, N
   type(VectorField), intent(inout) :: NormalN, NormalS, NormalW, NormalE ! normal to quadrangle elements
 
-  real(8), dimension(:,:), allocatable,intent(inout) ::  TangentWx, TangentWy, &                ! Tangent to quadrangle elements
-                             TangentEx, TangentEy, &
-                             TangentNx, TangentNy, &
-                             TangentSx, TangentSy, &
-                             CurviWx, CurviWy, &                 ! Unit vector between cell centers
-                             CurviEx, CurviEy, &
-                             CurviNx, CurviNy, &
-                             CurviSx, CurviSy
 
   allocate(NormalN%x(1:M,1:N))
   allocate(NormalN%y(1:M,1:N))

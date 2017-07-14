@@ -19,3 +19,8 @@ external_libs/libflaps.a
 external_libs/gmsh/libgmsh.a
 external_libs/amos/libamos.a
 external_libs/gmsh/msh2vf
+doc/doxyfile.stamp
+doc/doxygen.log
+doc/doxygen_sqlite3.db
+doc/html/
+doc/latex

@@ -49,16 +49,17 @@ module laser_m
 contains
 
   !> Initialize laser paramters
-  subroutine init_laser( this )
+  subroutine init_laser( this, Params )
    use Maths_m
    use Types_m
    implicit none
 
    type(Laser), intent(inout) :: this
+   type(InputParameters), intent(in) :: Params
 
-    this%lambda    = 515d-9
-    this%fluence   = 10d0
-    this%tau       = 40d-15
+    this%lambda    = Params%Wavelength !515d-9
+    this%fluence   = Params%Fluence !10d0
+    this%tau       = Params%PulseFWHM !40d-15
     this%spotX     = 50d-6
     this%spotY     = 50d-6
     this%xCenter   = 1000d-9

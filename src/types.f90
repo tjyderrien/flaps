@@ -69,6 +69,9 @@ module Types_m
     integer :: AdaptativeTimeStep
     integer :: RestartCalc
     integer :: DumpInterval
+    real(8) :: Fluence
+    real(8) :: PulseFWHM
+    real(8) :: Wavelength
   end type
 
 end module Types_m

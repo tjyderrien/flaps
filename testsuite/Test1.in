@@ -1,6 +1,5 @@
 !This is a dummy input file for Flaps2D
 
-
 M 11
 N 11
 
@@ -8,18 +7,17 @@ TimeStep 1.0e-18
 TimeMax 0.0e-15
 Text 80.0
 RestartCalc 0
-DumpInterval 10000 !Interval for writing the restart
 
 OutputIter 1000
 
 ! Laser
-Fluence 10.0e0
+Fluence 0.0e0
 Wavelength 515.0e-9
 PulseFWHM 40.0e-15
 
 PolarizationSource 0
 phiMie0 270.0
-UseMieScattering 1 !-1: constant intensity, 0: some fittings, 1: Mie scattering.
+UseMieScattering -1 !-1: constant intensity, 0: some fittings, 1: Mie scattering.
 
 ! Model
 DrudeHeating 1

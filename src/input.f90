@@ -41,6 +41,11 @@ subroutine InitInputParameter( Params )
     Params%M = -1
     Params%N = -1
     Params%OutputIter = 10000
+    
+    !Laser parameters for the simulation
+    Params%fluence = 0e0
+    Params%pulseFWHM = 0e0
+    Params%wavelength = 0e0
 
     !Debug options
     Params%NeOff = 0
@@ -190,6 +195,22 @@ subroutine CheckValidityInputParameters( Params )
 
     if( Params%DumpInterval < 0 ) then
       print *, 'Bad value for DumpInterval'
+      call StopProgram()
+    end if
+    
+    if( Params%Fluence < 0d0 ) then
+      print *, 'Laser fluence cannot be negative'
+      call StopProgram()
+    end if
+    
+    if( (Params%Wavelength .le. 0e0) ) then !.or. ( (Params%Wavelength  .ne. 343e-9) .and. (Params%Wavelength  .ne. 515e-9) &
+        !.and. (Params%Wavelength  .ne. 800e-9 ) .and. ( Params%Wavelength  .ne. 1030e-9 ) ) ) then
+      print *, 'Laser wavelength is for now limited to 343, 515, 800, and 1030 nm.'
+      call StopProgram()
+    end if
+    
+    if( Params%PulseFWHM .le. 0e0 ) then
+      print *, 'Pulse duration cannot be null or negative. Optimal value is close to 50e-15 s = 50 fs.'
       call StopProgram()
     end if
 
@@ -375,6 +396,24 @@ subroutine LoadInputParameters( filename, Params )
                 call ParseInt( line, Params%DumpInterval )
                 goto 999
               endif
+              
+              !Wavelength
+              if( id .equals. 'Wavelength' ) then
+                call ParseDouble( line, Params%Wavelength )
+                goto 999
+              endif
+              
+              !pulseFWHM
+              if( id .equals. 'PulseFWHM' ) then
+                call ParseDouble( line, Params%PulseFWHM )
+                goto 999
+              endif
+              
+              !Fluence
+              if( id .equals. 'Fluence' ) then
+                call ParseDouble( line, Params%Fluence )
+                goto 999
+              endif
 ! Some examples
 
 !              !Type de la base d'orbitales
@@ -435,6 +474,11 @@ subroutine PrintInputParameters(Params)
     write(unit, '(a,i5)') 'N = ', Params%N
     write(unit, '(a,i5)') 'OutputIter = ', Params%OutputIter
 
+    !Laser parameters
+    write(unit, '(a,e12.5)') 'pulse duration (FWHM) = ', Params%PulseFWHM
+    write(unit, '(a,e12.5)') 'Laser wavelength (m) = ', Params%Wavelength
+    write(unit, '(a,e12.5)') 'Laser Fluence (J/m2) = ', Params%Fluence
+    
     !Debug options
     write(unit, '(a,i2)') 'NeOff = ', Params%NeOff
     write(unit, '(a,i2)') 'TeOff = ', Params%TeOff

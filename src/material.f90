@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
+!! Copyright (C) 2012-2017 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -22,8 +22,9 @@
 
 module Material_m
   use Maths_m
+  use Profiler_m
   use Types_m
-
+  use laser_m
 
   implicit none
 
@@ -31,6 +32,7 @@ module Material_m
 
   public ::                  &
     Material,                &
+    Laser,                   &
     get_collision_frequency, &
     init_material,           &
     evaluate_bandgap,        &
@@ -47,21 +49,25 @@ module Material_m
        !Model for the band-gap of silicon
        EG_SI_CONSTANT      = 0,    &
        EG_SI_KORFIATIS07   = 1,    &
-       EG_SI_VANDRIEL87    = 2
+       EG_SI_VANDRIEL87    = 2,    &
        !Model for the band-gap of ZnO
+       EG_ZNO_CONSTANT     = 3
 
   !Collision frequency
   real, parameter::            &
-    COL_FREQ_SI_CONSTANT = 1d15 !TODO: Add a REF for this
+    COL_FREQ_SI_CONSTANT = 1d15, & !Silaeva et al, New Journal of Physics 15, 089401 (2013)
+    COL_FREQ_ZNO_CONSTANT= 1d15    !Dufft and Bonse, Journal of Applied Physics 105, 034908 (2009)
 
-  !Static dielectric constant
+  !Static dielectric permittivity. Useful in case of constant field before the laser irradiation.
   real(8), parameter::         &
-    EPS_INF_SI    =  11.66570433d0 !,0.01404457712d0)  !TODO: Add a REF for this
-                     !TODO: Do you really believe al these digits?
+    EPS_INF_SI    =  11.66570433d0, & !,0.01404457712d0)  !Palik, E. D. Handbook of Optical Constants of Solids Academic Press, 1985
+    !TODO: Do you really believe al these digits? TJYD: The higher, the better. SPP spectroscopy has no limits ;)
+    EPS_INF_ZNO   = (1.9d0)**2        !TODO: HASARDOUS, based on refractiveindex.info, with incomplete data. 
 
-  !One-photon ionization rate
-  real(8), parameter ::        &
-    IR1P_SI       =  3.4536819356d6
+! === Not necessary ===
+!   real(8), parameter ::        &
+!     IR1P_SI       =  3.4536819356d6 
+!     !TODO: This must be calculated calculated directly from the wavelenth-dependent dielectric Permittivity! 
 
   !Two-photon ionization rate
   !TODO: To be implemented
@@ -71,16 +77,20 @@ module Material_m
     integer :: Eg_model        !< The model for the band-gap
     real(8) :: AugerRateE      !< Auger rate for electrons
     real(8) :: AugerRateH      !< Auger rate for holes
-    real(8) :: EpsStatic       !< dielectric constant for static field
+    real(8) :: EpsStatic       !< dielectric constant for static field: useful when Poisson will be solved for static fields
+    real(8) :: Dielectric	 !< dielectric permittivity at a given wavelength !TODO: How to put a function of wavelength and temperature here? 
   end type Material
 
   contains
 
-    subroutine init_material(this, AugerOff)
+    subroutine init_material(this, AugerOff, source)
       type(Material), intent(inout) :: this
       integer,        intent(in)    :: AugerOff
+      type(Laser),    intent(in)    :: source
+      
+      complex(8) :: DielectricConstant
 
-      !For the moment, this is hard-coded. In the future, this will be obtained from the input file
+      !TODO: For the moment, this is hard-coded. In the future, this will be obtained from the input file
       this%Id = Si
       this%Eg_model = EG_SI_CONSTANT
       if(AugerOff.eq.0) then
@@ -94,9 +104,10 @@ module Material_m
       !Lets select some hardcoded values, depending on the material
       select case(this%Id)
       case(Si)
-        this%EpsStatic = EPS_INF_SI
+        this%EpsStatic = DielectricConstant(source%lambda)
       case(ZnO)
         print *, 'Static value for ZnO not implemeted.'
+        this%EpsStatic = EPS_INF_ZNO
         call StopProgram()
       case default
         print *, 'Bad value for material ID.'
@@ -112,8 +123,8 @@ module Material_m
           call StopProgram()
         end if
       case(ZnO)
-        if(this%Eg_model <= EG_SI_VANDRIEL87) then
-          print *, 'Selected band-gap model is not compatible with silicon.'
+        if(this%Eg_model < EG_ZNO_CONSTANT) then
+          print *, 'Selected band-gap model is not compatible with ZnO.'
           call StopProgram()
         end if
       case default
@@ -132,6 +143,9 @@ module Material_m
       real(8),          intent(out)   :: Eg(:,:)
 
       integer :: i,j
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'BAND_GAP')
 
       !TODO: Is seems that these three models have a very similar parametrization.
       !This implies one implementation and coefficients outside
@@ -151,7 +165,7 @@ module Material_m
         !$OMP PARALLEL DO DEFAULT(NONE) SHARED (mesh, N, Ts, Eg) COLLAPSE(2)
         do j=1,mesh%N
           do i=1,mesh%M
-            Eg(i,j)=ec*(1.16d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(1./3.)) !Driel 1987
+            Eg(i,j)=ec*(1.1692d0-(7.02d-4*Ts(i,j)**2)/(Ts(i,j)+1108d0)-1.5d-10*N(i,j)**(1d0/3d0)) !Driel 1987
           end do
         end do
         !$OMP END PARALLEL DO
@@ -159,9 +173,7 @@ module Material_m
         Eg(1:mesh%M,1:mesh%N) = M_ZERO
       end select
 
-      !TODO: If you want to keep these models: Reference + name
-!       EgapValue=ec*(1.1692d0-4.9d-4*Ts**2/(Ts+655d0))
-!         EgapValue=ec*(1.1692d0) !-4.9d-4*Ts**2/(Ts+655d0))
+      call profiler_stop(prof)
     end subroutine evaluate_bandgap
 
     !------------------------------------------------------------------
@@ -174,8 +186,7 @@ module Material_m
       case(Si)
         colfreq=COL_FREQ_SI_CONSTANT
       case(ZnO)
-        print *, 'Collision frequency for ZnO not implemeted.'
-        call StopProgram()
+        colfreq=COL_FREQ_ZNO_CONSTANT
       case default
         print *, 'Bad value for material ID.'
         call StopProgram()
@@ -183,60 +194,61 @@ module Material_m
     end function get_collision_frequency
 
     !------------------------------------------------------------------
-    real(8) function OnePhotonIonizationRate(this)
+    real(8) function OnePhotonIonizationRate(this, lambda)
+      real(8),          intent(in)    :: lambda
       type(Material),   intent(in)    :: this
-
-      !TODO: Do you want to keep this model?
-!       OnePhotonIonizationRate=4d0*pi/laser%lambda*aimag(sqrt(epsilonLinear))
-
-      select case(this%Id)
-      case(Si)
-        OnePhotonIonizationRate = IR1P_SI
-      case(ZnO)
-        print *, 'OnePhotonIonizationRate for ZnO not implemeted.'
-        call StopProgram()
-      case default
-        print *, 'Bad value for material ID.'
-        call StopProgram()
-      end select
-
+      
+      complex(8) :: epsilonOmega, DielectricConstant
+      
+      epsilonOmega=DielectricConstant(lambda)
+      
+!       select case(this%Id)
+!       case(Si)  !basically valid for any band gap material
+	 OnePhotonIonizationRate = 4d0*M_PI/lambda*aimag(sqrt(epsilonOmega))
+!       case(ZnO) 
+!         OnePhotonIonizationRate = 4d0*M_PI/lambda*aimag(sqrt(epsilonOmega))
+!       case default
+!         print *, 'OnePhotonAbsorption: invalid material choice. '
+!         call StopProgram()
+!       end select
     end function OnePhotonIonizationRate
 
-    !TODO: Ideally, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
-    !We should also be able to select a tabulated Keldysh model for that.
+    !TODO: For Si, to be replaced by the model given in Bristow, Alan D., Nir Rotenberg, and Henry M. Van Driel. "Two-photon absorption and Kerr coefficients of silicon for 850–2200 nm." Appl. phys. lett 90.19 (2007): 191104.
+    !We should also be able to select a tabulated Keldysh model from that.
     !------------------------------------------------------------------
-    pure real(8) function TwoPhotonIonizationRate(lambda)
+    real(8) function TwoPhotonIonizationRate(this, lambda)
+	 type(Material),   intent(in)    :: this
       real(8), intent(in) :: lambda
 
-      if(lambda.eq.1030d-9) then
-        TwoPhotonIonizationRate=1.933288399d-11
-        return
-      end if
-
-      if(lambda.eq.800d-9) then
-        TwoPhotonIonizationRate=1.857135194d-11
-        return
-      end if
-
-      if(lambda.eq.515d-9) then
-        TwoPhotonIonizationRate=1.512238197d-11
-        return
-      end if
-
-      if(lambda.eq.343d-9) then
-        TwoPhotonIonizationRate=M_ZERO
-        return
-      end if
+      select case (this%Id)
+	   case (Si)
+		if(lambda.eq.(1030d-9)) then
+		  TwoPhotonIonizationRate=1.933288399d-11
+		elseif (lambda.eq.(800d-9)) then
+		  TwoPhotonIonizationRate=1.857135194d-11
+		elseif(lambda.eq.(515d-9)) then
+		  TwoPhotonIonizationRate=1.512238197d-11
+		elseif(lambda.eq.(343d-9)) then
+		  TwoPhotonIonizationRate=M_ZERO
+		else
+		  write(*,'(a)') 'Wavelength is not in database for material ID.'
+		  call StopProgram()
+		end if
+	   case (ZnO)
+		write(*,'(a)') 'Wavelength is not in database for material ID.'
+		call StopProgram()
+	   case default
+		write(*,'(a)') 'Wavelength is not in database for material ID.'
+		call StopProgram()
+	 end select
     end function TwoPhotonIonizationRate
 
 end module Material_m
 
-
-
 !------------------------------------------------------------------
     complex(8) pure function DielectricConstant(lambda)
-!> Dielectric consant for silicon mateiral at some particular wavelengths. 
-!> TODO: interface with SPP-extended-theory. 
+!> Dielectric constant for silicon material at some particular wavelengths. 
+!> TODO: interface with SPP-extended-theory to obtain any value in spectrum
       implicit none
 !TODO: NTD: This should not be hardcoded but should be in an external file. (Not clear how to do this properly).
 !TODO: TJYD: The plan is to connect with SPP-extended-theory where Palik data [Palik, Edward D., ed. "Handbook of optical constants of solids." (1998).] are directly giving this coefficient. 
@@ -277,7 +289,10 @@ end module Material_m
   !Routine that computes both electron and hole density of states, on the full grid
   subroutine DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
     use Maths_m
+    use Profiler_m
     use Types_m
+    use laser_m
+
     implicit none
 
     type(MeshValues),  intent(in)    :: mesh
@@ -286,6 +301,10 @@ end module Material_m
 
     real(8) :: coefE, coefH
     integer :: i, j
+    type(Profiler), save :: prof
+
+    call Profiler_start(prof, 'DENSITY_OF_STATES')
+
 
     coefE = meDOS*kb/(M_TWO*M_PI*hbar**2)
     coefH = mhDOS*kb/(M_TWO*M_PI*hbar**2)
@@ -294,12 +313,14 @@ end module Material_m
     !$OMP DO COLLAPSE(2)
     do j=1, mesh%N !(optimized)
       do i=1, mesh%M
-        DOSe(i,j) = M_TWO*(coefE*mesh%Te(i,j))**(1.5d0)
-        DOSh(i,j) = M_TWO*(coefH*mesh%Th(i,j))**(1.5d0)
+        DOSe(i,j) = M_TWO*sqrt((coefE*mesh%Te(i,j))**3)
+        DOSh(i,j) = M_TWO*sqrt((coefH*mesh%Th(i,j))**3)
       end do
     end do
     !$OMP END DO
     !$OMP END PARALLEL
+
+    call profiler_stop(prof)
 
   end subroutine DensitiesOfState_batch
 
@@ -309,6 +330,7 @@ end module Material_m
     subroutine DielectricFunction_batch(mesh, Dielectric, OpticalIndex, OpticalDamping, Reflectivity, &
                                         epsilonInf, nuColl, me, source)
       use Maths_m
+      use Profiler_m
       use Laser_m
       use Types_m
       implicit none
@@ -324,6 +346,9 @@ end module Material_m
 
       complex(8) :: coef, sqrtEps
       integer :: i, j
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'DIELECTRIC_FUNCTION')
 
 
       coef=ec*ec/me/epsilon0*source%inv_omega**2/(M_ONE+M_IM*nuColl*source%inv_omega)
@@ -344,12 +369,14 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
     end subroutine DielectricFunction_batch
 
 !------------------------------------------------------------------
        !This routine computes the Drude dielectric function for the entire grid with one call
     subroutine ComputeDielectricFunctionDrude_batch(Params, mesh, N, Dielectric, absorptionDrude, Collision, mass, source)
       use Maths_m
+      use Profiler_m
       use Laser_m
       use Types_m
       implicit none
@@ -364,6 +391,11 @@ end module Material_m
 
       complex(8) :: coef
       integer :: i, j
+      type(Profiler), save :: prof
+
+      !$OMP MASTER
+      call Profiler_start(prof, 'DRUDE')
+      !$OMP END MASTER
 
       coef= ec*ec/(mass*epsilon0)*source%inv_omega**2/(M_ONE+M_IM*Collision*source%inv_omega)
 
@@ -386,6 +418,10 @@ end module Material_m
         !$OMP END DO
       end if
 
+      !$OMP MASTER
+      call profiler_stop(prof)
+      !$OMP END MASTER
+
     end subroutine ComputeDielectricFunctionDrude_batch
 
 
@@ -403,14 +439,8 @@ end module Material_m
       !> [Sjodin, Theodore, Hrvoje Petek, and Hai-Lung Dai.
       !> "Ultrafast carrier dynamics in silicon: A two-color 
       !> transient reflection grating study on a (111) surface." 
-      !> Physical review letters 81.25 (1998): 5664.)
+      !> Physical review letters 81.25 (1998): 5664.]
       ephCollisionFrequency=M_ONE/((240d-15)*(M_ONE+(ne*inv_nth)**2))
-
-
-      !TODO: can we remove these lines. Do you want to keep them?
-!       CollisionFrequency=1d14 !
-      ! CollisionFrequency=1d13 !
-      !CollisionFrequency=5d13 !
     end function ephCollisionFrequency
 
 !------------------------------------------------------------------
@@ -430,19 +460,21 @@ end module Material_m
         return
       end if
 
-      !TODO: Where is 3.6 comes from? Add a REF here.
+      !> Reference: [Driel, H. V. Kinetics of high-density plasmas generated in Si 
+      !> by 1.06- and 0.53-$m picosecond laser pulses Phys. Rev. B, 1987, 35, 8166-8176
       ImpactIonizationRate = 3.6d10*exp(inv_kb*Eg/Te)
 
     end function ImpactIonizationRate
 
 
    !-------------------------------------------------------------------------------------
-   !> Computes the electron and mobilities for the entire mesh
+   !> Computes the electron and hole mobilities for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine ComputeMobilities_batch(mesh, mobilityE, mobilityH, &
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                        ColFermi0, ColFermiHalf, nuColl, me)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -458,6 +490,9 @@ end module Material_m
 
       integer :: i, j
       real(8) :: coef
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'MOBILITIES')
 
       coef = ec/(me*nuColl)
 
@@ -473,6 +508,8 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
+
     end subroutine ComputeMobilities_batch
 
    !-------------------------------------------------------------------------------------
@@ -482,6 +519,7 @@ end module Material_m
                                        FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                        ColFermiHalf, ColFermiMenusHalf)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -498,10 +536,14 @@ end module Material_m
       integer(8),            intent(in)    :: ColFermiMenusHalf, ColFermiHalf
 
       integer :: i, j
+      type(Profiler), save :: prof
 
       if(Params%TransportModel.eq.-1) then
-           return
+        return
       end if
+
+      call Profiler_start(prof, 'DIFFUSIONS')
+
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, diffusionE, diffusionH, &
       !$OMP mobilityE, mobilityH, FermiTableE, FermiTableH, ColFermiHalf, &
@@ -518,13 +560,16 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
+
     end subroutine UpdateDiffusions_batch
 
    !-------------------------------------------------------------------------------------
-   !> Computes the drif vectors for the entire mesh
+   !> Computes the drift vectors for the entire mesh
    !-------------------------------------------------------------------------------------
     subroutine UpdateDriftVectors_batch(mesh, JeX, JeY, JhX, JhY, mobilityE, mobilityH, Ex, Ey, DriftOn)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -538,10 +583,14 @@ end module Material_m
       integer(8),        intent(in)    :: DriftOn
 
       integer :: i, j
+      type(Profiler), save :: prof
 
       if(DriftOn.eq.0) then !No need to update these values
         return
       endif
+
+      call Profiler_start(prof, 'DRIFT_VECTORS')
+
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (JeX, JeY, JhX, JhY, mobilityE, mobilityH, mesh, Ex, Ey)
       !$OMP DO COLLAPSE(2)
@@ -556,6 +605,7 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
     end subroutine UpdateDriftVectors_batch
 
    !-------------------------------------------------------------------------------------
@@ -565,6 +615,7 @@ end module Material_m
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                            ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta  )
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -583,6 +634,9 @@ end module Material_m
 
       real(8) :: tmp, LatticeHeatCapacity
       integer :: i, j
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'HEAT_CAPACITIES')
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (mesh, Ce, Ch, Cs, ColFermiThreeHalf, FermiIndexE, FermiIndexH, &
       !$OMP FermiTableE, FermiTableH, ColFermiEta, ColFermiHalf, ColFermiMenusHalf, invCe, invCh, invCs) &
@@ -610,6 +664,7 @@ end module Material_m
       !$OMP END DO
       !$OMP END PARALLEL
 
+      call profiler_stop(prof)
     end subroutine ComputeHeatCapacities_batch
 
 
@@ -635,6 +690,7 @@ end module Material_m
                                            FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
                                            ColFermi0, ColFermi1, ColFermi2, TransportModel)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -651,7 +707,6 @@ end module Material_m
       integer(8),        intent(in)    :: ColFermi0, ColFermi1, ColFermi2, TransportModel
 
       integer :: i, j
-
       !TODO: We have to find a nomeclature and a name for this model
       !TODO: Is there other models?
       !Elena Silaeva fit on: Kazan et al, Journal of Applied Physics, 2010, 107, 083503
@@ -661,6 +716,11 @@ end module Material_m
       real(8), parameter :: dd = 2.315984470d0
       real(8), parameter :: ee = -.4756634637d0
       real(8), parameter :: ff = 2.403533689d0 !TODO: If possible, use notations of the original paper
+
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'CONDUCTIVITIES')
+
 
       if(TransportModel.eq.-1) then !No need to update the conductivity
         return
@@ -690,6 +750,7 @@ end module Material_m
         !$OMP END DO
         !$OMP END PARALLEL
 !      else if(TransportModel.eq.1) then
+!      TODO: Add reference (Tritt or Chen et al 2005 ?)
 !        !$OMP DO COLLAPSE(2)
 !        do j=1, mesh%N
 !          do i=1, mesh%M
@@ -721,6 +782,8 @@ end module Material_m
 !      !$OMP END DO
     end if
 
+    call profiler_stop(prof)
+
     end subroutine UpdateConductivities_batch
 
    !-------------------------------------------------------------------------------------
@@ -728,6 +791,7 @@ end module Material_m
    !-------------------------------------------------------------------------------------
     subroutine UpdateCouplings_batch(Params, mesh, CouplingE, CouplingH, Ce, Ch)
       use Maths_m
+      use Profiler_m
       use Types_m
       implicit none
 
@@ -742,12 +806,17 @@ end module Material_m
       real(8) :: nuColleph!        electron-phonon collision frequency
       real(8) :: ephCollisionFrequency
       !
+      type(Profiler), save :: prof
+
+      call Profiler_start(prof, 'COUPLINGS')
+
       if(Params%CouplingDebug.eq.1) then !No need to update the couplings, as they are zero
           return
       end if
-      !
+      !TODO: why repeating the case on electrons, here? 
+      !TODO: add parallel zone here
       if(Params%HolesOff.eq.0) then
-        !
+        !$OMP PARALLEL DEFAULT(NONE) SHARED (CouplingE, CouplingH, mesh, Ce, Ch) PRIVATE (nuColleph)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N !(optimized)
           do i=1, mesh%M
@@ -758,9 +827,9 @@ end module Material_m
           end do
         end do
         !$OMP END DO
-        !
+        !$OMP END PARALLEL
       else !In this case no need to update CouplingH
-       !
+       !$OMP PARALLEL DEFAULT(NONE) SHARED (CouplingE, mesh, Ce, nuColleph)
        !$OMP DO COLLAPSE(2)
        do j=1, mesh%N !(optimized)
          do i=1, mesh%M
@@ -770,8 +839,10 @@ end module Material_m
          end do
        end do
        !$OMP END DO
-       !
+       !$OMP END PARALLEL
       end if
+      !
+      call profiler_stop(prof)
     !
     end subroutine UpdateCouplings_batch
 
@@ -786,6 +857,7 @@ end module Material_m
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, ImpactOff )
      use Material_m
      use Maths_m
+     use Profiler_m
      use Laser_m
      use Types_m
      implicit none
@@ -806,6 +878,10 @@ end module Material_m
      integer :: i,j
      real(8), dimension(mesh%M,mesh%N) :: EgapH
 
+     type(Profiler), save :: prof
+
+     call Profiler_start(prof, 'GAINS_AND_LOSSES')
+
      ! free-carrier balance sources
      call evaluate_bandgap(matter, mesh, mesh%Ne, mesh%Ts, Egap)
 
@@ -825,7 +901,7 @@ end module Material_m
         Int2 = intensity(i,j)**2
         work = ImpactIonizationRate(mesh%Te(i,j),Egap(i,j), ImpactOff)
 
-        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E &
+        GainsE(i,j)=(OnePhotonIonizationRate0*intensity(i,j)*source%inv_E & 
                     +M_HALF*TwoPhotonIonizationRate0*Int2*source%inv_E &
                     +work*mesh%Ne(i,j))! *(4d0*SiDensity-Ne(i,j))/(4d0*SiDensity) !use Old Ne here!
 
@@ -875,6 +951,8 @@ end module Material_m
     end do
     !$OMP END DO
     !$OMP END PARALLEL
+
+    call profiler_stop(prof)
    end subroutine ComputeGainsAndLosses
 
 !------------------------------------------------------------------

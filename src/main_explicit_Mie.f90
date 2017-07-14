@@ -256,7 +256,7 @@ program Flaps
             localT, P2critic, TotalNumOfE, TotalNumOfH, &
             xmin2, xmax2, ymin2, ymax2, &
             MeshConvergence, MeshConvergenceOld
-    real :: cpuefficiency, cpu_timestep_duration, ElapsedTime
+    real :: cpuefficiency, cpu_timestep_duration
             
     real(8) sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, sigmaX8, sigmaX9, &
             sigmaY1, sigmaY2, sigmaY3, sigmaY4, sigmaY5, sigmaY6, sigmaY7, sigmaY8, sigmaY9, &
@@ -281,7 +281,7 @@ program Flaps
     !! FUNCTIONS CALLS
      real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
      real(8) ConeExp1, ConeExp2, DensityOfState, &
-             CollisionFrequency, LatticeHeatCapacity, ImpactIonizationRate
+             LatticeHeatCapacity
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
 
             
@@ -290,6 +290,8 @@ program Flaps
 !#IFDEF (OMP_NUM_THREADS)
 !    integer :: OMP_GET_NUM_THREADS, OMP_GET_THREAD_NUM
 !#ENDIF
+
+   type(Profiler), save :: prof_check, prof_CFL, prof_IO, prof_copy, prof_fermi
 
   !TODO: move to material.f90
   !TODO: Should be a parameter, to guaranty no modification
@@ -323,14 +325,16 @@ program Flaps
   !$OMP END PARALLEL
 ! !!******* END OpenMP test
 
+  call Profiler_global_init()
   call Profiler_start(prof_init, 'INIT')
   call timer_init(full_timer)
 
   call InitInputParameter( Params )
   call LoadInputParameters( "flaps.in", Params )
   call CheckValidityInputParameters( Params )
-
-  call init_material( matter, Params%AugerOff )
+  
+  call init_laser(source, Params)
+  call init_material( matter, Params%AugerOff, source)
 
   allocate(Ue(1:Params%M, 1:Params%N))
   allocate(Uh(1:Params%M, 1:Params%N), & !hole energy
@@ -510,8 +514,6 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 
 !**** INITIALIZATION
-
-  call init_laser(source)
 
   tmin=tCenter-5d0*source%tau
 
@@ -1260,9 +1262,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   allocate(TangentSy(1:Params%M,1:Params%N))
 
    call allocate_NormCurviTangent(Params%M, Params%N, NormalN, NormalS, NormalE, &
-                                 NormalW, TangentNx, TangentNy, TangentSx, TangentSy, &
-                                 TangentEx, TangentEy, TangentWx, TangentWy, CurviNx, CurviNy, &
-                                 CurviSx, CurviSy, CurviEx, CurviEy, CurviWx, CurviWy )
+                                 NormalW )
+
 
    call compute_distances(Params%M, Params%N, x, y, DistN, DistS, DistE, DistW, DistDualN, &
                           DistDualS, DistDualE, DistDualW, CellAreaN, CellAreaS, CellAreaE, CEllAreaW )
@@ -1301,8 +1302,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
                                             NormalWxP, NormalWyP, CellAreaNP, CellAreaSP, CellAreaEP, CellAreaWP )
 
 
-  call poisson_init_dual( Params%M,Params%N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
-                           xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
+!   call poisson_init_dual( Params%M,Params%N, x, y, xDualSW, yDualSW, xDualSE, yDualSE, &
+!                            xDualNE, yDualNE, xDualNW, yDualNW, xDual, yDual)
 
    ! Drift initialization
    JeX(:,:)=M_ZERO
@@ -1313,8 +1314,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    
    !! defining material index and ionization constants
    epsilonInf=DielectricConstant(source%lambda)
-   OnePhotonIonizationRate0=OnePhotonIonizationRate(matter)
-   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(source%lambda)
+   OnePhotonIonizationRate0=OnePhotonIonizationRate(matter, source%lambda)
+   TwoPhotonIonizationRate0=TwoPhotonIonizationRate(matter, source%lambda)
    
   write(*,*) 'epsilon(', 1d9*source%lambda, 'nm)=', epsilonInf
   write(*,*) 'Re(sqrt(epsilon))=', real(sqrt(epsilonInf))
@@ -1601,6 +1602,8 @@ if(Params%UseMieScattering.eq.1) then
    NeTotal=M_HALF
    NhTotal=M_HALF
 
+   call Profiler_start(prof_copy, 'COPY DATA')
+
    ! replacing old datas
    !$OMP PARALLEL DEFAULT(NONE) SHARED(newmesh, Ue, Uh, UeNew, UhNew, &
    !$OMP TsPrev, TsOld, mesh, CeOld, Ce, ChOld, Ch, CsPrev2, CsPrev, CsOld, Cs )
@@ -1621,11 +1624,12 @@ if(Params%UseMieScattering.eq.1) then
    end do
    !$OMP END DO
    !$OMP END PARALLEL
-
-
+   !
    !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, newmesh)
    call copy_mesh(mesh, newmesh)
    !$OMP END PARALLEL
+
+   call profiler_stop(prof_copy)
 
    !TODO: Does this depends on the position? If yes, this has to be changed bak to an array. 
    !TODO: TJYD: this can depend on position, if we apply a model for the collision frequency. This would be nice, actually. 
@@ -1645,13 +1649,6 @@ if(Params%UseMieScattering.eq.1) then
    !
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
-   !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
-   !$OMP absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
-   !$OMP t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0,  &
-   !$OMP sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
-   !$OMP sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
-   !$OMP x3, y3, x4, y4, x5, EintFieldR,  &
-   !$OMP y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9)
    !This routine computes the intensity for the entire grid with one call
    call ComputeIntensity_batch(Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
                                absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
@@ -1660,8 +1657,9 @@ if(Params%UseMieScattering.eq.1) then
                                sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
                                x3, y3, x4, y4, x5, EintFieldR,  &
                                y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
-   !$OMP END PARALLEL
    !
+   !
+   call Profiler_start(prof_fermi, 'FERMI')
    !
 !!!! thermal calculations in the main domain
 ! calculation of sources
@@ -1687,6 +1685,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
    !
+   call profiler_stop(prof_fermi)
    !
    !
    !Computes the electron and mobilities for the entire mesh
@@ -1721,9 +1720,9 @@ if(Params%UseMieScattering.eq.1) then
                               GainsE, GainsH, SourceUe, SourceUh, SourceE, SourceH, LossesE, LossesH, Params%ImpactOff )
    !
    !Compute the new conductivites, based on the knowledge of densities and mobilities
-   call UpdateConductivities_batch(Params,mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
-                                     FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
-                                     ColFermi0, ColFermi1, ColFermi2)
+   call UpdateConductivities_batch(mesh, kappae, kappah, kappas, mobilityE, mobilityH, &
+                                           FermiTableE, FermiTableH, FermiIndexE, FermiIndexH, &
+                                           ColFermi0, ColFermi1, ColFermi2, Params%TransportModel)
    !
    ! interpolation bilineaire ponderee par les aires
    call bilinear_interpol_dual(mesh, dual, InvCellVol)
@@ -1840,6 +1839,9 @@ if(Params%UseMieScattering.eq.1) then
                              ColFermiThreeHalf, ColFermiHalf, ColFermiMenusHalf, ColFermiEta )
    end if
    !
+   !
+   call Profiler_start(prof_CFL, 'CALC_CFL')
+   !
    !$OMP PARALLEL DEFAULT(NONE) SHARED (dt, x, y, Params, diffusionE, kappae, kappas, &
    !$OMP CFLxT, CFLyT, CFLxN, CFLyN, CFLxTs, CFLyTs, DistN, DistS, DistE, DistW, invCe, invCh, invCs) &
    !$OMP PRIVATE(work)
@@ -1863,10 +1865,12 @@ if(Params%UseMieScattering.eq.1) then
    end do
    !$OMP END DO
    !$OMP END PARALLEL
+   call Profiler_stop(prof_CFL)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of parallel section
    !
    call applyBoundaryConditions( newmesh, UeNew, UhNew, GradNeX, GradNeY, DriftOn )
    !
+   call Profiler_start(prof_check, 'CHECK')
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! CHECKING the results
    !
@@ -1911,6 +1915,7 @@ if(Params%UseMieScattering.eq.1) then
      write(*,*) "CFL_Limit=", maxCFL
      write(*,*) "dt_init=", Params%TimeStep, "dt=", dt
 
+
      TotalThermalEnergy = 0.0d0
      TotalLaserEnergy = 0.0d0
 
@@ -1932,9 +1937,9 @@ if(Params%UseMieScattering.eq.1) then
          TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
          !
          !
-         work = intensity(i,j)/(1d0-reflectivity(i,j))
-         TotalLaserEnergy = TotalLaserEnergy + &
-                         OnePhotonIonizationRate0 * work    & !energy loss by interband absorption
+         work = intensity(i,j)*(1d0-reflectivity(i,j))
+         TotalLaserEnergy = TotalLaserEnergy + & !TODO: is this expression valid ?!
+                         OnePhotonIonizationRate0 * work    & !energy loss by one photon absorption
                        + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
                   + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
        end do
@@ -2036,7 +2041,8 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
 
-   call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t )
+
+   call check_divergences(mesh, maxCFLxT, maxCFLyT, maxCFLxN, maxCFLyN, x, y, t, nbiter, nmin, Params )
 
    !TODO: Move this to check_divergences
    !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, FermiIndexE, FermiIndexH, &
@@ -2058,8 +2064,13 @@ if(Params%UseMieScattering.eq.1) then
    end do
    !$OMP END DO
    !$OMP END PARALLEL
-  end if
+  !
+  end if !mod(nbiter,Params%OutputIter).eq.0
+  !
+  call Profiler_stop(prof_check)
+  !
 
+  call Profiler_start(prof_IO, 'IO')
   !TODO: There should be a module managing the adaptative time step
   ! lets change dt when fast reponse is finished in order to catch the long one.
 
@@ -2221,6 +2232,8 @@ if(Params%UseMieScattering.eq.1) then
             IntensityEnergy, ElectronEnergy, ElectronKineticEnergy, ElectronPotentialEnergy, HoleEnergy, LatticeEnergy )
     end if
     !
+  call Profiler_stop(prof_IO)
+    !
   call Profiler_stop(prof_timeloop)
     !
   end do !end of time loop
@@ -2236,7 +2249,7 @@ if(Params%UseMieScattering.eq.1) then
 
   call ReleaseInputParameters( Params )
 
-  call Profiler_write_report( )
+  call Profiler_end_global( )
 
 end program Flaps
 

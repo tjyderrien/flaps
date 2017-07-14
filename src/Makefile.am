@@ -47,12 +47,12 @@ depend:
 
 main_explicit_Mie.o: main_explicit_Mie.f90 input.o material.o mesh.o mie.o output.o source.o \
                      solver.o grid.o timer.o restart.o
-material.o: material.f90 types.o maths.o source.o
-mesh.o: mesh.f90 types.o
-mie.o: mie.f90 maths.o
+material.o: material.f90 types.o maths.o source.o profiler.o
+mesh.o: mesh.f90 types.o output.o
+mie.o: mie.f90 maths.o profiler.o
 output.o: output.f90 types.o
 source.o: source.f90 maths.o types.o
-solver.o: solver.f90 types.o
+solver.o: solver.f90 types.o profiler.o
 grid.o: grid.f90 maths.o types.o
 input.o: input.f90 types.o string.o utils.o
 string.o: string.f90

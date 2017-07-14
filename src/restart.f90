@@ -14,11 +14,10 @@
 !! along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 !------------------------------------------------------------------------------
-!> @file Timer.f90
+!> @file restart.f90
 !
 ! DESCRIPTION:
-!> @brief A timer module \n
-!> See IDRIS website http://www.idris.fr/su/Shared/fct_F95.html
+!> @brief Restart module to compute calculations on long times.
 !------------------------------------------------------------------------------
 
 module Restart_m
