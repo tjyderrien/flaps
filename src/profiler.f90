@@ -149,13 +149,13 @@ module Profiler_m
                                              'Cumulative time [s]', &
                                              'Time/call [ms/call]'
 
-   call addtorepport(iunit,prof_full)
+   call addtoreport(iunit,prof_full)
 
    CLOSE( UNIT=iunit )
   end subroutine Profiler_end_global
 
    !------------------------------------------------------------------
-   subroutine addtorepport(iunit, prof)
+   recursive subroutine addtoreport(iunit, prof)
      integer,        intent(in) :: iunit
      type(Profiler), intent(inout) :: prof
 
@@ -175,8 +175,8 @@ module Profiler_m
 
      !Recurive call
      do ichild = 1, prof%nchild
-       call addtorepport(iunit, prof%children(ichild)%p)
+       call addtoreport(iunit, prof%children(ichild)%p)
      end do
 
-   end subroutine addtorepport
+   end subroutine addtoreport
 end module Profiler_m
