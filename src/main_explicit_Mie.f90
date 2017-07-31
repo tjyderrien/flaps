@@ -1079,6 +1079,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Laser spot size: (Sx, Sy)=", source%spotX*1d6, source%spotY*1d6, "um"
   write(Parameters%unit,*) "Mie scattering:", Params%UseMieScattering
   write(Parameters%unit,*) "Laser polarization", Params%PolarizationSource
+  write(Parameters%unit,*) "UseFermiDirac=", Params%UseFermiDirac
   write(Parameters%unit,*)
   write(Parameters%unit,*) "============ MESH PARAMETERS =========="
   write(Parameters%unit,*) "Mesh size", Params%M, "x", Params%N
@@ -1165,8 +1166,13 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
-        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
+        if(Params%UseFermiDirac.eq.0) then
+          FermiIndexE(i,j)=1
+          FermiIndexH(i,j)=1
+        else
+          FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines)
+          FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines)
+        end if
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 
         etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
@@ -1672,8 +1678,13 @@ if(Params%UseMieScattering.eq.1) then
         !         write(*,*) "Esprit es-tu la ?"
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
-        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
+        if(Params%UseFermiDirac.eq.0) then
+          FermiIndexE(i,j)=1
+          FermiIndexH(i,j)=1
+        else
+          FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines)
+          FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines)
+        end if
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "NeNc=", Ne(i,j)/DOSe(i,j), Nh(i,j)/DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "FermiIndex=", FermiIndex(Ne(i,j)/DOSe(i,j), FermiMaxLines), FermiIndex(Nh(i,j)/DOSh(i,j), FermiMaxLines)

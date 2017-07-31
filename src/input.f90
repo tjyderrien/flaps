@@ -214,6 +214,11 @@ subroutine CheckValidityInputParameters( Params )
       call StopProgram()
     end if
 
+    if( abs(Params%UseFermiDirac) > 1 ) then
+      print *, 'Bad value for UseFermiDirac'
+      call StopProgram()
+    end if
+
 end subroutine CheckValidityInputParameters
 
 subroutine LoadInputParameters( filename, Params )
@@ -414,6 +419,12 @@ subroutine LoadInputParameters( filename, Params )
                 call ParseDouble( line, Params%Fluence )
                 goto 999
               endif
+
+              !UseFermiDirac
+              if( id .equals. 'UseFermiDirac' ) then
+                call ParseDouble( line, Params%UseFermiDirac )
+                goto 999
+              endif
 ! Some examples
 
 !              !Type de la base d'orbitales
@@ -491,6 +502,7 @@ subroutine PrintInputParameters(Params)
     write(unit, '(a,i2)') 'DrudeHeating = ', Params%DrudeHeating
     write(unit, '(a,i2)') 'TransportModel = ', Params%TransportModel
     write(unit, '(a,i2)') 'ConvectionEnergy = ', Params%ConvectionEnergy
+    write(unit, '(a,i2)') 'UseFermiDirac = ', Params%UseFermiDirac
 
     !Mie scattering
     write(unit, '(a,e12.5)') 'phiMie0 = ', Params%phiMie0
