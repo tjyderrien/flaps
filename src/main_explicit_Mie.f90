@@ -1669,12 +1669,14 @@ if(Params%UseMieScattering.eq.1) then
    !
 !!!! thermal calculations in the main domain
 ! calculation of sources
+    write(*,*) "iter=", nbiter
    !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, DOSe, DOSh, FermiRatioH, FermiRatioE, &
    !$OMP FermiIndexE, FermiIndexH )
    !$OMP DO  COLLAPSE(2)
     do j=1,Params%N
         do i=1,Params%M
-
+        write(*,*) "(i, j) =", i, j, "Ne=", mesh%Ne(i,j), "Nh=", mesh%Nh(i,j), "Te=", mesh%Te(i,j), &
+        "Th=", mesh%Th(i,j)
         !         write(*,*) "Esprit es-tu la ?"
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
@@ -1696,6 +1698,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
    !
+   read *
    call profiler_stop(prof_fermi)
    !
    !
