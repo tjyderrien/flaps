@@ -476,7 +476,7 @@ subroutine PrintInputParameters(Params)
     write(unit, '(a,e12.5)') 'Text = ', Params%Text
     write(unit, '(a,i2)') 'AdaptativeTimeStep = ', Params%AdaptativeTimeStep
     write(unit, '(a,i2)') 'RestartCalc = ', Params%RestartCalc
-    write(unit, '(a,i2)') 'DumpInterval = ', Params%DumpInterval
+    write(unit, '(a,i5)') 'DumpInterval = ', Params%DumpInterval
 
 
     !Numerical parameters of the simulation
