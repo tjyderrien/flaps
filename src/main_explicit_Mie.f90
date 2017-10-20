@@ -1793,23 +1793,23 @@ if(Params%UseMieScattering.eq.1) then
                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                          &
                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
        !
-     else
-       !
-       call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
-                   invCe, Ue, UeNew, VeX, VeY, CellVol,                                              &
-                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                   CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
-                   NormalN, NormalS, NormalE, NormalW  )
+!     else
+!       !
+!       call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
+!                   invCe, Ue, UeNew, VeX, VeY, CellVol,                                              &
+!                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+!                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+!                   CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
+!                   NormalN, NormalS, NormalE, NormalW  )
        !
        !TODO: Should probably not be here
-       call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
-                   invCh, Uh, UhNew, VhX, VhY, CellVol,                                              &
-                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                   CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
-                   NormalN, NormalS, NormalE, NormalW  )
-       !
+!       call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
+!                   invCh, Uh, UhNew, VhX, VhY, CellVol,                                              &
+!                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+!                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+!                   CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
+!                   NormalN, NormalS, NormalE, NormalW  )
+!       !
      endif
      !
      if(Params%HolesOff.eq.0) then
