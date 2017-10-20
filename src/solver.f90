@@ -475,12 +475,12 @@ end subroutine computeTs
 
 ! This routine computes Ue for the entire mesh
 ! We assume that we are in a OMP parallel environement
-!subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
-!                      invCe, Ue, UeNew, VeX, VeY, CellVol, &
-!                      ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-!                      ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-!                      CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
-!                      NormalN, NormalS, NormalE, NormalW  )
+subroutine computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe, &
+                      invCe, Ue, UeNew, VeX, VeY, CellVol, &
+                      ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+                      ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+                      CellAreaE, CellAreaW, CellAreaN, CellAreaS, &
+                      NormalN, NormalS, NormalE, NormalW  )
   use Maths_m
   use Profiler_m
   use Types_m
