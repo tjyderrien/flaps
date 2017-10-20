@@ -63,7 +63,7 @@ print color "reset";
 
 for ($test = 1 ; $test <= $ntests ; $test++) {
         print $message[$test];
-        system($testscript[$test]);
+        system($testscript[$test]); #program is executed here. 
         $ODT="Test".$test."/TimeMax.dat"; #ODT = reference !
 	$file="output/TimeMax.dat";
         @old = `cat $ODT | grep -v \"#\"`;
