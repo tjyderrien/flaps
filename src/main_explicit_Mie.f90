@@ -1060,8 +1060,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
-!    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
-    !uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
+   if(Params%UseFermiDirac.eq.0) then
+     FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
+   end if
 !************ INITIALIZATION ************
   call output_open(Parameters%unit,'output/parameters.dat', .false.)
   write(Parameters%unit,*) "========== CONE PARAMETERS ========="
@@ -1669,14 +1670,14 @@ if(Params%UseMieScattering.eq.1) then
    !
 !!!! thermal calculations in the main domain
 ! calculation of sources
-    write(*,*) "iter=", nbiter
+   ! write(*,*) "iter=", nbiter
    !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, DOSe, DOSh, FermiRatioH, FermiRatioE, &
    !$OMP FermiIndexE, FermiIndexH )
    !$OMP DO  COLLAPSE(2)
     do j=1,Params%N
         do i=1,Params%M
-        write(*,*) "(i, j) =", i, j, "Ne=", mesh%Ne(i,j), "Nh=", mesh%Nh(i,j), "Te=", mesh%Te(i,j), &
-        "Th=", mesh%Th(i,j)
+        ! write(*,*) "(i, j) =", i, j, "Ne=", mesh%Ne(i,j), "Nh=", mesh%Nh(i,j), "Te=", mesh%Te(i,j), &
+        ! "Th=", mesh%Th(i,j)
         !         write(*,*) "Esprit es-tu la ?"
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
@@ -1698,7 +1699,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
    !
-   read *
+   ! read *
    call profiler_stop(prof_fermi)
    !
    !
