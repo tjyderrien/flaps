@@ -15,7 +15,7 @@ DumpInterval 10000 !Interval for writing the restart
 OutputIter 1000
 
 ! Laser
-Fluence 0.0e0
+Fluence 10.0e0
 Wavelength 515.0e-9
 PulseFWHM 40.0e-15
 
@@ -25,15 +25,14 @@ UseMieScattering -1 !-1: constant intensity, 0: some fittings, 1: Mie scattering
 
 ! Model
 DrudeHeating 0    ! 0: disabled, 1: enabled. 
-TransportModel -1 ! -1: 0: 1:
+TransportModel 1 ! -1: disabled transport, 0:  1:
 ConvectionEnergy 0 ! Obselete. 
 
 !Debug options
-NeOff 1
+NeOff 0
 TeOff 0
-HolesOff 1
+HolesOff 0
 TsOff 1
 ImpactOff 1
 CrossDiffusionOff 1
-UseFermiDirac 0.0
->>>>>>> bugfix
+UseFermiDirac 1.0
