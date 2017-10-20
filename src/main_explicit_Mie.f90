@@ -117,7 +117,7 @@ program Flaps
 !                      epsilonStatic0=(11.66570433d0,0.01404457712d0)                ! dielectric constant for static field
     
     integer(8)         nbiter, i, j, k, nmin, nmax, NeedleIndexX, NeedleIndexY, maxFermiIndexE, maxFermiIndexH, &
-                Mp, Np, RunningIndex
+                Mp, Np, RunningIndex, FermiIndex
     real(8)         t, t0, dx, dy, x0, y0, dt, dt2, dt3, dt4, h1, h2, h3
     real(8)         I0 !initial values of the problem
 
@@ -1060,8 +1060,9 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
-   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
-    !uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
+   if(Params%UseFermiDirac.eq.0) then
+     FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
+   end if
 !************ INITIALIZATION ************
   call output_open(Parameters%unit,'output/parameters.dat', .false.)
   write(Parameters%unit,*) "========== CONE PARAMETERS ========="
@@ -1079,6 +1080,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   write(Parameters%unit,*) "Laser spot size: (Sx, Sy)=", source%spotX*1d6, source%spotY*1d6, "um"
   write(Parameters%unit,*) "Mie scattering:", Params%UseMieScattering
   write(Parameters%unit,*) "Laser polarization", Params%PolarizationSource
+  write(Parameters%unit,*) "UseFermiDirac=", Params%UseFermiDirac
   write(Parameters%unit,*)
   write(Parameters%unit,*) "============ MESH PARAMETERS =========="
   write(Parameters%unit,*) "Mesh size", Params%M, "x", Params%N
@@ -1165,8 +1167,13 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
+        if(Params%UseFermiDirac.eq.0) then
+          FermiIndexE(i,j)=1
+          FermiIndexH(i,j)=1
+        else
+          FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines)
+          FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines)
+        end if
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 
         etae=FermiTableE(ColFermiEta,FermiIndexE(i,j))
@@ -1663,17 +1670,24 @@ if(Params%UseMieScattering.eq.1) then
    !
 !!!! thermal calculations in the main domain
 ! calculation of sources
+   ! write(*,*) "iter=", nbiter
    !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, DOSe, DOSh, FermiRatioH, FermiRatioE, &
    !$OMP FermiIndexE, FermiIndexH )
    !$OMP DO  COLLAPSE(2)
     do j=1,Params%N
         do i=1,Params%M
-
+        ! write(*,*) "(i, j) =", i, j, "Ne=", mesh%Ne(i,j), "Nh=", mesh%Nh(i,j), "Te=", mesh%Te(i,j), &
+        ! "Th=", mesh%Th(i,j)
         !         write(*,*) "Esprit es-tu la ?"
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j), FermiMaxLines) !1
-        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j), FermiMaxLines) !1
+        if(Params%UseFermiDirac.eq.0) then
+          FermiIndexE(i,j)=1
+          FermiIndexH(i,j)=1
+        else
+          FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j), FermiMaxLines)
+          FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j), FermiMaxLines)
+        end if
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "NeNc=", Ne(i,j)/DOSe(i,j), Nh(i,j)/DOSh(i,j)
 !         write(*,*) "iter=", nbiter, "FermiIndex=", FermiIndex(Ne(i,j)/DOSe(i,j), FermiMaxLines), FermiIndex(Nh(i,j)/DOSh(i,j), FermiMaxLines)
@@ -1685,6 +1699,7 @@ if(Params%UseMieScattering.eq.1) then
    !$OMP END DO
    !$OMP END PARALLEL
    !
+   ! read *
    call profiler_stop(prof_fermi)
    !
    !
@@ -1778,23 +1793,23 @@ if(Params%UseMieScattering.eq.1) then
                    ShapeFactorNormalN, ShapeFactorTangentN, NormalN%N,                          &
                    ShapeFactorNormalS, ShapeFactorTangentS, NormalS%N )
        !
-     else
-       !
-       call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
-                   invCe, Ue, UeNew, VeX, VeY, CellVol,                                              &
-                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                   CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
-                   NormalN, NormalS, NormalE, NormalW  )
+!     else
+!       !
+!       call computeUe( mesh, dt, InvCellVol, kappae,  CouplingE, SourceUe,                           &
+!                   invCe, Ue, UeNew, VeX, VeY, CellVol,                                              &
+!                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+!                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+!                   CellAreaE, CellAreaW, CellAreaN, CellAreaS,                                       &
+!                   NormalN, NormalS, NormalE, NormalW  )
        !
        !TODO: Should probably not be here
-       call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
-                   invCh, Uh, UhNew, VhX, VhY, CellVol,                                              &
-                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
-                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
-                   CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
-                   NormalN, NormalS, NormalE, NormalW  )
-       !
+!       call computeUh( mesh, dt, InvCellVol, kappah,  CouplingH, SourceUh,                           &
+!                   invCh, Uh, UhNew, VhX, VhY, CellVol,                                              &
+!                   ShapeFactorNormalE, ShapeFactorTangentE, ShapeFactorNormalW, ShapeFactorTangentW, &
+!                   ShapeFactorNormalN, ShapeFactorTangentN, ShapeFactorNormalS, ShapeFactorTangentS, &
+!                   CellAreaE,CellAreaW, CellAreaN,CellAreaS,                                         &
+!                   NormalN, NormalS, NormalE, NormalW  )
+!       !
      endif
      !
      if(Params%HolesOff.eq.0) then

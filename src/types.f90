@@ -72,6 +72,7 @@ module Types_m
     real(8) :: Fluence
     real(8) :: PulseFWHM
     real(8) :: Wavelength
+    integer :: UseFermiDirac         ! 1: Enable Fermi-Dirac Integrals, 0: disable them
   end type
 
 end module Types_m
