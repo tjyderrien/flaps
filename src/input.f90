@@ -88,7 +88,7 @@ subroutine CheckValidityInputParameters( Params )
     implicit none
     type(InputParameters) :: Params
 
-    if( abs(Params%UseMieScattering) > 1) then
+    if( abs(Params%UseMieScattering) > 1 ) then
         print *, 'Bad value for UseMieScattering'
         call StopProgram()
     end if
@@ -214,7 +214,7 @@ subroutine CheckValidityInputParameters( Params )
       call StopProgram()
     end if
 
-    if( abs(Params%UseFermiDirac) > 1 ) then
+    if( Params%UseFermiDirac < 0 .or. Params%UseFermiDirac > 1 ) then
       print *, 'Bad value for UseFermiDirac'
       call StopProgram()
     end if

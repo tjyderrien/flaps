@@ -1060,7 +1060,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL(FermiMaxLines, FermiTableE, FermiTableH)
-   if(Params%UseFermiDirac.eq.0) then
+   if( Params%UseFermiDirac.eq.0 ) then
      FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! TODO: before publishing, this must work without inducing noise!
    end if
 !************ INITIALIZATION ************
@@ -1167,7 +1167,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DOSh(i,j)=DensityOfState(mhDOS, mesh%Th(i,j))
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        if(Params%UseFermiDirac.eq.0) then
+        if( Params%UseFermiDirac.eq.0 ) then
           FermiIndexE(i,j)=1
           FermiIndexH(i,j)=1
         else
@@ -1681,7 +1681,7 @@ if(Params%UseMieScattering.eq.1) then
         !         write(*,*) "Esprit es-tu la ?"
         FermiRatioE(i,j)=mesh%Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=mesh%Nh(i,j)/DOSh(i,j)
-        if(Params%UseFermiDirac.eq.0) then
+        if( Params%UseFermiDirac.eq.0 ) then
           FermiIndexE(i,j)=1
           FermiIndexH(i,j)=1
         else
