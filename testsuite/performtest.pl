@@ -5,7 +5,7 @@
 
 use Term::ANSIColor;
 
-$ntests = 1;
+$ntests = 2;
 for ($test=1;$test<=$ntests;$test++)
 {
         $tol[$test] = 0.0001; #relative value
@@ -20,7 +20,7 @@ for ($test=1;$test<=$ntests;$test++)
 
 
 # Variable d'environnement
-$omp="export OMP_NUM_THREADS=2; ";
+$omp="export OMP_NUM_THREADS=1; ";
 # $EXE ="@PACKAGE_NAME@-@PACKAGE_VERSION@";
 $EXE="flaps";
 #Initialisation
@@ -31,7 +31,7 @@ for ($i=1 ; $i <= $ntests ; $i++)
 }
 
 # set the message array (default test1 test2 .. testN)
-$message[1] ="Test  1:  [Analytic] Zero energy integration ..................";
+$message[1] ="Test  1:  [Exact] Zero energy integration ..................";
 $message[2] ="Test  2:  [Analytic] Excitation rate with homogeneous source ..";
 $message[3] ="Test  3:  [Analytic] Heating with homogeneous source ..........";
 $message[4] ="Test  4:  [Analytic] Heating via electron-lattice heat transfer";

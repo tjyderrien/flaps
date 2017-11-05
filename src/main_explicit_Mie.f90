@@ -1932,13 +1932,13 @@ if(Params%UseMieScattering.eq.1) then
 
 
      TotalThermalEnergy = 0.0d0
-     TotalLaserEnergy = 0.0d0
+     TotalLaserEnergy   = 0.0d0
 
      !$OMP PARALLEL DEFAULT(NONE) SHARED(Params, mesh, newmesh, x, y, TotalElectrons, TotalHoles, &
      !$OMP Ce, Ch, Cs, reflectivity, intensity, absorptionDrudeE, TotalThermalEnergy, &
      !$OMP absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, TotalLaserEnergy ) &
      !$OMP PRIVATE(work)
-     !$OMP DO COLLAPSE(2) REDUCTION(+:TotalLaserEnergy, TotalThermalEnergy)
+     !$OMP DO COLLAPSE(2) REDUCTION(+:TotalThermalEnergy, TotalLaserEnergy)
      do j=2, Params%N-1 !(optimized)
        do i=2, Params%M-1 !(optimized)
          !
@@ -1949,11 +1949,11 @@ if(Params%UseMieScattering.eq.1) then
                             -0.125d0*(x(i-1,j+1)-x(i+1,j-1))*(y(i+1,j+1)-y(i-1,j-1)))
          !
          !
-         TotalThermalEnergy= TotalThermalEnergy + Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
+         TotalThermalEnergy = TotalThermalEnergy + Ce(i,j)*mesh%Te(i,j)+Ch(i,j)*mesh%Th(i,j)+Cs(i,j)*mesh%Ts(i,j)
          !
          !
          work = intensity(i,j)*(1d0-reflectivity(i,j))
-         TotalLaserEnergy = TotalLaserEnergy + & !TODO: is this expression valid ?!
+         TotalLaserEnergy = TotalLaserEnergy + &
                          OnePhotonIonizationRate0 * work    & !energy loss by one photon absorption
                        + TwoPhotonIonizationRate0 * work**2 & !energy loss by two photon absorption
                   + (absorptionDrudeE(i,j)+absorptionDrudeH(i,j))*work !energy loss by carrrier heating
