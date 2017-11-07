@@ -529,7 +529,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
   LatticeEnergy=0d0
   TotalThermalEnergy=0d0; 
   cpuefficiency=0d0
-  
+  ThermalEnergy(:,:)=0d0 
   
 !***************** MESH GENERATION *****************
   write(*,*) "[Mesh] Building..."
@@ -2152,7 +2152,8 @@ if(UseMieScattering.eq.1) then
     
     maxIntensity=0d0; maxTe=0d0; minTe=1d10; maxTh=0d0; minTh=1d10; maxTs=0d0; minTs=1d10; 
     maxNe=0d0; minNe=1d50; maxNh=0d0; minNh=1d50; maxCFLxT=0d0; maxCFLyT=0d0; maxCFLxN=0d0; maxCFLyN=0d0; maxCFLxTs=0d0; 
-    maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0
+    maxCFLyTs=0d0; maxSourceE=0d0; maxSourceH=0d0; maxGainsE=0d0; maxGainsH=0d0;
+    TotalLaserEnergy = 0d0; TotalThermalEnergy = 0d0
     
    !$OMP PARALLEL DEFAULT (PRIVATE) SHARED (dt, dt1, dt2, dt3, dt4, UeNew, UhNew, TeNew, ThNew, TsNew, TsOld, TsPrev, NeNew, NhNew, &
    !$OMP& TeDual, ThDual, TsDual, NeDual, NhDual, intensityDual, &
