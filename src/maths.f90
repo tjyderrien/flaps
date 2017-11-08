@@ -582,7 +582,26 @@ end module Maths_m
 !
 !     end function ConeExp2Projection
 
+    function ConeExp3(t)
+    ! returns the parametric function x(t) adjusted on experimental shape given by Dominik Franz and Hamed Merdji, CEA Saclay LIDYL, Nov (2017).
+      implicit none
 
+      real(8)::ConeExp3, t
+      real(8) p0, p1, q0, q1, t0, t1, tc
+      
+      p0= 2.193d-15;  p1=4.049d-19;
+      q0= 1.3069;     q1= 1.2931d0; 
+      tc= 412.6d0
+      
+      !TODO: Make more general to automatize
+      t0 =  0.2361d0
+      t1 = -0.2531506894d0
+      if(t <= t0 .AND. t >= t1) then 
+!       if(t <= 2.471556d0 .AND. t >= -3.35d0) then
+        ConeExp3=q0*exp(-p0*(t-tc)**6)+q1*exp(-p1*(t-tc)**8)
+      end if
+
+    end function ConeExp3
 
 
 
@@ -616,14 +635,10 @@ end module Maths_m
 !       ConeExp2Newton=t-ConeExp2Equation(t, value)/( (ConeExp2Equation(t+step, value)-ConeExp2Equation(t, value))/step )
 !     end function ConeExp2Newton
 
-
-
-
-
-  function ConeExp1Radius(t,value,step)
+function ConeExp1Radius(t,value,step, tneg, tpos)
     ! execute Newton algorithm to find the radius of the equivalent cylinder
       implicit none
-      real(8) temp1, temp2, t, step, value, zeroin, ConeExp1Radius
+      real(8) temp1, temp2, t, step, tpos, tneg, value, zeroin, ConeExp1Radius
 !      integer(8) i
 
 !       do i=1,NewtonIterations
@@ -631,37 +646,35 @@ end module Maths_m
 !         write(*,*) 'Solving contour radius...'
 !         temp1=zeroin(0d0, 2.471556d0, ConeExp1Equation, 1d-15, value)
 !         temp2=zeroin(-3.35d0, 0d0, ConeExp1Equation, 1d-15, value)
-        ! reduced cone size to accelerate calculations
-!         write(*,*) 'Solving contour radius...'
-        temp1=zeroin(0d0, 0.2361d0, ConeExp1Equation, 1d-15, value)
-!         write(*,*) 'Solving contour radius...'
-        temp2=zeroin(-0.2531506894d0, 0d0, ConeExp1Equation, 1d-15, value)
-!         write(*,*) 'Solve:', temp
+        ! We search for the cone radius at its both sides. 
+!         temp1=zeroin(0d0, 0.2361d0, ConeExp1Equation, 1d-15, value) ! TODO: make automatic! 
+!         temp2=zeroin(-0.2531506894d0, 0d0, ConeExp1Equation, 1d-15, value) ! TODO: make automatic!
+          temp1=zeroin(0d0, tpos, ConeExp1Equation, 1d-15, value) ! TODO: make automatic! 
+          temp2=zeroin(tneg, 0d0, ConeExp1Equation, 1d-15, value) ! TODO: make automatic! 
 !       end do
+        ! We invert them if they are not in the right order. 
         if(abs(temp1) < abs(temp2)) then
           ConeExp1Radius=abs(temp2)
         else
           ConeExp1Radius=abs(temp1)
         end if
-!         ConeExp1Radius=0.5d0*(abs(temp1)+abs(temp2)) !not the average, since the case r>R is divergent
-!       ConeExp2Radius=0.5d0*(temp1+temp2)
 
        contains
 
       function ConeExp1Equation(t,value)
     ! sets the equation to solve for Newton algorithm
-      implicit none
-      real(8) t, value, ConeExp1Equation, ConeExp1
-!       integer(8) ConeExp1
-      ConeExp1Equation=ConeExp1(t)-value
+        implicit none
+        real(8) t, value, ConeExp1Equation, ConeExp1
+  !       integer(8) ConeExp1
+        ConeExp1Equation=ConeExp1(t)-value
        end function ConeExp1Equation
     end function ConeExp1Radius
 
 
-    function ConeExp2Radius(t,value,step)
+    function ConeExp2Radius(t,value,step, tneg, tpos)
     ! execute Newton algorithm to find the radius of the equivalent cylinder
       implicit none
-      real(8) temp1, temp2, t, step, value, zeroin, ConeExp2Radius
+      real(8) temp1, temp2, t, tneg, tpos, step, value, zeroin, ConeExp2Radius
 !      integer(8) i
 
 !       do i=1,NewtonIterations
@@ -697,5 +710,39 @@ end module Maths_m
        end function ConeExp2Equation
     end function ConeExp2Radius
 
+    function ConeExp3Radius(t,value,step, tneg, tpos)
+    ! execute Newton algorithm to find the radius of the equivalent cylinder
+      implicit none
+      real(8) temp1, temp2, t, step, tneg, tpos, value, zeroin, ConeExp3Radius
+!      integer(8) i
 
+!       do i=1,NewtonIterations
+!         temp=ConeExp2Newton(temp,value,step)
+!         write(*,*) 'Solving contour radius...'
+!         temp1=zeroin(0d0, 2.471556d0, ConeExp1Equation, 1d-15, value)
+!         temp2=zeroin(-3.35d0, 0d0, ConeExp1Equation, 1d-15, value)
+        ! reduced cone size to accelerate calculations
+!         write(*,*) 'Solving contour radius...'
+        temp1=zeroin(0d0, tpos, ConeExp3Equation, 1d-15, value) ! TODO: make automatic! 
+!         write(*,*) 'Solving contour radius...'
+        temp2=zeroin(tneg, 0d0, ConeExp3Equation, 1d-15, value) ! TODO: make automatic! 
+!         write(*,*) 'Solve:', temp
+!       end do
+        ! Captures the maximum of the solution from two sides to manage degeneracy problems. 
+        if(abs(temp1) < abs(temp2)) then
+          ConeExp3Radius=abs(temp2)
+        else
+          ConeExp3Radius=abs(temp1)
+        end if
+
+       contains
+
+      function ConeExp3Equation(t,value)
+    ! sets the equation to solve for Newton algorithm
+        implicit none
+        real(8) t, value, ConeExp3Equation, ConeExp3
+  !       integer(8) ConeExp1
+        ConeExp3Equation=ConeExp3(t)-value
+       end function ConeExp3Equation
+    end function ConeExp3Radius
 

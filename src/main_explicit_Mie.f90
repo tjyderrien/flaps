@@ -71,7 +71,9 @@ program Flaps
                           MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: Experimental cones, 2: Cone in a vessel (HS), 3: import GMSH (working)
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
-                          MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
+                          MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3; !TODO: interface with input file flaps.in. 
+                          contourmin = -0.2531506894d0,&  !in um, use to decrease size of the needle and shorten simulation time (/!\ tip dependent) !TODO: interface with input file flaps.in. 
+                          contourmax =  0.2361d0, &          !in um, use to decrease size of the needle and shorten simulation time (/!\ tip dependent) !TODO: interface with input file flaps.in. 
                           FermiMaxLines=3584            ! >= number of lines in Fermi file
        !                   SORiterations=1        ,&        !iteration number for over-relaxation method
        !                   InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
@@ -102,7 +104,7 @@ program Flaps
 !                            PolarizationSource=0, &        ! 0: source TE, 1: source TM
                             !MieScattering=1, &
                             NewtonIterations=1000, &
-                            ExpNeedleType=0
+                            ExpNeedleType=0 !TODO: transfer to input file flaps.in
         
     real(8):: me       ,&    ! electron effective mass for conductivity !0.24 (source ?)
               mh       ,&    ! hole effective mass for conductivity !0.81 (source ?)
@@ -256,6 +258,7 @@ program Flaps
             localT, P2critic, TotalNumOfE, TotalNumOfH, &
             xmin2, xmax2, ymin2, ymax2, &
             MeshConvergence, MeshConvergenceOld
+!             contourmin, contourmax
     real :: cpuefficiency, cpu_timestep_duration
             
     real(8) sigmaX1, sigmaX2, sigmaX3, sigmaX4, sigmaX5, sigmaX6, sigmaX7, sigmaX8, sigmaX9, &
@@ -279,8 +282,8 @@ program Flaps
                ColFermiHalf, ColFermiThreeHalf, ColFermiMenusHalf
 
     !! FUNCTIONS CALLS
-     real(8) ConeExp1Radius, ConeExp2Radius !, Interpolate
-     real(8) ConeExp1, ConeExp2, DensityOfState, &
+     real(8) ConeExp1Radius, ConeExp2Radius, ConeExp3Radius!, Interpolate
+     real(8) ConeExp1, ConeExp2, ConeExp3, DensityOfState, &
              LatticeHeatCapacity
      complex(8) DielectricConstant ! DielectricFunction, DielectricFunctionDrude,
 
@@ -719,8 +722,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           localT=localTmax-real(i-1)*localdT
           if(ExpNeedleType.eq.1) then
             x(i,1)=ConeExp2(localT)
-          else
+          else if(ExpNeedleType.eq.0) then
             x(i,1)=ConeExp1(localT)
+          else if(ExpNeedleType.eq.2) then
+            x(i,1)=ConeExp3(localT)
           end if
           y(i,1)=localT
         end do
@@ -743,8 +748,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           localT=localTmin+real(j-1)*localdT
           if(ExpNeedleType.eq.1) then
             x(1,j)=ConeExp2(localT)
-          else
+          else if(ExpNeedleType.eq.0) then
             x(1,j)=ConeExp1(localT)
+          else if(ExpNeedleType.eq.2) then
+            x(1,j)=ConeExp3(localT)
           end if
           y(1,j)=localT
         end do
@@ -765,15 +772,23 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           !$OMP DO
           do i=1,Params%M
             localT=localTmin+real(i-1)*localdT
-            x(i,Params%N)=ConeExp2(localT)
+            x(i,Params%N)=ConeExp2(localT) !TODO: interface this choice with input file flaps.in
             y(i,Params%N)=localT
           end do
           !$OMP END DO
-        else
+        else if(ExpNeedleType .eq. 0) then
           !$OMP DO
           do i=1,Params%M
             localT=localTmin+real(i-1)*localdT
-            x(i,Params%N)=ConeExp1(localT)
+            x(i,Params%N)=ConeExp1(localT) !TODO: interface this choice with input file flaps.in
+            y(i,Params%N)=localT
+          end do
+          !$OMP END DO
+        else if(ExpNeedleType .eq. 2) then
+          !$OMP DO
+          do i=1,Params%M
+            localT=localTmin+real(i-1)*localdT
+            x(i,Params%N)=ConeExp3(localT) !TODO: interface this choice with input file flaps.in
             y(i,Params%N)=localT
           end do
           !$OMP END DO
@@ -790,8 +805,10 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
           localT=localTmin+real(j-1)*localdT
           if(ExpNeedleType.eq.1) then
             x(Params%M,j)=ConeExp2(localTmax)
-          else
+          else if(ExpNeedleType.eq.0) then
             x(Params%M,j)=ConeExp1(localTmax)
+          else if(ExpNeedleType.eq.2) then
+            x(Params%M,j)=ConeExp3(localTmax)
           end if
           y(Params%M,j)=localT
         end do
@@ -865,6 +882,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         
     end do inner !end of iterations for mesh
 
+    ! This forces the mesh input to be in microns. 
     x(:,:)=1d-6*x(:,:)
     y(:,:)=1d-6*y(:,:)
     
@@ -1344,9 +1362,14 @@ if(Params%UseMieScattering.eq.1) then
 !           find the radius for the cylindrical Mie scattering model
 !           Radius(i,j)=y(i,j)
         if(ExpNeedleType.eq.0) then
-          Radius(i,j)=ConeExp1Radius(1d6*y(i,j), 1d6*x(i,j), M_ZERO)
-        else
-          Radius(i,j)=ConeExp2Radius(1d6*y(i,j), 1d6*x(i,j), M_ZERO)
+          Radius(i,j)=ConeExp1Radius(1d6*y(i,j), 1d6*x(i,j), M_ZERO, contourmin, contourmax)
+        else if(ExpNeedleType.eq.1) then
+          Radius(i,j)=ConeExp2Radius(1d6*y(i,j), 1d6*x(i,j), M_ZERO, contourmin, contourmax)
+        else if(ExpNeedleType.eq.2) then
+          Radius(i,j)=ConeExp3Radius(1d6*y(i,j), 1d6*x(i,j), M_ZERO, contourmin, contourmax)
+        else 
+          write(*,*) "The chosen needle does not exist. "
+          stop
         end if
       end do
     end do
