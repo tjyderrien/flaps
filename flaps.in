@@ -35,5 +35,4 @@ HolesOff 0
 TsOff 1
 ImpactOff 1
 CrossDiffusionOff 1
-UseFermiDirac 1.0
->>>>>>> fermi
+UseFermiDirac 1
