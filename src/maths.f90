@@ -589,16 +589,22 @@ end module Maths_m
       real(8)::ConeExp3, t
       real(8) p0, p1, q0, q1, t0, t1, tc
       
-      p0= 2.193d-15;  p1=4.049d-19;
-      q0= 1.3069;     q1= 1.2931d0; 
-      tc= 412.6d0
+      p0= 0.0041d0;   p1= 0.0095d0;
+      q0= 1.3069d0;   q1= 1.2931d0; 
+      tc= 0d0
       
       !TODO: Make more general to automatize
-      t0 =  0.2361d0
-      t1 = -0.2531506894d0
+      t0 =  0.0d0
+      t1 =  0.0d0 
+      
+      
+      
       if(t <= t0 .AND. t >= t1) then 
 !       if(t <= 2.471556d0 .AND. t >= -3.35d0) then
-        ConeExp3=q0*exp(-p0*(t-tc)**6)+q1*exp(-p1*(t-tc)**8)
+        ConeExp3=q0    *exp(-p0     *(t-tc)**6)+q1   *exp(-p1    *(t-tc)**8)
+        ! This sample was oriented by an angle of 60° inside SEM. 
+        ConeExp3 = ConeExp3 / cos(60d0*pi/180d0)
+!         ConeExp3=1.3069*exp(-(0.0041*(x).^6)) +1.2931*exp(-0.0095*(x).^8)
       end if
 
     end function ConeExp3
