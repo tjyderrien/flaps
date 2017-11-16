@@ -67,6 +67,7 @@ subroutine InitInputParameter( Params )
     !Mie scattering
     Params%phiMie0 = 0
     Params%PolarizationSource = 0
+    Params%UseFermiDirac = 1
 
 end subroutine InitInputParameter
 
@@ -422,7 +423,7 @@ subroutine LoadInputParameters( filename, Params )
 
               !UseFermiDirac
               if( id .equals. 'UseFermiDirac' ) then
-                call ParseDouble( line, Params%UseFermiDirac )
+                call ParseInt( line, Params%UseFermiDirac )
                 goto 999
               endif
 ! Some examples
