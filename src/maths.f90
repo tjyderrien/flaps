@@ -603,7 +603,7 @@ end module Maths_m
 !       if(t <= 2.471556d0 .AND. t >= -3.35d0) then
         ConeExp3=q0    *exp(-p0     *(t-tc)**6)+q1   *exp(-p1    *(t-tc)**8)
         ! This sample was oriented by an angle of 60° inside SEM. 
-        ConeExp3 = ConeExp3 / cos(60d0*pi/180d0)
+        ConeExp3 = ConeExp3 / cos(60d0*M_PI/180d0)
 !         ConeExp3=1.3069*exp(-(0.0041*(x).^6)) +1.2931*exp(-0.0095*(x).^8)
       end if
 
