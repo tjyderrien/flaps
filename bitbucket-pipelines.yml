@@ -9,7 +9,6 @@ pipelines:
   default:
     - step:
         script: # Modify the commands below to build your repository.
-          - make clean
           - autoreconf -i
           - ./configure FC=gfortran FCFLAGS="-O3 -fopenmp"
           - make
