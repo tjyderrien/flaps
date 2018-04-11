@@ -596,14 +596,12 @@ end module Maths_m
       !TODO: Make more general to automatize
       t0 =  0.0d0
       t1 =  0.0d0 
-      
-      
-      
+
       if(t <= t0 .AND. t >= t1) then 
 !       if(t <= 2.471556d0 .AND. t >= -3.35d0) then
         ConeExp3=q0    *exp(-p0     *(t-tc)**6)+q1   *exp(-p1    *(t-tc)**8)
-        ! This sample was oriented by an angle of 60° inside SEM. 
-        ConeExp3 = ConeExp3 / cos(60d0*M_PI/180d0)
+        ! This sample was oriented by an angle of 60 deg inside SEM. 
+        ConeExp3 = ConeExp3 / cos(60d0*3.14159265358979d0/180d0) ! calling M_PI here fails. ! TODO: transfer shapes contours to a specific file
 !         ConeExp3=1.3069*exp(-(0.0041*(x).^6)) +1.2931*exp(-0.0095*(x).^8)
       end if
 
