@@ -427,90 +427,92 @@ program Flaps
  absorptionDrudeE(:,:) = M_ZERO
  absorptionDrudeH(:,:) = M_ZERO
 
-!******** READ GMSH MESH FILE ************
-!TODO: This is very dirty
-namefile_msh='external_libs/gmsh/mesh.msh'
-RunningIndex=1 !gonna be used to mesh down
-! CALL extract_parameters(namefile_msh, namefile_vf)
-! We read the .msh file
-
-WRITE(*,*) 'Loading GMSH mesh...'
-
-CALL read_msh_file(namefile_msh, vertices, points, segments, triangles, quadrangles, dim_physical_entities, &
-& id_physical_entities, name_physical_entities, idvertices)
-! We verify if the triangles are sorted in trigonometric sense and we bring correction if necessary
-IF (associated(triangles)) THEN
-    CALL correct_orientation(vertices, triangles)
-END IF
-! We verify if the quadrangles are sorted in trigonometric sense and we bring correction if necessary
-IF (associated(quadrangles)) THEN
-    CALL correct_orientation(vertices, quadrangles)
-END IF
-
-nb_vertices = size(vertices,1)
-IF (associated(triangles)) THEN
-    nb_triangles = size(triangles,1)
-ELSE
-    nb_triangles = 0
-END IF
-IF (associated(quadrangles)) THEN
-    nb_quadrangles = size(quadrangles,1)
-ELSE
-    nb_quadrangles = 0
-END IF
-nb_edges = size(edges,1)
-nb_boundedges = size(boundedges,1)
-
-! We build the edges
-CALL compute_edges(triangles, quadrangles, edges)
-! For each edge, we identify the physical zone in which it is included
-CALL identify_physical_zone_for_edges(edges, segments, triangles, quadrangles)
-! We extract the bound edges
-CALL extract_boundedges(edges, boundedges)
-! We are mainly interested in getting the point data.
-    
-WRITE(*,FMT=*) "MESH INFORMATIONS"
-WRITE(*,FMT=*) "[GMSH] Quadrangles number"
-WRITE(*,FMT=*) nb_quadrangles
-WRITE(*,FMT=*) "[GMSH] Node number"
-WRITE(*,FMT=*) nb_vertices
-
-!***** Attribute positions of the nodes by recursivity
-
-RunningIndex=VirtualPoints
-
-! Corners
-RunningIndex=RunningIndex+1; MeshVertice(1,1) = RunningIndex
-RunningIndex=RunningIndex+1; MeshVertice(Params%M,1) = RunningIndex
-RunningIndex=RunningIndex+1; MeshVertice(Params%M,Params%N) = RunningIndex
-RunningIndex=RunningIndex+1; MeshVertice(1,Params%N) = RunningIndex
-
-!North
-do i=2, Params%M-1
-  RunningIndex=RunningIndex+1; MeshVertice(i, 1)=RunningIndex
-end do
-!East
-do j=2, Params%N-1
-  RunningIndex=RunningIndex+1; MeshVertice(Params%M, j)=RunningIndex
-end do
-!South
-do i=Params%M-1,2, -1
-  RunningIndex=RunningIndex+1; MeshVertice(i,Params%N)=RunningIndex
-end do
-!West
-do j=Params%N-1, 2, -1
-  RunningIndex=RunningIndex+1; MeshVertice(1,j)=RunningIndex
-end do
-
-!rest of the domain
-do i=2,Params%M-1
-  do j=2, Params%N-1
-    RunningIndex=RunningIndex+1; MeshVertice(i,j)=RunningIndex
-  end do
-end do
-
-
-WRITE(*,*) 'Latest running index while remeshing', RunningIndex
+WRITE(*,*) 'GMSH module has been commented. '
+ 
+! !******** READ GMSH MESH FILE ************
+! !TODO: This is very dirty
+! namefile_msh='external_libs/gmsh/mesh.msh'
+! RunningIndex=1 !gonna be used to mesh down
+! ! CALL extract_parameters(namefile_msh, namefile_vf)
+! ! We read the .msh file
+! 
+! WRITE(*,*) 'Loading GMSH mesh...'
+! 
+! CALL read_msh_file(namefile_msh, vertices, points, segments, triangles, quadrangles, dim_physical_entities, &
+! & id_physical_entities, name_physical_entities, idvertices)
+! ! We verify if the triangles are sorted in trigonometric sense and we bring correction if necessary
+! IF (associated(triangles)) THEN
+!     CALL correct_orientation(vertices, triangles)
+! END IF
+! ! We verify if the quadrangles are sorted in trigonometric sense and we bring correction if necessary
+! IF (associated(quadrangles)) THEN
+!     CALL correct_orientation(vertices, quadrangles)
+! END IF
+! 
+! nb_vertices = size(vertices,1)
+! IF (associated(triangles)) THEN
+!     nb_triangles = size(triangles,1)
+! ELSE
+!     nb_triangles = 0
+! END IF
+! IF (associated(quadrangles)) THEN
+!     nb_quadrangles = size(quadrangles,1)
+! ELSE
+!     nb_quadrangles = 0
+! END IF
+! nb_edges = size(edges,1)
+! nb_boundedges = size(boundedges,1)
+! 
+! ! We build the edges
+! CALL compute_edges(triangles, quadrangles, edges)
+! ! For each edge, we identify the physical zone in which it is included
+! CALL identify_physical_zone_for_edges(edges, segments, triangles, quadrangles)
+! ! We extract the bound edges
+! CALL extract_boundedges(edges, boundedges)
+! ! We are mainly interested in getting the point data.
+!     
+! WRITE(*,FMT=*) "MESH INFORMATIONS"
+! WRITE(*,FMT=*) "[GMSH] Quadrangles number"
+! WRITE(*,FMT=*) nb_quadrangles
+! WRITE(*,FMT=*) "[GMSH] Node number"
+! WRITE(*,FMT=*) nb_vertices
+! 
+! !***** Attribute positions of the nodes by recursivity
+! 
+! RunningIndex=VirtualPoints
+! 
+! ! Corners
+! RunningIndex=RunningIndex+1; MeshVertice(1,1) = RunningIndex
+! RunningIndex=RunningIndex+1; MeshVertice(Params%M,1) = RunningIndex
+! RunningIndex=RunningIndex+1; MeshVertice(Params%M,Params%N) = RunningIndex
+! RunningIndex=RunningIndex+1; MeshVertice(1,Params%N) = RunningIndex
+! 
+! !North
+! do i=2, Params%M-1
+!   RunningIndex=RunningIndex+1; MeshVertice(i, 1)=RunningIndex
+! end do
+! !East
+! do j=2, Params%N-1
+!   RunningIndex=RunningIndex+1; MeshVertice(Params%M, j)=RunningIndex
+! end do
+! !South
+! do i=Params%M-1,2, -1
+!   RunningIndex=RunningIndex+1; MeshVertice(i,Params%N)=RunningIndex
+! end do
+! !West
+! do j=Params%N-1, 2, -1
+!   RunningIndex=RunningIndex+1; MeshVertice(1,j)=RunningIndex
+! end do
+! 
+! !rest of the domain
+! do i=2,Params%M-1
+!   do j=2, Params%N-1
+!     RunningIndex=RunningIndex+1; MeshVertice(i,j)=RunningIndex
+!   end do
+! end do
+! 
+! 
+! WRITE(*,*) 'Latest running index while remeshing', RunningIndex
 
 
 !***** Compute geometrical data
