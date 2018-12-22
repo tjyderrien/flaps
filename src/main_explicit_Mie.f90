@@ -1503,6 +1503,7 @@ if(Params%UseMieScattering.eq.1) then
   maxNe=M_ZERO; maxNh=M_ZERO; minNe=1d50; minNh=1d50
   maxCFLxT=M_ZERO; maxCFLyT=M_ZERO; maxCFLxN=0d0; maxCFLyN=M_ZERO; maxCFLxTs=M_ZERO; maxCFLyTs=M_ZERO;
   maxFermiIndexE=0; maxFermiIndexH=0; 
+  TotalNumOfE=M_ZERO; TotalNumOfH = M_ZERO
  
   !NTD: Why DistX are recomputed here? Same for CellAreaX
   !TJYD: To treat boundary conditions and treat everything with a loop on the complete mesh. This should be kept.
@@ -1922,7 +1923,7 @@ if(Params%UseMieScattering.eq.1) then
    maxCFLyTs  = maxval(CFLyTs)
    !
    !Check and control quantity are computed only when needed
-   if(mod(nbiter,Params%OutputIter).eq.0) then
+   if((mod(nbiter,Params%OutputIter).eq.0) ) then
      !
      maxIntensity = maxval(intensity)
      maxTe      = maxval(newmesh%Te)
@@ -1987,7 +1988,7 @@ if(Params%UseMieScattering.eq.1) then
      !$OMP END DO
      !$OMP END PARALLEL
 
-     TotalMeshVolume=0d0
+     TotalMeshVolume=M_ZERO; TotalNumOfE=M_ZERO; TotalNumOfH=M_ZERO
      !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
      !$OMP TotalMeshVolume, TotalNumOfH, TotalElectrons, &
      !$OMP TotalHoles)
