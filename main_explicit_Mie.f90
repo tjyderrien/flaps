@@ -39,7 +39,7 @@ implicit none
     
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
-                        iterOutMaps=1000      ,& ! number of outputs for maps between each stdout
+                        iterOutMaps=10      ,& ! number of outputs for maps between each stdout
                           M=11   ,& !number of cells main domain X direction
                           N=11     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
@@ -322,9 +322,9 @@ implicit none
   !$OMP PARALLEL default(none) private(myid) &
   !$OMP shared(nthreads)
   ! Determine the number of threads and their id
-        myid = OMP_GET_THREAD_NUM()
+       ! myid = OMP_GET_THREAD_NUM()
         PRINT *, 'Hello from thread =', myid
-        nthreads = OMP_GET_NUM_THREADS()
+       ! nthreads = OMP_GET_NUM_THREADS()
   !$OMP BARRIER
   
   if (myid==0) then 
@@ -520,7 +520,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
     open(105,FILE='EnergyConservation.dat', access='sequential', status='unknown') !format 892
     ! FORMAT numbers already used for writing: 887, 886, 888, 885, 882, 883
     
-  
+  TotalNumOfE = 0d0; TotalNumOfH = 0d0; 
   TotalLaserEnergy=0d0; 
   IntensityEnergy=0d0;
   LaserIntensityEnergy=0d0; 
@@ -3212,6 +3212,8 @@ if(UseMieScattering.eq.1) then
     ! CHECKING the results
 
     TotalMeshVolume=0d0
+    TotalNumOfE = 0d0
+    TotalNumOfH = 0d0
 !     ElectronEnergy=0d0
 !     HoleEnergy=0d0
 !     LatticeEnergy=0d0
