@@ -711,7 +711,7 @@ subroutine compute_cellvol(M, N, x, y, CellVol, InvCellVol )
     do i=2, M-1
       ! define the volume of elementary cell around a point everywhere but not on boundaries
 !         CellVol(i,j)=0.25d0*(AreaElement(x(i-1,j-1),y(i-1,j-1),x(i+1,j-1),y(i+1,j-1),x(i+1,j+1),y(i+1,j+1),x(i-1,j+1),y(i-1,j+1)))
-      CellVol(i,j)=0.125d0* AreaElement((x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)), & !x(i-1/2,j-1/2)
+      CellVol(i,j)=(0.25d0)**2 * AreaElement((x(i-1,j-1)+x(i,j-1)+x(i,j)+x(i-1,j)), & !x(i-1/2,j-1/2)
                                         (y(i-1,j-1)+y(i,j-1)+y(i,j)+y(i-1,j)), &
                                         (x(i,j-1)+x(i+1,j-1)+x(i+1,j)+x(i,j)), &        !x(i+1/2,j-1/2)
                                         (y(i,j-1)+y(i+1,j-1)+y(i+1,j)+y(i,j)), &

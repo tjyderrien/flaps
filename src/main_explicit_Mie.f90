@@ -1632,7 +1632,7 @@ if(Params%UseMieScattering.eq.1) then
     
    t=t+dt;
     
-   NeTotal=M_HALF
+   NeTotal=M_HALF !TJYD: nice joke!
    NhTotal=M_HALF
 
    call Profiler_start(prof_copy, 'COPY DATA')
@@ -1988,7 +1988,8 @@ if(Params%UseMieScattering.eq.1) then
      !$OMP END DO
      !$OMP END PARALLEL
 
-     TotalMeshVolume=M_ZERO; TotalNumOfE=M_ZERO; TotalNumOfH=M_ZERO
+     TotalMeshVolume=M_ZERO; TotalNumOfE=M_ZERO; TotalNumOfH=M_ZERO;
+NeTotal=M_ZERO; NhTotal=M_ZERO
      !$OMP PARALLEL DEFAULT(NONE) SHARED(mesh, CellVol, NeTotal,NhTotal,TotalNumOfE,  &
      !$OMP TotalMeshVolume, TotalNumOfH, TotalElectrons, &
      !$OMP TotalHoles)
