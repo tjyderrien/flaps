@@ -28,7 +28,7 @@ implicit none
  !                       phiMie0=1d0*acos(-1d0)                ! Mie scattering: plane angle in cylindrical coordinates
     
     real(8), parameter:: dt0=1d-18,& !time step (s)
-                        tmax=0d-15 ,& !stop time
+                        tmax=10d-15 ,& !stop time
                         coeffDilaDt=2d0        ,& !diltation coeff before dt change
                         xmin=-10d-6       ,& !mesh min
                         xmax=10d-6       ,& !mesh max
@@ -38,10 +38,10 @@ implicit none
                         tmin=tCenter-5d0*tau                     !max absolute time
     
                         
-    integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
+    integer(8), parameter::  iterOut=100       ,& ! number of iterations between each stdout
                         iterOutMaps=10      ,& ! number of outputs for maps between each stdout
-                          M=21   ,& !number of cells main domain X direction
-                          N=21     ,& !number of cells main domain Y direection
+                          M=11   ,& !number of cells main domain X direction
+                          N=11     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
@@ -79,9 +79,9 @@ implicit none
                             TeOff=1       ,&                   !0: Disable temperature calculations
                             HolesOff=1       ,&
                             TsOff=1       ,&
-                            CouplingDebug=0        ,&        !0: e/h - lattice coupling enabled, 1: disabled
-                            AugerOff=0       ,&
-                            ImpactOff=0       ,&
+                            CouplingDebug=1        ,&        !0: e/h - lattice coupling enabled, 1: disabled
+                            AugerOff=1       ,&
+                            ImpactOff=1       ,&
                             ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
                             DisableCrossDiffusion=1, &
                             PoissonOn=0       ,& !0: Poisson solver is OFF. 1: Calculation of potential ON. 
@@ -3505,7 +3505,7 @@ if(UseMieScattering.eq.1) then
     call cpu_time(calc_time_3)
     cpuefficiency=real(nbiter)/(calc_time_3-calc_time_begin)*real(nthreads)
     
-    if(mod(nbiter,iterOut).eq.0) then 
+    if(mod(nbiter,iterOut).eq.0 .or. nbiter == 1) then 
       
       write(105,892, advance="YES") t, IntensityEnergy, ElectronEnergy, HoleEnergy, LatticeEnergy, & !5
           TotalMeshVolume, LaserIntensityEnergy, ElectronKineticEnergy, ElectronPotentialEnergy !9
@@ -3726,8 +3726,8 @@ if(UseMieScattering.eq.1) then
       real(8) :: OnePhotonIonizationRate
       real(8) lambda
       complex(8) epsilonLinear
-!       OnePhotonIonizationRate=4d0*pi/lambda*aimag(sqrt(epsilonLinear))
-      OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
+      OnePhotonIonizationRate=4d0*pi/lambda*aimag(sqrt(epsilonLinear))
+!      OnePhotonIonizationRate = 3.4536819356d6 !extracted from WC Dash and R Newman, Phys Rev 99, 1151 (1955)
       return
     end function OnePhotonIonizationRate
     
