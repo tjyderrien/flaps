@@ -1632,8 +1632,8 @@ if(Params%UseMieScattering.eq.1) then
     
    t=t+dt;
     
-   NeTotal=M_HALF !TJYD: nice joke!
-   NhTotal=M_HALF
+   NeTotal=M_ZERO !TJYD: nice joke!
+   NhTotal=M_ZERO
 
    call Profiler_start(prof_copy, 'COPY DATA')
 
@@ -2144,7 +2144,7 @@ NeTotal=M_ZERO; NhTotal=M_ZERO
      do i=1,Params%M
        do j=1,Params%N
          !
-         write(Depth%unit,'(46(1E12.5,3x))', advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
+         write(Depth%unit,'(47(1E12.5,3x))', advance="yes") t, x(i,j), y(i,j), intensity(i,j), mesh%Te(i,j), & !5
                         mesh%Th(i,j), mesh%Ts(i,j), mesh%Ne(i,j), mesh%Nh(i,j), reflectivity(i,j), & !10
                         absorptionDrudeE(i,j), absorptionDrudeH(i,j), TotalElectrons(i,j), & !13
                         TotalHoles(i,j), real(FermiIndexE(i,j)), REAL(FermiIndexH(i,j)), FermiRatioE(i,j), FermiRatioH(i,j), & !18
@@ -2153,7 +2153,7 @@ NeTotal=M_ZERO; NhTotal=M_ZERO
                         aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !33
                         Ey(i,j), diffusionE(i,j), diffusionH(i,j), GradNeX(i,j), GradNeY(i,j), &!38
                         real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !43
-                        Radius(i,j)
+                        Radius(i,j), CellVol(i,j)
          !
        end do !on Y
        write(Depth%unit,'(3x)', advance="yes")
