@@ -1,7 +1,8 @@
 #!/bin/bash
 
 Simplify() {
-	awk '{ print $1, $2, $3, $4, $5, $6, $7, $8, $9 }' $1
+#	awk '{ print $1, $2, $3, $4, $5, $6, $7, $8, $9 }' $1
+        tail -n +2 $1 #removing the first line
 }
 
 
@@ -17,5 +18,5 @@ else
 	Simplify $1 > $1.simplified.dat
 	Simplify $2 > $2.simplified.dat
 	echo "Info: Performing the comparison..."
-	numdiff $1.simplified.dat $2.simplified.dat
+	numdiff -r 0.0001 $1.simplified.dat $2.simplified.dat
 fi
