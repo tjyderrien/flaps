@@ -16,7 +16,7 @@ program Flaps
 implicit none
 
     real(8), parameter:: lambda=515d-9         , & !laser wavelength (m)
-                        fluence=0d0                , & !laser fluence (J.m-2)
+                        fluence=10d0                , & !laser fluence (J.m-2)
                         tau=40d-15                , & !FWHM pulse duration (s)
                         spotX=50d-6                , & !FWHM spot size in X direction (1030nm: 400nm x 50nm ; 515nm: 50um x 50 um ; 343 nm: 50um x 100nm)
                         spotY=50d-6                , & !FWHM spot size in Y direction
@@ -40,15 +40,15 @@ implicit none
                         
     integer(8), parameter::  iterOut=1000       ,& ! number of iterations between each stdout
                         iterOutMaps=10      ,& ! number of outputs for maps between each stdout
-                          M=11   ,& !number of cells main domain X direction
-                          N=11     ,& !number of cells main domain Y direection
+                          M=21   ,& !number of cells main domain X direction
+                          N=21     ,& !number of cells main domain Y direection
                           VirtualPoints=3, & !number of virtual points to exclude from the GMSH file (locate them at the beginning!)
                           Mv=101       ,& !number of celles in the Vessel domain (larger) X direction
                           Nv=101        ,& !number of celles in the Vessel domain (larger) Y direction
                           MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: Experimental cones, 2: Cone in a vessel (HS), 3: import GMSH (working)
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
-                          MeshShift=3       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
+                          MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3;
                           FermiMaxLines=3584        ,&        ! >= number of lines in Fermi file
                           SORiterations=1        ,&        !iteration number for over-relaxation method
                           InterpolateMethod=1        ,&        ! 0: linear, 1: bicubic
@@ -67,7 +67,7 @@ implicit none
                           MeshConvergenceEpsilon=1d-10, & !error tolerance on meshing convergency
                           MeshDamping0=1d8, &         ! damping coefficient (m^-1) for mesh refinement
                           ActivateInduction=0d0, &
-                          CrossCoeff=-1d0, &                ! 0d0: OFF, 1d0: ON
+                          CrossCoeff=0d0, &                ! 0d0: OFF, 1d0: ON
                           maxCFL=1d-3                        ! maximum admitted on CFL condition for any time step increase
                           
     integer(8), parameter::  DrudeHeating=1, &        ! free-carrier absorption, 0: Drude heating OFF, 1: enabled (1-epsDrude)
@@ -76,14 +76,14 @@ implicit none
                                                 ! 0: only fourier conductivity
                                                 !-1: diffusion and conductivity OFF
                             NeOff=0       ,&
-                            TeOff=0       ,&                   !0: Disable temperature calculations
-                            HolesOff=0       ,&
-                            TsOff=0       ,&
+                            TeOff=1       ,&                   !0: Disable temperature calculations
+                            HolesOff=1       ,&
+                            TsOff=1       ,&
                             CouplingDebug=0        ,&        !0: e/h - lattice coupling enabled, 1: disabled
                             AugerOff=0       ,&
                             ImpactOff=0       ,&
                             ConvectionEnergy=0        ,&         !0: work with Te, no convection. 1: work with Ue, convection
-                            DisableCrossDiffusion=0, &
+                            DisableCrossDiffusion=1, &
                             PoissonOn=0       ,& !0: Poisson solver is OFF. 1: Calculation of potential ON. 
                             DriftOn=0       ,& !0: Drift is disabled. 1: Enabled. 
                             CathodeZone=1        ,& !1: on the needle bottom, 0: on back vessel (not physical but stable)
@@ -970,7 +970,7 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
    allocate(FermiTableE(1:9, 1:FermiMaxLines))
    allocate(FermiTableH(1:9, 1:FermiMaxLines))
    call TabCreateFL !(FermiTableE, FermiTableH)
-!    FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
+   FermiTableE(:,:)=1d0; FermiTableH(:,:)=1d0; ! uncomment if you want to disable fermi-dirac. Dont forget to lock the FermiIndexes also.
 !************ INITIALIZATION ************
 
   write(96,*) "========== CONE PARAMETERS ========="
@@ -1072,8 +1072,8 @@ WRITE(*,*) 'Latest running index while remeshing', RunningIndex
         DOSh(i,j)=DensityOfStateH(Th(i,j))
         FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=1 !FermiIndex(FermiRatioE(i,j)) !1
+        FermiIndexH(i,j)=1 !FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j))
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
@@ -2268,8 +2268,8 @@ if(UseMieScattering.eq.1) then
         DOSh(i,j)=DensityOfStateH(Th(i,j))
         FermiRatioE(i,j)=Ne(i,j)/DOSe(i,j)
         FermiRatioH(i,j)=Nh(i,j)/DOSh(i,j)
-        FermiIndexE(i,j)=FermiIndex(FermiRatioE(i,j)) !1
-        FermiIndexH(i,j)=FermiIndex(FermiRatioH(i,j)) !1
+        FermiIndexE(i,j)=1! FermiIndex(FermiRatioE(i,j)) !1
+        FermiIndexH(i,j)=1! FermiIndex(FermiRatioH(i,j)) !1
 !         write(*,*) "iter=", nbiter, "DOS=", DOSe(i,j), DOSh(i,j)
         etae(i,j)=FermiTableE(ColFermiEta,FermiIndexE(i,j)) 
         etah(i,j)=FermiTableH(ColFermiEta,FermiIndexH(i,j))
@@ -3212,8 +3212,8 @@ if(UseMieScattering.eq.1) then
     ! CHECKING the results
 
     TotalMeshVolume=0d0
-    TotalNumOfE = 0d0
-    TotalNumOfH = 0d0
+    TotalNumOfE = 0d0; NeTotal = 0d0 !TODO: redundant
+    TotalNumOfH = 0d0; NhTotal = 0d0 !TODO: redundant
 !     ElectronEnergy=0d0
 !     HoleEnergy=0d0
 !     LatticeEnergy=0d0
@@ -3437,7 +3437,7 @@ if(UseMieScattering.eq.1) then
                         aimag(Dielectric(i,j)), MaxHeatingTime(i,j), MaxHeating(i,j), real(potentialNeedle(i,j)), Ex(i,j), & !35
                         Ey(i,j), diffusionE(i,j), diffusionH(i,j), GradNeX(i,j), GradNeY(i,j), &!40
                         real(EintField(i,j)), aimag(EintField(i,j)), EintFieldR(i,j), EintFieldI(i,j), phiMie(i,j), & !45
-                        Radius(i,j)
+                        Radius(i,j), CellVol(i,j)
                         
   887 FORMAT (1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
   3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
@@ -3448,7 +3448,7 @@ if(UseMieScattering.eq.1) then
   3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
   3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
   3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, 3x, 1E12.5, &
-  3x, 1E12.5)        
+  3x, 1E12.5, 3x, 1E12.5)        
 !          write(97,886, advance='yes')
           call flush(97); 
         end if
