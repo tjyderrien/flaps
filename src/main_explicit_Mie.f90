@@ -2137,10 +2137,10 @@ NeTotal=M_ZERO; NhTotal=M_ZERO
   end if
 
    !
-   if(mod(nbiter,Params%OutputIter*iterOutMaps).eq.0  .or. nbiter == 1) then
+   if(mod(nbiter,Params%OutputIter*iterOutMaps).eq.0 .or. nbiter==1) then !TODO: 1st iteration?
      !
      !
-     call output_open(Depth%unit,'output/Depth.dat', (nbiter/=1 .or. Params%RestartCalc == 1))               ! format 887
+     call output_open(Depth%unit,'output/Depth.dat', (nbiter .ge. 1 .or. Params%RestartCalc == 1))               ! format 887
      do i=1,Params%M
        do j=1,Params%N
          !
