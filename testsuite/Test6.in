@@ -11,7 +11,7 @@ RestartCalc 0
 OutputIter 100
 
 ! Laser
-Fluence 0.0e0
+Fluence 10.0e0
 Wavelength 515.0e-9
 PulseFWHM 40.0e-15
 
@@ -29,6 +29,7 @@ NeOff 0
 TeOff 0
 HolesOff 0
 TsOff 0
-ImpactOff 0
+CouplingDebug 0
+ImpactOff 1
 CrossDiffusionOff 0
 UseFermiDirac 0
