@@ -5,7 +5,7 @@
 
 use Term::ANSIColor;
 
-$ntests = 2;
+$ntests = 10;
 for ($test=1;$test<=$ntests;$test++)
 {
         $tol[$test] = 0.0001; #relative value
@@ -31,16 +31,16 @@ for ($i=1 ; $i <= $ntests ; $i++)
 }
 
 # set the message array (default test1 test2 .. testN)
-$message[1] ="Test  1:  [Exact] Zero energy integration ..................";
-$message[2] ="Test  2:  [Analytic] Excitation rate with homogeneous source ..";
-$message[3] ="Test  3:  [Analytic] Heating with homogeneous source ..........";
-$message[4] ="Test  4:  [Analytic] Heating via electron-lattice heat transfer";
-$message[5] ="Test  5:  [Analytic] Auger recombination rate .................";
-$message[6] ="Test  6:  [Analytic] Heating induced by Auger recombination ...";
-$message[7] ="Test  7:  [Regression] Mie scattering TM total energy .........";
-$message[8] ="Test  8:  [Regression] Mie scattering TE total energy .........";
-$message[9] ="Test  9:  [Regression] Mie induced electron heating ...........";
-$message[10]="Test 10:  [Regression] Mie induced lattice heating ............";
+$message[1] ="Test  1:  [Regression] Zero energy integration ..................";
+$message[2] ="Test  2:  [Regression] e- excitation by homogeneous source ......";
+$message[3] ="Test  3:  [Regression] e- heating by homogeneous source..........";
+$message[4] ="Test  4:  [Regression] e- exc. and heating by homogeneous source.";
+$message[5] ="Test  5:  [Regression] e-/h exc. and heating by hom. source .....";
+$message[6] ="Test  6:  [Regression] e-/h exc. and heating, coupled to lattice.";
+$message[7] ="Test  7:  [Regression] Enabling quantum effects ...............";
+$message[8] ="Test  8:  [Regression] Mie induced lattice heating ............";
+$message[9] ="Test  9:  Regression] Enabling transport w/o cross-diffusion...";
+$message[10]="Test 10:  [Regression] Enabling transport with cross-diffusion.";
 $message[11]="Test 11:  [Analytic] Fermi-Dirac integral convergence .........";
 $message[12]="Test 12:  [Regression] Fermi-Dirac regressive test ............";
 
@@ -63,6 +63,8 @@ print color "reset";
 
 for ($test = 1 ; $test <= $ntests ; $test++) {
         print $message[$test];
+        
+#        print $testscripts[$test]; #check we have the right command
         system($testscript[$test]); #program is executed here. 
         $ODT="Test".$test."/TimeMax.dat"; #ODT = reference !
 	$file="output/TimeMax.dat";
@@ -108,6 +110,7 @@ for ($test = 1 ; $test <= $ntests ; $test++) {
         print "\n";
 	$failed[$test]=0.0;
         goto nexttest;
+        
         failed: #Le test n'est pas passé
         print color "red";
         print "Failed";
