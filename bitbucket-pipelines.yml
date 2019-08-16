@@ -1,0 +1,24 @@
+# This is a sample build configuration for C++ – Make.
+# Check our guides at https://confluence.atlassian.com/x/5Q4SMw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: gfortran:7.3
+
+pipelines:
+  default:
+    - step:
+        script: # Valid for Ubuntu and Gfortran compiler
+          - autoreconf -i
+          - ./configure FC=gfortran FCFLAGS="-O3 -fopenmp"
+          - make
+          - pipe: atlassian/slack-notify:0.3.2
+            variables:
+              WEBHOOK_URL: 'https://app.slack.com/services/BJEKEC5B6'
+              MESSAGE: 'Well compiled.'
+              # DEBUG: 'False' # Optional. 
+    - step:
+        deployment: cp
+        script: 
+          - cp ./src/flaps ./
+     
