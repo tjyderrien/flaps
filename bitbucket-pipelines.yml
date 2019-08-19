@@ -18,7 +18,6 @@ pipelines:
               MESSAGE: 'Well compiled.'
               # DEBUG: 'False' # Optional. 
     - step:
-        deployment: echo
         script: 
-          - echo "You may need to copy the file from ./src/flaps to ./flaps/"
+          - echo 'You may need to copy the file from ./src/flaps to ./flaps/'
      
