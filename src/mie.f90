@@ -33,19 +33,19 @@ module Mie_m
   integer, parameter ::              &
        MIE_SCATTERING_CONSTANT = -1, &
        MIE_SCATTERING_FITTED   =  0, &
-       ME_SCATTERING_ANALYTIC  =  1
+       MIE_SCATTERING_ANALYTIC =  1
 
 contains
 
    !------------------------------------------------------------------
    !This routine computes the intensity for the entire grid with one call
    !------------------------------------------------------------------
-    subroutine ComputeIntensity_batch(Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
+    subroutine ComputeIntensity_batch(Params, mesh, source, intensity, Dielectric, phiMie, OpticalIndex, Reflectivity, &
                                       absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                                       t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0, DefectThickness, BandBendingInFDTD,  &
                                       sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
                                       sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
-                                      x3, y3, x4, y4, x5, EintFieldR,  &
+                                      x3, y3, x4, y4, x5, &
                                       y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
       use Laser_m
       use Profiler_m
@@ -57,11 +57,13 @@ contains
       type(Laser),       intent(in)      :: source
       real(8),           intent(out)     :: intensity(mesh%M, mesh%N)
       real(8),           intent(in)      :: OpticalIndex(mesh%M, mesh%N)
+      complex(8),        intent(in)      :: Dielectric(mesh%M, mesh%N)
+      real(8),           intent(in)      :: phiMie(mesh%M, mesh%N)
       real(8),           intent(in)      :: Reflectivity(mesh%M, mesh%N)
       real(8),           intent(in)      :: absorptionDrudeE(mesh%M, mesh%N)
       real(8),           intent(in)      :: absorptionDrudeH(mesh%M, mesh%N)
       real(8),           intent(in)      :: x(mesh%M, mesh%N), y(mesh%M, mesh%N)
-      real(8),           intent(in)      :: EintFieldR(mesh%M, mesh%N)
+!      real(8),           intent(in)      :: EintFieldR(mesh%M, mesh%N)
       real(8),           intent(in)      :: OnePhotonIonizationRate0, TwoPhotonIonizationRate0
       real(8),           intent(in)      :: t, t0, sigmaTau, I0, sigmaX, sigmaY, x0, y0, DefectThickness
       integer(8),        intent(in)      :: BandBendingInFDTD
@@ -73,7 +75,8 @@ contains
       integer :: i, j
       real(8) :: ConstBLx, ConstBLy
       real(8) :: OnePhotonIonizationRate
-
+      real(8) :: EintFieldR(mesh%M, mesh%N)
+      complex(8)  :: EintField(mesh%M, mesh%N)
       real(8) :: exp_t_t0_sigmaTau
       type(Profiler), save :: prof
 
@@ -82,11 +85,12 @@ contains
       exp_t_t0_sigmaTau = exp(-M_HALF*((t-t0)/sigmaTau)**2)
 
       !$OMP PARALLEL DEFAULT(NONE) SHARED (Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
+      !$OMP phiMie, Dielectric, EintField, &
       !$OMP absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
       !$OMP t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0,  &
       !$OMP sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
       !$OMP sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
-      !$OMP x3, y3, x4, y4, x5, EintFieldR,  exp_t_t0_sigmaTau, DefectThickness, BandBendingInFDTD, &
+      !$OMP x3, y3, x4, y4, x5, EintFieldR, exp_t_t0_sigmaTau, DefectThickness, BandBendingInFDTD, &
       !$OMP y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9) &
       !$OMP PRIVATE(ConstBLx, ConstBLy)
 
@@ -94,6 +98,9 @@ contains
       !TODO: It is almost impossible to read, and per se to debug such a code.
       !TODO: @TYJD: Stop doing such coding style vandalism ;)
       !TODO: #TJYD @NTD: I commented the obselete / unphysical sources. We can then simplify this section. 
+      !TODO: #TJYD @NTD: I have finally continued the debugging here. Such a
+      !                  mess! The number of arguments has to be reduced urgently :) 
+      !                  Apologies for the delay in understanding.
 
       select case(Params%UseMieScattering)
       case(MIE_SCATTERING_CONSTANT)
@@ -205,7 +212,7 @@ contains
           end do
         end do
         !$OMP END DO
-      case(ME_SCATTERING_ANALYTIC)
+      case(MIE_SCATTERING_ANALYTIC)
         ! USING MIE SCATTERING ANALYTICAL FORMULAS !TJYD@NTD: This is more clean, here :)
         !$OMP DO COLLAPSE(2)
         do j=1, mesh%N
@@ -213,8 +220,8 @@ contains
         ! calculate electric field inside the tip
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie, abs(ContourYofX(x(i,j), NeedleRadius, NeedleAngle)), Dielectric(i,j)) !*sqrt(2d0*laser%fluence/(c*epsilon0*tau))
           ! debug formula for constant cone radius
-!           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie, 100d-9, epsilonInf)
-!           EintField(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real !TODO: Why this formulation would not be more physical? (TJYD)
+           EintField(i,j)=MieScattering(abs(y(i,j)), phiMie(i,j), 100d-9, Dielectric(i,j), source%k)
+           EintFieldR(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real !TODO: Why this formulation would not be more physical? (TJYD)
           intensity(i,j)=I0*OpticalIndex(i,j)* EintFieldR(i,j)**2 * exp_t_t0_sigmaTau !laser laser%fluence and reflectivity is inside the field
           end do
         end do
@@ -241,7 +248,7 @@ contains
 
     end subroutine ComputeIntensity_batch
   !------------------------------------------------------------------
-
+  !THIS ROUTINE COMPUTES MIE SCATTERING FOR A CYLINDER, TM MODE 
   !------------------------------------------------------------------
     complex(8) function MieScattering(r, phi, radius, dielectric, k) result(total)
       implicit none
@@ -271,7 +278,7 @@ contains
       end do
     end function MieScattering
   !------------------------------------------------------------------
-
+  !THIS FUNCTION COMPUTES MIE SCATTERING FOR TE MODE
   !------------------------------------------------------------------
      complex(8) function MieScatteringTE1(r, phi, radius, dielectric, k) result(total)
       implicit none
@@ -302,7 +309,7 @@ contains
       total=-total/(dielectric*k*r)
     end function MieScatteringTE1
   !------------------------------------------------------------------
-
+  !THIS ROUTINE COMPUTES MIE SCATTERING FOR A CYLINDER TE MODE
   !------------------------------------------------------------------
    complex(8) function MieScatteringTE2(r, phi, radius, dielectric, k) result(total)
       implicit none

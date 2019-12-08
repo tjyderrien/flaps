@@ -67,6 +67,8 @@ subroutine InitInputParameter( Params )
     !Mie scattering
     Params%phiMie0 = 0
     Params%PolarizationSource = 0
+
+    !Fermi-Dirac statistics
     Params%UseFermiDirac = 1
 
 end subroutine InitInputParameter

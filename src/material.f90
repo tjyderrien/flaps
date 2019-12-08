@@ -78,7 +78,7 @@ module Material_m
     real(8) :: AugerRateE      !< Auger rate for electrons
     real(8) :: AugerRateH      !< Auger rate for holes
     real(8) :: EpsStatic       !< dielectric constant for static field: useful when Poisson will be solved for static fields
-    real(8) :: Dielectric	 !< dielectric permittivity at a given wavelength !TODO: How to put a function of wavelength and temperature here? 
+    real(8) :: Dielectric      !< dielectric permittivity at a given wavelength !TODO: How to put a function of wavelength and temperature here? 
   end type Material
 
   contains

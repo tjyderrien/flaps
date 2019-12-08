@@ -1,4 +1,4 @@
-!! Copyright (C) 2012-2016 T. J.-Y. Derrien, N. Tancogne-Dejean
+!! Copyright (C) 2012-2019 T. J.-Y. Derrien, N. Tancogne-Dejean
 !!
 !! This program is free software: you can redistribute it and/or modify
 !! it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ program Flaps
                           MeshChoice=1       ,& !0: rectangle (xmin,xmax)(ymin,ymax). 1: Experimental cones, 2: Cone in a vessel (HS), 3: import GMSH (working)
                           MeshIterations=500000        ,&        !number of iterations to calculate meshNeedle
                           MeshIterationsVessel=100*Mv,&        !number of iterations to calculate meshVessel
-                          MeshShift=1       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3; !TODO: interface with input file flaps.in. 
+                          MeshShift=2       ,&         !number of cells x N in the tip, 343 nm: 2; 515 nm: 3; !TODO: interface with input file flaps.in. 
                           contourmin = -0.2531506894d0,&  !in um, use to decrease size of the needle and shorten simulation time (/!\ tip dependent) !TODO: interface with input file flaps.in. 
                           contourmax =  0.2361d0, &          !in um, use to decrease size of the needle and shorten simulation time (/!\ tip dependent) !TODO: interface with input file flaps.in. 
                           FermiMaxLines=3584            ! >= number of lines in Fermi file
@@ -520,13 +520,12 @@ WRITE(*,*) 'GMSH module has been commented. '
 
 !**** INITIALIZATION
 
-  tmin=tCenter-5d0*source%tau
-
-
   dt=Params%TimeStep
   dt2=Params%TimeStep
   dt3=Params%TimeStep
   dt4=Params%TimeStep
+
+  tmin=tCenter-5d0*source%tau
 
   ColFermiNeNc=2; ColFermiEta=3; ColFermi0=4; ColFermi1=5; ColFermi2=6; ColFermiHalf=7; 
   ColFermiThreeHalf=8; ColFermiMenusHalf=9;
@@ -1387,7 +1386,7 @@ if(Params%UseMieScattering.eq.1) then
           if(Params%PolarizationSource.eq.1) then !TM polarization, Bassel et al scattering on a cylinder
           ! formula for an experimental needle with interpolated radius
 !             write(*,*) "TM polarization selected."
-            EintField(i,j)= MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
+            EintField(i,j)=MieScattering(abs(y(i,j)), phiMie(i,j), 1d-6*Radius(i,j), epsilonInf, source%k) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau)) !ERROR HERE
             EintField2(i,j)=M_ZERO
           ! formula with a super mistake on radius
 !           EintField(i,j)=Unit * MieScattering(abs(y(i,j)), phiMie(i,j), 0.5d0*(y(i,N)-y(i,1)), epsilonInf) ! * sqrt(2d0*source%fluence/(c*epsilon0*source%tau))
@@ -1408,9 +1407,20 @@ if(Params%UseMieScattering.eq.1) then
     !$OMP END DO
     !$OMP END PARALLEL
 
-!     EintFieldR=sqrt(EintField * conjg(EintField))
-    EintFieldR=real(sqrt( EintField * conjg(EintField) + EintField2 * conjg(EintField2) ))
-    
+    !$OMP PARALLEL DEFAULT(NONE) SHARED(EintField, EintField2, EintFieldR, Params)
+    !$OMP DO COLLAPSE(2)
+    do j=1,Params%N
+      do i=1,Params%M
+        ! EintFieldR(i,j)=0d0 !debug, OK
+!        EintFieldR(i,j)=real(EintField(i,j)) !debug test: failed. Problem is in
+!        conversion from complex to real. Which version can be without problem?
+        print *, EintField(i,j) ! ERROR: contains a NaN
+        ! EintFieldR(i,j)=real(realpart(sqrt(EintField(i,j) * conjg(EintField(i,j)))))
+        EintFieldR(i,j)=real( sqrt( EintField(i,j) * conjg(EintField(i,j)) + EintField2(i,j) * conjg(EintField2(i,j)) ))
+      end do
+    end do
+    !$OMP END DO
+    !$OMP END PARALLEL 
 
     call output_open(Field%unit,'output/Field.dat', .false.) ! format 891
     do j=1,Params%N
@@ -1683,12 +1693,12 @@ if(Params%UseMieScattering.eq.1) then
    call DensitiesOfState_batch(mesh, DOSe, DOSh, meDOS, mhDOS)
    !
    !This routine computes the intensity for the entire grid with one call
-   call ComputeIntensity_batch(Params, mesh, source, intensity, OpticalIndex, Reflectivity, &
+   call ComputeIntensity_batch(Params, mesh, source, intensity, Dielectric, phiMie, OpticalIndex, Reflectivity, &
                                absorptionDrudeE, absorptionDrudeH, OnePhotonIonizationRate0, TwoPhotonIonizationRate0, &
                                t, t0, sigmaTau, I0, sigmaX, sigmaY, x, y, x0, y0, DefectThickness, BandBendingInFDTD,  &
                                sigmaX1, sigmaY1, sigmaX2, sigmaY2, sigmaX3, sigmaY3, sigmaX4, sigmaY4, sigmaX5, sigmaY5, &
                                sigmaX6, sigmaY6, sigmaX7, sigmaY7, sigmaX8, sigmaY8, sigmaX9, sigmaY9, x1, y1, x2, y2, &
-                               x3, y3, x4, y4, x5, EintFieldR,  &
+                               x3, y3, x4, y4, x5, &
                                y5, x6, y6, x7, y7, x8, y8, x9, y9, I1, I2, I3, I4, I5, I6, I7, I8, I9 )
    !
    !
