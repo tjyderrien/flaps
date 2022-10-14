@@ -223,6 +223,10 @@ contains
            EintField(i,j)=MieScattering(abs(y(i,j)), phiMie(i,j), 100d-9, Dielectric(i,j), source%k)
            EintFieldR(i,j)=sqrt(EintField(i,j)*conjg(EintField(i,j))) !complex to real !TODO: Why this formulation would not be more physical? (TJYD)
           intensity(i,j)=I0*OpticalIndex(i,j)* EintFieldR(i,j)**2 * exp_t_t0_sigmaTau !laser laser%fluence and reflectivity is inside the field
+          if(isnan(intensity(i,j))) then
+                write(*,*) "Mie returns NaN!"
+                ! write(*,*) intensity(i,j)
+          end if
           end do
         end do
         !$OMP END DO
@@ -231,7 +235,6 @@ contains
          call StopProgram
       end select
 
-      !TODO: NTD: Is it really needed or can I remove it?
       !$OMP DO COLLAPSE(2)
       do j=1, mesh%N !(optimized)
         do i=1, mesh%M
@@ -272,9 +275,14 @@ contains
 
       do i=1, 2*maxBesselOrder+1
         ireal=real(i-maxBesselOrder-1) !ireal is included in [-tmin;tmin], but fortran does not accept loops with negative index
-!         write(*,*) i, ireal
         total=total+M_IM**ireal * exp(M_IM*ireal*phi) * BesselJ(ireal, &
                 sqrt(dielectric)*k*r) * MieCoeff1(ireal, radius, dielectric, k) !TODO: sqrt of complex number must be avoided !
+        if(isnan(real(total))) then
+!          write(*,*) i, MieCoeff1(ireal, radius, dielectric, k) ! NaN
+           write(*,*) i, BesselJ(ireal, k*radius*sqrt(dielectric))
+                !Denom of MieCoeff1
+        end if
+
       end do
     end function MieScattering
   !------------------------------------------------------------------
@@ -341,9 +349,10 @@ contains
       complex(8), intent(in)  :: dielectric
       real(8),    intent(in)  :: k, radius
       real(8),    intent(in)  :: order
-
       MieCoeff1=(BesselJ(order, M_ONE_CMPLX*k*radius) - MieCoeff2(order, radius, dielectric, k)  &
           * Hankel1(order, k*radius, M_ZERO)) / (BesselJ(order, k*radius*sqrt(dielectric))) !TODO: sqrt of complex number must be avoided !
+!TODO: ERROR: on Maple, problem of BesselJ() = 0 does not show up, while here it
+!is systematic. 
     end function MieCoeff1
   !------------------------------------------------------------------
 
