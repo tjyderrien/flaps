@@ -44,6 +44,7 @@ AC_FC_SRCEXT(f90)
 FCFLAGS="${acx_save_fcflags}"
 
 AC_FC_LIBRARY_LDFLAGS
+AC_LANG_POP(Fortran)
 
 dnl check flag to include module path
 AX_F90_MODULE_FLAG

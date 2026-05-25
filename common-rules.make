@@ -34,7 +34,8 @@ flaps_LIBS = \
        $(top_builddir)/external_libs/gmsh/libgmsh.a
 
 core_LIBS = \
-      @LIBS_LAPACK@
+      @LIBS_LAPACK@ \
+      @LIBS_BLAS@
 
 all_LIBS = $(flaps_LIBS) $(core_LIBS)
 
