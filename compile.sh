@@ -1,15 +1,22 @@
 #!/bin/bash
-# DebugLine=-g -check all -warn all -backtrace 
-DebugLine="" #-g -bounds-check -w -backtrace -Wno-unused-variable -Wall
-Optimization="$(DebugLine) -O3 -I/usr/include -llapack -lm  -openmp" #-openmp #-mcmodel=large"
+# DebugLine="-g -fcheck=bounds -fbacktrace -Wno-unused-variable -Wall"
+Optimization="-O3 -fopenmp"
 
-FC="ifort" #gfortran
+FC=gfortran
 FCFLAGS="${Optimization}"
+
+module load openblas
+
+OPENBLAS_LIBS=$(pkg-config --libs openblas)
+OPENBLAS_LIBDIR=$(pkg-config --variable=libdir openblas)
 
 make clean
 autoreconf -i
-./configure FC=${FC} FCLAGS=${FCFLAGS}
-make 
+./configure FC=${FC} FCFLAGS="${FCFLAGS}" \
+  LDFLAGS="-Wl,-rpath,${OPENBLAS_LIBDIR}" \
+  --with-blas="${OPENBLAS_LIBS}" \
+  --with-lapack="${OPENBLAS_LIBS}"
+make
 make install
 
 
